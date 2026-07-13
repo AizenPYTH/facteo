@@ -1,7 +1,7 @@
 import { SymbolView } from 'expo-symbols';
 import { Pressable, StyleSheet, TextInput, View, type ViewStyle } from 'react-native';
 
-import { colors } from '@/constants/theme/colors';
+import { useColors, useThemedStyles } from '@/hooks/use-colors';
 import { radius } from '@/constants/theme/radius';
 import { spacing } from '@/constants/theme/spacing';
 import { typography } from '@/constants/theme/typography';
@@ -17,10 +17,12 @@ export type ClientSearchBarProps = {
 export function ClientSearchBar({
   value,
   onChangeText,
-  placeholder = 'Rechercher par société, contact, téléphone ou email',
+  placeholder = 'Rechercher par société, contact, téléphone ou e-mail',
   style,
   testID,
 }: ClientSearchBarProps) {
+  const styles = useStyles();
+  const colors = useColors();
   return (
     <View style={[styles.container, style]} testID={testID}>
       <SymbolView
@@ -58,7 +60,8 @@ export function ClientSearchBar({
   );
 }
 
-const styles = StyleSheet.create({
+function useStyles() {
+  return useThemedStyles((colors) => ({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -77,4 +80,5 @@ const styles = StyleSheet.create({
     padding: 0,
     margin: 0,
   },
-});
+}));
+}

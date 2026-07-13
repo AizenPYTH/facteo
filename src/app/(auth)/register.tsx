@@ -2,24 +2,31 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Link, router, type Href } from 'expo-router';
 import { useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
-import {
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { Image, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/ui/button';
+import { FormScreen } from '@/components/ui/form-screen';
 import { TextField } from '@/components/ui/text-field';
 import { useAuth } from '@/hooks/use-auth';
-import { authScreenStyles, getAuthErrorMessage } from '@/lib/auth/errors';
+import { useAuthScreenStyles } from '@/hooks/use-auth-screen-styles';
+import { getAuthErrorMessage } from '@/lib/auth/errors';
 import { registerSchema, type RegisterFormValues } from '@/lib/validations/register';
+import { useToast } from '@/providers/toast-provider';
+
+const FIELDS = [
+  ['firstName', 'Prénom', 'Jean', 'given-name', 'givenName', 'words'] as const,
+  ['lastName', 'Nom', 'Dupont', 'family-name', 'familyName', 'words'] as const,
+  ['companyName', "Nom de l'entreprise", 'Acme SARL', 'organization', 'organizationName', 'words'] as const,
+  ['email', 'Adresse e-mail', 'vous@entreprise.fr', 'email', 'emailAddress', 'none'] as const,
+  ['password', 'Mot de passe', 'Au moins 8 caractères', 'new-password', 'newPassword', 'none'] as const,
+  ['confirmPassword', 'Confirmer le mot de passe', 'Confirmez votre mot de passe', 'new-password', 'newPassword', 'none'] as const,
+] as const;
 
 export default function RegisterScreen() {
+  const authScreenStyles = useAuthScreenStyles();
   const { signUp } = useAuth();
+  const { showSuccess } = useToast();
   const [formError, setFormError] = useState<string | null>(null);
 
   const {
@@ -55,197 +62,84 @@ export default function RegisterScreen() {
     }
 
     if (!session) {
-      setFormError('Please check your email to confirm your account, then sign in.');
+      showSuccess("Un e-mail de confirmation vient d'être envoyé.");
       router.replace('/login' as Href);
       return;
     }
 
+    showSuccess('Compte créé avec succès.');
     router.replace('/' as Href);
   }
 
   return (
-    <SafeAreaView style={authScreenStyles.container} edges={['top', 'bottom']}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.flex}>
-        <ScrollView
-          contentContainerStyle={authScreenStyles.content}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}>
-          <View style={authScreenStyles.header}>
-            <Text style={authScreenStyles.title}>Create Account</Text>
-            <Text style={authScreenStyles.subtitle}>Start invoicing with FACTEO</Text>
-          </View>
-
-          {formError ? (
-            <View style={authScreenStyles.errorBanner}>
-              <Text style={authScreenStyles.errorBannerText}>{formError}</Text>
-            </View>
-          ) : null}
-
-          <View style={authScreenStyles.formCard}>
-            <View style={authScreenStyles.field}>
-              <Controller
-                control={control}
-                name="firstName"
-                render={({ field: { onChange, onBlur, value } }) => (
-                  <TextField
-                    autoCapitalize="words"
-                    autoComplete="given-name"
-                    error={errors.firstName?.message}
-                    label="First name"
-                    onBlur={onBlur}
-                    onChangeText={onChange}
-                    placeholder="Jane"
-                    returnKeyType="next"
-                    textContentType="givenName"
-                    value={value}
-                  />
-                )}
-              />
-            </View>
-
-            <View style={authScreenStyles.divider} />
-
-            <View style={authScreenStyles.field}>
-              <Controller
-                control={control}
-                name="lastName"
-                render={({ field: { onChange, onBlur, value } }) => (
-                  <TextField
-                    autoCapitalize="words"
-                    autoComplete="family-name"
-                    error={errors.lastName?.message}
-                    label="Last name"
-                    onBlur={onBlur}
-                    onChangeText={onChange}
-                    placeholder="Doe"
-                    returnKeyType="next"
-                    textContentType="familyName"
-                    value={value}
-                  />
-                )}
-              />
-            </View>
-
-            <View style={authScreenStyles.divider} />
-
-            <View style={authScreenStyles.field}>
-              <Controller
-                control={control}
-                name="companyName"
-                render={({ field: { onChange, onBlur, value } }) => (
-                  <TextField
-                    autoCapitalize="words"
-                    autoComplete="organization"
-                    error={errors.companyName?.message}
-                    label="Company name"
-                    onBlur={onBlur}
-                    onChangeText={onChange}
-                    placeholder="Acme Inc."
-                    returnKeyType="next"
-                    textContentType="organizationName"
-                    value={value}
-                  />
-                )}
-              />
-            </View>
-
-            <View style={authScreenStyles.divider} />
-
-            <View style={authScreenStyles.field}>
-              <Controller
-                control={control}
-                name="email"
-                render={({ field: { onChange, onBlur, value } }) => (
-                  <TextField
-                    autoCapitalize="none"
-                    autoComplete="email"
-                    error={errors.email?.message}
-                    keyboardType="email-address"
-                    label="Email"
-                    onBlur={onBlur}
-                    onChangeText={onChange}
-                    placeholder="you@company.com"
-                    returnKeyType="next"
-                    textContentType="emailAddress"
-                    value={value}
-                  />
-                )}
-              />
-            </View>
-
-            <View style={authScreenStyles.divider} />
-
-            <View style={authScreenStyles.field}>
-              <Controller
-                control={control}
-                name="password"
-                render={({ field: { onChange, onBlur, value } }) => (
-                  <TextField
-                    autoCapitalize="none"
-                    autoComplete="new-password"
-                    error={errors.password?.message}
-                    label="Password"
-                    onBlur={onBlur}
-                    onChangeText={onChange}
-                    placeholder="At least 8 characters"
-                    returnKeyType="next"
-                    secureTextEntry
-                    textContentType="newPassword"
-                    value={value}
-                  />
-                )}
-              />
-            </View>
-
-            <View style={authScreenStyles.divider} />
-
-            <View style={authScreenStyles.field}>
-              <Controller
-                control={control}
-                name="confirmPassword"
-                render={({ field: { onChange, onBlur, value } }) => (
-                  <TextField
-                    autoCapitalize="none"
-                    autoComplete="new-password"
-                    error={errors.confirmPassword?.message}
-                    label="Confirm password"
-                    onBlur={onBlur}
-                    onChangeText={onChange}
-                    placeholder="Re-enter your password"
-                    returnKeyType="done"
-                    secureTextEntry
-                    textContentType="newPassword"
-                    value={value}
-                  />
-                )}
-              />
-            </View>
-          </View>
-
-          <Button
-            loading={isSubmitting}
-            onPress={handleSubmit(onSubmit)}
-            title="Create Account"
+    <SafeAreaView edges={['top', 'bottom']} style={authScreenStyles.container}>
+      <FormScreen
+        contentContainerStyle={authScreenStyles.content}
+        footer={
+          <Button loading={isSubmitting} onPress={handleSubmit(onSubmit)} title="Créer un compte" />
+        }
+        scrollable>
+        <View style={authScreenStyles.header}>
+          <Image
+            accessibilityIgnoresInvertColors
+            source={require('@/assets/images/facteo-logo.png')}
+            style={styles.logo}
           />
+          <Text accessibilityRole="header" style={authScreenStyles.title}>
+            Créer un compte
+          </Text>
+          <Text style={authScreenStyles.subtitle}>Commencez en quelques secondes.</Text>
+        </View>
 
-          <View style={authScreenStyles.footer}>
-            <Text style={authScreenStyles.footerText}>
-              Already have an account?{' '}
-              <Link href={'/login' as Href}>
-                <Text style={authScreenStyles.footerLink}>Sign In</Text>
-              </Link>
-            </Text>
+        {formError ? (
+          <View accessibilityRole="alert" style={authScreenStyles.errorBanner}>
+            <Text style={authScreenStyles.errorBannerText}>{formError}</Text>
           </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
+        ) : null}
+
+        <View style={authScreenStyles.form}>
+          {FIELDS.map(([name, label, placeholder, autoComplete, textContentType, autoCapitalize], index) => (
+            <Controller
+              key={name}
+              control={control}
+              name={name}
+              render={({ field: { onChange, onBlur, value } }) => (
+                <TextField
+                  autoCapitalize={autoCapitalize}
+                  autoComplete={autoComplete}
+                  error={errors[name]?.message}
+                  keyboardType={name === 'email' ? 'email-address' : 'default'}
+                  label={label}
+                  onBlur={onBlur}
+                  onChangeText={onChange}
+                  placeholder={placeholder}
+                  returnKeyType={index < FIELDS.length - 1 ? 'next' : 'done'}
+                  secureTextEntry={name.includes('password')}
+                  textContentType={textContentType}
+                  value={value}
+                />
+              )}
+            />
+          ))}
+        </View>
+
+        <View style={authScreenStyles.footer}>
+          <Text style={authScreenStyles.footerText}>
+            Déjà un compte ?{' '}
+            <Link href={'/login' as Href}>
+              <Text style={authScreenStyles.footerLink}>Connexion</Text>
+            </Link>
+          </Text>
+        </View>
+      </FormScreen>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  flex: {
-    flex: 1,
+  logo: {
+    width: 148,
+    height: 40,
+    resizeMode: 'contain',
   },
 });

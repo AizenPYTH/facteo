@@ -9,7 +9,7 @@ import {
   type ViewStyle,
 } from 'react-native';
 
-import { colors } from '@/constants/theme/colors';
+import { useColors, useThemedStyles } from '@/hooks/use-colors';
 import { radius } from '@/constants/theme/radius';
 import { spacing } from '@/constants/theme/spacing';
 import { typography } from '@/constants/theme/typography';
@@ -20,6 +20,7 @@ import { QuoteCard } from './quote-card';
 
 export type QuotesListProps = {
   quotes: Quote[];
+  onQuotePress?: (quote: Quote) => void;
   isInitialLoading?: boolean;
   isRefreshing?: boolean;
   isFetchingNextPage?: boolean;
@@ -38,12 +39,15 @@ export function QuotesList({
   isSearching = false,
   onRefresh,
   onEndReached,
+  onQuotePress,
   contentContainerStyle,
   testID,
 }: QuotesListProps) {
+  const styles = useStyles();
+  const colors = useColors();
   const renderItem: ListRenderItem<Quote> = ({ item, index }) => (
     <View>
-      <QuoteCard quote={item} />
+      <QuoteCard onPress={onQuotePress} quote={item} />
       {index < quotes.length - 1 ? <View style={styles.separator} /> : null}
     </View>
   );
@@ -92,6 +96,8 @@ export function QuotesList({
         ) : undefined
       }
       renderItem={renderItem}
+      keyboardShouldPersistTaps="handled"
+      nestedScrollEnabled
       showsVerticalScrollIndicator={false}
       style={styles.list}
       testID={testID}
@@ -99,7 +105,8 @@ export function QuotesList({
   );
 }
 
-const styles = StyleSheet.create({
+function useStyles() {
+  return useThemedStyles((colors) => ({
   list: {
     flex: 1,
   },
@@ -135,4 +142,5 @@ const styles = StyleSheet.create({
     backgroundColor: colors.separator,
     marginLeft: spacing.md,
   },
-});
+}));
+}

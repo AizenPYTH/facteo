@@ -1,7 +1,7 @@
 import { StyleSheet, Text, View } from 'react-native';
 
-import { colors } from '@/constants/theme/colors';
-import { typography } from '@/constants/theme/typography';
+import { useColors, useThemedStyles } from '@/hooks/use-colors';
+import { textHierarchy } from '@/constants/theme/typography';
 
 type ClientFieldProps = {
   label: string;
@@ -10,13 +10,15 @@ type ClientFieldProps = {
 };
 
 export function ClientField({ label, value, emphasize = false }: ClientFieldProps) {
+  const styles = useStyles();
+  const colors = useColors();
   const displayValue = value?.trim() || 'Non renseigné';
 
   return (
     <View style={styles.field}>
       <Text style={styles.label}>{label}</Text>
       <Text
-        numberOfLines={1}
+        numberOfLines={2}
         style={[styles.value, emphasize ? styles.valueEmphasized : null]}>
         {displayValue}
       </Text>
@@ -24,21 +26,24 @@ export function ClientField({ label, value, emphasize = false }: ClientFieldProp
   );
 }
 
-const styles = StyleSheet.create({
+function useStyles() {
+  return useThemedStyles((colors) => ({
   field: {
     gap: 2,
   },
   label: {
-    ...typography.caption1,
+    ...textHierarchy.caption,
     color: colors.textSecondary,
     textTransform: 'uppercase',
-    letterSpacing: 0.3,
   },
   value: {
-    ...typography.subheadline,
+    ...textHierarchy.subtitle,
     color: colors.text,
+    flexShrink: 1,
   },
   valueEmphasized: {
-    ...typography.bodyMedium,
+    ...textHierarchy.body,
+    fontWeight: '500',
   },
-});
+}));
+}

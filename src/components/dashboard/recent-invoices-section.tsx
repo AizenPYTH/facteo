@@ -1,6 +1,6 @@
 import { StyleSheet, View } from 'react-native';
 
-import { colors } from '@/constants/theme/colors';
+import { useColors, useThemedStyles } from '@/hooks/use-colors';
 import { radius } from '@/constants/theme/radius';
 import { spacing } from '@/constants/theme/spacing';
 import type { Invoice } from '@/types/dashboard';
@@ -15,9 +15,11 @@ type RecentInvoicesSectionProps = {
 };
 
 export function RecentInvoicesSection({ invoices, onInvoicePress }: RecentInvoicesSectionProps) {
+  const styles = useStyles();
+  const colors = useColors();
   return (
     <View style={styles.section}>
-      <SectionHeader title="Recent invoices" />
+      <SectionHeader title="Factures récentes" />
       {invoices.length === 0 ? (
         <EmptyInvoices />
       ) : (
@@ -36,7 +38,8 @@ export function RecentInvoicesSection({ invoices, onInvoicePress }: RecentInvoic
   );
 }
 
-const styles = StyleSheet.create({
+function useStyles() {
+  return useThemedStyles((colors) => ({
   section: {
     gap: spacing.md,
   },
@@ -47,4 +50,5 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     overflow: 'hidden',
   },
-});
+}));
+}

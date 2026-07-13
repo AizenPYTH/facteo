@@ -1,35 +1,51 @@
+import { SymbolView } from 'expo-symbols';
 import { StyleSheet, Text, View } from 'react-native';
 
-import { colors } from '@/constants/theme/colors';
-import { spacing } from '@/constants/theme/spacing';
+import { useColors, useThemedStyles } from '@/hooks/use-colors';
 import { typography } from '@/constants/theme/typography';
 
 type SectionHeaderProps = {
   title: string;
   actionLabel?: string;
+  premiumLocked?: boolean;
 };
 
-export function SectionHeader({ title, actionLabel }: SectionHeaderProps) {
+export function SectionHeader({ title, actionLabel, premiumLocked = false }: SectionHeaderProps) {
+  const styles = useStyles();
+  const colors = useColors();
+
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>{title}</Text>
+      <View style={styles.titleRow}>
+        <Text style={styles.title}>{title}</Text>
+        {premiumLocked ? (
+          <SymbolView name="lock.fill" size={13} tintColor={colors.textTertiary} />
+        ) : null}
+      </View>
       {actionLabel ? <Text style={styles.action}>{actionLabel}</Text> : null}
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  title: {
-    ...typography.title3,
-    color: colors.text,
-  },
-  action: {
-    ...typography.subheadlineMedium,
-    color: colors.textLink,
-  },
-});
+function useStyles() {
+  return useThemedStyles((colors) => ({
+    container: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+    titleRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+    },
+    title: {
+      ...typography.title3,
+      color: colors.text,
+    },
+    action: {
+      ...typography.subheadlineMedium,
+      color: colors.textLink,
+    },
+  }));
+}

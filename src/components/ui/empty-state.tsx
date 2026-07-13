@@ -1,8 +1,9 @@
 import { SymbolView } from 'expo-symbols';
 import type { ComponentProps } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View, type ViewStyle } from 'react-native';
 
-import { colors } from '@/constants/theme/colors';
+import { Button } from '@/components/ui/button';
+import { useColors, useThemedStyles } from '@/hooks/use-colors';
 import { radius } from '@/constants/theme/radius';
 import { spacing } from '@/constants/theme/spacing';
 import { typography } from '@/constants/theme/typography';
@@ -13,6 +14,10 @@ type EmptyStateProps = {
   title: string;
   description: string;
   icon?: SymbolName;
+  actionLabel?: string;
+  onAction?: () => void;
+  style?: ViewStyle;
+  testID?: string;
 };
 
 const DEFAULT_ICON = {
@@ -25,28 +30,34 @@ export function EmptyState({
   title,
   description,
   icon = DEFAULT_ICON,
+  actionLabel,
+  onAction,
+  style,
+  testID,
 }: EmptyStateProps) {
+  const styles = useStyles();
+  const colors = useColors();
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, style]} testID={testID}>
       <View style={styles.iconWrap}>
         <SymbolView name={icon} size={28} tintColor={colors.iconTertiary} type="hierarchical" />
       </View>
       <Text style={styles.title}>{title}</Text>
       <Text style={styles.description}>{description}</Text>
+      {actionLabel && onAction ? (
+        <Button accessibilityLabel={actionLabel} onPress={onAction} title={actionLabel} />
+      ) : null}
     </View>
   );
 }
 
-const styles = StyleSheet.create({
+function useStyles() {
+  return useThemedStyles((colors) => ({
   container: {
     alignItems: 'center',
-    paddingVertical: spacing.xl,
+    paddingVertical: spacing['3xl'],
     paddingHorizontal: spacing.lg,
-    gap: spacing.sm,
-    backgroundColor: colors.surface,
-    borderRadius: radius.card,
-    borderWidth: 1,
-    borderColor: colors.border,
+    gap: spacing.md,
   },
   iconWrap: {
     width: 56,
@@ -55,7 +66,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.backgroundSecondary,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: spacing.xs,
   },
   title: {
     ...typography.headline,
@@ -67,4 +77,5 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     textAlign: 'center',
   },
-});
+}));
+}

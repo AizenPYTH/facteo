@@ -1,11 +1,9 @@
 import { supabase } from '@/lib/supabase';
 import { logSupabaseError } from '@/lib/supabase/errors';
-import {
-  mapFormValuesToClientInsert,
-  mapFormValuesToClientUpdate,
-} from '@/lib/clients/mappers';
+import { mapFormValuesToClientInsert, mapFormValuesToClientUpdate } from '@/lib/clients/mappers';
 import { mapClientRowToClient } from '@/lib/supabase/mappers';
 import type { Client, ClientFormValues } from '@/types/client';
+import type { DataScope } from '@/types/tenant';
 import {
   CLIENTS_PAGE_SIZE,
   type ClientsPage,
@@ -31,12 +29,12 @@ function applySearchFilter<T extends { or: (filters: string) => T }>(
   }
 
   return query.or(
-    `company.ilike.%${sanitizedSearch}%,name.ilike.%${sanitizedSearch}%,email.ilike.%${sanitizedSearch}%,phone.ilike.%${sanitizedSearch}%`,
+    `company.ilike.%${sanitizedSearch}%,name.ilike.%${sanitizedSearch}%,email.ilike.%${sanitizedSearch}%,phone.ilike.%${sanitizedSearch}%,city.ilike.%${sanitizedSearch}%,address.ilike.%${sanitizedSearch}%,vat_number.ilike.%${sanitizedSearch}%`,
   );
 }
 
 export async function fetchClientsPage(
-  userId: string,
+  scope: DataScope,
   { search = '', page = 0, pageSize = CLIENTS_PAGE_SIZE }: ClientsPageParams = {},
 ): Promise<ClientsPage> {
   const from = page * pageSize;
@@ -45,7 +43,8 @@ export async function fetchClientsPage(
   let query = supabase
     .from('clients')
     .select(CLIENT_COLUMNS, { count: 'exact' })
-    .eq('user_id', userId)
+    .eq('company_id', scope.companyId)
+    .is('deleted_at', null)
     .order('name', { ascending: true })
     .range(from, to);
 
@@ -69,12 +68,13 @@ export async function fetchClientsPage(
   };
 }
 
-export async function fetchClientById(userId: string, clientId: string): Promise<Client | null> {
+export async function fetchClientById(scope: DataScope, clientId: string): Promise<Client | null> {
   const { data, error } = await supabase
     .from('clients')
     .select(CLIENT_COLUMNS)
-    .eq('user_id', userId)
+    .eq('company_id', scope.companyId)
     .eq('id', clientId)
+    .is('deleted_at', null)
     .maybeSingle();
 
   if (error) {
@@ -85,10 +85,10 @@ export async function fetchClientById(userId: string, clientId: string): Promise
   return data ? mapClientRowToClient(data as ClientRow) : null;
 }
 
-export async function createClient(userId: string, input: ClientFormValues): Promise<Client> {
+export async function createClient(scope: DataScope, input: ClientFormValues): Promise<Client> {
   const { data, error } = await supabase
     .from('clients')
-    .insert(mapFormValuesToClientInsert(userId, input))
+    .insert(mapFormValuesToClientInsert(scope, input))
     .select(CLIENT_COLUMNS)
     .single();
 
@@ -101,14 +101,14 @@ export async function createClient(userId: string, input: ClientFormValues): Pro
 }
 
 export async function updateClient(
-  userId: string,
+  scope: DataScope,
   clientId: string,
   input: ClientFormValues,
 ): Promise<Client> {
   const { data, error } = await supabase
     .from('clients')
     .update(mapFormValuesToClientUpdate(input))
-    .eq('user_id', userId)
+    .eq('company_id', scope.companyId)
     .eq('id', clientId)
     .select(CLIENT_COLUMNS)
     .single();
@@ -121,11 +121,11 @@ export async function updateClient(
   return mapClientRowToClient(data as ClientRow);
 }
 
-export async function deleteClient(userId: string, clientId: string): Promise<void> {
+export async function deleteClient(scope: DataScope, clientId: string): Promise<void> {
   const { error } = await supabase
     .from('clients')
-    .delete()
-    .eq('user_id', userId)
+    .update({ deleted_at: new Date().toISOString() })
+    .eq('company_id', scope.companyId)
     .eq('id', clientId);
 
   if (error) {

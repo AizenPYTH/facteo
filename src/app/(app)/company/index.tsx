@@ -1,29 +1,21 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { router } from 'expo-router';
-import { SymbolView } from 'expo-symbols';
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
-import {
-  ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { ActivityIndicator, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { CompanyProfileForm } from '@/components/company';
 import { Button } from '@/components/ui/button';
-import { colors } from '@/constants/theme/colors';
+import { FormScreen } from '@/components/ui/form-screen';
+import { NavigationHeader } from '@/components/ui/navigation-header';
+import { useColors, useThemedStyles } from '@/hooks/use-colors';
 import { spacing } from '@/constants/theme/spacing';
-import { typography } from '@/constants/theme/typography';
+import { textHierarchy } from '@/constants/theme/typography';
 import {
   useCompanyProfile,
   useUpdateCompanyProfile,
 } from '@/hooks/use-company-profile';
+import { useCompanyProfileAssets } from '@/hooks/use-company-profile-assets';
 import { getCompanyProfileErrorMessage } from '@/lib/company-profile/errors';
 import { companyProfileSchema } from '@/lib/validations/company-profile';
 import { useToast } from '@/providers/toast-provider';
@@ -33,7 +25,10 @@ import {
 } from '@/types/company-profile';
 
 export default function CompanyProfileScreen() {
+  const styles = useStyles();
+  const colors = useColors();
   const { data, isLoading } = useCompanyProfile();
+  const { data: assets, isLoading: assetsLoading } = useCompanyProfileAssets();
   const updateProfile = useUpdateCompanyProfile();
   const { showError, showSuccess } = useToast();
 
@@ -56,7 +51,7 @@ export default function CompanyProfileScreen() {
   async function onSubmit(values: CompanyProfileFormValues) {
     try {
       await updateProfile.mutateAsync(values);
-      showSuccess('Profil enregistré avec succès');
+      showSuccess('Profil enregistré.');
       reset(values);
     } catch (error) {
       const rawMessage =
@@ -68,7 +63,7 @@ export default function CompanyProfileScreen() {
     }
   }
 
-  if (isLoading) {
+  if (isLoading || assetsLoading) {
     return (
       <SafeAreaView edges={['top', 'bottom']} style={styles.safeArea}>
         <View style={styles.loading}>
@@ -80,90 +75,54 @@ export default function CompanyProfileScreen() {
   }
 
   return (
-    <SafeAreaView edges={['top', 'bottom']} style={styles.safeArea}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.flex}>
-        <View style={styles.header}>
-          <Pressable
-            accessibilityRole="button"
-            onPress={() => router.back()}
-            style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}>
-            <SymbolView
-              name={{ ios: 'chevron.left', android: 'arrow_back', web: 'arrow_back' }}
-              size={18}
-              tintColor={colors.primary}
-              type="hierarchical"
-            />
-            <Text style={styles.backLabel}>Retour</Text>
-          </Pressable>
-          <Text accessibilityRole="header" style={styles.title}>
-            Mon entreprise
-          </Text>
-        </View>
-
-        <ScrollView
-          contentContainerStyle={styles.content}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}>
-          <CompanyProfileForm control={control} errors={errors} />
-
-          <Button
-            disabled={!isDirty}
-            loading={isSubmitting || updateProfile.isPending}
-            onPress={handleSubmit(onSubmit)}
-            title="Enregistrer"
-          />
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+    <FormScreen
+      footer={
+        <Button
+          disabled={!isDirty}
+          loading={isSubmitting || updateProfile.isPending}
+          onPress={handleSubmit(onSubmit)}
+          title="Enregistrer"
+        />
+      }
+      header={<NavigationHeader title="Profil entreprise" />}>
+      <CompanyProfileForm
+        assets={{
+          logoUrl: assets?.logoUrl ?? null,
+          signatureUrl: assets?.signatureUrl ?? null,
+        }}
+        control={control}
+        errors={errors}
+      />
+    </FormScreen>
   );
 }
 
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: colors.backgroundGrouped,
-  },
-  flex: {
-    flex: 1,
-  },
-  loading: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.md,
-  },
-  loadingText: {
-    ...typography.subheadline,
-    color: colors.textSecondary,
-  },
-  header: {
-    paddingHorizontal: spacing.screenPaddingHorizontal,
-    paddingTop: spacing.sm,
-    paddingBottom: spacing.md,
-    gap: spacing.sm,
-  },
-  backButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    alignSelf: 'flex-start',
-  },
-  backLabel: {
-    ...typography.subheadlineMedium,
-    color: colors.primary,
-  },
-  pressed: {
-    opacity: 0.7,
-  },
-  title: {
-    ...typography.largeTitle,
-    color: colors.text,
-  },
-  content: {
-    paddingHorizontal: spacing.screenPaddingHorizontal,
-    paddingBottom: spacing.xl,
-    gap: spacing.lg,
-  },
-});
+function useStyles() {
+  return useThemedStyles((colors) => ({
+    safeArea: {
+      flex: 1,
+      backgroundColor: colors.backgroundGrouped,
+    },
+    flex: {
+      flex: 1,
+    },
+    loading: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: spacing.md,
+    },
+    loadingText: {
+      ...textHierarchy.subtitle,
+      color: colors.textSecondary,
+    },
+    header: {
+      paddingBottom: spacing.sm,
+    },
+    content: {
+      paddingHorizontal: spacing.screenPaddingHorizontal,
+      paddingBottom: spacing['2xl'],
+      gap: spacing.sectionGap,
+    },
+  }));
+}

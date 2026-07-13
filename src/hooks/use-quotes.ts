@@ -1,22 +1,22 @@
-import { keepPreviousData, useInfiniteQuery } from '@tanstack/react-query';
+import { useInfiniteQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
 
-import { useAuth } from '@/hooks/use-auth';
+import { useTenant } from '@/hooks/use-tenant';
+import { requireScope } from '@/lib/tenant/scope';
 import { fetchQuotesPage } from '@/lib/supabase/quotes';
 import { quotesQueryKeys } from '@/lib/supabase/query-keys';
-import type { QuotesPage } from '@/types/quotes-list';
+import type { QuoteStatusFilter, QuotesPage } from '@/types/quotes-list';
 
-export function useInfiniteQuotes(search = '') {
-  const { user, loading: authLoading } = useAuth();
+export function useInfiniteQuotes(search = '', status: QuoteStatusFilter = 'all') {
+  const { scope, loading: tenantLoading, isSwitching } = useTenant();
 
   const query = useInfiniteQuery<QuotesPage>({
-    queryKey: quotesQueryKeys.infiniteList(user?.id ?? 'anonymous', search),
+    queryKey: quotesQueryKeys.infiniteList(scope?.companyId ?? 'anonymous', search, status),
     queryFn: ({ pageParam }) =>
-      fetchQuotesPage(user!.id, { search, page: pageParam as number }),
+      fetchQuotesPage(requireScope(scope), { search, status, page: pageParam as number }),
     initialPageParam: 0,
     getNextPageParam: (lastPage) => lastPage.nextPage ?? undefined,
-    enabled: Boolean(user?.id) && !authLoading,
-    placeholderData: keepPreviousData,
+    enabled: Boolean(scope?.companyId) && !tenantLoading && !isSwitching,
     staleTime: 30_000,
   });
 

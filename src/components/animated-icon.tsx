@@ -1,136 +1,153 @@
-import { Image } from 'expo-image';
-import { useState } from 'react';
-import { Dimensions, StyleSheet, View } from 'react-native';
-import Animated, { Easing, Keyframe } from 'react-native-reanimated';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useEffect, useState } from 'react';
+import { Image, StyleSheet, View } from 'react-native';
+import Animated, {
+  Easing,
+  interpolate,
+  useAnimatedStyle,
+  useSharedValue,
+  withDelay,
+  withRepeat,
+  withSequence,
+  withTiming,
+} from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
 
-const INITIAL_SCALE_FACTOR = Dimensions.get('screen').height / 90;
-const DURATION = 600;
+const DURATION_MS = 2200;
+const BRAND_BLUE = '#0274DF';
+const BRAND_DEEP = '#012F6B';
+const BRAND_GLOW = '#4DA3FF';
 
-export function AnimatedSplashOverlay() {
-  const [visible, setVisible] = useState(true);
+type PremiumSplashOverlayProps = {
+  onComplete?: () => void;
+};
 
-  if (!visible) return null;
+export function PremiumSplashOverlay({ onComplete }: PremiumSplashOverlayProps) {
+  const opacity = useSharedValue(1);
+  const logoScale = useSharedValue(0.76);
+  const logoOpacity = useSharedValue(0);
+  const glowOpacity = useSharedValue(0);
+  const gradientShift = useSharedValue(0);
 
-  const splashKeyframe = new Keyframe({
-    0: {
-      transform: [{ scale: 1 }],
-      opacity: 1,
-    },
-    20: {
-      opacity: 1,
-    },
-    70: {
-      opacity: 0,
-      easing: Easing.elastic(0.7),
-    },
-    100: {
-      opacity: 0,
-      transform: [{ scale: 1 }],
-      easing: Easing.elastic(0.7),
-    },
-  });
+  useEffect(() => {
+    logoOpacity.value = withTiming(1, { duration: 700, easing: Easing.out(Easing.cubic) });
+    logoScale.value = withSequence(
+      withTiming(1, { duration: 900, easing: Easing.out(Easing.cubic) }),
+      withDelay(250, withTiming(1.06, { duration: 500, easing: Easing.inOut(Easing.sin) })),
+      withTiming(1, { duration: 350, easing: Easing.out(Easing.quad) }),
+    );
+    glowOpacity.value = withDelay(
+      180,
+      withRepeat(
+        withSequence(
+          withTiming(0.5, { duration: 1100, easing: Easing.inOut(Easing.sin) }),
+          withTiming(0.16, { duration: 1100, easing: Easing.inOut(Easing.sin) }),
+        ),
+        2,
+        false,
+      ),
+    );
+    gradientShift.value = withRepeat(
+      withTiming(1, { duration: 3200, easing: Easing.inOut(Easing.sin) }),
+      -1,
+      true,
+    );
 
-  const image = <Image style={styles.image} source={require('@/assets/images/expo-logo.png')} />;
+    opacity.value = withDelay(
+      DURATION_MS - 500,
+      withTiming(0, { duration: 520, easing: Easing.in(Easing.cubic) }, (finished) => {
+        'worklet';
+        if (finished && onComplete) {
+          scheduleOnRN(onComplete);
+        }
+      }),
+    );
+  }, [glowOpacity, gradientShift, logoOpacity, logoScale, onComplete, opacity]);
+
+  const overlayStyle = useAnimatedStyle(() => ({ opacity: opacity.value }));
+  const logoStyle = useAnimatedStyle(() => ({
+    opacity: logoOpacity.value,
+    transform: [{ scale: logoScale.value }],
+  }));
+  const glowStyle = useAnimatedStyle(() => ({
+    opacity: glowOpacity.value,
+    transform: [{ scale: 1 + interpolate(gradientShift.value, [0, 1], [0.92, 1.12]) }],
+  }));
+  const gradientStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: interpolate(gradientShift.value, [0, 1], [-18, 18]) }],
+  }));
 
   return (
-    <Animated.View
-      entering={splashKeyframe.duration(DURATION).withCallback((finished) => {
-        'worklet';
-        if (finished) {
-          scheduleOnRN(setVisible, false);
-        }
-      })}
-      style={styles.splashOverlay}>
-      {image}
+    <Animated.View pointerEvents="none" style={[styles.overlay, overlayStyle]}>
+      <Animated.View style={[StyleSheet.absoluteFill, gradientStyle]}>
+        <LinearGradient
+          colors={[BRAND_DEEP, '#014FA8', BRAND_BLUE, '#051E45']}
+          end={{ x: 1, y: 1 }}
+          locations={[0, 0.3, 0.68, 1]}
+          start={{ x: 0, y: 0 }}
+          style={StyleSheet.absoluteFill}
+        />
+      </Animated.View>
+
+      <Animated.View style={[styles.glow, glowStyle]} />
+      <Animated.View style={logoStyle}>
+        <Image
+          accessibilityIgnoresInvertColors
+          source={require('@/assets/images/facteo-logo.png')}
+          style={styles.logo}
+        />
+      </Animated.View>
     </Animated.View>
   );
 }
 
-const keyframe = new Keyframe({
-  0: {
-    transform: [{ scale: INITIAL_SCALE_FACTOR }],
-  },
-  100: {
-    transform: [{ scale: 1 }],
-    easing: Easing.elastic(0.7),
-  },
-});
+export function AnimatedSplashOverlay() {
+  const [visible, setVisible] = useState(true);
 
-const logoKeyframe = new Keyframe({
-  0: {
-    transform: [{ scale: 1.3 }],
-    opacity: 0,
-  },
-  40: {
-    transform: [{ scale: 1.3 }],
-    opacity: 0,
-    easing: Easing.elastic(0.7),
-  },
-  100: {
-    opacity: 1,
-    transform: [{ scale: 1 }],
-    easing: Easing.elastic(0.7),
-  },
-});
+  if (!visible) {
+    return null;
+  }
 
-const glowKeyframe = new Keyframe({
-  0: {
-    transform: [{ rotateZ: '0deg' }],
-  },
-  100: {
-    transform: [{ rotateZ: '7200deg' }],
-  },
-});
+  return <PremiumSplashOverlay onComplete={() => setVisible(false)} />;
+}
 
 export function AnimatedIcon() {
   return (
-    <View style={styles.iconContainer}>
-      <Animated.View entering={glowKeyframe.duration(60 * 1000 * 4)} style={styles.glow}>
-        <Image style={styles.glow} source={require('@/assets/images/logo-glow.png')} />
-      </Animated.View>
-
-      <Animated.View entering={keyframe.duration(DURATION)} style={styles.background} />
-      <Animated.View style={styles.imageContainer} entering={logoKeyframe.duration(DURATION)}>
-        <Image style={styles.image} source={require('@/assets/images/expo-logo.png')} />
-      </Animated.View>
+    <View style={styles.iconWrap}>
+      <Image
+        accessibilityIgnoresInvertColors
+        source={require('@/assets/images/facteo-logo.png')}
+        style={styles.logo}
+      />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  imageContainer: {
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  glow: {
-    width: 201,
-    height: 201,
-    position: 'absolute',
-  },
-  iconContainer: {
-    justifyContent: 'center',
-    alignItems: 'center',
-    width: 128,
-    height: 128,
-    zIndex: 100,
-  },
-  image: {
-    width: 76,
-    height: 71,
-  },
-  background: {
-    borderRadius: 40,
-    experimental_backgroundImage: `linear-gradient(180deg, #3C9FFE, #0274DF)`,
-    width: 128,
-    height: 128,
-    position: 'absolute',
-  },
-  splashOverlay: {
+  overlay: {
     ...StyleSheet.absoluteFill,
-    backgroundColor: '#208AEF',
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 1000,
+  },
+  glow: {
+    position: 'absolute',
+    width: 280,
+    height: 280,
+    borderRadius: 140,
+    backgroundColor: BRAND_GLOW,
+    shadowColor: BRAND_GLOW,
+    shadowOpacity: 0.75,
+    shadowRadius: 48,
+    shadowOffset: { width: 0, height: 0 },
+  },
+  iconWrap: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  logo: {
+    width: 168,
+    height: 46,
+    resizeMode: 'contain',
   },
 });

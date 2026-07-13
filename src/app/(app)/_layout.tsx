@@ -1,12 +1,14 @@
-import { Redirect, type Href } from 'expo-router';
+import { Redirect, Stack, type Href } from 'expo-router';
 
 import { AnimatedSplashOverlay } from '@/components/animated-icon';
 import { AuthLoadingScreen } from '@/components/auth/auth-loading-screen';
-import AppTabs from '@/components/app-tabs';
+import { TenantSwitchingOverlay } from '@/components/tenant/tenant-switching-overlay';
 import { useAuth } from '@/hooks/use-auth';
+import { usePushNotifications } from '@/hooks/use-push-notifications';
 
 export default function AppLayout() {
   const { user, loading } = useAuth();
+  usePushNotifications();
 
   if (loading) {
     return <AuthLoadingScreen />;
@@ -19,7 +21,24 @@ export default function AppLayout() {
   return (
     <>
       <AnimatedSplashOverlay />
-      <AppTabs />
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="(tabs)" />
+        <Stack.Screen
+          name="settings"
+          options={{
+            animation: 'slide_from_right',
+            presentation: 'card',
+          }}
+        />
+        <Stack.Screen
+          name="company"
+          options={{
+            animation: 'slide_from_right',
+            presentation: 'card',
+          }}
+        />
+      </Stack>
+      <TenantSwitchingOverlay />
     </>
   );
 }

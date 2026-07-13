@@ -1,0 +1,29 @@
+﻿node.exe : npm warn Unknown env config "devdir". This will stop working in the next major version of npm. See `npm 
+help npmrc` for supported config options.
+Au caractère Ligne:1 : 1
++ & "C:\Program Files\nodejs/node.exe" "C:\Program Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (npm warn Unknow...config options.:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+env: load .env
+env: export EXPO_PUBLIC_COMPANY_SEARCH_API_URL EXPO_PUBLIC_COMPANY_SEARCH_PROVIDER EXPO_PUBLIC_SUPABASE_ANON_KEY EXPO_PUBLIC_SUPABASE_URL
+ÔÇ║ Installing using npm
+> npm install
+npm warn Unknown env config "devdir". This will stop working in the next major version of npm. See `npm help npmrc` 
+for supported config options.
+
+up to date, audited 631 packages in 5s
+
+51 packages are looking for funding
+  run `npm fund` for details
+
+12 moderate severity vulnerabilities
+
+To address issues that do not require attention, run:
+  npm audit fix
+
+To address all issues (including breaking changes), run:
+  npm audit fix --force
+
+Run `npm audit` for details.

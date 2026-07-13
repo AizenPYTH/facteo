@@ -1,6 +1,7 @@
-import { Pressable, StyleSheet, Text, View, type ViewStyle } from 'react-native';
+import { Pressable, Text, View, type ViewStyle } from 'react-native';
+import { SymbolView } from 'expo-symbols';
 
-import { colors } from '@/constants/theme/colors';
+import { useColors, useThemedStyles } from '@/hooks/use-colors';
 import { radius } from '@/constants/theme/radius';
 import { shadows } from '@/constants/theme/theme';
 import { spacing } from '@/constants/theme/spacing';
@@ -13,21 +14,31 @@ export type StatCardProps = {
   onPress?: () => void;
   style?: ViewStyle;
   testID?: string;
+  premiumLocked?: boolean;
 };
 
 export function StatCard({
   label,
   value,
-  accentColor = colors.primary,
+  accentColor,
   onPress,
   style,
   testID,
+  premiumLocked = false,
 }: StatCardProps) {
+  const styles = useStyles();
+  const colors = useColors();
+  const resolvedAccent = accentColor ?? colors.primary;
   const content = (
     <>
-      <View style={[styles.accent, { backgroundColor: accentColor }]} />
+      <View style={[styles.accent, { backgroundColor: resolvedAccent }]} />
+      {premiumLocked ? (
+        <View style={styles.lockBadge}>
+          <SymbolView name="lock.fill" size={11} tintColor={colors.textTertiary} />
+        </View>
+      ) : null}
       <Text style={styles.label}>{label}</Text>
-      <Text style={styles.value}>{value}</Text>
+      <Text style={[styles.value, premiumLocked ? styles.valueLocked : null]}>{value}</Text>
     </>
   );
 
@@ -36,7 +47,12 @@ export function StatCard({
       <Pressable
         accessibilityRole="button"
         onPress={onPress}
-        style={({ pressed }) => [styles.card, pressed && styles.pressed, style]}
+        style={({ pressed }) => [
+          styles.card,
+          premiumLocked ? styles.cardLocked : null,
+          pressed && styles.pressed,
+          style,
+        ]}
         testID={testID}>
         {content}
       </Pressable>
@@ -44,25 +60,33 @@ export function StatCard({
   }
 
   return (
-    <View style={[styles.card, style]} testID={testID}>
+    <View style={[styles.card, premiumLocked ? styles.cardLocked : null, style]} testID={testID}>
       {content}
     </View>
   );
 }
 
-const styles = StyleSheet.create({
+function useStyles() {
+  return useThemedStyles((colors) => ({
   card: {
     backgroundColor: colors.surface,
     borderRadius: radius.card,
     padding: spacing.md,
     gap: spacing.sm,
-    borderWidth: 1,
-    borderColor: colors.border,
     overflow: 'hidden',
     ...shadows.card,
   },
+  cardLocked: {
+    opacity: 0.88,
+  },
   pressed: {
     opacity: 0.92,
+  },
+  lockBadge: {
+    position: 'absolute',
+    top: spacing.sm,
+    right: spacing.sm,
+    zIndex: 1,
   },
   accent: {
     position: 'absolute',
@@ -75,9 +99,15 @@ const styles = StyleSheet.create({
     ...typography.footnote,
     color: colors.textSecondary,
     marginTop: spacing.xs,
+    flexShrink: 1,
   },
   value: {
     ...typography.title2,
     color: colors.text,
+    flexShrink: 1,
   },
-});
+  valueLocked: {
+    color: colors.textSecondary,
+  },
+}));
+}

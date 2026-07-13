@@ -1,32 +1,36 @@
+import { formatClientStoredName, parseClientStoredName } from '@/lib/clients/name';
+import { normalizeFrenchPhone } from '@/lib/format/phone';
 import type { ClientFormValues } from '@/types/client';
 import type { ClientInsert, ClientUpdate } from '@/types/database';
+import type { DataScope } from '@/types/tenant';
 
 function toNullableString(value: string): string | null {
   const trimmed = value.trim();
   return trimmed.length > 0 ? trimmed : null;
 }
 
-function normalizeDigits(value: string): string | null {
-  const digits = value.replace(/\s/g, '');
-  return digits.length > 0 ? digits : null;
+function toNullablePhone(value: string): string | null {
+  const normalized = normalizeFrenchPhone(value);
+  return normalized.length > 0 ? normalized : null;
 }
 
 export function mapFormValuesToClientInsert(
-  userId: string,
+  scope: DataScope,
   input: ClientFormValues,
 ): ClientInsert {
   return {
-    user_id: userId,
-    name: input.contactName.trim(),
+    user_id: scope.userId,
+    company_id: scope.companyId,
+    name: formatClientStoredName(input.lastName, input.firstName),
     company: toNullableString(input.company),
     email: toNullableString(input.email),
-    phone: toNullableString(input.phone),
+    phone: toNullablePhone(input.phone),
     address: toNullableString(input.address),
     postal_code: toNullableString(input.postalCode),
     city: toNullableString(input.city),
     country: toNullableString(input.country),
-    siren: normalizeDigits(input.siren),
-    siret: normalizeDigits(input.siret),
+    siren: toNullableString(input.siren.replace(/\D/g, '')),
+    siret: toNullableString(input.siret.replace(/\D/g, '')),
     vat_number: toNullableString(input.vatNumber.replace(/\s/g, '').toUpperCase()),
     notes: toNullableString(input.notes),
     updated_at: new Date().toISOString(),
@@ -35,18 +39,20 @@ export function mapFormValuesToClientInsert(
 
 export function mapFormValuesToClientUpdate(input: ClientFormValues): ClientUpdate {
   return {
-    name: input.contactName.trim(),
+    name: formatClientStoredName(input.lastName, input.firstName),
     company: toNullableString(input.company),
     email: toNullableString(input.email),
-    phone: toNullableString(input.phone),
+    phone: toNullablePhone(input.phone),
     address: toNullableString(input.address),
     postal_code: toNullableString(input.postalCode),
     city: toNullableString(input.city),
     country: toNullableString(input.country),
-    siren: normalizeDigits(input.siren),
-    siret: normalizeDigits(input.siret),
+    siren: toNullableString(input.siren.replace(/\D/g, '')),
+    siret: toNullableString(input.siret.replace(/\D/g, '')),
     vat_number: toNullableString(input.vatNumber.replace(/\s/g, '').toUpperCase()),
     notes: toNullableString(input.notes),
     updated_at: new Date().toISOString(),
   };
 }
+
+export { parseClientStoredName };

@@ -13,7 +13,14 @@ export type { RecentInvoiceCardProps } from './recent-invoice-card';
 export { EmptyInvoices } from './empty-invoices';
 export type { EmptyInvoicesProps } from './empty-invoices';
 
+export { DashboardWelcome } from './dashboard-welcome';
+
 export { StatsGrid } from './stats-grid';
+export { ExtendedStatsGrid } from './extended-stats-grid';
+export { RevenueChart } from './revenue-chart';
+export { TopClientsSection } from './top-clients-section';
+export { TopPrestationsSection } from './top-prestations-section';
+export { RecentActivitySection } from './recent-activity-section';
 export { QuickActions } from './quick-actions';
 export { RecentInvoicesSection } from './recent-invoices-section';
 export { SectionHeader } from './section-header';

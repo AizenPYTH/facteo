@@ -1,8 +1,11 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
-import { useAuth } from '@/hooks/use-auth';
+import { useTenant } from '@/hooks/use-tenant';
+import { requireScope } from '@/lib/tenant/scope';
 import { createClient, deleteClient, updateClient } from '@/lib/supabase/clients';
+import { enforcePlanLimit } from '@/lib/subscription/limit-guard';
 import { clientsQueryKeys, dashboardQueryKeys } from '@/lib/supabase/query-keys';
+import { useSubscriptionContext } from '@/providers/subscription-provider';
 import type { ClientFormValues } from '@/types/client';
 
 function useInvalidateClients() {
@@ -15,50 +18,37 @@ function useInvalidateClients() {
 }
 
 export function useClientMutations() {
-  const { user } = useAuth();
+  const { scope } = useTenant();
+  const { showLimitModal } = useSubscriptionContext();
   const invalidateClients = useInvalidateClients();
   const queryClient = useQueryClient();
 
   const createClientMutation = useMutation({
-    mutationFn: (input: ClientFormValues) => {
-      if (!user?.id) {
-        throw new Error('User must be authenticated to create a client.');
-      }
-
-      return createClient(user.id, input);
+    mutationFn: async (input: ClientFormValues) => {
+      await enforcePlanLimit('clients', showLimitModal);
+      return createClient(requireScope(scope), input);
     },
     onSuccess: invalidateClients,
   });
 
   const updateClientMutation = useMutation({
-    mutationFn: ({ clientId, input }: { clientId: string; input: ClientFormValues }) => {
-      if (!user?.id) {
-        throw new Error('User must be authenticated to update a client.');
-      }
-
-      return updateClient(user.id, clientId, input);
-    },
+    mutationFn: ({ clientId, input }: { clientId: string; input: ClientFormValues }) =>
+      updateClient(requireScope(scope), clientId, input),
     onSuccess: (data) => {
       invalidateClients();
-      if (user?.id) {
-        queryClient.setQueryData(clientsQueryKeys.detail(user.id, data.id), data);
+      if (scope?.companyId) {
+        queryClient.setQueryData(clientsQueryKeys.detail(scope.companyId, data.id), data);
       }
     },
   });
 
   const deleteClientMutation = useMutation({
-    mutationFn: (clientId: string) => {
-      if (!user?.id) {
-        throw new Error('User must be authenticated to delete a client.');
-      }
-
-      return deleteClient(user.id, clientId);
-    },
+    mutationFn: (clientId: string) => deleteClient(requireScope(scope), clientId),
     onSuccess: (_data, clientId) => {
       invalidateClients();
-      if (user?.id) {
+      if (scope?.companyId) {
         queryClient.removeQueries({
-          queryKey: clientsQueryKeys.detail(user.id, clientId),
+          queryKey: clientsQueryKeys.detail(scope.companyId, clientId),
         });
       }
     },

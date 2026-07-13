@@ -1,12 +1,12 @@
 import {
   ActivityIndicator,
   Pressable,
-  StyleSheet,
   Text,
   type PressableProps,
 } from 'react-native';
 
-import { colors } from '@/constants/theme/colors';
+import { triggerImpactHaptic } from '@/lib/haptics';
+import { useColors, useThemedStyles } from '@/hooks/use-colors';
 import { radius } from '@/constants/theme/radius';
 import { spacing } from '@/constants/theme/spacing';
 import { typography } from '@/constants/theme/typography';
@@ -22,16 +22,29 @@ export function Button({
   loading = false,
   variant = 'primary',
   disabled,
+  accessibilityLabel,
   style,
+  onPress,
   ...props
 }: ButtonProps) {
+  const styles = useStyles();
+  const colors = useColors();
   const isDisabled = disabled || loading;
   const isPrimary = variant === 'primary';
 
   return (
     <Pressable
+      accessibilityLabel={accessibilityLabel ?? title}
       accessibilityRole="button"
+      accessibilityState={{ disabled: isDisabled, busy: loading }}
       disabled={isDisabled}
+      onPress={(event) => {
+        if (!isDisabled) {
+          void triggerImpactHaptic();
+        }
+
+        onPress?.(event);
+      }}
       style={(state) => {
         const resolvedStyle = typeof style === 'function' ? style(state) : style;
 
@@ -47,7 +60,9 @@ export function Button({
       {loading ? (
         <ActivityIndicator color={isPrimary ? colors.onPrimary : colors.primary} />
       ) : (
-        <Text style={[styles.label, isPrimary ? styles.primaryLabel : styles.ghostLabel]}>
+        <Text
+          maxFontSizeMultiplier={1.5}
+          style={[styles.label, isPrimary ? styles.primaryLabel : styles.ghostLabel]}>
           {title}
         </Text>
       )}
@@ -55,7 +70,8 @@ export function Button({
   );
 }
 
-const styles = StyleSheet.create({
+function useStyles() {
+  return useThemedStyles((colors) => ({
   base: {
     minHeight: 50,
     borderRadius: radius.button,
@@ -88,4 +104,5 @@ const styles = StyleSheet.create({
   ghostLabel: {
     color: colors.primary,
   },
-});
+}));
+}

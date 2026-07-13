@@ -1,5 +1,7 @@
 import { supabase } from '@/lib/supabase';
 import { logSupabaseError } from '@/lib/supabase/errors';
+import { debugProfileTrace } from '@/lib/supabase/profile-debug';
+import { ensureUserProfileExists } from '@/lib/supabase/storage';
 import type {
   CompanyProfile,
   CompanyProfileFormValues,
@@ -7,9 +9,10 @@ import type {
 } from '@/types/company-profile';
 import { createEmptyCompanyProfileFormValues } from '@/types/company-profile';
 import type { Profile, ProfileInsert } from '@/types/database';
+import { normalizePaymentMethods } from '@/types/payment-methods';
 
 export const PROFILE_COLUMNS =
-  'id, first_name, last_name, company_name, email, phone, address, postal_code, city, country, siret, vat_number, created_at, updated_at' as const;
+  'id, first_name, last_name, company_name, email, phone, address, postal_code, city, country, siret, vat_number, iban, bic, payment_methods, logo_url, signature_url, created_at, updated_at' as const;
 
 type UserMetadata = Record<string, unknown>;
 
@@ -37,6 +40,11 @@ export function mapProfileToCompanyProfile(row: Profile): CompanyProfile {
     country: row.country ?? '',
     siret: row.siret ?? '',
     vatNumber: row.vat_number ?? '',
+    iban: row.iban ?? '',
+    bic: row.bic ?? '',
+    paymentMethods: normalizePaymentMethods(row.payment_methods),
+    logoUrl: row.logo_url,
+    signatureUrl: row.signature_url,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -72,6 +80,9 @@ export function mapProfileToFormValues(
     country: profile.country ?? defaults.country,
     siret: profile.siret ?? '',
     vatNumber: profile.vat_number ?? '',
+    iban: profile.iban ?? '',
+    bic: profile.bic ?? '',
+    paymentMethods: normalizePaymentMethods(profile.payment_methods),
   };
 }
 
@@ -92,6 +103,9 @@ function mapFormValuesToProfileInsert(
     country: toNullableString(input.country),
     siret: toNullableString(input.siret.replace(/\s/g, '')),
     vat_number: toNullableString(input.vatNumber.replace(/\s/g, '').toUpperCase()),
+    iban: toNullableString(input.iban.replace(/\s/g, '').toUpperCase()),
+    bic: toNullableString(input.bic.replace(/\s/g, '').toUpperCase()),
+    payment_methods: input.paymentMethods,
     updated_at: new Date().toISOString(),
   };
 }
@@ -101,11 +115,27 @@ export async function fetchCompanyProfile(
   metadata: UserMetadata = {},
   authEmail?: string | null,
 ): Promise<CompanyProfileFormValues> {
+  const { data: authData } = await supabase.auth.getUser();
+  const authUserId = authData.user?.id ?? null;
+
+  await ensureUserProfileExists();
+
   const { data, error } = await supabase
     .from('profiles')
     .select(PROFILE_COLUMNS)
     .eq('id', userId)
     .maybeSingle();
+
+  debugProfileTrace('fetchCompanyProfile', {
+    authUserId,
+    passedUserId: userId,
+    idsMatch: authUserId === userId,
+    profileFound: Boolean(data),
+    profileId: data?.id ?? null,
+    logoUrl: data?.logo_url ?? null,
+    signatureUrl: data?.signature_url ?? null,
+    error: error?.message ?? null,
+  });
 
   if (error) {
     logSupabaseError('fetchCompanyProfile', error);
@@ -119,6 +149,8 @@ export async function upsertCompanyProfile(
   userId: string,
   input: UpdateCompanyProfileInput,
 ): Promise<CompanyProfile> {
+  await ensureUserProfileExists();
+
   const payload = mapFormValuesToProfileInsert(userId, input);
 
   const { data, error } = await supabase

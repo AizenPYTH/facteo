@@ -9,7 +9,7 @@ import {
   type ViewStyle,
 } from 'react-native';
 
-import { colors } from '@/constants/theme/colors';
+import { useColors, useThemedStyles } from '@/hooks/use-colors';
 import { radius } from '@/constants/theme/radius';
 import { spacing } from '@/constants/theme/spacing';
 import { typography } from '@/constants/theme/typography';
@@ -43,6 +43,8 @@ export function ClientsList({
   contentContainerStyle,
   testID,
 }: ClientsListProps) {
+  const styles = useStyles();
+  const colors = useColors();
   const renderItem: ListRenderItem<Client> = ({ item, index }) => (
     <View>
       <ClientCard client={item} onPress={onClientPress} />
@@ -94,6 +96,8 @@ export function ClientsList({
         ) : undefined
       }
       renderItem={renderItem}
+      keyboardShouldPersistTaps="handled"
+      nestedScrollEnabled
       showsVerticalScrollIndicator={false}
       style={styles.list}
       testID={testID}
@@ -101,7 +105,8 @@ export function ClientsList({
   );
 }
 
-const styles = StyleSheet.create({
+function useStyles() {
+  return useThemedStyles((colors) => ({
   list: {
     flex: 1,
   },
@@ -137,4 +142,5 @@ const styles = StyleSheet.create({
     backgroundColor: colors.separator,
     marginLeft: spacing.md,
   },
-});
+}));
+}

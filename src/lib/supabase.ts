@@ -5,20 +5,14 @@ import { createClient } from '@supabase/supabase-js';
 
 import type { Database } from '@/types/database';
 
-function requireEnv(name: 'EXPO_PUBLIC_SUPABASE_URL' | 'EXPO_PUBLIC_SUPABASE_ANON_KEY'): string {
-  const value = process.env[name];
+const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
+const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
 
-  if (!value) {
-    throw new Error(
-      `Missing ${name}. Add it to your .env file and restart the Expo dev server.`,
-    );
-  }
-
-  return value;
+if (!supabaseUrl || !supabaseAnonKey) {
+  throw new Error(
+    'Configuration Supabase manquante. Ajoutez EXPO_PUBLIC_SUPABASE_URL et EXPO_PUBLIC_SUPABASE_ANON_KEY dans votre fichier .env.',
+  );
 }
-
-const supabaseUrl = requireEnv('EXPO_PUBLIC_SUPABASE_URL');
-const supabaseAnonKey = requireEnv('EXPO_PUBLIC_SUPABASE_ANON_KEY');
 
 export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
   auth: {

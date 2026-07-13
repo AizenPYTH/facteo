@@ -1,7 +1,16 @@
+import {
+  formatClientFullName,
+  getClientDisplayName,
+  getClientSecondaryLabel,
+  parseClientStoredName,
+} from '@/lib/clients/name';
+import { formatFrenchPhoneDisplay } from '@/lib/format/phone';
+
 export type Client = {
   id: string;
+  lastName: string;
+  firstName: string;
   company: string | null;
-  name: string;
   email: string | null;
   phone: string | null;
   address: string | null;
@@ -17,8 +26,9 @@ export type Client = {
 };
 
 export type ClientFormValues = {
+  lastName: string;
+  firstName: string;
   company: string;
-  contactName: string;
   email: string;
   phone: string;
   address: string;
@@ -36,8 +46,9 @@ export type UpdateClientInput = ClientFormValues;
 
 export function createEmptyClientFormValues(): ClientFormValues {
   return {
+    lastName: '',
+    firstName: '',
     company: '',
-    contactName: '',
     email: '',
     phone: '',
     address: '',
@@ -53,10 +64,11 @@ export function createEmptyClientFormValues(): ClientFormValues {
 
 export function mapClientToFormValues(client: Client): ClientFormValues {
   return {
+    lastName: client.lastName,
+    firstName: client.firstName,
     company: client.company ?? '',
-    contactName: client.name,
     email: client.email ?? '',
-    phone: client.phone ?? '',
+    phone: formatFrenchPhoneDisplay(client.phone) ?? '',
     address: client.address ?? '',
     postalCode: client.postalCode ?? '',
     city: client.city ?? '',
@@ -67,3 +79,5 @@ export function mapClientToFormValues(client: Client): ClientFormValues {
     notes: client.notes ?? '',
   };
 }
+
+export { formatClientFullName, getClientDisplayName, getClientSecondaryLabel, parseClientStoredName };

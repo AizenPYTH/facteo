@@ -18,13 +18,8 @@ export function SplashScreenController() {
 
     hasHiddenSplash.current = true;
 
-    SplashScreen.hideAsync()
-      .then(() => {
-        console.log('Splash hidden');
-      })
-      .catch((error: unknown) => {
+    SplashScreen.hideAsync().catch(() => {
       hasHiddenSplash.current = false;
-      console.warn('Failed to hide splash screen:', error);
     });
   }, [loading]);
 

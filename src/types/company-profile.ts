@@ -1,3 +1,6 @@
+import type { PaymentMethodId } from '@/types/payment-methods';
+import { DEFAULT_PAYMENT_METHODS } from '@/types/payment-methods';
+
 export type CompanyProfile = {
   id: string;
   companyName: string;
@@ -11,6 +14,11 @@ export type CompanyProfile = {
   country: string;
   siret: string;
   vatNumber: string;
+  iban: string;
+  bic: string;
+  paymentMethods: PaymentMethodId[];
+  logoUrl: string | null;
+  signatureUrl: string | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -27,6 +35,9 @@ export type CompanyProfileFormValues = {
   country: string;
   siret: string;
   vatNumber: string;
+  iban: string;
+  bic: string;
+  paymentMethods: PaymentMethodId[];
 };
 
 export type UpdateCompanyProfileInput = CompanyProfileFormValues;
@@ -44,5 +55,8 @@ export function createEmptyCompanyProfileFormValues(): CompanyProfileFormValues 
     country: 'France',
     siret: '',
     vatNumber: '',
+    iban: '',
+    bic: '',
+    paymentMethods: [...DEFAULT_PAYMENT_METHODS],
   };
 }

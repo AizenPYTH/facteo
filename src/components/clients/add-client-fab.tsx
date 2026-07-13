@@ -2,11 +2,13 @@ import { router, type Href } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { Platform, Pressable, StyleSheet, Text, type ViewStyle } from 'react-native';
 
-import { colors } from '@/constants/theme/colors';
+import { useColors, useThemedStyles } from '@/hooks/use-colors';
 import { radius } from '@/constants/theme/radius';
 import { shadows } from '@/constants/theme/theme';
 import { spacing } from '@/constants/theme/spacing';
 import { typography } from '@/constants/theme/typography';
+
+import { usePlanLimitGuard } from '@/hooks/use-plan-limit';
 
 export type AddClientFabProps = {
   onPress?: () => void;
@@ -21,9 +23,19 @@ export function AddClientFab({
   style,
   testID,
 }: AddClientFabProps) {
-  function handlePress() {
+  const styles = useStyles();
+  const colors = useColors();
+  const { guardResource } = usePlanLimitGuard();
+
+  async function handlePress() {
     if (onPress) {
       onPress();
+      return;
+    }
+
+    const allowed = await guardResource('clients');
+
+    if (!allowed) {
       return;
     }
 
@@ -33,7 +45,9 @@ export function AddClientFab({
   return (
     <Pressable
       accessibilityRole="button"
-      onPress={handlePress}
+      onPress={() => {
+        void handlePress();
+      }}
       style={({ pressed }) => [styles.fab, pressed && styles.pressed, style]}
       testID={testID}>
       <SymbolView
@@ -47,7 +61,8 @@ export function AddClientFab({
   );
 }
 
-const styles = StyleSheet.create({
+function useStyles() {
+  return useThemedStyles((colors) => ({
   fab: {
     position: 'absolute',
     right: spacing.screenPaddingHorizontal,
@@ -69,4 +84,5 @@ const styles = StyleSheet.create({
     ...typography.subheadlineMedium,
     color: colors.onPrimary,
   },
-});
+}));
+}

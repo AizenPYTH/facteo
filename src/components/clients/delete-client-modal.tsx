@@ -1,7 +1,7 @@
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Button } from '@/components/ui/button';
-import { colors } from '@/constants/theme/colors';
+import { useColors, useThemedStyles } from '@/hooks/use-colors';
 import { radius } from '@/constants/theme/radius';
 import { spacing } from '@/constants/theme/spacing';
 import { typography } from '@/constants/theme/typography';
@@ -21,6 +21,8 @@ export function DeleteClientModal({
   onCancel,
   onConfirm,
 }: DeleteClientModalProps) {
+  const styles = useStyles();
+  const colors = useColors();
   return (
     <Modal animationType="fade" onRequestClose={onCancel} transparent visible={visible}>
       <Pressable onPress={onCancel} style={styles.overlay}>
@@ -47,7 +49,8 @@ export function DeleteClientModal({
   );
 }
 
-const styles = StyleSheet.create({
+function useStyles() {
+  return useThemedStyles((colors) => ({
   overlay: {
     flex: 1,
     backgroundColor: colors.overlay,
@@ -77,4 +80,5 @@ const styles = StyleSheet.create({
   deleteButton: {
     backgroundColor: colors.error,
   },
-});
+}));
+}

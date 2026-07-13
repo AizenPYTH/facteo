@@ -38,14 +38,9 @@ export function AuthProvider({ children }: PropsWithChildren) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    console.log(loading ? 'loading=true' : 'loading=false');
-  }, [loading]);
-
-  useEffect(() => {
     let mounted = true;
 
     async function restoreSession() {
-      console.log('Restoring session...');
       const { data, error } = await supabase.auth.getSession();
 
       if (!mounted) {
@@ -53,10 +48,12 @@ export function AuthProvider({ children }: PropsWithChildren) {
       }
 
       if (error) {
-        console.error('Failed to restore session:', error.message);
+        setSession(null);
+        setUser(null);
+        setLoading(false);
+        return;
       }
 
-      console.log('Session restored');
       setSession(data.session);
       setUser(data.session?.user ?? null);
       setLoading(false);

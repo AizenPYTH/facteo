@@ -1,6 +1,7 @@
 import { StyleSheet, Text, TextInput, View, type TextInputProps } from 'react-native';
 
-import { colors } from '@/constants/theme/colors';
+import { useColors, useThemedStyles } from '@/hooks/use-colors';
+import { spacing } from '@/constants/theme/spacing';
 import { typography } from '@/constants/theme/typography';
 
 type TextFieldProps = TextInputProps & {
@@ -8,25 +9,37 @@ type TextFieldProps = TextInputProps & {
   error?: string;
 };
 
-export function TextField({ label, error, style, ...props }: TextFieldProps) {
+export function TextField({ label, error, style, accessibilityLabel, ...props }: TextFieldProps) {
+  const styles = useStyles();
+  const colors = useColors();
   return (
     <View style={styles.container}>
-      {label ? <Text style={styles.label}>{label}</Text> : null}
+      {label ? (
+        <Text maxFontSizeMultiplier={1.5} style={styles.label}>
+          {label}
+        </Text>
+      ) : null}
       <TextInput
+        accessibilityLabel={accessibilityLabel ?? label ?? props.placeholder}
         autoCapitalize="none"
         autoCorrect={false}
         placeholderTextColor={colors.textPlaceholder}
         style={[styles.input, error ? styles.inputError : null, style]}
         {...props}
       />
-      {error ? <Text style={styles.error}>{error}</Text> : null}
+      {error ? (
+        <Text accessibilityRole="alert" maxFontSizeMultiplier={1.5} style={styles.error}>
+          {error}
+        </Text>
+      ) : null}
     </View>
   );
 }
 
-const styles = StyleSheet.create({
+function useStyles() {
+  return useThemedStyles((colors) => ({
   container: {
-    gap: 6,
+    gap: spacing.xs,
   },
   label: {
     ...typography.footnoteMedium,
@@ -35,7 +48,9 @@ const styles = StyleSheet.create({
   input: {
     ...typography.body,
     color: colors.text,
-    padding: 0,
+    minHeight: 44,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: 0,
     margin: 0,
   },
   inputError: {
@@ -45,4 +60,5 @@ const styles = StyleSheet.create({
     ...typography.caption1,
     color: colors.error,
   },
-});
+}));
+}

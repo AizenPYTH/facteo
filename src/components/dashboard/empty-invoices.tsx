@@ -1,7 +1,7 @@
 import { SymbolView } from 'expo-symbols';
 import { StyleSheet, Text, View, type ViewStyle } from 'react-native';
 
-import { colors } from '@/constants/theme/colors';
+import { useColors, useThemedStyles } from '@/hooks/use-colors';
 import { radius } from '@/constants/theme/radius';
 import { spacing } from '@/constants/theme/spacing';
 import { typography } from '@/constants/theme/typography';
@@ -13,8 +13,8 @@ export type EmptyInvoicesProps = {
   testID?: string;
 };
 
-const DEFAULT_TITLE = 'No invoices yet';
-const DEFAULT_DESCRIPTION = 'Your latest invoices will appear here once you create one.';
+const DEFAULT_TITLE = 'Aucune facture';
+const DEFAULT_DESCRIPTION = 'Vos dernières factures apparaîtront ici.';
 
 export function EmptyInvoices({
   title = DEFAULT_TITLE,
@@ -22,6 +22,8 @@ export function EmptyInvoices({
   style,
   testID,
 }: EmptyInvoicesProps) {
+  const styles = useStyles();
+  const colors = useColors();
   return (
     <View style={[styles.container, style]} testID={testID}>
       <View style={styles.iconWrap}>
@@ -38,7 +40,8 @@ export function EmptyInvoices({
   );
 }
 
-const styles = StyleSheet.create({
+function useStyles() {
+  return useThemedStyles((colors) => ({
   container: {
     alignItems: 'center',
     paddingVertical: spacing.xl,
@@ -68,4 +71,5 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     textAlign: 'center',
   },
-});
+}));
+}

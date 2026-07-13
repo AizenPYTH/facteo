@@ -1,31 +1,40 @@
-import { StyleSheet } from 'react-native';
-import { type Control, Controller, type FieldErrors } from 'react-hook-form';
+import { StyleSheet, View } from 'react-native';
+import { type Control, Controller, type FieldErrors, type UseFormSetValue } from 'react-hook-form';
 
 import { FormDivider, FormField, FormSection } from '@/components/company/form-section';
 import { TextField } from '@/components/ui/text-field';
+import { spacing } from '@/constants/theme/spacing';
+import { formatFrenchPhoneInput } from '@/lib/format/phone';
 import type { ClientFormValues } from '@/types/client';
+
+import { ClientCompanyLookup } from './client-company-lookup';
 
 type ClientFormProps = {
   control: Control<ClientFormValues>;
   errors: FieldErrors<ClientFormValues>;
+  setValue: UseFormSetValue<ClientFormValues>;
 };
 
-export function ClientForm({ control, errors }: ClientFormProps) {
+export function ClientForm({ control, errors, setValue }: ClientFormProps) {
   return (
-    <>
-      <FormSection title="Informations générales">
+    <View style={styles.form}>
+      <ClientCompanyLookup control={control} errors={errors} setValue={setValue} />
+
+      <FormSection title="Identité">
         <FormField>
           <Controller
             control={control}
-            name="company"
+            name="lastName"
             render={({ field: { onChange, onBlur, value } }) => (
               <TextField
                 autoCapitalize="words"
-                error={errors.company?.message}
-                label="Société"
+                error={errors.lastName?.message}
+                label="Nom"
                 onBlur={onBlur}
                 onChangeText={onChange}
-                placeholder="Acme SARL"
+                placeholder="Dupont"
+                returnKeyType="next"
+                textContentType="familyName"
                 value={value}
               />
             )}
@@ -35,15 +44,36 @@ export function ClientForm({ control, errors }: ClientFormProps) {
         <FormField>
           <Controller
             control={control}
-            name="contactName"
+            name="firstName"
             render={({ field: { onChange, onBlur, value } }) => (
               <TextField
                 autoCapitalize="words"
-                error={errors.contactName?.message}
-                label="Nom du contact"
+                error={errors.firstName?.message}
+                label="Prénom"
                 onBlur={onBlur}
                 onChangeText={onChange}
-                placeholder="Jean Dupont"
+                placeholder="Jean"
+                returnKeyType="next"
+                textContentType="givenName"
+                value={value}
+              />
+            )}
+          />
+        </FormField>
+        <FormDivider />
+        <FormField>
+          <Controller
+            control={control}
+            name="company"
+            render={({ field: { onChange, onBlur, value } }) => (
+              <TextField
+                autoCapitalize="words"
+                error={errors.company?.message}
+                label="Entreprise"
+                onBlur={onBlur}
+                onChangeText={onChange}
+                placeholder="Acme SARL"
+                textContentType="organizationName"
                 value={value}
               />
             )}
@@ -62,7 +92,7 @@ export function ClientForm({ control, errors }: ClientFormProps) {
                 autoComplete="email"
                 error={errors.email?.message}
                 keyboardType="email-address"
-                label="Email"
+                label="Adresse e-mail"
                 onBlur={onBlur}
                 onChangeText={onChange}
                 placeholder="contact@entreprise.fr"
@@ -84,7 +114,7 @@ export function ClientForm({ control, errors }: ClientFormProps) {
                 keyboardType="phone-pad"
                 label="Téléphone"
                 onBlur={onBlur}
-                onChangeText={onChange}
+                onChangeText={(text) => onChange(formatFrenchPhoneInput(text))}
                 placeholder="06 12 34 56 78"
                 textContentType="telephoneNumber"
                 value={value}
@@ -168,43 +198,7 @@ export function ClientForm({ control, errors }: ClientFormProps) {
         </FormField>
       </FormSection>
 
-      <FormSection title="Informations légales">
-        <FormField>
-          <Controller
-            control={control}
-            name="siren"
-            render={({ field: { onChange, onBlur, value } }) => (
-              <TextField
-                error={errors.siren?.message}
-                keyboardType="number-pad"
-                label="SIREN"
-                onBlur={onBlur}
-                onChangeText={onChange}
-                placeholder="123 456 789"
-                value={value}
-              />
-            )}
-          />
-        </FormField>
-        <FormDivider />
-        <FormField>
-          <Controller
-            control={control}
-            name="siret"
-            render={({ field: { onChange, onBlur, value } }) => (
-              <TextField
-                error={errors.siret?.message}
-                keyboardType="number-pad"
-                label="SIRET"
-                onBlur={onBlur}
-                onChangeText={onChange}
-                placeholder="123 456 789 00012"
-                value={value}
-              />
-            )}
-          />
-        </FormField>
-        <FormDivider />
+      <FormSection title="Informations complémentaires">
         <FormField>
           <Controller
             control={control}
@@ -222,9 +216,7 @@ export function ClientForm({ control, errors }: ClientFormProps) {
             )}
           />
         </FormField>
-      </FormSection>
-
-      <FormSection title="Notes">
+        <FormDivider />
         <FormField>
           <Controller
             control={control}
@@ -246,11 +238,14 @@ export function ClientForm({ control, errors }: ClientFormProps) {
           />
         </FormField>
       </FormSection>
-    </>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  form: {
+    gap: spacing.lg,
+  },
   notesInput: {
     minHeight: 96,
   },

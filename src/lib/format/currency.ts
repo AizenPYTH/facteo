@@ -23,6 +23,14 @@ export function formatPriceHT(
   }).format(amount);
 }
 
+export function formatPriceTTC(
+  amount: number,
+  locale = 'fr-FR',
+  currency = 'EUR',
+): string {
+  return formatPriceHT(amount, locale, currency);
+}
+
 export function formatVatRate(rate: number, locale = 'fr-FR'): string {
   return `${new Intl.NumberFormat(locale, {
     minimumFractionDigits: 0,

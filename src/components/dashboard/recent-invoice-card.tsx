@@ -1,6 +1,6 @@
 import { Pressable, StyleSheet, Text, View, type ViewStyle } from 'react-native';
 
-import { colors } from '@/constants/theme/colors';
+import { useColors, useThemedStyles } from '@/hooks/use-colors';
 import { spacing } from '@/constants/theme/spacing';
 import { typography } from '@/constants/theme/typography';
 import { formatCurrency } from '@/lib/format/currency';
@@ -21,6 +21,8 @@ export function RecentInvoiceCard({
   style,
   testID,
 }: RecentInvoiceCardProps) {
+  const styles = useStyles();
+  const colors = useColors();
   const content = (
     <View style={[styles.row, style]}>
       <View style={styles.leading}>
@@ -45,7 +47,8 @@ export function RecentInvoiceCard({
   );
 }
 
-const styles = StyleSheet.create({
+function useStyles() {
+  return useThemedStyles((colors) => ({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -75,4 +78,5 @@ const styles = StyleSheet.create({
     backgroundColor: colors.separator,
     marginLeft: spacing.md,
   },
-});
+}));
+}

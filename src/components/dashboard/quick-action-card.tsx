@@ -2,7 +2,7 @@ import { SymbolView } from 'expo-symbols';
 import type { ComponentProps } from 'react';
 import { Platform, Pressable, StyleSheet, Text, type ViewStyle } from 'react-native';
 
-import { colors } from '@/constants/theme/colors';
+import { useColors, useThemedStyles } from '@/hooks/use-colors';
 import { radius } from '@/constants/theme/radius';
 import { shadows } from '@/constants/theme/theme';
 import { spacing } from '@/constants/theme/spacing';
@@ -27,8 +27,11 @@ export function QuickActionCard({
   style,
   testID,
 }: QuickActionCardProps) {
+  const styles = useStyles();
+  const colors = useColors();
   return (
     <Pressable
+      accessibilityLabel={label}
       accessibilityRole="button"
       accessibilityState={{ disabled }}
       disabled={disabled}
@@ -51,7 +54,8 @@ export function QuickActionCard({
   );
 }
 
-const styles = StyleSheet.create({
+function useStyles() {
+  return useThemedStyles((colors) => ({
   card: {
     flex: 1,
     alignItems: 'center',
@@ -81,4 +85,5 @@ const styles = StyleSheet.create({
   labelDisabled: {
     color: colors.textTertiary,
   },
-});
+}));
+}

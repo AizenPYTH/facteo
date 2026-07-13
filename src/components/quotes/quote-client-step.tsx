@@ -1,3 +1,4 @@
+import { router, type Href } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { useMemo, useState } from 'react';
 import {
@@ -10,27 +11,103 @@ import {
 } from 'react-native';
 
 import { ClientSearchBar } from '@/components/clients/client-search-bar';
-import { colors } from '@/constants/theme/colors';
+import { Button } from '@/components/ui/button';
+import { useColors, useThemedStyles } from '@/hooks/use-colors';
 import { radius } from '@/constants/theme/radius';
 import { spacing } from '@/constants/theme/spacing';
 import { typography } from '@/constants/theme/typography';
 import { useDebouncedValue } from '@/hooks/use-debounced-value';
 import { useInfiniteClients } from '@/hooks/use-clients';
-import type { Client } from '@/types/client';
+import { getClientDisplayName, type Client } from '@/types/client';
 
 type QuoteClientStepProps = {
   selectedClientId: string | null;
   onSelectClient: (client: Client) => void;
 };
 
+function ClientRow({
+  client,
+  isSelected,
+  onPress,
+}: {
+  client: Client;
+  isSelected: boolean;
+  onPress: () => void;
+}) {
+  const styles = useStyles();
+  const colors = useColors();
+  const displayName = getClientDisplayName(client);
+  const secondaryLabel =
+    client.company?.trim() &&
+    [client.firstName, client.lastName].filter(Boolean).join(' ')
+      ? [client.firstName, client.lastName].filter(Boolean).join(' ')
+      : null;
+
+  return (
+    <Pressable
+      accessibilityRole="button"
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.clientRow,
+        isSelected && styles.clientRowSelected,
+        pressed && styles.pressed,
+      ]}>
+      <View style={styles.clientInfo}>
+        <Text style={styles.clientName}>{displayName}</Text>
+        {secondaryLabel ? <Text style={styles.clientMeta}>{secondaryLabel}</Text> : null}
+      </View>
+      {isSelected ? (
+        <SymbolView
+          name={{ ios: 'checkmark.circle.fill', android: 'check_circle', web: 'check_circle' }}
+          size={22}
+          tintColor={colors.primary}
+          type="hierarchical"
+        />
+      ) : null}
+    </Pressable>
+  );
+}
+
 export function QuoteClientStep({ selectedClientId, onSelectClient }: QuoteClientStepProps) {
+  const styles = useStyles();
+  const colors = useColors();
   const [search, setSearch] = useState('');
   const debouncedSearch = useDebouncedValue(search, 300);
   const { clients, isLoading } = useInfiniteClients(debouncedSearch);
 
+  const isSearching = debouncedSearch.trim().length > 0;
+
+  const recentClients = useMemo(
+    () =>
+      [...clients]
+        .sort(
+          (left, right) =>
+            new Date(right.updatedAt).getTime() - new Date(left.updatedAt).getTime(),
+        )
+        .slice(0, 5),
+    [clients],
+  );
+
+  const listClients = useMemo(() => {
+    if (isSearching) {
+      return [...clients].sort((left, right) =>
+        getClientDisplayName(left).localeCompare(getClientDisplayName(right), 'fr'),
+      );
+    }
+
+    const recentIds = new Set(recentClients.map((client) => client.id));
+    const remaining = clients
+      .filter((client) => !recentIds.has(client.id))
+      .sort((left, right) =>
+        getClientDisplayName(left).localeCompare(getClientDisplayName(right), 'fr'),
+      );
+
+    return [...recentClients, ...remaining];
+  }, [clients, isSearching, recentClients]);
+
   const sortedClients = useMemo(
     () =>
-      [...clients].sort((left, right) => {
+      [...listClients].sort((left, right) => {
         if (left.id === selectedClientId) {
           return -1;
         }
@@ -39,9 +116,9 @@ export function QuoteClientStep({ selectedClientId, onSelectClient }: QuoteClien
           return 1;
         }
 
-        return left.name.localeCompare(right.name, 'fr');
+        return 0;
       }),
-    [clients, selectedClientId],
+    [listClients, selectedClientId],
   );
 
   if (isLoading && clients.length === 0) {
@@ -56,52 +133,45 @@ export function QuoteClientStep({ selectedClientId, onSelectClient }: QuoteClien
   return (
     <View style={styles.container}>
       <Text style={styles.description}>Choisissez le client pour ce devis.</Text>
+
+      <Button
+        onPress={() => router.push('/clients/new' as Href)}
+        title="Nouveau client"
+        variant="ghost"
+      />
+
       <ClientSearchBar onChangeText={setSearch} value={search} />
+
+      {!isSearching && recentClients.length > 0 ? (
+        <Text style={styles.sectionLabel}>Clients récents</Text>
+      ) : null}
 
       <FlatList
         contentContainerStyle={styles.listContent}
         data={sortedClients}
         keyExtractor={(item) => item.id}
+        keyboardShouldPersistTaps="handled"
+        nestedScrollEnabled
         ListEmptyComponent={
-          <Text style={styles.emptyText}>Aucun client trouvé. Ajoutez un client d'abord.</Text>
+          <Text style={styles.emptyText}>
+            Aucun client trouvé. Créez un client pour continuer.
+          </Text>
         }
-        renderItem={({ item }) => {
-          const isSelected = item.id === selectedClientId;
-          const displayName = item.company?.trim() || item.name;
-
-          return (
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => onSelectClient(item)}
-              style={({ pressed }) => [
-                styles.clientRow,
-                isSelected && styles.clientRowSelected,
-                pressed && styles.pressed,
-              ]}>
-              <View style={styles.clientInfo}>
-                <Text style={styles.clientName}>{displayName}</Text>
-                {item.company ? (
-                  <Text style={styles.clientMeta}>{item.name}</Text>
-                ) : null}
-              </View>
-              {isSelected ? (
-                <SymbolView
-                  name={{ ios: 'checkmark.circle.fill', android: 'check_circle', web: 'check_circle' }}
-                  size={22}
-                  tintColor={colors.primary}
-                  type="hierarchical"
-                />
-              ) : null}
-            </Pressable>
-          );
-        }}
+        renderItem={({ item }) => (
+          <ClientRow
+            client={item}
+            isSelected={item.id === selectedClientId}
+            onPress={() => onSelectClient(item)}
+          />
+        )}
         showsVerticalScrollIndicator={false}
       />
     </View>
   );
 }
 
-const styles = StyleSheet.create({
+function useStyles() {
+  return useThemedStyles((colors) => ({
   container: {
     flex: 1,
     gap: spacing.md,
@@ -109,6 +179,12 @@ const styles = StyleSheet.create({
   description: {
     ...typography.subheadline,
     color: colors.textSecondary,
+  },
+  sectionLabel: {
+    ...typography.footnoteMedium,
+    color: colors.textSecondary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.3,
   },
   loading: {
     flex: 1,
@@ -160,4 +236,5 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     paddingVertical: spacing.xl,
   },
-});
+}));
+}

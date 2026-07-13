@@ -7,14 +7,14 @@ function normalizeDigits(value: string): string {
 }
 
 export const companyProfileSchema = z.object({
-  companyName: z.string().trim().min(1, "Le nom de l'entreprise est requis"),
-  firstName: z.string().trim().min(1, 'Le prénom est requis'),
-  lastName: z.string().trim().min(1, 'Le nom est requis'),
+  companyName: z.string().trim().min(1, 'Champ obligatoire.'),
+  firstName: z.string().trim().min(1, 'Champ obligatoire.'),
+  lastName: z.string().trim().min(1, 'Champ obligatoire.'),
   email: z
     .string()
     .trim()
-    .min(1, "L'email est requis")
-    .email('Adresse email invalide'),
+    .min(1, 'Champ obligatoire.')
+    .email('Adresse e-mail invalide.'),
   phone: optionalText,
   address: optionalText,
   postalCode: optionalText.refine(
@@ -31,6 +31,17 @@ export const companyProfileSchema = z.object({
     (value) => !value || /^[A-Z]{2}[A-Z0-9]{2,13}$/i.test(normalizeDigits(value)),
     'Numéro de TVA invalide',
   ),
+  iban: optionalText.refine(
+    (value) => !value || /^[A-Z]{2}[0-9A-Z]{13,32}$/i.test(normalizeDigits(value)),
+    'IBAN invalide',
+  ),
+  bic: optionalText.refine(
+    (value) => !value || /^[A-Z]{4}[A-Z]{2}[A-Z0-9]{2}([A-Z0-9]{3})?$/i.test(normalizeDigits(value)),
+    'BIC invalide',
+  ),
+  paymentMethods: z
+    .array(z.enum(['bank_transfer', 'cash', 'card', 'cheque', 'paypal', 'stripe']))
+    .min(1, 'Sélectionnez au moins un moyen de paiement.'),
 });
 
 export type CompanyProfileSchemaValues = z.infer<typeof companyProfileSchema>;

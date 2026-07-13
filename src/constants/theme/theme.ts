@@ -1,6 +1,6 @@
 import { Platform, type ViewStyle } from 'react-native';
 
-import { colors, colorsDark, legacyColors } from './colors';
+import { colors, colorsDark } from './colors';
 import { radius } from './radius';
 import { spacing } from './spacing';
 import { fontFamily, typography } from './typography';
@@ -58,5 +58,3 @@ export const theme = lightTheme;
 
 export type Theme = typeof lightTheme;
 export type ShadowToken = keyof typeof shadows;
-
-export { colors, colorsDark, legacyColors, radius, spacing, typography, fontFamily };

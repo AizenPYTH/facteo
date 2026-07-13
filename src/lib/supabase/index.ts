@@ -6,8 +6,6 @@ export {
   updateClient,
 } from './clients';
 
-export { createProduct, fetchProductsPage } from './products';
-
 export { createQuote, fetchQuotesPage } from './quotes';
 
 export {

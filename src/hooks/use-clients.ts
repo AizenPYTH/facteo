@@ -1,23 +1,23 @@
-import { keepPreviousData, useInfiniteQuery, useQuery } from '@tanstack/react-query';
+import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
 
-import { useAuth } from '@/hooks/use-auth';
+import { useTenant } from '@/hooks/use-tenant';
+import { requireScope } from '@/lib/tenant/scope';
 import { fetchClientById, fetchClientsPage } from '@/lib/supabase/clients';
 import { clientsQueryKeys } from '@/lib/supabase/query-keys';
 import type { Client } from '@/types/client';
 import type { ClientsPage } from '@/types/clients-list';
 
 export function useInfiniteClients(search = '') {
-  const { user, loading: authLoading } = useAuth();
+  const { scope, loading: tenantLoading, isSwitching } = useTenant();
 
   const query = useInfiniteQuery<ClientsPage>({
-    queryKey: clientsQueryKeys.infiniteList(user?.id ?? 'anonymous', search),
+    queryKey: clientsQueryKeys.infiniteList(scope?.companyId ?? 'anonymous', search),
     queryFn: ({ pageParam }) =>
-      fetchClientsPage(user!.id, { search, page: pageParam as number }),
+      fetchClientsPage(requireScope(scope), { search, page: pageParam as number }),
     initialPageParam: 0,
     getNextPageParam: (lastPage) => lastPage.nextPage ?? undefined,
-    enabled: Boolean(user?.id) && !authLoading,
-    placeholderData: keepPreviousData,
+    enabled: Boolean(scope?.companyId) && !tenantLoading && !isSwitching,
     staleTime: 30_000,
   });
 
@@ -33,11 +33,11 @@ export function useInfiniteClients(search = '') {
 }
 
 export function useClient(clientId: string) {
-  const { user, loading: authLoading } = useAuth();
+  const { scope, loading: tenantLoading, isSwitching } = useTenant();
 
   return useQuery<Client | null>({
-    queryKey: clientsQueryKeys.detail(user?.id ?? 'anonymous', clientId),
-    queryFn: () => fetchClientById(user!.id, clientId),
-    enabled: Boolean(user?.id) && Boolean(clientId) && !authLoading,
+    queryKey: clientsQueryKeys.detail(scope?.companyId ?? 'anonymous', clientId),
+    queryFn: () => fetchClientById(requireScope(scope), clientId),
+    enabled: Boolean(scope?.companyId) && Boolean(clientId) && !tenantLoading && !isSwitching,
   });
 }

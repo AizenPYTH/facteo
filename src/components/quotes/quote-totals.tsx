@@ -1,6 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native';
 
-import { colors } from '@/constants/theme/colors';
+import { useColors, useThemedStyles } from '@/hooks/use-colors';
 import { radius } from '@/constants/theme/radius';
 import { spacing } from '@/constants/theme/spacing';
 import { typography } from '@/constants/theme/typography';
@@ -12,6 +12,8 @@ type QuoteTotalsProps = {
 };
 
 export function QuoteTotals({ totals }: QuoteTotalsProps) {
+  const styles = useStyles();
+  const colors = useColors();
   return (
     <View style={styles.container}>
       <View style={styles.row}>
@@ -30,7 +32,8 @@ export function QuoteTotals({ totals }: QuoteTotalsProps) {
   );
 }
 
-const styles = StyleSheet.create({
+function useStyles() {
+  return useThemedStyles((colors) => ({
   container: {
     backgroundColor: colors.surface,
     borderRadius: radius.card,
@@ -67,4 +70,5 @@ const styles = StyleSheet.create({
     ...typography.headline,
     color: colors.primary,
   },
-});
+}));
+}

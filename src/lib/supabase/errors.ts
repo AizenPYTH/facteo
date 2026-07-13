@@ -1,6 +1,8 @@
 import type { PostgrestError } from '@supabase/supabase-js';
 
-export function logSupabaseError(context: string, error: PostgrestError): void {
+type LoggableError = Pick<PostgrestError, 'message'> | { message: string };
+
+export function logSupabaseError(context: string, error: LoggableError): void {
   console.error(`[Supabase] ${context}:`, error.message);
 }
 

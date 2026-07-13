@@ -1,37 +1,41 @@
 import { z } from 'zod';
 
+import { isValidFrenchPhone } from '@/lib/format/phone';
+import { isValidSiren, isValidSiret, normalizeRegistrationDigits } from '@/lib/company-search';
+
 const optionalText = z.string().trim();
 
-function normalizeDigits(value: string): string {
-  return value.replace(/\s/g, '');
-}
+const optionalSiren = optionalText.refine(
+  (value) => !value || isValidSiren(normalizeRegistrationDigits(value)),
+  'SIREN invalide.',
+);
+
+const optionalSiret = optionalText.refine(
+  (value) => !value || isValidSiret(normalizeRegistrationDigits(value)),
+  'SIRET invalide.',
+);
 
 export const clientFormSchema = z.object({
+  lastName: z.string().trim().min(1, 'Champ obligatoire.'),
+  firstName: optionalText,
   company: optionalText,
-  contactName: z.string().trim().min(1, 'Le nom du contact est requis'),
   email: optionalText.refine(
     (value) => !value || z.string().email().safeParse(value).success,
-    'Adresse email invalide',
+    'Adresse e-mail invalide.',
   ),
-  phone: optionalText,
+  phone: optionalText.refine(isValidFrenchPhone, 'Numéro de téléphone invalide.'),
   address: optionalText,
   postalCode: optionalText.refine(
     (value) => !value || /^\d{5}$/.test(value),
-    'Le code postal doit contenir 5 chiffres',
+    'Le code postal doit contenir 5 chiffres.',
   ),
   city: optionalText,
   country: optionalText,
-  siren: optionalText.refine(
-    (value) => !value || /^\d{9}$/.test(normalizeDigits(value)),
-    'Le SIREN doit contenir 9 chiffres',
-  ),
-  siret: optionalText.refine(
-    (value) => !value || /^\d{14}$/.test(normalizeDigits(value)),
-    'Le SIRET doit contenir 14 chiffres',
-  ),
+  siren: optionalSiren,
+  siret: optionalSiret,
   vatNumber: optionalText.refine(
-    (value) => !value || /^[A-Z]{2}[A-Z0-9]{2,13}$/i.test(normalizeDigits(value)),
-    'Numéro de TVA invalide',
+    (value) => !value || /^[A-Z]{2}[A-Z0-9]{2,13}$/i.test(value.replace(/\s/g, '')),
+    'Numéro de TVA invalide.',
   ),
   notes: optionalText,
 });

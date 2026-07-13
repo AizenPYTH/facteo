@@ -1,8 +1,8 @@
-import { StyleSheet, Text, View, type ViewStyle } from 'react-native';
+import { View, type ViewStyle } from 'react-native';
 
-import { colors } from '@/constants/theme/colors';
+import { AppText } from '@/components/ui/app-text';
 import { spacing } from '@/constants/theme/spacing';
-import { typography } from '@/constants/theme/typography';
+import { useThemedStyles } from '@/hooks/use-colors';
 
 export type QuotesScreenHeaderProps = {
   title?: string;
@@ -10,21 +10,21 @@ export type QuotesScreenHeaderProps = {
 };
 
 export function QuotesScreenHeader({ title = 'Devis', style }: QuotesScreenHeaderProps) {
+  const styles = useStyles();
+
   return (
     <View style={[styles.container, style]}>
-      <Text accessibilityRole="header" style={styles.title}>
+      <AppText accessibilityRole="header" variant="display">
         {title}
-      </Text>
+      </AppText>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    gap: spacing.xs,
-  },
-  title: {
-    ...typography.largeTitle,
-    color: colors.text,
-  },
-});
+function useStyles() {
+  return useThemedStyles(() => ({
+    container: {
+      gap: spacing.xs,
+    },
+  }));
+}

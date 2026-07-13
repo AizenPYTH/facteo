@@ -1,22 +1,19 @@
 import { StyleSheet, Text, View } from 'react-native';
 
-import { colors } from '@/constants/theme/colors';
+import { useColors, useThemedStyles } from '@/hooks/use-colors';
 import { radius } from '@/constants/theme/radius';
 import { spacing } from '@/constants/theme/spacing';
 import { typography } from '@/constants/theme/typography';
 
-const STEPS = [
-  'Client',
-  'Produits',
-  'Quantités',
-  'Récapitulatif',
-] as const;
+const STEPS = ['Client', 'Prestations', 'Validation'] as const;
 
 type QuoteWizardProgressProps = {
   currentStep: number;
 };
 
 export function QuoteWizardProgress({ currentStep }: QuoteWizardProgressProps) {
+  const styles = useStyles();
+  const colors = useColors();
   return (
     <View style={styles.container}>
       {STEPS.map((label, index) => {
@@ -41,11 +38,7 @@ export function QuoteWizardProgress({ currentStep }: QuoteWizardProgressProps) {
                 {stepNumber}
               </Text>
             </View>
-            <Text
-              numberOfLines={1}
-              style={[styles.label, isActive && styles.labelActive]}>
-              {label}
-            </Text>
+            <Text style={[styles.label, isActive && styles.labelActive]}>{label}</Text>
           </View>
         );
       })}
@@ -53,10 +46,12 @@ export function QuoteWizardProgress({ currentStep }: QuoteWizardProgressProps) {
   );
 }
 
-const styles = StyleSheet.create({
+function useStyles() {
+  return useThemedStyles((colors) => ({
   container: {
     flexDirection: 'row',
     gap: spacing.xs,
+    paddingHorizontal: spacing.screenPaddingHorizontal,
   },
   step: {
     flex: 1,
@@ -100,4 +95,5 @@ const styles = StyleSheet.create({
     color: colors.text,
     ...typography.footnoteMedium,
   },
-});
+}));
+}

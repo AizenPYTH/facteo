@@ -6,13 +6,25 @@
   "build": {
     "development": {
       "developmentClient": true,
-      "distribution": "internal"
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_ENABLE_DEV_TOOLS": "true",
+        "EXPO_PUBLIC_APP_ENV": "development"
+      }
     },
     "preview": {
-      "distribution": "internal"
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_ENABLE_DEV_TOOLS": "true",
+        "EXPO_PUBLIC_APP_ENV": "testflight"
+      }
     },
     "production": {
-      "autoIncrement": true
+      "autoIncrement": true,
+      "env": {
+        "EXPO_PUBLIC_ENABLE_DEV_TOOLS": "false",
+        "EXPO_PUBLIC_APP_ENV": "production"
+      }
     }
   },
   "submit": {

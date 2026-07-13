@@ -112,5 +112,25 @@ export const typography = {
   },
 } as const satisfies Record<string, TextStyle>;
 
+export type TextHierarchy =
+  | 'display'
+  | 'title'
+  | 'subtitle'
+  | 'body'
+  | 'caption';
+
+export const textHierarchy = {
+  /** Grand titre — écrans principaux */
+  display: typography.largeTitle,
+  /** Titre — sections et en-têtes */
+  title: typography.title2,
+  /** Sous-titre — descriptions courtes */
+  subtitle: typography.subheadline,
+  /** Texte — contenu principal */
+  body: typography.body,
+  /** Légende — métadonnées et labels secondaires */
+  caption: typography.footnote,
+} as const satisfies Record<TextHierarchy, TextStyle>;
+
 export type TypographyVariant = keyof typeof typography;
 export type FontSizeToken = keyof typeof fontSize;
