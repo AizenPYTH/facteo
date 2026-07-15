@@ -57,6 +57,10 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ...
 
 ### Vercel (Project Settings → Environment Variables)
 
+**Important :** dans Vercel → Settings → General → **Root Directory**, renseigner `website`.
+
+Si le Root Directory n’est pas défini, le `vercel.json` à la racine du monorepo lance quand même `npm run build --prefix website`.
+
 | Variable | Valeur |
 |----------|--------|
 | `NEXT_PUBLIC_SITE_URL` | `https://facteo.app` |
