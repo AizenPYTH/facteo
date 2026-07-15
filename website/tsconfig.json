@@ -1,0 +1,58 @@
+{
+  "compilerOptions": {
+    "target": "ES2017",
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "allowJs": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "jsx": "react-jsx",
+    "incremental": true,
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ],
+    "paths": {
+      "@/*": ["./src/*"],
+      "@facteo/types/*": ["./src/types/*"],
+      "@/types/*": ["./src/types/*"],
+      "@/lib/supabase/env": ["./src/lib/supabase/env.ts"],
+      "@/lib/supabase/browser": ["./src/lib/supabase/browser.ts"],
+      "@/lib/supabase/middleware": ["./src/lib/supabase/middleware.ts"],
+      "@/lib/supabase/server": ["./src/lib/supabase/server.ts"],
+      "@/lib/supabase": ["./src/lib/supabase.ts"],
+      "@/lib/supabase/*": ["./src/lib/domain/supabase/*"],
+      "@/lib/clients/*": ["./src/lib/domain/clients/*"],
+      "@/lib/format/*": ["./src/lib/domain/format/*"],
+      "@/lib/tenant/*": ["./src/lib/domain/tenant/*"],
+      "@/lib/errors/*": ["./src/lib/domain/errors/*"],
+      "@/lib/validations/*": ["./src/lib/domain/validations/*"],
+      "@/lib/auth/*": ["./src/lib/domain/auth/*"],
+      "@/lib/invoices/*": ["./src/lib/domain/invoices/*"],
+      "@/lib/quotes/*": ["./src/lib/domain/quotes/*"],
+      "@/lib/documents/*": ["./src/lib/domain/documents/*"],
+      "@/lib/calculations/*": ["./src/lib/domain/calculations/*"],
+      "@/lib/pdf/*": ["./src/lib/domain/pdf/*"],
+      "@/lib/files/*": ["./src/lib/files/*"],
+      "@/lib/company-search": ["./src/lib/domain/company-search/index.ts"],
+      "@/lib/company-search/*": ["./src/lib/domain/company-search/*"],
+      "@/lib/dev/*": ["./src/lib/domain/dev/*"],
+      "@/lib/subscription/*": ["./src/lib/domain/subscription/*"]
+    }
+  },
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts",
+    ".next/dev/types/**/*.ts",
+    "**/*.mts"
+  ],
+  "exclude": ["node_modules"]
+}

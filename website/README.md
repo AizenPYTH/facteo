@@ -1,0 +1,112 @@
+# FACTEO — Plateforme Web unifiée
+
+Site marketing + application web sur **un seul domaine** : `facteo.app`
+
+## Architecture
+
+```
+facteo.app/              → Site marketing
+facteo.app/login         → Connexion
+facteo.app/register      → Inscription
+facteo.app/app           → Dashboard (protégé)
+facteo.app/app/clients   → Clients
+facteo.app/app/invoices  → Factures
+…
+
+Application mobile       → Expo (iOS / Android) — inchangée
+```
+
+## Stack
+
+- **Next.js 16** (App Router)
+- **Supabase** (auth + données, `@supabase/ssr`)
+- **React Query** (état serveur)
+- **Tailwind CSS v4** + Framer Motion
+- **Logique métier partagée** avec l’app Expo via `src/lib/domain/`
+
+## Développement local
+
+```bash
+cd website
+npm install
+cp .env.example .env.local
+# Renseigner NEXT_PUBLIC_SUPABASE_URL et NEXT_PUBLIC_SUPABASE_ANON_KEY
+npm run dev
+```
+
+## Variables d'environnement
+
+Copier `.env.example` vers `.env.local` et renseigner les valeurs **du même projet Supabase** que l'app Expo (`EXPO_PUBLIC_SUPABASE_*` dans le `.env` racine) :
+
+```env
+NEXT_PUBLIC_SITE_URL=http://localhost:3000
+NEXT_PUBLIC_SUPABASE_URL=https://xxx.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ...
+```
+
+### Vercel (Project Settings → Environment Variables)
+
+| Variable | Valeur |
+|----------|--------|
+| `NEXT_PUBLIC_SITE_URL` | `https://facteo.app` |
+| `NEXT_PUBLIC_SUPABASE_URL` | Même URL que Expo |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Même clé anon que Expo |
+
+### Supabase Dashboard (obligatoire pour les e-mails)
+
+**Authentication → URL Configuration :**
+
+| Champ | Valeur locale | Valeur production |
+|-------|---------------|-------------------|
+| Site URL | `http://localhost:3000` | `https://facteo.app` |
+| Redirect URLs | `http://localhost:3000/auth/callback` | `https://facteo.app/auth/callback` |
+
+Sans ces URLs, les e-mails de confirmation et de mot de passe oublié ne fonctionneront pas.
+
+## Déploiement Vercel
+
+| Paramètre | Valeur |
+|-----------|--------|
+| Root Directory | `website` |
+| Framework | Next.js |
+| Domaine | `facteo.app` |
+
+Configurer les variables Supabase dans le projet Vercel.
+
+## Pages publiques
+
+| Route | Description |
+|-------|-------------|
+| `/` | Accueil |
+| `/fonctionnalites` | Fonctionnalités |
+| `/tarifs` | Tarifs |
+| `/faq` | FAQ |
+| `/contact` | Contact |
+| `/support` | Support |
+| `/a-propos` | À propos |
+| `/carrieres` | Carrières (placeholder) |
+| `/telecharger` | Télécharger |
+| `/blog` | Blog (placeholder) |
+| Pages légales | `/confidentialite`, `/conditions-utilisation`, etc. |
+
+## Application web (`/app`)
+
+| Route | Description |
+|-------|-------------|
+| `/app` | Tableau de bord |
+| `/app/clients` | Clients |
+| `/app/quotes` | Devis |
+| `/app/invoices` | Factures |
+| `/app/payments` | Paiements |
+| `/app/companies` | Entreprises |
+| `/app/settings` | Paramètres |
+
+## Réutilisation du code Expo
+
+La logique métier (services Supabase, validations, types, formatters) est partagée :
+
+- Types : `../src/types/` via alias `@facteo/types/*`
+- Services : `website/src/lib/domain/supabase/` (copie avec alias d’imports)
+- Validations : `website/src/lib/domain/validations/`
+
+L’UI web est reconstruite en Tailwind (desktop-first), sans React Native Web.
