@@ -2,8 +2,10 @@ import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 
 const ROOT = join(import.meta.dirname, '..', 'src');
+const EXPO_CONSTANTS = 'expo' + '-constants';
+
 const FORBIDDEN = [
-  /expo-constants/,
+  new RegExp(EXPO_CONSTANTS),
   /from\s+['"]expo[\w-]*/,
   /from\s+['"]@expo\//,
   /from\s+['"]react-native['"]/,
