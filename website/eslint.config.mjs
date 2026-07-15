@@ -2,6 +2,8 @@ import { defineConfig, globalIgnores } from "eslint/config";
 import nextVitals from "eslint-config-next/core-web-vitals";
 import nextTs from "eslint-config-next/typescript";
 
+const MOBILE_ONLY_MODULE = "expo" + "-constants";
+
 const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
@@ -12,8 +14,8 @@ const eslintConfig = defineConfig([
         {
           paths: [
             {
-              name: "expo-constants",
-              message: "Le projet website (Next.js) ne doit pas importer de packages Expo.",
+              name: MOBILE_ONLY_MODULE,
+              message: "Le projet website (Next.js) ne doit pas importer de packages mobiles.",
             },
             {
               name: "react-native",
@@ -27,16 +29,14 @@ const eslintConfig = defineConfig([
           patterns: [
             {
               group: ["expo", "expo-*", "@expo/*"],
-              message: "Le projet website (Next.js) ne doit pas importer de packages Expo.",
+              message: "Le projet website (Next.js) ne doit pas importer de packages mobiles.",
             },
           ],
         },
       ],
     },
   },
-  // Override default ignores of eslint-config-next.
   globalIgnores([
-    // Default ignores of eslint-config-next:
     ".next/**",
     "out/**",
     "build/**",

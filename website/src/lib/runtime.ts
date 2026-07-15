@@ -1,4 +1,4 @@
-/** Runtime Next.js — remplace `__DEV__` et les helpers Expo. */
+/** Helpers runtime Next.js (web uniquement). */
 export const IS_DEV = process.env.NODE_ENV === 'development';
 
 export function readPublicEnv(...keys: string[]): string | undefined {

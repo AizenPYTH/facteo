@@ -4,9 +4,11 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "prebuild": "node scripts/verify-no-expo.mjs",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "verify:no-expo": "node scripts/verify-no-expo.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.4.0",
