@@ -1,6 +1,3 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Platform } from 'react-native';
-
 type AuthStorage = {
   getItem: (key: string) => Promise<string | null>;
   setItem: (key: string, value: string) => Promise<void>;
@@ -29,10 +26,7 @@ function createWebAuthStorage(): AuthStorage {
   };
 }
 
+/** Stockage auth Supabase — implémentation web uniquement (Next.js). */
 export function createSupabaseAuthStorage(): AuthStorage {
-  if (Platform.OS === 'web') {
-    return createWebAuthStorage();
-  }
-
-  return AsyncStorage;
+  return createWebAuthStorage();
 }

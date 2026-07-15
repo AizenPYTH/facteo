@@ -22,7 +22,18 @@ Application mobile       → Expo (iOS / Android) — inchangée
 - **Supabase** (auth + données, `@supabase/ssr`)
 - **React Query** (état serveur)
 - **Tailwind CSS v4** + Framer Motion
-- **Logique métier partagée** avec l’app Expo via `src/lib/domain/`
+- **Logique métier** : copie autonome dans `website/src/lib/domain/` (aucune dépendance Expo)
+
+## Indépendance Expo / Next.js
+
+Le dossier `website/` est **totalement indépendant** de l'app mobile Expo :
+
+- Aucun package `expo-*` ni `react-native` dans `package.json`
+- Variables d'environnement préfixées `NEXT_PUBLIC_*` uniquement
+- Types locaux via `@facteo/types/*` → `website/src/types/`
+- ESLint interdit les imports Expo/React Native (voir `eslint.config.mjs`)
+
+L'app Expo reste à la racine du monorepo ; les deux projets partagent la même base Supabase mais pas de code runtime commun.
 
 ## Développement local
 
@@ -36,7 +47,7 @@ npm run dev
 
 ## Variables d'environnement
 
-Copier `.env.example` vers `.env.local` et renseigner les valeurs **du même projet Supabase** que l'app Expo (`EXPO_PUBLIC_SUPABASE_*` dans le `.env` racine) :
+Copier `.env.example` vers `.env.local` et renseigner les clés Supabase (même projet que l'app mobile, mais variables `NEXT_PUBLIC_*` ici) :
 
 ```env
 NEXT_PUBLIC_SITE_URL=http://localhost:3000

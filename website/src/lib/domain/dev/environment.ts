@@ -1,6 +1,6 @@
-import Constants from 'expo-constants';
+import { IS_DEV, readPublicEnv } from '@/lib/runtime';
 
-export type AppEnvironmentLabel = 'Development' | 'TestFlight' | 'Production';
+export type AppEnvironmentLabel = 'Development' | 'Staging' | 'Production';
 
 export type AppVersionInfo = {
   version: string;
@@ -8,20 +8,20 @@ export type AppVersionInfo = {
   nativeAppVersion: string;
 };
 
-/** Toujours true — le bouton Mode développeur est visible dans tous les builds (bêta). */
+/** Visible en développement et sur les previews Vercel. */
 export function isDeveloperModeAvailable(): boolean {
-  return true;
+  return IS_DEV || readPublicEnv('NEXT_PUBLIC_APP_ENV') === 'preview';
 }
 
 export function getAppEnvironment(): AppEnvironmentLabel {
-  if (__DEV__) {
+  if (IS_DEV) {
     return 'Development';
   }
 
-  const env = process.env.EXPO_PUBLIC_APP_ENV?.trim().toLowerCase();
+  const env = readPublicEnv('NEXT_PUBLIC_APP_ENV')?.toLowerCase();
 
-  if (env === 'testflight' || env === 'preview' || env === 'internal') {
-    return 'TestFlight';
+  if (env === 'preview' || env === 'staging' || env === 'test') {
+    return 'Staging';
   }
 
   return 'Production';
@@ -29,8 +29,8 @@ export function getAppEnvironment(): AppEnvironmentLabel {
 
 export function getAppVersionInfo(): AppVersionInfo {
   return {
-    version: Constants.expoConfig?.version ?? '—',
-    buildNumber: Constants.nativeBuildVersion ?? '—',
-    nativeAppVersion: Constants.nativeAppVersion ?? '—',
+    version: readPublicEnv('NEXT_PUBLIC_APP_VERSION') ?? '1.0.0',
+    buildNumber: readPublicEnv('NEXT_PUBLIC_BUILD_ID', 'VERCEL_GIT_COMMIT_SHA') ?? '—',
+    nativeAppVersion: '—',
   };
 }
