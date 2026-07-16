@@ -55,17 +55,20 @@ NEXT_PUBLIC_SUPABASE_URL=https://xxx.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ...
 ```
 
-### Vercel (Project Settings → Environment Variables)
+### Déploiement Vercel
 
-**Important :** dans Vercel → Settings → General → **Root Directory**, renseigner `website`.
+1. **Settings → General → Root Directory** : `website`
+2. **Framework Preset** : Next.js (détection automatique)
+3. **Build / Install Command** : laisser vide (défaut Vercel)
+4. Ne pas ajouter de `vercel.json` — Vercel lit `website/package.json` directement
 
-Si le Root Directory n’est pas défini, le `vercel.json` à la racine du monorepo lance quand même `npm run build --prefix website`.
+### Variables d'environnement (Vercel)
 
 | Variable | Valeur |
 |----------|--------|
 | `NEXT_PUBLIC_SITE_URL` | `https://facteo.app` |
-| `NEXT_PUBLIC_SUPABASE_URL` | Même URL que Expo |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Même clé anon que Expo |
+| `NEXT_PUBLIC_SUPABASE_URL` | Même URL que l'app mobile |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Même clé anon que l'app mobile |
 
 ### Supabase Dashboard (obligatoire pour les e-mails)
 
@@ -77,16 +80,6 @@ Si le Root Directory n’est pas défini, le `vercel.json` à la racine du monor
 | Redirect URLs | `http://localhost:3000/auth/callback` | `https://facteo.app/auth/callback` |
 
 Sans ces URLs, les e-mails de confirmation et de mot de passe oublié ne fonctionneront pas.
-
-## Déploiement Vercel
-
-| Paramètre | Valeur |
-|-----------|--------|
-| Root Directory | `website` |
-| Framework | Next.js |
-| Domaine | `facteo.app` |
-
-Configurer les variables Supabase dans le projet Vercel.
 
 ## Pages publiques
 
