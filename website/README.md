@@ -53,14 +53,33 @@ Copier `.env.example` vers `.env.local` et renseigner les clés Supabase (même 
 NEXT_PUBLIC_SITE_URL=http://localhost:3000
 NEXT_PUBLIC_SUPABASE_URL=https://xxx.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ...
+NEXT_PUBLIC_COMPANY_SEARCH_API_URL=https://recherche-entreprises.api.gouv.fr
+NEXT_PUBLIC_COMPANY_SEARCH_PROVIDER=recherche-entreprises
 ```
 
-### Déploiement Vercel
+La recherche SIREN / SIRET (préremplissage client) nécessite `NEXT_PUBLIC_COMPANY_SEARCH_API_URL`
+et un abonnement Premium (`siren_search`), comme sur l’app mobile.
 
-1. **Settings → General → Root Directory** : `website`
-2. **Framework Preset** : Next.js (détection automatique)
-3. **Build / Install Command** : laisser vide (défaut Vercel)
-4. Ne pas ajouter de `vercel.json` — Vercel lit `website/package.json` directement
+### Déploiement Vercel (monorepo FACTEO + Expo)
+
+Le dépôt contient deux apps indépendantes (Expo à la racine, Next.js dans `website/`).
+Next.js détecte automatiquement le monorepo via le `package-lock.json` racine et produit
+`relativeAppDir: "website"` dans `.next/required-server-files.json`.
+
+**Réglages obligatoires dans Vercel → Settings → General / Build :**
+
+| Paramètre | Valeur |
+|-----------|--------|
+| Root Directory | *(vide — racine du repo)* |
+| Framework Preset | Next.js (auto) |
+| Install Command | *(vide — défaut)* |
+| Build Command | *(vide — défaut)* |
+| Output Directory | *(vide — ne jamais mettre `website/.next`)* |
+| Include files outside Root Directory | Désactivé |
+
+Ne pas ajouter de `vercel.json`. Ne pas définir `outputFileTracingRoot` ni `turbopack.root`
+dans `next.config.ts` : ces options forcent `relativeAppDir: ""` et font chercher
+`.next/package.json` à la racine du repo au lieu de `website/.next/`.
 
 ### Variables d'environnement (Vercel)
 
@@ -69,6 +88,8 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ...
 | `NEXT_PUBLIC_SITE_URL` | `https://facteo.app` |
 | `NEXT_PUBLIC_SUPABASE_URL` | Même URL que l'app mobile |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Même clé anon que l'app mobile |
+| `NEXT_PUBLIC_COMPANY_SEARCH_API_URL` | `https://recherche-entreprises.api.gouv.fr` |
+| `NEXT_PUBLIC_COMPANY_SEARCH_PROVIDER` | `recherche-entreprises` (optionnel) |
 
 ### Supabase Dashboard (obligatoire pour les e-mails)
 

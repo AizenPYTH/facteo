@@ -3,6 +3,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 
+import { ClientCompanyLookup } from '@/components/app/client-company-lookup';
 import {
   FormActions,
   FormField,
@@ -29,6 +30,8 @@ export function ClientForm({
 }) {
   const {
     register,
+    control,
+    setValue,
     handleSubmit,
     formState: { errors, isSubmitting },
   } = useForm<ClientFormValues>({
@@ -38,6 +41,8 @@ export function ClientForm({
 
   return (
     <form className="space-y-6" onSubmit={handleSubmit((values) => onSubmit(values))}>
+      <ClientCompanyLookup control={control} errors={errors} setValue={setValue} />
+
       <FormSection description="Informations principales du contact" title="Identité">
         <div className="grid gap-5 sm:grid-cols-2">
           <FormField error={errors.lastName?.message} label="Nom *">
@@ -77,12 +82,6 @@ export function ClientForm({
 
       <FormSection description="Informations légales (optionnel)" title="Légal">
         <div className="grid gap-5 sm:grid-cols-3">
-          <FormField error={errors.siren?.message} label="SIREN">
-            <TextInput {...register('siren')} placeholder="123456789" />
-          </FormField>
-          <FormField error={errors.siret?.message} label="SIRET">
-            <TextInput {...register('siret')} placeholder="12345678901234" />
-          </FormField>
           <FormField error={errors.vatNumber?.message} label="N° TVA">
             <TextInput {...register('vatNumber')} placeholder="FR12345678901" />
           </FormField>

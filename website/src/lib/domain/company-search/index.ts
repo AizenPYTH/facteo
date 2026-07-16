@@ -27,3 +27,38 @@ export async function searchCompanyByRegistrationNumber(
 
   return result;
 }
+
+export {
+  getCompanySearchApiBaseUrl,
+  getCompanySearchProviderId,
+  isCompanySearchConfigured,
+} from '@/lib/company-search/config';
+
+export {
+  CompanySearchError,
+  getCompanySearchErrorMessage,
+  isCompanySearchError,
+} from '@/lib/company-search/errors';
+
+export {
+  getLookupRegistrationNumber,
+  isReadyForLookup,
+  isValidRegistrationNumber,
+  isValidSiren,
+  isValidSiret,
+  normalizeRegistrationDigits,
+  registrationDigitsSchema,
+} from '@/lib/company-search/validation';
+
+export { computeFrenchVatNumberFromSiren } from '@/lib/company-search/vat';
+
+export { registerCompanySearchProvider } from '@/lib/company-search/providers/registry';
+
+export type { CompanySearchProvider } from '@/lib/company-search/providers/types';
+
+export type {
+  CompanyLookupResult,
+  CompanySearchErrorCode,
+  CompanySearchOptions,
+  CompanySearchProviderId,
+} from '@/lib/company-search/types';
