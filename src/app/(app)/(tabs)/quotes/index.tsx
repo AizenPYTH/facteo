@@ -10,7 +10,9 @@ import {
   QuotesList,
   QuotesScreenHeader,
 } from '@/components/quotes';
+import { QuotesDesktopScreen } from '@/components/web/desktop/screens/quotes-desktop-screen';
 import { BottomTabInset } from '@/constants/theme';
+import { useBreakpoint } from '@/hooks/use-breakpoint';
 import { useColors, useThemedStyles } from '@/hooks/use-colors';
 import { spacing } from '@/constants/theme/spacing';
 import { useDebouncedValue } from '@/hooks/use-debounced-value';
@@ -22,6 +24,16 @@ const FAB_CLEARANCE = 104;
 const SEARCH_DEBOUNCE_MS = 300;
 
 export default function QuotesScreen() {
+  const { isDesktop, isTablet, isWeb } = useBreakpoint();
+
+  if (isWeb && (isDesktop || isTablet)) {
+    return <QuotesDesktopScreen />;
+  }
+
+  return <QuotesMobileScreen />;
+}
+
+function QuotesMobileScreen() {
   const styles = useStyles();
   const colors = useColors();
   const [search, setSearch] = useState('');

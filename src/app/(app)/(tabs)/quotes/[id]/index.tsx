@@ -19,6 +19,8 @@ import { spacing } from '@/constants/theme/spacing';
 import { useAuth } from '@/hooks/use-auth';
 import { useTenant } from '@/hooks/use-tenant';
 import { requireScope } from '@/lib/tenant/scope';
+import { useDesktopListRedirect } from '@/hooks/use-desktop-list-redirect';
+import { useBreakpoint } from '@/hooks/use-breakpoint';
 import { useQuoteMutations } from '@/hooks/use-quote-mutations';
 import { useQuote } from '@/hooks/use-quote';
 import { useSentDocuments } from '@/hooks/use-sent-documents';
@@ -35,7 +37,9 @@ import { useToast } from '@/providers/toast-provider';
 export default function QuoteDetailScreen() {
   const styles = useStyles();
   const colors = useColors();
+  const { isWeb, isDesktop, isTablet } = useBreakpoint();
   const { id } = useLocalSearchParams<{ id: string }>();
+  useDesktopListRedirect('/quotes');
   const quoteId = Array.isArray(id) ? id[0] : id;
   const { user } = useAuth();
   const { scope } = useTenant();
@@ -126,6 +130,10 @@ export default function QuoteDetailScreen() {
     } catch (error) {
       showError(getQuoteErrorMessage(readErrorMessage(error)));
     }
+  }
+
+  if (isWeb && (isDesktop || isTablet)) {
+    return null;
   }
 
   if (isLoading || !quote) {

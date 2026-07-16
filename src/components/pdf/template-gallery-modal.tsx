@@ -64,7 +64,6 @@ export function TemplateGalleryModal({
   const buildPreviewHtmlRef = useRef(buildPreviewHtml);
   const onSelectRef = useRef(onSelect);
   const gestureLockedRef = useRef(false);
-  const wasVisibleRef = useRef(false);
   const loadGenerationRef = useRef(0);
   const cacheKeyRef = useRef(cacheKey);
 
@@ -87,11 +86,14 @@ export function TemplateGalleryModal({
 
   const loadTemplatePdf = useCallback(async (templateId: string): Promise<string | null> => {
     try {
-      return await ensureTemplatePreviewPdf(
-        cacheKeyRef.current,
-        templateId,
-        buildPreviewHtmlRef.current,
-      );
+      const timeout = new Promise<never>((_, reject) => {
+        setTimeout(() => reject(new Error('Délai dépassé')), 30000);
+      });
+
+      return await Promise.race([
+        ensureTemplatePreviewPdf(cacheKeyRef.current, templateId, buildPreviewHtmlRef.current),
+        timeout,
+      ]);
     } catch {
       return null;
     }
@@ -122,6 +124,7 @@ export function TemplateGalleryModal({
       }
 
       const generation = ++loadGenerationRef.current;
+      setActiveIndex(bounded);
       setLoading(true);
       setErrorMessage(null);
 
@@ -157,9 +160,11 @@ export function TemplateGalleryModal({
     [contentOpacity, contentTranslateX, loadTemplatePdf, prefetchNeighbors],
   );
 
+  const displayTemplateRef = useRef(displayTemplate);
+  displayTemplateRef.current = displayTemplate;
+
   useEffect(() => {
     if (!visible) {
-      wasVisibleRef.current = false;
       loadGenerationRef.current += 1;
       setActivePdfUri(null);
       setLoading(false);
@@ -168,14 +173,9 @@ export function TemplateGalleryModal({
       return;
     }
 
-    if (wasVisibleRef.current) {
-      return;
-    }
-
-    wasVisibleRef.current = true;
     const initialIndex = findTemplateIndex(selectedTemplateId);
-    void displayTemplate(initialIndex, 0);
-  }, [displayTemplate, selectedTemplateId, visible]);
+    void displayTemplateRef.current(initialIndex, 0);
+  }, [cacheKey, selectedTemplateId, visible]);
 
   const goToIndex = useCallback(
     (nextIndex: number) => {
@@ -430,7 +430,7 @@ const useStyles = () =>
       gap: spacing.sm,
     },
     viewerLoadingOverlay: {
-      ...StyleSheet.absoluteFillObject,
+      ...StyleSheet.absoluteFill,
       alignItems: 'center',
       justifyContent: 'center',
       backgroundColor: 'rgba(235, 235, 240, 0.55)',

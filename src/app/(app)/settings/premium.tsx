@@ -1,9 +1,8 @@
 import { router } from 'expo-router';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { StyleSheet, Text, View } from 'react-native';
 
 import { PlanComparison } from '@/components/subscription/plan-comparison';
-import { SettingsScreenHeader } from '@/components/settings';
+import { SettingsScreenFrame } from '@/components/web/desktop/settings-screen-frame';
 import { Button } from '@/components/ui/button';
 import { LoadingView } from '@/components/ui/loading-view';
 import { spacing } from '@/constants/theme/spacing';
@@ -50,20 +49,15 @@ export default function PremiumScreen() {
 
   if (isLoading || plansQuery.isLoading || !standardPlan || !premiumPlan) {
     return (
-      <SafeAreaView edges={['top', 'bottom']} style={styles.safeArea}>
-        <SettingsScreenHeader title="Abonnement" />
+      <SettingsScreenFrame title="Abonnement">
         <LoadingView message="Chargement de votre offre..." />
-      </SafeAreaView>
+      </SettingsScreenFrame>
     );
   }
 
   return (
-    <SafeAreaView edges={['top', 'bottom']} style={styles.safeArea}>
-      <SettingsScreenHeader title="Abonnement" />
-      <ScrollView
-        contentContainerStyle={styles.content}
-        keyboardDismissMode="on-drag"
-        showsVerticalScrollIndicator={false}>
+    <SettingsScreenFrame title="Abonnement">
+      <View style={styles.content}>
         <View style={styles.hero}>
           <Text style={styles.heroTitle}>FACTEO Premium</Text>
           <Text style={styles.heroSubtitle}>
@@ -99,8 +93,8 @@ export default function PremiumScreen() {
           )}
           <Text style={styles.footnote}>Paiement sécurisé par Stripe Checkout.</Text>
         </View>
-      </ScrollView>
-    </SafeAreaView>
+      </View>
+    </SettingsScreenFrame>
   );
 }
 
@@ -125,13 +119,7 @@ function readErrorMessage(error: unknown): string {
 
 function useStyles() {
   return useThemedStyles((colors) => ({
-    safeArea: {
-      flex: 1,
-      backgroundColor: colors.backgroundGrouped,
-    },
     content: {
-      paddingHorizontal: spacing.screenPaddingHorizontal,
-      paddingBottom: spacing.xl,
       gap: spacing.lg,
     },
     hero: {

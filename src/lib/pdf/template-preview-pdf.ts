@@ -4,6 +4,7 @@ import { generateHtmlAsPdf } from '@/lib/pdf/share';
 
 const memoryCache = new Map<string, string>();
 const inflight = new Map<string, Promise<string>>();
+const MIN_PDF_BYTES = 512;
 
 function memoryKey(namespace: string, templateId: string): string {
   return `${namespace}::${templateId}`;
@@ -19,6 +20,16 @@ function cacheFilePath(namespace: string, templateId: string): string {
   return `${cacheDirectory(namespace)}/${safeTemplateId}.pdf`;
 }
 
+async function isValidPdfFile(uri: string): Promise<boolean> {
+  const info = await FileSystem.getInfoAsync(uri);
+
+  if (!info.exists || info.size == null) {
+    return false;
+  }
+
+  return info.size >= MIN_PDF_BYTES;
+}
+
 export async function ensureTemplatePreviewPdf(
   namespace: string,
   templateId: string,
@@ -28,8 +39,7 @@ export async function ensureTemplatePreviewPdf(
   const cachedUri = memoryCache.get(key);
 
   if (cachedUri) {
-    const info = await FileSystem.getInfoAsync(cachedUri);
-    if (info.exists) {
+    if (await isValidPdfFile(cachedUri)) {
       return cachedUri;
     }
 
@@ -37,9 +47,8 @@ export async function ensureTemplatePreviewPdf(
   }
 
   const diskPath = cacheFilePath(namespace, templateId);
-  const diskInfo = await FileSystem.getInfoAsync(diskPath);
 
-  if (diskInfo.exists) {
+  if (await isValidPdfFile(diskPath)) {
     memoryCache.set(key, diskPath);
     return diskPath;
   }
@@ -50,8 +59,17 @@ export async function ensureTemplatePreviewPdf(
   }
 
   const task = (async () => {
-    const html = await buildHtml(templateId);
+    const html = (await buildHtml(templateId)).trim();
+
+    if (!html) {
+      throw new Error('Aperçu indisponible : données entreprise incomplètes.');
+    }
+
     const generated = await generateHtmlAsPdf(html, `template-${templateId}.pdf`);
+
+    if (!(await isValidPdfFile(generated.uri))) {
+      throw new Error('Le PDF généré est vide.');
+    }
 
     await FileSystem.makeDirectoryAsync(cacheDirectory(namespace), {
       intermediates: true,
@@ -71,10 +89,17 @@ export async function ensureTemplatePreviewPdf(
   }
 }
 
-export function invalidateTemplatePreviewCache(namespace: string): void {
+export async function invalidateTemplatePreviewCache(namespace: string): Promise<void> {
   for (const key of memoryCache.keys()) {
     if (key.startsWith(`${namespace}::`)) {
       memoryCache.delete(key);
     }
+  }
+
+  const directory = cacheDirectory(namespace);
+  const info = await FileSystem.getInfoAsync(directory);
+
+  if (info.exists) {
+    await FileSystem.deleteAsync(directory, { idempotent: true });
   }
 }

@@ -22,6 +22,8 @@ import { useDocumentActions } from '@/hooks/use-document-actions';
 import { useThemedStyles, useColors } from '@/hooks/use-colors';
 import { spacing } from '@/constants/theme/spacing';
 import { typography } from '@/constants/theme/typography';
+import { useDesktopListRedirect } from '@/hooks/use-desktop-list-redirect';
+import { useBreakpoint } from '@/hooks/use-breakpoint';
 import { useInvoice } from '@/hooks/use-invoices';
 import { useInvoiceMutations } from '@/hooks/use-invoice-mutations';
 import { getInvoiceErrorMessage } from '@/lib/invoices/errors';
@@ -44,7 +46,9 @@ import { useToast } from '@/providers/toast-provider';
 export default function InvoiceDetailScreen() {
   const styles = useStyles();
   const colors = useColors();
+  const { isWeb, isDesktop, isTablet } = useBreakpoint();
   const { id, payment } = useLocalSearchParams<{ id: string; payment?: string }>();
+  useDesktopListRedirect('/invoices');
   const invoiceId = Array.isArray(id) ? id[0] : id;
   const { user } = useAuth();
   const { scope, isSwitching } = useTenant();
@@ -361,6 +365,10 @@ export default function InvoiceDetailScreen() {
     hasFeature,
     invoice,
   ]);
+
+  if (isWeb && (isDesktop || isTablet)) {
+    return null;
+  }
 
   if (isSwitching || isLoading || !invoice) {
     return (

@@ -38,6 +38,7 @@ export function PdfPreviewWebView({
 
   useEffect(() => {
     let active = true;
+    let loadTimeout: ReturnType<typeof setTimeout> | null = null;
 
     async function loadSource() {
       setError(false);
@@ -49,6 +50,11 @@ export function PdfPreviewWebView({
 
         if (active) {
           setSource(nextSource);
+          loadTimeout = setTimeout(() => {
+            if (active) {
+              setWebViewLoading(false);
+            }
+          }, 20000);
         }
       } catch {
         if (active) {
@@ -62,6 +68,9 @@ export function PdfPreviewWebView({
 
     return () => {
       active = false;
+      if (loadTimeout) {
+        clearTimeout(loadTimeout);
+      }
     };
   }, [pdfUri, preferPdfJs]);
 
@@ -131,9 +140,7 @@ export function PdfPreviewWebView({
           setWebViewLoading(false);
         }}
         onLoadEnd={() => {
-          if (isNative) {
-            setWebViewLoading(false);
-          }
+          setWebViewLoading(false);
         }}
         onMessage={(event) => {
           handleMessage(event.nativeEvent.data);

@@ -1,11 +1,10 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useEffect } from 'react';
 import { Controller, useForm } from 'react-hook-form';
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { KeyboardAvoidingView, Platform, StyleSheet, View } from 'react-native';
 import { z } from 'zod';
 
-import { SettingsScreenHeader } from '@/components/settings';
+import { SettingsScreenFrame } from '@/components/web/desktop/settings-screen-frame';
 import { Button } from '@/components/ui/button';
 import { LoadingView } from '@/components/ui/loading-view';
 import { TextField } from '@/components/ui/text-field';
@@ -84,23 +83,18 @@ export default function NumberingSettingsScreen() {
 
   if (isLoading) {
     return (
-      <SafeAreaView edges={['top', 'bottom']} style={styles.safeArea}>
+      <SettingsScreenFrame scrollable={false} title="Numérotation">
         <LoadingView message="Chargement..." />
-      </SafeAreaView>
+      </SettingsScreenFrame>
     );
   }
 
   return (
-    <SafeAreaView edges={['top', 'bottom']} style={styles.safeArea}>
+    <SettingsScreenFrame scrollable={false} title="Numérotation">
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.flex}>
-        <SettingsScreenHeader title="Numérotation" />
-        <ScrollView
-          contentContainerStyle={styles.content}
-          keyboardDismissMode="on-drag"
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}>
+        <View style={styles.content}>
           <Controller
             control={control}
             name="quotePrefix"
@@ -170,24 +164,18 @@ export default function NumberingSettingsScreen() {
               title="Enregistrer"
             />
           </View>
-        </ScrollView>
+        </View>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </SettingsScreenFrame>
   );
 }
 
 function useStyles() {
-  return useThemedStyles((colors) => ({
-  safeArea: {
-    flex: 1,
-    backgroundColor: colors.backgroundGrouped,
-  },
+  return useThemedStyles(() => ({
   flex: {
     flex: 1,
   },
   content: {
-    paddingHorizontal: spacing.screenPaddingHorizontal,
-    paddingBottom: spacing.xl,
     gap: spacing.lg,
   },
   actions: {

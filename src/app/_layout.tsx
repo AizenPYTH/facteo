@@ -27,6 +27,10 @@ function RootNavigation() {
         <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
         <Stack screenOptions={{ headerShown: false }}>
           <Stack.Screen name="index" />
+          <Stack.Screen name="privacy" />
+          <Stack.Screen name="terms" />
+          <Stack.Screen name="legal" />
+          <Stack.Screen name="cookies" />
           <Stack.Screen name="(auth)" />
           <Stack.Screen name="(app)" />
         </Stack>

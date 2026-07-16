@@ -1,18 +1,20 @@
 import { router, type Href } from 'expo-router';
-import { Alert, Platform, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Alert, Platform, StyleSheet, Switch, Text, View } from 'react-native';
 
 import {
   SettingsProfileSummary,
   SettingsRow,
-  SettingsScreenHeader,
   SettingsSection,
 } from '@/components/settings';
 import { NotificationPreferencesSection } from '@/components/settings/notification-preferences-section';
+import { SettingsScreenFrame } from '@/components/web/desktop/settings-screen-frame';
+import { SettingsDesktopContent } from '@/components/web/desktop/screens/settings-desktop-content';
 import { Button } from '@/components/ui/button';
+import { useBreakpoint } from '@/hooks/use-breakpoint';
 import { useColors, useThemedStyles } from '@/hooks/use-colors';
 import { spacing } from '@/constants/theme/spacing';
 import { typography } from '@/constants/theme/typography';
+import { openLegalPage } from '@/lib/legal/open-legal-page';
 import { useAuth } from '@/hooks/use-auth';
 import { useCompanyProfile } from '@/hooks/use-company-profile';
 import { useSubscription } from '@/hooks/use-subscription';
@@ -24,6 +26,8 @@ import { useToast } from '@/providers/toast-provider';
 export default function SettingsScreen() {
   const styles = useStyles();
   const colors = useColors();
+  const { isWeb, isDesktop, isTablet } = useBreakpoint();
+  const useDesktopSettings = isWeb && (isDesktop || isTablet);
   const { user, signOut } = useAuth();
   const companyProfile = useCompanyProfile();
   const { isPremium, isDeveloperModeEnabled } = useSubscription();
@@ -104,13 +108,11 @@ export default function SettingsScreen() {
   }
 
   return (
-    <SafeAreaView edges={['top', 'bottom']} style={styles.safeArea}>
-      <SettingsScreenHeader title="Paramètres" />
-      <ScrollView
-        contentContainerStyle={styles.content}
-        keyboardDismissMode="on-drag"
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}>
+    <SettingsScreenFrame title="Paramètres">
+      {useDesktopSettings ? (
+        <SettingsDesktopContent />
+      ) : (
+        <>
         <SettingsProfileSummary
           companyName={companyProfile.data?.companyName}
           email={user?.email}
@@ -174,6 +176,25 @@ export default function SettingsScreen() {
           <SettingsRow destructive label="Supprimer le compte" onPress={handleDeleteAccount} />
         </SettingsSection>
 
+        <SettingsSection title="Confidentialité">
+          <SettingsRow
+            label="Politique de confidentialité"
+            onPress={() => void openLegalPage('privacy')}
+          />
+          <View style={styles.separator} />
+          <SettingsRow
+            label="Conditions d’utilisation"
+            onPress={() => void openLegalPage('terms')}
+          />
+          <View style={styles.separator} />
+          <SettingsRow label="Mentions légales" onPress={() => void openLegalPage('legal')} />
+          <View style={styles.separator} />
+          <SettingsRow
+            label="Politique des cookies"
+            onPress={() => void openLegalPage('cookies')}
+          />
+        </SettingsSection>
+
         <SettingsSection title="Mode développeur">
           {isDevModeEnabled ? (
             <View style={styles.devActions}>
@@ -198,11 +219,12 @@ export default function SettingsScreen() {
           )}
         </SettingsSection>
 
-        <Text style={styles.version}>
-          FACTEO v{versionInfo.version} · build {versionInfo.buildNumber}
-        </Text>
-      </ScrollView>
-    </SafeAreaView>
+      <Text style={styles.version}>
+        FACTEO v{versionInfo.version} · build {versionInfo.buildNumber}
+      </Text>
+        </>
+      )}
+    </SettingsScreenFrame>
   );
 }
 
@@ -216,15 +238,6 @@ function readErrorMessage(error: unknown): string {
 
 function useStyles() {
   return useThemedStyles((colors) => ({
-    safeArea: {
-      flex: 1,
-      backgroundColor: colors.backgroundGrouped,
-    },
-    content: {
-      paddingHorizontal: spacing.screenPaddingHorizontal,
-      paddingBottom: spacing.xl,
-      gap: spacing.lg,
-    },
     separator: {
       height: StyleSheet.hairlineWidth,
       backgroundColor: colors.separator,

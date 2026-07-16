@@ -90,7 +90,7 @@ export function PdfPreviewModal({
               <Text style={styles.emptyText}>Génération du PDF…</Text>
             </View>
           ) : pdfUri ? (
-            <PdfPreviewWebView onPageCountChange={onPageCountChange} pdfUri={pdfUri} />
+            <PdfPreviewWebView onPageCountChange={onPageCountChange} pdfUri={pdfUri} preferPdfJs />
           ) : (
             <View style={styles.empty}>
               <Text style={styles.emptyText}>Préparation de l’aperçu…</Text>

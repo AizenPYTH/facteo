@@ -9,6 +9,8 @@ import { Button } from '@/components/ui/button';
 import { LoadingView } from '@/components/ui/loading-view';
 import { useColors, useThemedStyles } from '@/hooks/use-colors';
 import { spacing } from '@/constants/theme/spacing';
+import { useDesktopListRedirect } from '@/hooks/use-desktop-list-redirect';
+import { useBreakpoint } from '@/hooks/use-breakpoint';
 import { useClientMutations } from '@/hooks/use-client-mutations';
 import { useClient } from '@/hooks/use-clients';
 import { getClientErrorMessage } from '@/lib/clients/errors';
@@ -18,7 +20,9 @@ import { useToast } from '@/providers/toast-provider';
 export default function ClientDetailScreen() {
   const styles = useStyles();
   const colors = useColors();
+  const { isWeb, isDesktop, isTablet } = useBreakpoint();
   const { id } = useLocalSearchParams<{ id: string }>();
+  useDesktopListRedirect('/clients');
   const clientId = Array.isArray(id) ? id[0] : id;
   const { data: client, isLoading, isFetched } = useClient(clientId ?? '');
   const { deleteClient } = useClientMutations();
@@ -31,6 +35,10 @@ export default function ClientDetailScreen() {
       router.back();
     }
   }, [client, clientId, isFetched, showError]);
+
+  if (isWeb && (isDesktop || isTablet)) {
+    return null;
+  }
 
   async function handleDelete() {
     if (!clientId) {

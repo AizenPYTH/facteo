@@ -13,27 +13,40 @@ import { ThemedText } from './themed-text';
 import { ThemedView } from './themed-view';
 
 import { MaxContentWidth, Spacing } from '@/constants/theme';
+import { useBreakpoint } from '@/hooks/use-breakpoint';
 
 export default function AppTabs() {
+  const { isDesktop, isTablet } = useBreakpoint();
+  const useDesktopNav = isDesktop || isTablet;
+
   return (
     <Tabs>
-      <TabSlot style={{ height: '100%' }} />
-      <TabList asChild>
-        <CustomTabList>
-          <TabTrigger name="home" href="/" asChild>
-            <TabButton>Tableau de bord</TabButton>
-          </TabTrigger>
-          <TabTrigger name="clients" href={'/clients' as Href} asChild>
-            <TabButton>Clients</TabButton>
-          </TabTrigger>
-          <TabTrigger name="quotes" href={'/quotes' as Href} asChild>
-            <TabButton>Devis</TabButton>
-          </TabTrigger>
-          <TabTrigger name="invoices" href={'/invoices' as Href} asChild>
-            <TabButton>Factures</TabButton>
-          </TabTrigger>
-        </CustomTabList>
-      </TabList>
+      <TabSlot style={useDesktopNav ? styles.desktopSlot : styles.mobileSlot} />
+      {useDesktopNav ? (
+        <TabList style={styles.hiddenTabList}>
+          <TabTrigger name="index" href="/" />
+          <TabTrigger name="clients" href={'/clients' as Href} />
+          <TabTrigger name="quotes" href={'/quotes' as Href} />
+          <TabTrigger name="invoices" href={'/invoices' as Href} />
+        </TabList>
+      ) : (
+        <TabList asChild>
+          <CustomTabList>
+            <TabTrigger name="index" href="/" asChild>
+              <TabButton>Tableau de bord</TabButton>
+            </TabTrigger>
+            <TabTrigger name="clients" href={'/clients' as Href} asChild>
+              <TabButton>Clients</TabButton>
+            </TabTrigger>
+            <TabTrigger name="quotes" href={'/quotes' as Href} asChild>
+              <TabButton>Devis</TabButton>
+            </TabTrigger>
+            <TabTrigger name="invoices" href={'/invoices' as Href} asChild>
+              <TabButton>Factures</TabButton>
+            </TabTrigger>
+          </CustomTabList>
+        </TabList>
+      )}
     </Tabs>
   );
 }
@@ -66,6 +79,22 @@ export function CustomTabList(props: TabListProps) {
 }
 
 const styles = StyleSheet.create({
+  desktopSlot: {
+    flex: 1,
+    height: '100%',
+    width: '100%',
+  },
+  mobileSlot: {
+    height: '100%',
+  },
+  hiddenTabList: {
+    position: 'absolute',
+    width: 1,
+    height: 1,
+    overflow: 'hidden',
+    opacity: 0,
+    pointerEvents: 'none',
+  },
   tabListContainer: {
     position: 'absolute',
     width: '100%',

@@ -5,6 +5,8 @@ import { ActivityIndicator, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { CompanyProfileForm } from '@/components/company';
+import { DesktopPage } from '@/components/web/desktop/desktop-page';
+import { DesktopTopHeader } from '@/components/web/desktop/desktop-top-header';
 import { Button } from '@/components/ui/button';
 import { FormScreen } from '@/components/ui/form-screen';
 import { NavigationHeader } from '@/components/ui/navigation-header';
@@ -15,6 +17,7 @@ import {
   useCompanyProfile,
   useUpdateCompanyProfile,
 } from '@/hooks/use-company-profile';
+import { useBreakpoint } from '@/hooks/use-breakpoint';
 import { useCompanyProfileAssets } from '@/hooks/use-company-profile-assets';
 import { getCompanyProfileErrorMessage } from '@/lib/company-profile/errors';
 import { companyProfileSchema } from '@/lib/validations/company-profile';
@@ -27,6 +30,8 @@ import {
 export default function CompanyProfileScreen() {
   const styles = useStyles();
   const colors = useColors();
+  const { isWeb, isDesktop, isTablet } = useBreakpoint();
+  const useDesktop = isWeb && (isDesktop || isTablet);
   const { data, isLoading } = useCompanyProfile();
   const { data: assets, isLoading: assetsLoading } = useCompanyProfileAssets();
   const updateProfile = useUpdateCompanyProfile();
@@ -64,13 +69,60 @@ export default function CompanyProfileScreen() {
   }
 
   if (isLoading || assetsLoading) {
+    const loading = (
+      <View style={styles.loading}>
+        <ActivityIndicator color={colors.primary} size="large" />
+        <Text style={styles.loadingText}>Chargement du profil...</Text>
+      </View>
+    );
+
+    if (useDesktop) {
+      return (
+        <View style={styles.desktopRoot}>
+          <DesktopTopHeader
+            subtitle="Identité, coordonnées et visuels de votre entreprise"
+            title="Profil entreprise"
+          />
+          {loading}
+        </View>
+      );
+    }
+
     return (
       <SafeAreaView edges={['top', 'bottom']} style={styles.safeArea}>
-        <View style={styles.loading}>
-          <ActivityIndicator color={colors.primary} size="large" />
-          <Text style={styles.loadingText}>Chargement du profil...</Text>
-        </View>
+        {loading}
       </SafeAreaView>
+    );
+  }
+
+  const form = (
+    <CompanyProfileForm
+      assets={{
+        logoUrl: assets?.logoUrl ?? null,
+        signatureUrl: assets?.signatureUrl ?? null,
+      }}
+      control={control}
+      errors={errors}
+    />
+  );
+
+  if (useDesktop) {
+    return (
+      <View style={styles.desktopRoot}>
+        <DesktopTopHeader
+          subtitle="Identité, coordonnées et visuels de votre entreprise"
+          title="Profil entreprise"
+        />
+        <DesktopPage>
+          {form}
+          <Button
+            disabled={!isDirty}
+            loading={isSubmitting || updateProfile.isPending}
+            onPress={handleSubmit(onSubmit)}
+            title="Enregistrer"
+          />
+        </DesktopPage>
+      </View>
     );
   }
 
@@ -100,6 +152,10 @@ export default function CompanyProfileScreen() {
 function useStyles() {
   return useThemedStyles((colors) => ({
     safeArea: {
+      flex: 1,
+      backgroundColor: colors.backgroundGrouped,
+    },
+    desktopRoot: {
       flex: 1,
       backgroundColor: colors.backgroundGrouped,
     },

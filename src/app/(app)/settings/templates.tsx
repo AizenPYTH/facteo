@@ -1,9 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { TemplateGalleryModal } from '@/components/pdf/template-gallery-modal';
-import { SettingsScreenHeader } from '@/components/settings';
+import { SettingsScreenFrame } from '@/components/web/desktop/settings-screen-frame';
 import { AppText } from '@/components/ui/app-text';
 import { LoadingView } from '@/components/ui/loading-view';
 import { useAuth } from '@/hooks/use-auth';
@@ -74,7 +73,7 @@ export default function DocumentTemplatesScreen() {
   const buildPreviewHtml = useCallback(
     (templateId: string) => {
       if (!scope) {
-        return Promise.resolve('');
+        return Promise.reject(new Error('Espace entreprise indisponible.'));
       }
 
       return buildTemplatePreviewHtml(
@@ -94,15 +93,14 @@ export default function DocumentTemplatesScreen() {
 
   if (isLoading) {
     return (
-      <SafeAreaView edges={['top', 'bottom']} style={styles.safeArea}>
+      <SettingsScreenFrame title="Modèles de documents">
         <LoadingView message="Chargement..." />
-      </SafeAreaView>
+      </SettingsScreenFrame>
     );
   }
 
   return (
-    <SafeAreaView edges={['top', 'bottom']} style={styles.safeArea}>
-      <SettingsScreenHeader title="Modèles de documents" />
+    <SettingsScreenFrame title="Modèles de documents">
       <View style={styles.content}>
         <AppText color="secondary" variant="subtitle">
           Parcourez les modèles en taille réelle. Le modèle sélectionné est enregistré
@@ -145,16 +143,13 @@ export default function DocumentTemplatesScreen() {
         title={activeKind === 'invoice' ? 'Modèles de factures' : 'Modèles de devis'}
         visible={galleryVisible}
       />
-    </SafeAreaView>
+    </SettingsScreenFrame>
   );
 }
 
 function useStyles() {
   return useThemedStyles((colors) => ({
-    safeArea: { flex: 1, backgroundColor: colors.backgroundGrouped },
     content: {
-      paddingHorizontal: spacing.screenPaddingHorizontal,
-      paddingTop: spacing.md,
       gap: spacing.lg,
     },
     segment: {

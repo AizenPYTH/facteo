@@ -43,6 +43,8 @@ type InvoiceWizardScreenProps = {
   title: string;
   invoiceId?: string;
   initialState?: InvoiceWizardState;
+  variant?: 'mobile' | 'desktop';
+  onStepChange?: (step: number) => void;
 };
 
 export function InvoiceWizardScreen({
@@ -50,6 +52,8 @@ export function InvoiceWizardScreen({
   title,
   invoiceId,
   initialState,
+  variant = 'mobile',
+  onStepChange,
 }: InvoiceWizardScreenProps) {
   const { createInvoice, updateInvoice } = useInvoiceMutations();
   const { showError, showSuccess } = useToast();
@@ -57,6 +61,10 @@ export function InvoiceWizardScreen({
   const { data: settings } = useSettings();
 
   const [step, setStep] = useState(1);
+
+  useEffect(() => {
+    onStepChange?.(step);
+  }, [onStepChange, step]);
   const [state, setState] = useState<InvoiceWizardState>(
     initialState ?? createEmptyInvoiceWizardState(),
   );
@@ -312,24 +320,43 @@ export function InvoiceWizardScreen({
         ? 'Créer la facture'
         : 'Enregistrer les modifications';
 
+  const isDesktop = variant === 'desktop';
+
   return (
     <WizardScreen
+      footer={
+        isDesktop ? (
+          <WizardActionBar
+            backLabel={step === 1 ? 'Annuler' : 'Précédent'}
+            onBack={handleBack}
+            onPrimary={step < TOTAL_STEPS ? handleNext : handleSave}
+            primaryDisabled={step < TOTAL_STEPS ? !canGoNext() : false}
+            primaryLabel={primaryActionLabel}
+            primaryLoading={step >= TOTAL_STEPS && isSaving}
+          />
+        ) : undefined
+      }
       header={
-        <>
-          <InvoiceScreenHeader showBackButton={false} title={title} />
-          <QuoteWizardProgress currentStep={step} />
-        </>
+        isDesktop ? undefined : (
+          <>
+            <InvoiceScreenHeader showBackButton={false} title={title} />
+            <QuoteWizardProgress currentStep={step} />
+          </>
+        )
       }
       toolbar={
-        <WizardActionBar
-          backLabel={step === 1 ? 'Annuler' : 'Précédent'}
-          onBack={handleBack}
-          onPrimary={step < TOTAL_STEPS ? handleNext : handleSave}
-          primaryDisabled={step < TOTAL_STEPS ? !canGoNext() : false}
-          primaryLabel={primaryActionLabel}
-          primaryLoading={step >= TOTAL_STEPS && isSaving}
-        />
-      }>
+        isDesktop ? undefined : (
+          <WizardActionBar
+            backLabel={step === 1 ? 'Annuler' : 'Précédent'}
+            onBack={handleBack}
+            onPrimary={step < TOTAL_STEPS ? handleNext : handleSave}
+            primaryDisabled={step < TOTAL_STEPS ? !canGoNext() : false}
+            primaryLabel={primaryActionLabel}
+            primaryLoading={step >= TOTAL_STEPS && isSaving}
+          />
+        )
+      }
+      variant={variant}>
       {renderStep()}
     </WizardScreen>
   );
