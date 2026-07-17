@@ -139,7 +139,7 @@ export const PRICING_CONTENT = {
     {
       id: 'premium',
       name: 'Premium',
-      price: '19 €',
+      price: '6,99 €',
       period: '/ mois',
       description: 'Pour les professionnels exigeants.',
       features: [
@@ -184,6 +184,11 @@ export const FAQ_CONTENT = {
         'Votre client signe directement sur l’écran (mobile ou tablette). La signature est intégrée au PDF final.',
     },
     {
+      question: 'Puis-je utiliser un code promo ?',
+      answer:
+        'Oui. Au moment du paiement Stripe Checkout, vous pouvez saisir un code promo si vous en avez un. Les codes sont communiqués ponctuellement par FACTEO.',
+    },
+    {
       question: 'Puis-je annuler mon abonnement ?',
       answer: 'Oui, à tout moment depuis les paramètres. Aucun engagement.',
     },
@@ -205,12 +210,12 @@ export const FOOTER_LINKS = {
   company: [
     { label: 'À propos', href: '/#presentation' },
     { label: 'Contact', href: 'mailto:contact@facteo.app' },
-    { label: 'Support', href: 'mailto:support@facteo.app' },
+    { label: 'Support', href: 'https://facteo.app/support' },
   ],
   legal: [
-    { label: 'Confidentialité', href: '/privacy' },
-    { label: 'Conditions d’utilisation', href: '/terms' },
-    { label: 'Mentions légales', href: '/legal' },
-    { label: 'Politique des cookies', href: '/cookies' },
+    { label: 'Confidentialité', href: 'https://facteo.app/confidentialite' },
+    { label: 'Conditions d’utilisation', href: 'https://facteo.app/conditions-utilisation' },
+    { label: 'Mentions légales', href: 'https://facteo.app/mentions-legales' },
+    { label: 'Politique des cookies', href: 'https://facteo.app/cookies' },
   ],
 } as const;

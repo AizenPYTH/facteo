@@ -57,13 +57,15 @@ const useStyles = () =>
   useThemedStyles((colors) => ({
     card: {
       backgroundColor: colors.surface,
-      borderRadius: radius.card,
+      borderRadius: radius.xl,
       borderWidth: StyleSheet.hairlineWidth,
       borderColor: colors.border,
       padding: spacing.cardPadding,
       gap: spacing.sm,
+      ...shadows.xs,
     },
     pressed: {
-      opacity: 0.92,
+      opacity: 0.94,
+      transform: [{ scale: 0.992 }],
     },
   }));

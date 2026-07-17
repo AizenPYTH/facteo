@@ -5,6 +5,16 @@ import { useThemedStyles } from '@/hooks/use-colors';
 
 export function useAuthScreenStyles() {
   return useThemedStyles((colors) => ({
+    footerText: {
+      ...typography.subheadline,
+      color: colors.textSecondary,
+      textAlign: 'center' as const,
+    },
+    footerLink: {
+      ...typography.subheadlineMedium,
+      color: colors.primary,
+    },
+    // Kept for any residual callers during migration.
     container: {
       flex: 1,
       backgroundColor: colors.background,
@@ -18,22 +28,24 @@ export function useAuthScreenStyles() {
     },
     header: {
       gap: spacing.md,
-      alignItems: 'flex-start' as const,
+      alignItems: 'center' as const,
     },
     title: {
-      ...typography.largeTitle,
+      ...typography.title1,
       color: colors.text,
+      textAlign: 'center' as const,
     },
     subtitle: {
       ...typography.subheadline,
       color: colors.textSecondary,
+      textAlign: 'center' as const,
     },
     form: {
       gap: spacing.lg,
     },
     errorBanner: {
       backgroundColor: colors.errorSubtle,
-      borderRadius: radius.md,
+      borderRadius: radius.lg,
       paddingHorizontal: spacing.md,
       paddingVertical: spacing.sm,
       borderWidth: 1,
@@ -46,15 +58,6 @@ export function useAuthScreenStyles() {
     footer: {
       alignItems: 'center' as const,
       marginTop: spacing.sm,
-    },
-    footerText: {
-      ...typography.subheadline,
-      color: colors.textSecondary,
-      textAlign: 'center' as const,
-    },
-    footerLink: {
-      ...typography.subheadlineMedium,
-      color: colors.primary,
     },
   }));
 }

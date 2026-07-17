@@ -1,8 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 
 import { useAuth } from '@/hooks/use-auth';
-import { useDeveloperMode } from '@/providers/developer-mode-provider';
-import { applyDeveloperModeUnlock } from '@/lib/dev/apply-subscription-override';
 import { hasPlanFeature } from '@/lib/subscription/plans';
 import {
   fetchSubscriptionPlans,
@@ -38,29 +36,14 @@ export function useSubscriptionPlans() {
 
 export function useSubscription() {
   const snapshotQuery = useSubscriptionSnapshot();
-  const plansQuery = useSubscriptionPlans();
-  const { isEnabled: isDeveloperModeEnabled } = useDeveloperMode();
 
   const snapshot = snapshotQuery.data;
-  const isDevUnlocked = isDeveloperModeEnabled && Boolean(snapshot);
-
-  const effectiveSnapshot =
-    isDevUnlocked && plansQuery.data
-      ? applyDeveloperModeUnlock(snapshot!, plansQuery.data)
-      : isDevUnlocked
-        ? applyDeveloperModeUnlock(snapshot!, snapshot!.plan ? [snapshot!.plan] : [])
-        : snapshot;
-
-  const subscription = effectiveSnapshot?.subscription ?? null;
-  const plan = effectiveSnapshot?.plan ?? null;
-  const usage = effectiveSnapshot?.usage ?? null;
-  const isPremium = isDevUnlocked || subscription?.effectivePlanId === 'premium';
+  const subscription = snapshot?.subscription ?? null;
+  const plan = snapshot?.plan ?? null;
+  const usage = snapshot?.usage ?? null;
+  const isPremium = subscription?.effectivePlanId === 'premium';
 
   function hasFeature(feature: PlanFeatureKey): boolean {
-    if (isDevUnlocked) {
-      return true;
-    }
-
     if (!subscription || !plan) {
       return false;
     }
@@ -69,10 +52,6 @@ export function useSubscription() {
   }
 
   function getLimit(resource: PlanResource): number | null {
-    if (isDevUnlocked) {
-      return null;
-    }
-
     if (!plan) {
       return null;
     }
@@ -95,7 +74,6 @@ export function useSubscription() {
     plan,
     usage,
     isPremium,
-    isDeveloperModeEnabled: isDevUnlocked,
     hasFeature,
     getLimit,
     refresh: snapshotQuery.refetch,

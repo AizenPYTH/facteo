@@ -107,11 +107,12 @@ export default function SubscriptionSettingsPage() {
 
           <Panel>
             <p className="text-sm text-slate-600">
-              Pour passer au plan Premium ou gérer votre facturation, contactez{' '}
+              FACTEO Premium : 6,99 €/mois. Pour souscrire ou gérer votre facturation, utilisez
+              l’application mobile (paiement Stripe sécurisé, codes promo acceptés) ou contactez{' '}
               <a className="font-medium text-primary hover:underline" href="mailto:support@facteo.app">
                 support@facteo.app
-              </a>{' '}
-              ou consultez la page{' '}
+              </a>
+              . Voir aussi la page{' '}
               <Link className="font-medium text-primary hover:underline" href="/tarifs">
                 tarifs
               </Link>

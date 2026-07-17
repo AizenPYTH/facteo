@@ -1,5 +1,5 @@
 import { router, type Href } from 'expo-router';
-import { Alert, Platform, StyleSheet, Switch, Text, View } from 'react-native';
+import { Alert, Linking, Platform, StyleSheet, Switch, Text, View } from 'react-native';
 
 import {
   SettingsProfileSummary,
@@ -8,15 +8,15 @@ import {
 } from '@/components/settings';
 import { NotificationPreferencesSection } from '@/components/settings/notification-preferences-section';
 import { DesktopPanel } from '@/components/web/desktop/desktop-panel';
-import { Button } from '@/components/ui/button';
 import { useColors, useThemedStyles } from '@/hooks/use-colors';
 import { spacing } from '@/constants/theme/spacing';
 import { typography } from '@/constants/theme/typography';
+import { MARKETING_CONTACT } from '@/constants/marketing/site';
+import { openHelpPage, openLegalPage } from '@/lib/legal/open-legal-page';
 import { useAuth } from '@/hooks/use-auth';
 import { useCompanyProfile } from '@/hooks/use-company-profile';
 import { useSubscription } from '@/hooks/use-subscription';
-import { getAppVersionInfo } from '@/lib/dev/environment';
-import { useDeveloperMode } from '@/providers/developer-mode-provider';
+import { getAppVersionInfo } from '@/lib/app-version';
 import { useThemePreference } from '@/providers/theme-preference-provider';
 import { useToast } from '@/providers/toast-provider';
 
@@ -25,24 +25,14 @@ export function SettingsDesktopContent() {
   const colors = useColors();
   const { user, signOut } = useAuth();
   const companyProfile = useCompanyProfile();
-  const { isPremium, isDeveloperModeEnabled } = useSubscription();
+  const { isPremium } = useSubscription();
   const { preference, setPreference } = useThemePreference();
-  const { showError, showSuccess } = useToast();
-  const {
-    isEnabled: isDevModeEnabled,
-    enableDeveloperMode,
-    disableDeveloperMode,
-  } = useDeveloperMode();
+  const { showSuccess } = useToast();
   const versionInfo = getAppVersionInfo();
 
   const isDarkMode = preference === 'dark';
   const darkModeSupported = Platform.OS !== 'web';
-
-  const planLabel = isDeveloperModeEnabled
-    ? 'Premium · mode développeur'
-    : isPremium
-      ? 'FACTEO Premium'
-      : 'FACTEO Standard';
+  const planLabel = isPremium ? 'FACTEO Premium' : 'FACTEO Standard';
 
   async function handleToggleDarkMode(value: boolean) {
     if (!darkModeSupported) {
@@ -62,6 +52,28 @@ export function SettingsDesktopContent() {
     }
 
     router.replace('/login' as Href);
+  }
+
+  function handleDeleteAccount() {
+    Alert.alert(
+      'Supprimer le compte',
+      `Conformément aux règles App Store, vous pouvez demander la suppression définitive de votre compte et de vos données.\n\nÉcrivez à ${MARKETING_CONTACT.support} depuis l’adresse e-mail de votre compte. Nous traiterons la demande sous 30 jours.`,
+      [
+        { text: 'Annuler', style: 'cancel' },
+        {
+          text: 'Contacter le support',
+          onPress: () => {
+            void Linking.openURL(
+              `mailto:${MARKETING_CONTACT.support}?subject=${encodeURIComponent(
+                'Demande de suppression de compte FACTEO',
+              )}&body=${encodeURIComponent(
+                `Bonjour,\n\nJe souhaite supprimer définitivement mon compte FACTEO associé à l’adresse : ${user?.email ?? ''}.\n\nMerci.`,
+              )}`,
+            );
+          },
+        },
+      ],
+    );
   }
 
   return (
@@ -118,22 +130,34 @@ export function SettingsDesktopContent() {
 
           <SettingsSection title="Session">
             <SettingsRow label="Se déconnecter" onPress={() => void handleLogout()} />
+            <View style={styles.separator} />
+            <SettingsRow destructive label="Supprimer le compte" onPress={handleDeleteAccount} />
           </SettingsSection>
 
-          {isDevModeEnabled ? (
-            <SettingsSection title="Mode développeur">
-              <View style={styles.devActions}>
-                <Text style={styles.devActiveLabel}>
-                  Mode développeur actif — tout est débloqué.
-                </Text>
-                <Button
-                  onPress={() => void disableDeveloperMode()}
-                  title="Désactiver"
-                  variant="ghost"
-                />
-              </View>
-            </SettingsSection>
-          ) : null}
+          <SettingsSection title="Aide">
+            <SettingsRow label="Centre d’aide" onPress={() => void openHelpPage('support')} />
+            <View style={styles.separator} />
+            <SettingsRow label="Guide d’utilisation" onPress={() => void openHelpPage('guide')} />
+          </SettingsSection>
+
+          <SettingsSection title="Confidentialité & conditions">
+            <SettingsRow
+              label="Politique de confidentialité"
+              onPress={() => void openLegalPage('privacy')}
+            />
+            <View style={styles.separator} />
+            <SettingsRow
+              label="Conditions d’utilisation"
+              onPress={() => void openLegalPage('terms')}
+            />
+            <View style={styles.separator} />
+            <SettingsRow label="Mentions légales" onPress={() => void openLegalPage('legal')} />
+            <View style={styles.separator} />
+            <SettingsRow
+              label="Politique des cookies"
+              onPress={() => void openLegalPage('cookies')}
+            />
+          </SettingsSection>
         </View>
       </DesktopPanel>
 
@@ -162,15 +186,6 @@ const useStyles = () =>
     },
     value: {
       ...typography.subheadline,
-      color: colors.textSecondary,
-    },
-    devActions: {
-      paddingHorizontal: spacing.md,
-      paddingVertical: spacing.sm,
-      gap: spacing.sm,
-    },
-    devActiveLabel: {
-      ...typography.footnote,
       color: colors.textSecondary,
     },
     version: {

@@ -8,26 +8,41 @@
       "developmentClient": true,
       "distribution": "internal",
       "env": {
-        "EXPO_PUBLIC_ENABLE_DEV_TOOLS": "true",
+        "APP_VARIANT": "development",
         "EXPO_PUBLIC_APP_ENV": "development"
+      }
+    },
+    "development-simulator": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "env": {
+        "APP_VARIANT": "development",
+        "EXPO_PUBLIC_APP_ENV": "development"
+      },
+      "ios": {
+        "simulator": true
       }
     },
     "preview": {
       "distribution": "internal",
       "env": {
-        "EXPO_PUBLIC_ENABLE_DEV_TOOLS": "true",
+        "APP_VARIANT": "production",
         "EXPO_PUBLIC_APP_ENV": "testflight"
       }
     },
     "production": {
       "autoIncrement": true,
       "env": {
-        "EXPO_PUBLIC_ENABLE_DEV_TOOLS": "false",
+        "APP_VARIANT": "production",
         "EXPO_PUBLIC_APP_ENV": "production"
       }
     }
   },
   "submit": {
-    "production": {}
+    "production": {
+      "android": {
+        "track": "internal"
+      }
+    }
   }
 }

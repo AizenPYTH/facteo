@@ -10,7 +10,6 @@ import { CompanyProvider } from '@/providers/company-provider';
 import { ColorsProvider } from '@/providers/colors-provider';
 import { QueryProvider } from '@/providers/query-provider';
 import { ThemePreferenceProvider, useThemePreference } from '@/providers/theme-preference-provider';
-import { DeveloperModeProvider } from '@/providers/developer-mode-provider';
 import { SubscriptionProvider } from '@/providers/subscription-provider';
 import { ToastProvider } from '@/providers/toast-provider';
 
@@ -47,14 +46,12 @@ export default function RootLayout() {
           <AuthProvider>
             <CompanyProvider>
               <ThemePreferenceProvider>
-                <DeveloperModeProvider>
                   <SplashScreenController />
                   <ToastProvider>
                     <SubscriptionProvider>
                       <RootNavigation />
                     </SubscriptionProvider>
                   </ToastProvider>
-                </DeveloperModeProvider>
               </ThemePreferenceProvider>
             </CompanyProvider>
           </AuthProvider>

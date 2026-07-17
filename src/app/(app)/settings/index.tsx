@@ -1,5 +1,5 @@
 import { router, type Href } from 'expo-router';
-import { Alert, Platform, StyleSheet, Switch, Text, View } from 'react-native';
+import { Alert, Linking, Platform, StyleSheet, Switch, Text, View } from 'react-native';
 
 import {
   SettingsProfileSummary,
@@ -9,17 +9,16 @@ import {
 import { NotificationPreferencesSection } from '@/components/settings/notification-preferences-section';
 import { SettingsScreenFrame } from '@/components/web/desktop/settings-screen-frame';
 import { SettingsDesktopContent } from '@/components/web/desktop/screens/settings-desktop-content';
-import { Button } from '@/components/ui/button';
 import { useBreakpoint } from '@/hooks/use-breakpoint';
 import { useColors, useThemedStyles } from '@/hooks/use-colors';
 import { spacing } from '@/constants/theme/spacing';
 import { typography } from '@/constants/theme/typography';
-import { openLegalPage } from '@/lib/legal/open-legal-page';
+import { MARKETING_CONTACT, MARKETING_HELP_URLS } from '@/constants/marketing/site';
+import { openHelpPage, openLegalPage } from '@/lib/legal/open-legal-page';
 import { useAuth } from '@/hooks/use-auth';
 import { useCompanyProfile } from '@/hooks/use-company-profile';
 import { useSubscription } from '@/hooks/use-subscription';
-import { getAppVersionInfo } from '@/lib/dev/environment';
-import { useDeveloperMode } from '@/providers/developer-mode-provider';
+import { getAppVersionInfo } from '@/lib/app-version';
 import { useThemePreference } from '@/providers/theme-preference-provider';
 import { useToast } from '@/providers/toast-provider';
 
@@ -30,24 +29,14 @@ export default function SettingsScreen() {
   const useDesktopSettings = isWeb && (isDesktop || isTablet);
   const { user, signOut } = useAuth();
   const companyProfile = useCompanyProfile();
-  const { isPremium, isDeveloperModeEnabled } = useSubscription();
+  const { isPremium } = useSubscription();
   const { preference, setPreference } = useThemePreference();
-  const { showError, showSuccess } = useToast();
-  const {
-    isEnabled: isDevModeEnabled,
-    enableDeveloperMode,
-    disableDeveloperMode,
-  } = useDeveloperMode();
+  const { showSuccess } = useToast();
   const versionInfo = getAppVersionInfo();
 
   const isDarkMode = preference === 'dark';
   const darkModeSupported = Platform.OS !== 'web';
-
-  const planLabel = isDeveloperModeEnabled
-    ? 'Premium · mode développeur'
-    : isPremium
-      ? 'FACTEO Premium'
-      : 'FACTEO Standard';
+  const planLabel = isPremium ? 'FACTEO Premium' : 'FACTEO Standard';
 
   async function handleToggleDarkMode(value: boolean) {
     if (!darkModeSupported) {
@@ -56,24 +45,6 @@ export default function SettingsScreen() {
     }
 
     await setPreference(value ? 'dark' : 'light');
-  }
-
-  async function handleEnableDeveloperMode() {
-    try {
-      await enableDeveloperMode();
-      showSuccess('Mode développeur activé. Toutes les fonctionnalités sont débloquées.');
-    } catch (error) {
-      showError(readErrorMessage(error));
-    }
-  }
-
-  async function handleDisableDeveloperMode() {
-    try {
-      await disableDeveloperMode();
-      showSuccess('Mode développeur désactivé.');
-    } catch (error) {
-      showError(readErrorMessage(error));
-    }
   }
 
   async function handleLogout() {
@@ -90,9 +61,21 @@ export default function SettingsScreen() {
   function handleDeleteAccount() {
     Alert.alert(
       'Supprimer le compte',
-      'La suppression définitive de votre compte nécessite une assistance. Vous allez être déconnecté. Contactez le support pour finaliser la suppression.',
+      `Conformément aux règles App Store, vous pouvez demander la suppression définitive de votre compte et de vos données.\n\nÉcrivez à ${MARKETING_CONTACT.support} depuis l’adresse e-mail de votre compte. Nous traiterons la demande sous 30 jours.`,
       [
         { text: 'Annuler', style: 'cancel' },
+        {
+          text: 'Contacter le support',
+          onPress: () => {
+            void Linking.openURL(
+              `mailto:${MARKETING_CONTACT.support}?subject=${encodeURIComponent(
+                'Demande de suppression de compte FACTEO',
+              )}&body=${encodeURIComponent(
+                `Bonjour,\n\nJe souhaite supprimer définitivement mon compte FACTEO associé à l’adresse : ${user?.email ?? ''}.\n\nMerci.`,
+              )}`,
+            );
+          },
+        },
         {
           text: 'Se déconnecter',
           style: 'destructive',
@@ -113,127 +96,109 @@ export default function SettingsScreen() {
         <SettingsDesktopContent />
       ) : (
         <>
-        <SettingsProfileSummary
-          companyName={companyProfile.data?.companyName}
-          email={user?.email}
-          onPressPlan={() => router.push('/settings/premium' as Href)}
-          planLabel={planLabel}
-        />
-
-        <SettingsSection title="Entreprise">
-          <SettingsRow
-            label="Mes entreprises"
-            onPress={() => router.push('/settings/companies' as Href)}
+          <SettingsProfileSummary
+            companyName={companyProfile.data?.companyName}
+            email={user?.email}
+            onPressPlan={() => router.push('/settings/premium' as Href)}
+            planLabel={planLabel}
           />
-          <View style={styles.separator} />
-          <SettingsRow
-            label="Profil entreprise"
-            onPress={() => router.push('/company' as Href)}
-          />
-        </SettingsSection>
 
-        <SettingsSection title="Numérotation & documents">
-          <SettingsRow
-            label="Préfixes et numéros"
-            onPress={() => router.push('/settings/numbering' as Href)}
-          />
-          <View style={styles.separator} />
-          <SettingsRow
-            label="Modèles de factures et devis"
-            onPress={() => router.push('/settings/templates' as Href)}
-          />
-        </SettingsSection>
+          <SettingsSection title="Entreprise">
+            <SettingsRow
+              label="Mes entreprises"
+              onPress={() => router.push('/settings/companies' as Href)}
+            />
+            <View style={styles.separator} />
+            <SettingsRow
+              label="Profil entreprise"
+              onPress={() => router.push('/company' as Href)}
+            />
+          </SettingsSection>
 
-        <NotificationPreferencesSection />
+          <SettingsSection title="Numérotation & documents">
+            <SettingsRow
+              label="Préfixes et numéros"
+              onPress={() => router.push('/settings/numbering' as Href)}
+            />
+            <View style={styles.separator} />
+            <SettingsRow
+              label="Modèles de factures et devis"
+              onPress={() => router.push('/settings/templates' as Href)}
+            />
+          </SettingsSection>
 
-        <SettingsSection
-          footer={
-            darkModeSupported
-              ? 'Le thème s’applique immédiatement sur l’appareil.'
-              : 'Bientôt disponible sur le web.'
-          }
-          title="Apparence">
-          <SettingsRow
-            label="Mode sombre"
-            onPress={darkModeSupported ? undefined : () => showSuccess('Bientôt disponible sur le web.')}
-            trailing={
-              <Switch
-                disabled={!darkModeSupported}
-                onValueChange={(value) => {
-                  void handleToggleDarkMode(value);
-                }}
-                thumbColor={colors.surface}
-                trackColor={{ false: colors.borderStrong, true: colors.primary }}
-                value={isDarkMode}
-              />
+          <NotificationPreferencesSection />
+
+          <SettingsSection
+            footer={
+              darkModeSupported
+                ? 'Le thème s’applique immédiatement sur l’appareil.'
+                : 'Bientôt disponible sur le web.'
             }
-          />
-        </SettingsSection>
+            title="Apparence">
+            <SettingsRow
+              label="Mode sombre"
+              onPress={
+                darkModeSupported ? undefined : () => showSuccess('Bientôt disponible sur le web.')
+              }
+              trailing={
+                <Switch
+                  disabled={!darkModeSupported}
+                  onValueChange={(value) => {
+                    void handleToggleDarkMode(value);
+                  }}
+                  thumbColor={colors.surface}
+                  trackColor={{ false: colors.borderStrong, true: colors.primary }}
+                  value={isDarkMode}
+                />
+              }
+            />
+          </SettingsSection>
 
-        <SettingsSection title="Compte">
-          <SettingsRow label="Se déconnecter" onPress={() => void handleLogout()} />
-          <View style={styles.separator} />
-          <SettingsRow destructive label="Supprimer le compte" onPress={handleDeleteAccount} />
-        </SettingsSection>
+          <SettingsSection title="Compte">
+            <SettingsRow label="Se déconnecter" onPress={() => void handleLogout()} />
+            <View style={styles.separator} />
+            <SettingsRow destructive label="Supprimer le compte" onPress={handleDeleteAccount} />
+          </SettingsSection>
 
-        <SettingsSection title="Confidentialité">
-          <SettingsRow
-            label="Politique de confidentialité"
-            onPress={() => void openLegalPage('privacy')}
-          />
-          <View style={styles.separator} />
-          <SettingsRow
-            label="Conditions d’utilisation"
-            onPress={() => void openLegalPage('terms')}
-          />
-          <View style={styles.separator} />
-          <SettingsRow label="Mentions légales" onPress={() => void openLegalPage('legal')} />
-          <View style={styles.separator} />
-          <SettingsRow
-            label="Politique des cookies"
-            onPress={() => void openLegalPage('cookies')}
-          />
-        </SettingsSection>
+          <SettingsSection title="Aide">
+            <SettingsRow
+              label="Centre d’aide"
+              onPress={() => void openHelpPage('support')}
+            />
+            <View style={styles.separator} />
+            <SettingsRow
+              label="Guide d’utilisation"
+              onPress={() => void openHelpPage('guide')}
+            />
+          </SettingsSection>
 
-        <SettingsSection title="Mode développeur">
-          {isDevModeEnabled ? (
-            <View style={styles.devActions}>
-              <Text style={styles.devActiveLabel}>Mode développeur actif — tout est débloqué.</Text>
-              <Button
-                onPress={() => {
-                  void handleDisableDeveloperMode();
-                }}
-                title="Désactiver le mode développeur"
-                variant="ghost"
-              />
-            </View>
-          ) : (
-            <View style={styles.devActions}>
-              <Button
-                onPress={() => {
-                  void handleEnableDeveloperMode();
-                }}
-                title="Activer le mode développeur"
-              />
-            </View>
-          )}
-        </SettingsSection>
+          <SettingsSection title="Confidentialité & conditions">
+            <SettingsRow
+              label="Politique de confidentialité"
+              onPress={() => void openLegalPage('privacy')}
+            />
+            <View style={styles.separator} />
+            <SettingsRow
+              label="Conditions d’utilisation"
+              onPress={() => void openLegalPage('terms')}
+            />
+            <View style={styles.separator} />
+            <SettingsRow label="Mentions légales" onPress={() => void openLegalPage('legal')} />
+            <View style={styles.separator} />
+            <SettingsRow
+              label="Politique des cookies"
+              onPress={() => void openLegalPage('cookies')}
+            />
+          </SettingsSection>
 
-      <Text style={styles.version}>
-        FACTEO v{versionInfo.version} · build {versionInfo.buildNumber}
-      </Text>
+          <Text style={styles.version}>
+            FACTEO v{versionInfo.version} · build {versionInfo.buildNumber}
+          </Text>
         </>
       )}
     </SettingsScreenFrame>
   );
-}
-
-function readErrorMessage(error: unknown): string {
-  if (error instanceof Error) {
-    return error.message;
-  }
-
-  return 'Une erreur est survenue.';
 }
 
 function useStyles() {
@@ -242,15 +207,6 @@ function useStyles() {
       height: StyleSheet.hairlineWidth,
       backgroundColor: colors.separator,
       marginLeft: spacing.md,
-    },
-    devActions: {
-      paddingHorizontal: spacing.md,
-      paddingVertical: spacing.sm,
-      gap: spacing.sm,
-    },
-    devActiveLabel: {
-      ...typography.footnote,
-      color: colors.textSecondary,
     },
     version: {
       ...typography.footnote,

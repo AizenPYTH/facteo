@@ -43,7 +43,6 @@
       "@/lib/files/*": ["./src/lib/files/*"],
       "@/lib/company-search": ["./src/lib/domain/company-search/index.ts"],
       "@/lib/company-search/*": ["./src/lib/domain/company-search/*"],
-      "@/lib/dev/*": ["./src/lib/domain/dev/*"],
       "@/lib/subscription/*": ["./src/lib/domain/subscription/*"]
     }
   },

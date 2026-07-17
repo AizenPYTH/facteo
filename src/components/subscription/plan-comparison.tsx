@@ -3,6 +3,10 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { useColors, useThemedStyles } from '@/hooks/use-colors';
 import { formatPlanLimit } from '@/lib/subscription/plans';
+import {
+  PREMIUM_PRICE_LABEL,
+  PREMIUM_PRICE_PERIOD_LABEL,
+} from '@/constants/subscription-pricing';
 import { radius } from '@/constants/theme/radius';
 import { spacing } from '@/constants/theme/spacing';
 import { typography } from '@/constants/theme/typography';
@@ -82,7 +86,10 @@ export function PlanComparison({ standardPlan, premiumPlan, currentPlanId }: Pla
             <SymbolView name="star.fill" size={14} tintColor={colors.primary} />
           )}
         </View>
-        <Text style={styles.planSubtitle}>Illimité · personnalisation et outils avancés</Text>
+        <Text style={styles.planSubtitle}>
+          {PREMIUM_PRICE_LABEL}
+          {PREMIUM_PRICE_PERIOD_LABEL} · illimité et outils avancés
+        </Text>
       </View>
 
       <View style={styles.table}>

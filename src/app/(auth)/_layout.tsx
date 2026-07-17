@@ -14,5 +14,5 @@ export default function AuthLayout() {
     return <Redirect href={'/' as Href} />;
   }
 
-  return <Stack screenOptions={{ headerShown: false }} />;
+  return <Stack screenOptions={{ animation: 'fade', headerShown: false }} />;
 }

@@ -5,7 +5,7 @@ import { PRICING } from '@/lib/content';
 
 export const metadata: Metadata = {
   title: 'Tarifs',
-  description: 'Tarifs FACTEO : offre Standard gratuite et Premium à 19 €/mois. Sans engagement.',
+  description: 'Tarifs FACTEO : offre Standard gratuite et Premium à 6,99 €/mois. Sans engagement.',
 };
 
 export default function PricingPage() {

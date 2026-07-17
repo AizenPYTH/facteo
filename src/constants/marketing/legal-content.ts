@@ -93,6 +93,7 @@ export const PRIVACY_SECTIONS: LegalSection[] = [
       '• Droit à la portabilité : recevoir vos données dans un format structuré.',
       '• Droit d’opposition : vous opposer au traitement fondé sur l’intérêt légitime.',
       '• Droit de retirer votre consentement à tout moment, sans affecter la licéité du traitement antérieur.',
+      'Vous pouvez demander la suppression de votre compte depuis Paramètres dans l’application, ou en écrivant à support@facteo.app depuis l’adresse e-mail associée au compte. Nous traitons la demande sous 30 jours.',
       'Pour exercer vos droits, contactez-nous à contact@facteo.app. Vous pouvez également introduire une réclamation auprès de la CNIL (www.cnil.fr).',
     ],
   },
@@ -204,7 +205,7 @@ export const TERMS_SECTIONS: LegalSection[] = [
     id: 'resiliation',
     title: '11. Résiliation',
     paragraphs: [
-      'Vous pouvez supprimer votre compte à tout moment depuis les paramètres de l’application. La suppression entraîne la fermeture de votre accès et la suppression de vos données dans les délais légaux.',
+      'Vous pouvez demander la suppression de votre compte à tout moment depuis les paramètres de l’application (contact support). La suppression entraîne la fermeture de votre accès et la suppression ou l’anonymisation de vos données personnelles dans un délai de 30 jours, sous réserve des obligations légales de conservation des documents comptables.',
       'FACTEO peut suspendre ou résilier votre compte en cas de violation des présentes CGU, de non-paiement, ou d’usage abusif du service, après notification lorsque cela est possible.',
     ],
   },

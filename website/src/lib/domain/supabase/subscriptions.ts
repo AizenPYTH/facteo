@@ -1,6 +1,5 @@
 import { supabase } from '@/lib/supabase';
 import { logSupabaseError } from '@/lib/supabase/errors';
-import { getDevPlanLimitCheck } from '@/lib/dev/dev-plan-limits';
 import { resolveEffectivePlanId } from '@/lib/subscription/plans';
 import type {
   PlanFeatures,
@@ -159,13 +158,6 @@ export async function fetchSubscriptionUsage(): Promise<SubscriptionUsage> {
 }
 
 export async function checkPlanLimit(resource: PlanResource): Promise<PlanLimitCheck> {
-  const usage = await fetchSubscriptionUsage();
-  const devCheck = getDevPlanLimitCheck(resource, usage);
-
-  if (devCheck) {
-    return devCheck;
-  }
-
   const { data, error } = await supabase.rpc('check_plan_limit', {
     p_resource: resource,
   });

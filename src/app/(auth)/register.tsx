@@ -2,12 +2,11 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Link, router, type Href } from 'expo-router';
 import { useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
-import { Image, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Text } from 'react-native';
 
+import { AuthScreen } from '@/components/auth/auth-screen';
+import { AuthTextField } from '@/components/auth/auth-text-field';
 import { Button } from '@/components/ui/button';
-import { FormScreen } from '@/components/ui/form-screen';
-import { TextField } from '@/components/ui/text-field';
 import { useAuth } from '@/hooks/use-auth';
 import { useAuthScreenStyles } from '@/hooks/use-auth-screen-styles';
 import { getAuthErrorMessage } from '@/lib/auth/errors';
@@ -15,12 +14,62 @@ import { registerSchema, type RegisterFormValues } from '@/lib/validations/regis
 import { useToast } from '@/providers/toast-provider';
 
 const FIELDS = [
-  ['firstName', 'Prénom', 'Jean', 'given-name', 'givenName', 'words'] as const,
-  ['lastName', 'Nom', 'Dupont', 'family-name', 'familyName', 'words'] as const,
-  ['companyName', "Nom de l'entreprise", 'Acme SARL', 'organization', 'organizationName', 'words'] as const,
-  ['email', 'Adresse e-mail', 'vous@entreprise.fr', 'email', 'emailAddress', 'none'] as const,
-  ['password', 'Mot de passe', 'Au moins 8 caractères', 'new-password', 'newPassword', 'none'] as const,
-  ['confirmPassword', 'Confirmer le mot de passe', 'Confirmez votre mot de passe', 'new-password', 'newPassword', 'none'] as const,
+  {
+    name: 'firstName' as const,
+    label: 'Prénom',
+    placeholder: 'Jean',
+    autoComplete: 'given-name' as const,
+    textContentType: 'givenName' as const,
+    autoCapitalize: 'words' as const,
+    icon: 'person.fill' as const,
+  },
+  {
+    name: 'lastName' as const,
+    label: 'Nom',
+    placeholder: 'Dupont',
+    autoComplete: 'family-name' as const,
+    textContentType: 'familyName' as const,
+    autoCapitalize: 'words' as const,
+    icon: 'person.fill' as const,
+  },
+  {
+    name: 'companyName' as const,
+    label: "Nom de l'entreprise",
+    placeholder: 'Acme SARL',
+    autoComplete: 'organization' as const,
+    textContentType: 'organizationName' as const,
+    autoCapitalize: 'words' as const,
+    icon: 'building.2.fill' as const,
+  },
+  {
+    name: 'email' as const,
+    label: 'Adresse e-mail',
+    placeholder: 'vous@entreprise.fr',
+    autoComplete: 'email' as const,
+    textContentType: 'emailAddress' as const,
+    autoCapitalize: 'none' as const,
+    icon: 'envelope.fill' as const,
+  },
+  {
+    name: 'password' as const,
+    label: 'Mot de passe',
+    placeholder: 'Au moins 8 caractères',
+    autoComplete: 'new-password' as const,
+    textContentType: 'newPassword' as const,
+    autoCapitalize: 'none' as const,
+    icon: 'lock.fill' as const,
+    isPassword: true,
+  },
+  {
+    name: 'confirmPassword' as const,
+    label: 'Confirmer le mot de passe',
+    placeholder: 'Confirmez votre mot de passe',
+    autoComplete: 'new-password' as const,
+    textContentType: 'newPassword' as const,
+    autoCapitalize: 'none' as const,
+    icon: 'lock.fill' as const,
+    isPassword: true,
+  },
 ] as const;
 
 export default function RegisterScreen() {
@@ -72,74 +121,50 @@ export default function RegisterScreen() {
   }
 
   return (
-    <SafeAreaView edges={['top', 'bottom']} style={authScreenStyles.container}>
-      <FormScreen
-        contentContainerStyle={authScreenStyles.content}
-        footer={
-          <Button loading={isSubmitting} onPress={handleSubmit(onSubmit)} title="Créer un compte" />
-        }
-        scrollable>
-        <View style={authScreenStyles.header}>
-          <Image
-            accessibilityIgnoresInvertColors
-            source={require('@/assets/images/facteo-logo.png')}
-            style={styles.logo}
-          />
-          <Text accessibilityRole="header" style={authScreenStyles.title}>
-            Créer un compte
-          </Text>
-          <Text style={authScreenStyles.subtitle}>Commencez en quelques secondes.</Text>
-        </View>
-
-        {formError ? (
-          <View accessibilityRole="alert" style={authScreenStyles.errorBanner}>
-            <Text style={authScreenStyles.errorBannerText}>{formError}</Text>
-          </View>
-        ) : null}
-
-        <View style={authScreenStyles.form}>
-          {FIELDS.map(([name, label, placeholder, autoComplete, textContentType, autoCapitalize], index) => (
-            <Controller
-              key={name}
-              control={control}
-              name={name}
-              render={({ field: { onChange, onBlur, value } }) => (
-                <TextField
-                  autoCapitalize={autoCapitalize}
-                  autoComplete={autoComplete}
-                  error={errors[name]?.message}
-                  keyboardType={name === 'email' ? 'email-address' : 'default'}
-                  label={label}
-                  onBlur={onBlur}
-                  onChangeText={onChange}
-                  placeholder={placeholder}
-                  returnKeyType={index < FIELDS.length - 1 ? 'next' : 'done'}
-                  secureTextEntry={name.includes('password')}
-                  textContentType={textContentType}
-                  value={value}
-                />
-              )}
+    <AuthScreen
+      error={formError}
+      footer={
+        <Button
+          elevated
+          loading={isSubmitting}
+          onPress={handleSubmit(onSubmit)}
+          title="Créer un compte"
+        />
+      }
+      footerLink={
+        <Text style={authScreenStyles.footerText}>
+          Déjà un compte ?{' '}
+          <Link href={'/login' as Href}>
+            <Text style={authScreenStyles.footerLink}>Connexion</Text>
+          </Link>
+        </Text>
+      }
+      subtitle="Commencez en quelques secondes."
+      title="Créer un compte">
+      {FIELDS.map((field, index) => (
+        <Controller
+          key={field.name}
+          control={control}
+          name={field.name}
+          render={({ field: { onChange, onBlur, value } }) => (
+            <AuthTextField
+              autoCapitalize={field.autoCapitalize}
+              autoComplete={field.autoComplete}
+              error={errors[field.name]?.message}
+              icon={field.icon}
+              isPassword={'isPassword' in field ? field.isPassword : false}
+              keyboardType={field.name === 'email' ? 'email-address' : 'default'}
+              label={field.label}
+              onBlur={onBlur}
+              onChangeText={onChange}
+              placeholder={field.placeholder}
+              returnKeyType={index < FIELDS.length - 1 ? 'next' : 'done'}
+              textContentType={field.textContentType}
+              value={value}
             />
-          ))}
-        </View>
-
-        <View style={authScreenStyles.footer}>
-          <Text style={authScreenStyles.footerText}>
-            Déjà un compte ?{' '}
-            <Link href={'/login' as Href}>
-              <Text style={authScreenStyles.footerLink}>Connexion</Text>
-            </Link>
-          </Text>
-        </View>
-      </FormScreen>
-    </SafeAreaView>
+          )}
+        />
+      ))}
+    </AuthScreen>
   );
 }
-
-const styles = StyleSheet.create({
-  logo: {
-    width: 148,
-    height: 40,
-    resizeMode: 'contain',
-  },
-});

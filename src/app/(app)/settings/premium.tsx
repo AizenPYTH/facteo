@@ -5,6 +5,10 @@ import { PlanComparison } from '@/components/subscription/plan-comparison';
 import { SettingsScreenFrame } from '@/components/web/desktop/settings-screen-frame';
 import { Button } from '@/components/ui/button';
 import { LoadingView } from '@/components/ui/loading-view';
+import {
+  PREMIUM_PRICE_LABEL,
+  PREMIUM_PRICE_PERIOD_LABEL,
+} from '@/constants/subscription-pricing';
 import { spacing } from '@/constants/theme/spacing';
 import { typography } from '@/constants/theme/typography';
 import { useThemedStyles } from '@/hooks/use-colors';
@@ -60,6 +64,10 @@ export default function PremiumScreen() {
       <View style={styles.content}>
         <View style={styles.hero}>
           <Text style={styles.heroTitle}>FACTEO Premium</Text>
+          <Text style={styles.heroPrice}>
+            {PREMIUM_PRICE_LABEL}
+            <Text style={styles.heroPeriod}>{PREMIUM_PRICE_PERIOD_LABEL}</Text>
+          </Text>
           <Text style={styles.heroSubtitle}>
             Débloquez toutes les fonctionnalités et supprimez les limites de votre activité.
           </Text>
@@ -88,10 +96,12 @@ export default function PremiumScreen() {
               onPress={() => {
                 void handleSubscribe();
               }}
-              title="Passer à Premium"
+              title={`Passer à Premium — ${PREMIUM_PRICE_LABEL}/mois`}
             />
           )}
-          <Text style={styles.footnote}>Paiement sécurisé par Stripe Checkout.</Text>
+          <Text style={styles.footnote}>
+            Paiement sécurisé par Stripe. Un code promo peut être saisi lors du paiement.
+          </Text>
         </View>
       </View>
     </SettingsScreenFrame>
@@ -128,6 +138,16 @@ function useStyles() {
     heroTitle: {
       ...typography.title1,
       color: colors.text,
+    },
+    heroPrice: {
+      ...typography.title2,
+      color: colors.primary,
+      marginTop: spacing.xs,
+    },
+    heroPeriod: {
+      ...typography.body,
+      color: colors.textSecondary,
+      fontWeight: '400',
     },
     heroSubtitle: {
       ...typography.body,

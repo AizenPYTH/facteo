@@ -58,7 +58,10 @@
     "typescript": "~6.0.3"
   },
   "scripts": {
-    "start": "expo start",
+    "start": "node ./scripts/start-dev.mjs",
+    "start:go": "node ./scripts/start-dev.mjs",
+    "start:dev-client": "node ./scripts/start-dev-client.mjs",
+    "run:ios:dev": "node ./scripts/run-ios-dev.mjs",
     "reset-project": "node ./scripts/reset-project.js",
     "android": "expo run:android",
     "ios": "expo run:ios",
@@ -67,7 +70,10 @@
     "vercel-build": "expo export --platform web && node scripts/copy-public-assets.mjs",
     "preview:web": "npx serve dist",
     "lint": "expo lint",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "eas:build:ios": "eas build --platform ios --profile production --auto-submit",
+    "eas:build:android": "eas build --platform android --profile production --auto-submit",
+    "eas:build:all": "eas build --platform all --profile production --auto-submit"
   },
   "private": true
 }

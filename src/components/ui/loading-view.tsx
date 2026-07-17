@@ -11,7 +11,7 @@ type LoadingViewProps = {
 };
 
 export function LoadingView({
-  message = 'Chargement...',
+  message = 'Chargement…',
   size = 'large',
   style,
 }: LoadingViewProps) {
@@ -22,7 +22,9 @@ export function LoadingView({
       accessibilityLabel={message}
       accessibilityRole="progressbar"
       style={[styles.container, style]}>
-      <ActivityIndicator color={colors.primary} size={size} />
+      <View style={styles.indicatorWrap}>
+        <ActivityIndicator color={colors.primary} size={size} />
+      </View>
       {message ? <Text style={styles.label}>{message}</Text> : null}
     </View>
   );
@@ -35,6 +37,14 @@ function useStyles() {
     justifyContent: 'center',
     gap: spacing.md,
     paddingVertical: spacing.xl,
+  },
+  indicatorWrap: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.primarySubtle,
   },
   label: {
     ...typography.subheadline,

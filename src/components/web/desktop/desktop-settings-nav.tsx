@@ -6,7 +6,7 @@ import { useThemedStyles } from '@/hooks/use-colors';
 import { radius } from '@/constants/theme/radius';
 import { spacing } from '@/constants/theme/spacing';
 import { typography } from '@/constants/theme/typography';
-import { openLegalPage } from '@/lib/legal/open-legal-page';
+import { openHelpPage, openLegalPage } from '@/lib/legal/open-legal-page';
 
 type SettingsNavItem = {
   href: string;
@@ -61,8 +61,8 @@ const SETTINGS_NAV_GROUPS: SettingsNavGroup[] = [
     id: 'support',
     title: 'Support',
     items: [
-      { href: '/settings', label: 'FAQ', description: 'Questions fréquentes' },
-      { href: '/settings', label: 'Contact', description: 'Assistance' },
+      { href: 'help:support', label: 'Centre d’aide', description: 'Assistance et contact' },
+      { href: 'help:guide', label: 'Guide d’utilisation', description: 'Prise en main' },
     ],
   },
   {
@@ -80,7 +80,7 @@ const SETTINGS_NAV_GROUPS: SettingsNavGroup[] = [
 function isSettingsNavActive(pathname: string, item: SettingsNavItem): boolean {
   const path = normalizeAppPath(pathname);
 
-  if (item.href.startsWith('legal:')) {
+  if (item.href.startsWith('legal:') || item.href.startsWith('help:')) {
     return false;
   }
 
@@ -116,6 +116,12 @@ export function DesktopSettingsNav() {
                       | 'legal'
                       | 'cookies';
                     void openLegalPage(page);
+                    return;
+                  }
+
+                  if (item.href.startsWith('help:')) {
+                    const page = item.href.replace('help:', '') as 'support' | 'guide';
+                    void openHelpPage(page);
                     return;
                   }
 

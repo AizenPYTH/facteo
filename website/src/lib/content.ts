@@ -89,7 +89,7 @@ export const PRICING = {
     {
       id: 'premium',
       name: 'Premium',
-      price: '19 €',
+      price: '6,99 €',
       period: '/ mois',
       description: 'Pour les professionnels exigeants.',
       features: ['Tout Standard', 'Statistiques avancées', 'Paiements Stripe', 'Multi-entreprises', 'Support prioritaire'],
@@ -107,6 +107,7 @@ export const FAQ = {
     { question: 'Mes données sont-elles sécurisées ?', answer: 'Vos données sont hébergées sur une infrastructure cloud sécurisée (Supabase), avec chiffrement et sauvegardes.' },
     { question: 'Puis-je personnaliser mes documents ?', answer: 'Oui. Logo, couleurs, modèles PDF, mentions légales et numérotation sont entièrement personnalisables.' },
     { question: 'Comment fonctionne la signature ?', answer: 'Votre client signe directement sur l’écran (mobile ou tablette). La signature est intégrée au PDF final.' },
+    { question: 'Puis-je utiliser un code promo ?', answer: 'Oui. Au moment du paiement Stripe Checkout, vous pouvez saisir un code promo si vous en avez un. Les codes sont communiqués ponctuellement par FACTEO.' },
     { question: 'Puis-je annuler mon abonnement ?', answer: 'Oui, à tout moment depuis les paramètres. Aucun engagement.' },
   ],
 };

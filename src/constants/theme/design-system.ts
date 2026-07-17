@@ -17,10 +17,11 @@ export const layout = {
 } as const;
 
 export const motion = {
-  fast: 200,
-  normal: 320,
-  slow: 480,
-  spring: { damping: 18, stiffness: 180 },
+  fast: 180,
+  normal: 300,
+  slow: 460,
+  splash: 1000,
+  spring: { damping: 20, stiffness: 200 },
 } as const;
 
 export const components = {

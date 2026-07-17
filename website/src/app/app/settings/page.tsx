@@ -3,17 +3,21 @@
 import Link from 'next/link';
 import {
   Bell,
+  BookOpen,
   Building2,
   CreditCard,
   FileText,
   History,
+  LifeBuoy,
   Palette,
   Receipt,
   Shield,
+  Trash2,
 } from 'lucide-react';
 
 import { AppTopBar } from '@/components/app/app-shell';
 import { Panel } from '@/components/app/ui';
+import { SUPPORT_EMAIL } from '@/lib/constants';
 
 const SETTINGS_SECTIONS = [
   {
@@ -21,6 +25,13 @@ const SETTINGS_SECTIONS = [
     items: [
       { href: '/app/settings/profile', label: 'Profil', icon: Shield, desc: 'Informations personnelles' },
       { href: '/app/settings/notifications', label: 'Notifications', icon: Bell, desc: 'Préférences d’alertes' },
+      {
+        href: `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent('Demande de suppression de compte FACTEO')}`,
+        label: 'Supprimer le compte',
+        icon: Trash2,
+        desc: 'Demande via support (sous 30 jours)',
+        external: true,
+      },
     ],
   },
   {
@@ -45,13 +56,22 @@ const SETTINGS_SECTIONS = [
     ],
   },
   {
+    title: 'Aide',
+    items: [
+      { href: '/support', label: 'Centre d’aide', icon: LifeBuoy, desc: 'Assistance' },
+      { href: '/support#guide', label: 'Guide d’utilisation', icon: BookOpen, desc: 'Prise en main' },
+    ],
+  },
+  {
     title: 'Légal',
     items: [
       { href: '/confidentialite', label: 'Confidentialité', icon: Receipt, desc: 'Politique de données' },
       { href: '/conditions-utilisation', label: 'Conditions', icon: FileText, desc: 'CGU' },
+      { href: '/mentions-legales', label: 'Mentions légales', icon: FileText, desc: 'Éditeur' },
+      { href: '/cookies', label: 'Cookies', icon: FileText, desc: 'Politique cookies' },
     ],
   },
-];
+] as const;
 
 export default function SettingsPage() {
   return (
@@ -67,19 +87,33 @@ export default function SettingsPage() {
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
               {section.items.map((item) => {
                 const Icon = item.icon;
+                const isExternal = 'external' in item && item.external;
+
+                const content = (
+                  <Panel>
+                    <div className="flex items-start gap-4">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-primary">
+                        <Icon size={20} />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-slate-900">{item.label}</h3>
+                        <p className="mt-1 text-sm text-slate-500">{item.desc}</p>
+                      </div>
+                    </div>
+                  </Panel>
+                );
+
+                if (isExternal) {
+                  return (
+                    <a href={item.href} key={item.href}>
+                      {content}
+                    </a>
+                  );
+                }
+
                 return (
                   <Link href={item.href} key={item.href}>
-                    <Panel>
-                      <div className="flex items-start gap-4">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-primary">
-                          <Icon size={20} />
-                        </div>
-                        <div>
-                          <h3 className="font-semibold text-slate-900">{item.label}</h3>
-                          <p className="mt-1 text-sm text-slate-500">{item.desc}</p>
-                        </div>
-                      </div>
-                    </Panel>
+                    {content}
                   </Link>
                 );
               })}

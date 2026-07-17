@@ -9,6 +9,11 @@ export const MARKETING_LEGAL_URLS = {
   cookies: `${MARKETING_SITE_URL}/cookies`,
 } as const;
 
+export const MARKETING_HELP_URLS = {
+  support: `${MARKETING_SITE_URL}/support`,
+  guide: `${MARKETING_SITE_URL}/support#guide`,
+} as const;
+
 export const MARKETING_CONTACT = {
   email: 'contact@facteo.app',
   support: 'support@facteo.app',

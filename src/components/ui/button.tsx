@@ -10,17 +10,21 @@ import { useColors, useThemedStyles } from '@/hooks/use-colors';
 import { radius } from '@/constants/theme/radius';
 import { spacing } from '@/constants/theme/spacing';
 import { typography } from '@/constants/theme/typography';
+import { shadows } from '@/constants/theme/theme';
 
 type ButtonProps = PressableProps & {
   title: string;
   loading?: boolean;
   variant?: 'primary' | 'ghost';
+  /** Soft depth for primary CTAs (auth, sticky footers). */
+  elevated?: boolean;
 };
 
 export function Button({
   title,
   loading = false,
   variant = 'primary',
+  elevated = false,
   disabled,
   accessibilityLabel,
   style,
@@ -51,6 +55,7 @@ export function Button({
         return [
           styles.base,
           isPrimary ? styles.primary : styles.ghost,
+          elevated && isPrimary && !isDisabled ? styles.elevated : null,
           state.pressed && !isDisabled && (isPrimary ? styles.primaryPressed : styles.ghostPressed),
           isDisabled && styles.disabled,
           resolvedStyle,
@@ -73,8 +78,8 @@ export function Button({
 function useStyles() {
   return useThemedStyles((colors) => ({
   base: {
-    minHeight: 50,
-    borderRadius: radius.button,
+    minHeight: 52,
+    borderRadius: radius.buttonLarge,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: spacing.buttonPaddingHorizontal,
@@ -85,6 +90,12 @@ function useStyles() {
   },
   primaryPressed: {
     backgroundColor: colors.primaryPressed,
+    transform: [{ scale: 0.985 }],
+  },
+  elevated: {
+    ...shadows.md,
+    shadowColor: colors.primary,
+    shadowOpacity: 0.28,
   },
   ghost: {
     backgroundColor: 'transparent',
