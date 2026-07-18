@@ -1,9 +1,16 @@
 import type { PostgrestError } from '@supabase/supabase-js';
 
-type LoggableError = Pick<PostgrestError, 'message'> | { message: string };
+type LoggableError = Pick<PostgrestError, 'message'> | { message?: string } | string | null | undefined;
 
 export function logSupabaseError(context: string, error: LoggableError): void {
-  console.error(`[Supabase] ${context}:`, error.message);
+  const message =
+    typeof error === 'string'
+      ? error
+      : error && typeof error === 'object' && 'message' in error && typeof error.message === 'string'
+        ? error.message
+        : 'Erreur Supabase inconnue.';
+
+  console.error(`[Supabase] ${context}:`, message, error);
 }
 
 export function getCountFromQuery(

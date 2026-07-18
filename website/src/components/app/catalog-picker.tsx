@@ -1,8 +1,8 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { Package, Search, Wrench, X } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { CheckSquare, Package, Search, Square, Wrench, X } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
 
 import { useAuth } from '@/providers/auth-provider';
 import { useTenant } from '@/providers/company-provider';
@@ -18,16 +18,17 @@ type CatalogTab = 'all' | 'product' | 'service';
 export function CatalogPicker({
   open,
   onClose,
-  onSelect,
+  onSelectMany,
 }: {
   open: boolean;
   onClose: () => void;
-  onSelect: (item: Product) => void;
+  onSelectMany: (items: Product[]) => void;
 }) {
   const { user } = useAuth();
   const { scope } = useTenant();
   const [search, setSearch] = useState('');
   const [tab, setTab] = useState<CatalogTab>('all');
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
   const productsQuery = useQuery({
     queryKey: productsQueryKeys.list(user?.id ?? '', 'product', search),
@@ -49,9 +50,18 @@ export function CatalogPicker({
     return [...products, ...services].sort((a, b) => a.name.localeCompare(b.name, 'fr'));
   }, [productsQuery.data, servicesQuery.data, tab]);
 
+  useEffect(() => {
+    if (!open) {
+      setSelectedIds([]);
+      setSearch('');
+    }
+  }, [open]);
+
   if (!open) return null;
 
   const loading = productsQuery.isLoading || servicesQuery.isLoading;
+
+  const selectedItems = items.filter((item) => selectedIds.includes(item.id));
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -124,14 +134,20 @@ export function CatalogPicker({
             <ul className="divide-y divide-slate-100">
               {items.map((item) => {
                 const Icon = item.type === 'product' ? Package : Wrench;
+                const isSelected = selectedIds.includes(item.id);
                 return (
                   <li key={item.id}>
                     <button
-                      className="flex w-full items-center gap-3 px-5 py-3.5 text-left transition hover:bg-blue-50/60"
+                      className={cn(
+                        'flex w-full items-center gap-3 px-5 py-3.5 text-left transition hover:bg-blue-50/60',
+                        isSelected && 'bg-blue-50/80',
+                      )}
                       onClick={() => {
-                        onSelect(item);
-                        onClose();
-                        setSearch('');
+                        setSelectedIds((prev) =>
+                          prev.includes(item.id)
+                            ? prev.filter((entry) => entry !== item.id)
+                            : [...prev, item.id],
+                        );
                       }}
                       type="button">
                       <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-500">
@@ -142,14 +158,32 @@ export function CatalogPicker({
                         <p className="text-xs text-slate-500">
                           {formatCurrency(item.unitPrice)} HT · TVA {item.vatRate}% · {item.unit}
                         </p>
+                        <p className="text-[11px] text-slate-400">
+                          {item.brand || 'Sans marque'} · SKU {item.sku || '—'}
+                        </p>
                       </div>
-                      <span className="shrink-0 text-xs font-medium text-primary">Ajouter</span>
+                      <span className="shrink-0 text-xs font-medium text-primary">
+                        {isSelected ? <CheckSquare size={16} /> : <Square size={16} />}
+                      </span>
                     </button>
                   </li>
                 );
               })}
             </ul>
           )}
+        </div>
+        <div className="flex items-center justify-between border-t border-slate-100 px-5 py-3">
+          <p className="text-xs text-slate-500">{selectedItems.length} sélectionné(s)</p>
+          <button
+            className="inline-flex items-center gap-2 rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-white disabled:opacity-50"
+            disabled={selectedItems.length === 0}
+            onClick={() => {
+              onSelectMany(selectedItems);
+              onClose();
+            }}
+            type="button">
+            Ajouter la sélection
+          </button>
         </div>
       </div>
     </div>
