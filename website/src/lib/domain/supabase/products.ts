@@ -134,6 +134,13 @@ function toProductRows(value: unknown): ProductRow[] {
   return Array.isArray(value) ? (value as unknown as ProductRow[]) : [];
 }
 
+function toProductRow(value: unknown): ProductRow | null {
+  if (!value || Array.isArray(value) || typeof value !== 'object') {
+    return null;
+  }
+  return value as unknown as ProductRow;
+}
+
 function mapFormToInsert(scope: DataScope, type: ProductType, values: ProductFormValues): ProductInsert {
   const vatRate = parseVatRate(values.vatRate, 20);
   const unitPrice = parseFlexibleNumber(values.unitPrice, 0);
@@ -343,7 +350,8 @@ export async function fetchProductById(
 
   if (!error) {
     markSchemaFromColumns(firstColumns);
-    return data ? mapProductRow(data as ProductRow) : null;
+    const mapped = toProductRow(data);
+    return mapped ? mapProductRow(mapped) : null;
   }
 
   if (firstColumns === PRODUCT_COLUMNS && isMissingProductColumnError(error)) {
@@ -359,7 +367,8 @@ export async function fetchProductById(
       logSupabaseError('fetchProductById', legacyError);
       return null;
     }
-    return legacyData ? mapProductRow(legacyData as ProductRow) : null;
+    const mappedLegacy = toProductRow(legacyData);
+    return mappedLegacy ? mapProductRow(mappedLegacy) : null;
   }
 
   logSupabaseError('fetchProductById', error);
@@ -382,7 +391,11 @@ export async function createProduct(
 
   if (!error) {
     markSchemaFromColumns(firstColumns);
-    return mapProductRow(data as ProductRow);
+    const mapped = toProductRow(data);
+    if (!mapped) {
+      throw new Error('Réponse produit invalide après création.');
+    }
+    return mapProductRow(mapped);
   }
 
   if (firstColumns === PRODUCT_COLUMNS && isMissingProductColumnError(error)) {
@@ -397,7 +410,11 @@ export async function createProduct(
       logSupabaseError('createProduct', legacyError);
       throw legacyError;
     }
-    return mapProductRow(legacyData as ProductRow);
+    const mappedLegacy = toProductRow(legacyData);
+    if (!mappedLegacy) {
+      throw new Error('Réponse produit invalide après création (schéma legacy).');
+    }
+    return mapProductRow(mappedLegacy);
   }
 
   if (isDuplicateReferenceConstraintError(error)) {
@@ -425,7 +442,11 @@ export async function updateProduct(
 
   if (!error) {
     markSchemaFromColumns(firstColumns);
-    return mapProductRow(data as ProductRow);
+    const mapped = toProductRow(data);
+    if (!mapped) {
+      throw new Error('Réponse produit invalide après mise à jour.');
+    }
+    return mapProductRow(mapped);
   }
 
   if (firstColumns === PRODUCT_COLUMNS && isMissingProductColumnError(error)) {
@@ -442,7 +463,11 @@ export async function updateProduct(
       logSupabaseError('updateProduct', legacyError);
       throw legacyError;
     }
-    return mapProductRow(legacyData as ProductRow);
+    const mappedLegacy = toProductRow(legacyData);
+    if (!mappedLegacy) {
+      throw new Error('Réponse produit invalide après mise à jour (schéma legacy).');
+    }
+    return mapProductRow(mappedLegacy);
   }
 
   logSupabaseError('updateProduct', error);
