@@ -130,6 +130,10 @@ function sanitizeSearchTerm(search: string): string {
   return search.trim().replace(/[%_,]/g, '');
 }
 
+function toProductRows(value: unknown): ProductRow[] {
+  return Array.isArray(value) ? (value as unknown as ProductRow[]) : [];
+}
+
 function mapFormToInsert(scope: DataScope, type: ProductType, values: ProductFormValues): ProductInsert {
   const vatRate = parseVatRate(values.vatRate, 20);
   const unitPrice = parseFlexibleNumber(values.unitPrice, 0);
@@ -247,7 +251,7 @@ export async function fetchProducts(
 
   if (!error) {
     markSchemaFromColumns(firstColumns);
-    return (data as ProductRow[] | null)?.map(mapProductRow) ?? [];
+    return toProductRows(data).map(mapProductRow);
   }
 
   if (firstColumns === PRODUCT_COLUMNS && isMissingProductColumnError(error)) {
@@ -270,7 +274,7 @@ export async function fetchProducts(
       logSupabaseError('fetchProducts', legacyError);
       return [];
     }
-    return (legacyData as ProductRow[] | null)?.map(mapProductRow) ?? [];
+    return toProductRows(legacyData).map(mapProductRow);
   }
 
   logSupabaseError('fetchProducts', error);
@@ -297,7 +301,7 @@ export async function fetchProductsByIds(
 
   if (!error) {
     markSchemaFromColumns(firstColumns);
-    const mapped = (data as ProductRow[] | null)?.map(mapProductRow) ?? [];
+    const mapped = toProductRows(data).map(mapProductRow);
     const order = new Map(ids.map((id, index) => [id, index]));
     return mapped.sort((a, b) => (order.get(a.id) ?? 0) - (order.get(b.id) ?? 0));
   }
@@ -315,7 +319,7 @@ export async function fetchProductsByIds(
       logSupabaseError('fetchProductsByIds', legacyError);
       return [];
     }
-    const mapped = (legacyData as ProductRow[] | null)?.map(mapProductRow) ?? [];
+    const mapped = toProductRows(legacyData).map(mapProductRow);
     const order = new Map(ids.map((id, index) => [id, index]));
     return mapped.sort((a, b) => (order.get(a.id) ?? 0) - (order.get(b.id) ?? 0));
   }
