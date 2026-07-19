@@ -1,5 +1,5 @@
 -- =============================================================================
--- FACTEO MVP — Schéma initial complet
+-- Factume MVP — Schéma initial complet
 -- =============================================================================
 -- Exécuter sur une base Supabase vide (nouveau projet ou reset local).
 -- Inclut : enums, soft delete (deleted_at), documents, quote_items, invoice_items.
@@ -267,7 +267,7 @@ create table public.subscriptions (
   updated_at timestamptz not null default timezone('utc', now())
 );
 
-comment on table public.subscriptions is 'Abonnement FACTEO par utilisateur.';
+comment on table public.subscriptions is 'Abonnement Factume par utilisateur.';
 
 create index subscriptions_user_id_idx on public.subscriptions (user_id);
 create index subscriptions_status_idx on public.subscriptions (status);

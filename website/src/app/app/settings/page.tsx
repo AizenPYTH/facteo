@@ -26,7 +26,7 @@ const SETTINGS_SECTIONS = [
       { href: '/app/settings/profile', label: 'Profil', icon: Shield, desc: 'Informations personnelles' },
       { href: '/app/settings/notifications', label: 'Notifications', icon: Bell, desc: 'Préférences d’alertes' },
       {
-        href: `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent('Demande de suppression de compte FACTEO')}`,
+        href: `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent('Demande de suppression de compte Factume')}`,
         label: 'Supprimer le compte',
         icon: Trash2,
         desc: 'Demande via support (sous 30 jours)',
@@ -76,7 +76,7 @@ const SETTINGS_SECTIONS = [
 export default function SettingsPage() {
   return (
     <>
-      <AppTopBar subtitle="Configurez FACTEO selon vos besoins" title="Paramètres" />
+      <AppTopBar subtitle="Configurez Factume selon vos besoins" title="Paramètres" />
 
       <div className="flex-1 space-y-8 overflow-y-auto p-8">
         {SETTINGS_SECTIONS.map((section) => (

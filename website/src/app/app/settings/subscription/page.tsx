@@ -9,6 +9,7 @@ import { useAuth } from '@/providers/auth-provider';
 import { fetchSubscriptionSnapshot } from '@/lib/domain/supabase/subscriptions';
 import { subscriptionQueryKeys } from '@/lib/domain/supabase/query-keys';
 import { formatDate } from '@/lib/domain/format/date';
+import { SUPPORT_EMAIL } from '@/lib/constants';
 
 export default function SubscriptionSettingsPage() {
   const { user } = useAuth();
@@ -35,8 +36,8 @@ export default function SubscriptionSettingsPage() {
           <Panel>
             <p className="text-sm text-slate-600">
               Impossible de charger les informations d’abonnement. Réessayez plus tard ou contactez{' '}
-              <a className="text-primary hover:underline" href="mailto:support@facteo.app">
-                support@facteo.app
+              <a className="text-primary hover:underline" href={`mailto:${SUPPORT_EMAIL}`}>
+                {SUPPORT_EMAIL}
               </a>
               .
             </p>
@@ -107,10 +108,10 @@ export default function SubscriptionSettingsPage() {
 
           <Panel>
             <p className="text-sm text-slate-600">
-              FACTEO Premium : 6,99 €/mois. Pour souscrire ou gérer votre facturation, utilisez
+              Factume Premium : 6,99 €/mois. Pour souscrire ou gérer votre facturation, utilisez
               l’application mobile (paiement Stripe sécurisé, codes promo acceptés) ou contactez{' '}
-              <a className="font-medium text-primary hover:underline" href="mailto:support@facteo.app">
-                support@facteo.app
+              <a className="font-medium text-primary hover:underline" href={`mailto:${SUPPORT_EMAIL}`}>
+                {SUPPORT_EMAIL}
               </a>
               . Voir aussi la page{' '}
               <Link className="font-medium text-primary hover:underline" href="/tarifs">

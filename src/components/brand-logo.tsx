@@ -13,7 +13,7 @@ export function BrandLogo({ size = 88, style, testID }: BrandLogoProps) {
       <Image
         accessibilityIgnoresInvertColors
         contentFit="contain"
-        source={require('@/assets/images/facteo-logo.png')}
+        source={require('@/assets/images/factume-logo.png')}
         style={{ width: size, height: size }}
       />
     </View>

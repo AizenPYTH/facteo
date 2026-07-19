@@ -5,7 +5,7 @@ import { PageHero } from '@/components/sections/landing-sections';
 
 export const metadata: Metadata = {
   title: 'À propos',
-  description: 'Découvrez la mission et les valeurs de FACTEO.',
+  description: 'Découvrez la mission et les valeurs de Factume.',
 };
 
 export default function AboutPage() {
@@ -13,12 +13,12 @@ export default function AboutPage() {
     <>
       <PageHero
         subtitle="Simplifier la facturation pour les professionnels qui créent de la valeur sur le terrain."
-        title="À propos de FACTEO"
+        title="À propos de Factume"
       />
       <section className="px-6 py-20 lg:px-8">
         <FadeIn className="mx-auto max-w-3xl space-y-6 text-lg leading-relaxed text-muted">
           <p>
-            FACTEO est né d’un constat simple : les artisans, freelances et petites entreprises perdent
+            Factume est né d’un constat simple : les artisans, freelances et petites entreprises perdent
             trop de temps sur la paperasse administrative.
           </p>
           <p>

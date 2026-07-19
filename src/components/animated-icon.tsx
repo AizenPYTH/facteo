@@ -61,8 +61,8 @@ export function PremiumSplashOverlay({ onComplete }: PremiumSplashOverlayProps) 
       <Animated.View style={logoStyle}>
         <Image
           accessibilityIgnoresInvertColors
-          accessibilityLabel="FACTEO"
-          source={require('@/assets/images/facteo-logo.png')}
+          accessibilityLabel="Factume"
+          source={require('@/assets/images/factume-logo.png')}
           style={styles.logo}
         />
       </Animated.View>
@@ -85,7 +85,7 @@ export function AnimatedIcon() {
     <View style={styles.iconWrap}>
       <Image
         accessibilityIgnoresInvertColors
-        source={require('@/assets/images/facteo-logo.png')}
+        source={require('@/assets/images/factume-logo.png')}
         style={styles.logo}
       />
     </View>

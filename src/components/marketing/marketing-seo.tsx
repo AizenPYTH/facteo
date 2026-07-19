@@ -45,7 +45,7 @@ export function MarketingSeo({
     upsertMeta('name', 'robots', noIndex ? 'noindex, nofollow' : 'index, follow');
 
     upsertMeta('property', 'og:type', 'website');
-    upsertMeta('property', 'og:site_name', 'FACTEO');
+    upsertMeta('property', 'og:site_name', 'Factume');
     upsertMeta('property', 'og:title', title);
     upsertMeta('property', 'og:description', description);
     upsertMeta('property', 'og:url', url);

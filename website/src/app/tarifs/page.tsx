@@ -6,7 +6,7 @@ import { SUBSCRIPTION_PRICING_COPY } from '@/lib/subscription-plans';
 export const metadata: Metadata = {
   title: 'Tarifs',
   description:
-    'Offres FACTEO : Micro gratuit, Basique, Standard et Pro. Paiement mensuel ou annuel HT, sans engagement.',
+    'Offres Factume : Micro gratuit, Basique, Standard et Pro. Paiement mensuel ou annuel HT, sans engagement.',
 };
 
 export default function PricingPage() {

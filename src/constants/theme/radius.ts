@@ -1,5 +1,5 @@
 /**
- * FACTEO border radius tokens — rounded, iOS-inspired corners.
+ * Factume border radius tokens — rounded, iOS-inspired corners.
  */
 
 export const radius = {

@@ -29,7 +29,7 @@ export function PlanLimitModal({ visible, onClose }: PlanLimitModalProps) {
       const completed = await startCheckout();
 
       if (completed) {
-        showSuccess('FACTEO Premium est activé.');
+        showSuccess('Factume Premium est activé.');
       }
     } catch (error) {
       showError(readErrorMessage(error));

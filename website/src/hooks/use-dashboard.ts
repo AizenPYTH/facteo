@@ -7,7 +7,7 @@ import { useTenant } from '@/providers/company-provider';
 import { fetchDashboardData, createEmptyDashboardData } from '@/lib/domain/supabase/dashboard';
 import { dashboardQueryKeys } from '@/lib/domain/supabase/query-keys';
 import { requireScope } from '@/lib/domain/tenant/scope';
-import { createEmptyExtendedDashboardData } from '@facteo/types/dashboard';
+import { createEmptyExtendedDashboardData } from '@factume/types/dashboard';
 
 export function useDashboard() {
   const { user, loading: authLoading } = useAuth();

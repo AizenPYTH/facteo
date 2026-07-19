@@ -2,7 +2,7 @@ export const HERO_CONTENT = {
   overline: 'Facturation nouvelle génération',
   title: 'Gérez vos devis et factures comme un pro.',
   subtitle:
-    'FACTEO centralise clients, devis, factures, signatures et paiements. Une application pensée pour les artisans, freelances et PME qui veulent gagner du temps.',
+    'Factume centralise clients, devis, factures, signatures et paiements. Une application pensée pour les artisans, freelances et PME qui veulent gagner du temps.',
   ctaPrimary: 'Commencer gratuitement',
   ctaSecondary: 'Découvrir les fonctionnalités',
 };
@@ -10,7 +10,7 @@ export const HERO_CONTENT = {
 export const PRESENTATION_CONTENT = {
   title: 'Tout votre activité, au même endroit',
   subtitle:
-    'Fini les tableurs, les PDF perdus et les relances oubliées. FACTEO vous accompagne du premier devis jusqu’au paiement.',
+    'Fini les tableurs, les PDF perdus et les relances oubliées. Factume vous accompagne du premier devis jusqu’au paiement.',
   bullets: [
     'Créez des devis professionnels en quelques minutes',
     'Transformez un devis accepté en facture en un clic',
@@ -20,7 +20,7 @@ export const PRESENTATION_CONTENT = {
 };
 
 export const WHY_CONTENT = {
-  title: 'Pourquoi choisir FACTEO ?',
+  title: 'Pourquoi choisir Factume ?',
   subtitle: 'Un outil conçu pour le terrain, pas pour les comptables.',
   items: [
     {
@@ -102,7 +102,7 @@ export const MOBILE_CONTENT = {
 
 export const TESTIMONIALS_CONTENT = {
   title: 'Ils nous font confiance',
-  subtitle: 'Des artisans et indépendants utilisent FACTEO au quotidien.',
+  subtitle: 'Des artisans et indépendants utilisent Factume au quotidien.',
   items: [
     {
       quote: 'Je gagne au moins 2 heures par semaine sur ma paperasse. Les devis sont enfin propres.',
@@ -131,7 +131,7 @@ export const PRICING_CONTENT = {
       name: 'Standard',
       price: '0 €',
       period: '/ mois',
-      description: 'Pour démarrer et tester FACTEO.',
+      description: 'Pour démarrer et tester Factume.',
       features: ['Clients illimités', 'Devis et factures', 'PDF et modèles', 'Application mobile'],
       cta: 'Créer un compte',
       highlighted: false,
@@ -159,14 +159,14 @@ export const FAQ_CONTENT = {
   title: 'Questions fréquentes',
   items: [
     {
-      question: 'FACTEO est-il adapté aux artisans ?',
+      question: 'Factume est-il adapté aux artisans ?',
       answer:
-        'Oui. FACTEO est pensé pour les artisans, freelances et TPE qui veulent une facturation simple sans logiciel comptable complexe.',
+        'Oui. Factume est pensé pour les artisans, freelances et TPE qui veulent une facturation simple sans logiciel comptable complexe.',
     },
     {
-      question: 'Puis-je utiliser FACTEO sur ordinateur ?',
+      question: 'Puis-je utiliser Factume sur ordinateur ?',
       answer:
-        'Oui. FACTEO est disponible en application web avec une interface desktop optimisée, en plus des apps iOS et Android.',
+        'Oui. Factume est disponible en application web avec une interface desktop optimisée, en plus des apps iOS et Android.',
     },
     {
       question: 'Mes données sont-elles sécurisées ?',
@@ -186,7 +186,7 @@ export const FAQ_CONTENT = {
     {
       question: 'Puis-je utiliser un code promo ?',
       answer:
-        'Oui. Au moment du paiement Stripe Checkout, vous pouvez saisir un code promo si vous en avez un. Les codes sont communiqués ponctuellement par FACTEO.',
+        'Oui. Au moment du paiement Stripe Checkout, vous pouvez saisir un code promo si vous en avez un. Les codes sont communiqués ponctuellement par Factume.',
     },
     {
       question: 'Puis-je annuler mon abonnement ?',
@@ -197,7 +197,7 @@ export const FAQ_CONTENT = {
 
 export const CTA_CONTENT = {
   title: 'Prêt à simplifier votre facturation ?',
-  subtitle: 'Rejoignez les professionnels qui ont choisi FACTEO. Création de compte en 2 minutes.',
+  subtitle: 'Rejoignez les professionnels qui ont choisi Factume. Création de compte en 2 minutes.',
   cta: 'Créer mon compte gratuit',
 };
 
@@ -209,13 +209,13 @@ export const FOOTER_LINKS = {
   ],
   company: [
     { label: 'À propos', href: '/#presentation' },
-    { label: 'Contact', href: 'mailto:contact@facteo.app' },
-    { label: 'Support', href: 'https://facteo.app/support' },
+    { label: 'Contact', href: 'mailto:contact@factume.app' },
+    { label: 'Support', href: 'https://factume.app/support' },
   ],
   legal: [
-    { label: 'Confidentialité', href: 'https://facteo.app/confidentialite' },
-    { label: 'Conditions d’utilisation', href: 'https://facteo.app/conditions-utilisation' },
-    { label: 'Mentions légales', href: 'https://facteo.app/mentions-legales' },
-    { label: 'Politique des cookies', href: 'https://facteo.app/cookies' },
+    { label: 'Confidentialité', href: 'https://factume.app/confidentialite' },
+    { label: 'Conditions d’utilisation', href: 'https://factume.app/conditions-utilisation' },
+    { label: 'Mentions légales', href: 'https://factume.app/mentions-legales' },
+    { label: 'Politique des cookies', href: 'https://factume.app/cookies' },
   ],
 } as const;

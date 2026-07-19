@@ -29,7 +29,7 @@ export const PDF_TEMPLATES: PdfTemplateDefinition[] = [
     'classic-blue',
     'Classique Bleu',
     'Modèle équilibré et professionnel',
-    'FACTEO',
+    'Factume',
     { primary: '#2563EB', accent: '#1D4ED8', text: '#111827', muted: '#6B7280', border: '#E5E7EB', surface: '#F9FAFB', surfaceAlt: '#FFFFFF', paymentBg: '#EFF6FF', paymentBorder: '#BFDBFE' },
   ),
   base(

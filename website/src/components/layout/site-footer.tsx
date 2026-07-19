@@ -30,7 +30,7 @@ export function SiteFooter() {
       <div className="border-t border-slate-800">
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-6 py-6 text-sm text-slate-500 sm:flex-row lg:px-8">
           <p>© {year} {SITE_NAME}. Tous droits réservés.</p>
-          <p>Fait en France · facteo.app</p>
+          <p>Fait en France · Factume</p>
         </div>
       </div>
     </footer>

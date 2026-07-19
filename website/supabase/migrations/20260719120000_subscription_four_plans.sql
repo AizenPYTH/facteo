@@ -1,4 +1,4 @@
--- FACTEO — Offres Micro / Basique / Standard / Pro + quotas mensuels
+-- Factume — Offres Micro / Basique / Standard / Pro + quotas mensuels
 
 -- ---------------------------------------------------------------------------
 -- Colonnes de quotas
@@ -64,7 +64,7 @@ values
   (
     'micro',
     'Micro',
-    'Pour découvrir FACTEO et facturer vos premiers clients.',
+    'Pour découvrir Factume et facturer vos premiers clients.',
     0,
     null,
     null,

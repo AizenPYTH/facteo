@@ -1,15 +1,15 @@
 {
   "expo": {
-    "name": "FACTEO",
-    "slug": "FACTEO",
+    "name": "Factume",
+    "slug": "Factume",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "facteo",
+    "scheme": "factume",
     "userInterfaceStyle": "automatic",
     "ios": {
       "icon": "./assets/images/icon.png",
-      "bundleIdentifier": "com.facteo.app",
+      "bundleIdentifier": "com.factume.app",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
@@ -25,7 +25,7 @@
       "permissions": [
         "android.permission.RECORD_AUDIO"
       ],
-      "package": "com.facteo.app"
+      "package": "com.factume.app"
     },
     "web": {
       "output": "static",
@@ -48,8 +48,8 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "FACTEO a besoin d’accéder à vos photos pour importer le logo et la signature.",
-          "cameraPermission": "FACTEO a besoin d’accéder à l’appareil photo pour importer le logo et la signature."
+          "photosPermission": "Factume a besoin d’accéder à vos photos pour importer le logo et la signature.",
+          "cameraPermission": "Factume a besoin d’accéder à l’appareil photo pour importer le logo et la signature."
         }
       ],
       [

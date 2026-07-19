@@ -61,8 +61,8 @@ export function ResizeHandle({
   );
 }
 
-const STORAGE_KEY = 'facteo-composer-preview-width';
-const WORKSPACE_SIDEBAR_KEY = 'facteo-workspace-sidebar-width';
+const STORAGE_KEY = 'factume-composer-preview-width';
+const WORKSPACE_SIDEBAR_KEY = 'factume-workspace-sidebar-width';
 
 function useStoredWidth(storageKey: string, defaultWidth: number, min: number, max: number) {
   const [width, setWidthState] = useState(defaultWidth);

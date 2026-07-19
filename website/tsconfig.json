@@ -21,7 +21,7 @@
     ],
     "paths": {
       "@/*": ["./src/*"],
-      "@facteo/types/*": ["./src/types/*"],
+      "@factume/types/*": ["./src/types/*"],
       "@/types/*": ["./src/types/*"],
       "@/lib/supabase/env": ["./src/lib/supabase/env.ts"],
       "@/lib/supabase/browser": ["./src/lib/supabase/browser.ts"],

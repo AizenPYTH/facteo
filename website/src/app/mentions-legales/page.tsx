@@ -5,7 +5,7 @@ import { LEGAL_LAST_UPDATED, LEGAL_MENTIONS_SECTIONS } from '@/lib/legal-content
 
 export const metadata: Metadata = {
   title: 'Mentions légales',
-  description: 'Mentions légales FACTEO — éditeur, hébergement et propriété intellectuelle.',
+  description: 'Mentions légales Factume — éditeur, hébergement et propriété intellectuelle.',
 };
 
 export default function LegalMentionsPage() {

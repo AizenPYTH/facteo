@@ -13,7 +13,7 @@ import { Appearance, Platform, useColorScheme as useSystemColorScheme, type Colo
 
 import { colors as lightColors, colorsDark } from '@/constants/theme/colors';
 
-export const THEME_PREFERENCE_STORAGE_KEY = 'facteo_color_scheme';
+export const THEME_PREFERENCE_STORAGE_KEY = 'factume_color_scheme';
 
 export type ThemePreference = 'light' | 'dark' | 'system';
 

@@ -1,5 +1,5 @@
 -- =============================================================================
--- FACTEO — Synchronisation schéma / code (stabilisation)
+-- Factume — Synchronisation schéma / code (stabilisation)
 -- =============================================================================
 -- Idempotent : peut être exécuté sur une base partiellement migrée.
 -- =============================================================================

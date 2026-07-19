@@ -186,7 +186,7 @@ export function RegisterForm() {
         <div>
           <h2 className="text-sm font-semibold text-slate-900">Votre activité</h2>
           <p className="mt-0.5 text-xs text-slate-500">
-            FACTEO est conçu pour les professionnels qui émettent des devis et factures.
+            Factume est conçu pour les professionnels qui émettent des devis et factures.
           </p>
         </div>
         <Field

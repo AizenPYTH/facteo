@@ -26,7 +26,7 @@ export function DashboardWelcome({ style }: DashboardWelcomeProps) {
         />
       </View>
       <Text accessibilityRole="header" style={styles.title}>
-        Bienvenue sur FACTEO.
+        Bienvenue sur Factume.
       </Text>
       <Text style={styles.description}>Commencez par créer un client.</Text>
       <Button

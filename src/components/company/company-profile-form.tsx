@@ -38,7 +38,7 @@ export function CompanyProfileForm({ control, errors, assets }: CompanyProfileFo
                 label="Nom de l'entreprise"
                 onBlur={onBlur}
                 onChangeText={onChange}
-                placeholder="FACTEO SARL"
+                placeholder="Factume SARL"
                 value={value}
               />
             )}

@@ -1,4 +1,4 @@
-/** Row types for FACTEO Supabase tables. */
+/** Row types for Factume Supabase tables. */
 
 import type { PaymentMethodId } from '@/types/payment-methods';
 

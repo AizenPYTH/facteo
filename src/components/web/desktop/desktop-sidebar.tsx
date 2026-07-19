@@ -59,7 +59,7 @@ export function DesktopSidebar() {
       <View style={styles.top}>
         <View style={styles.brandBlock}>
           <BrandLogo size={collapsed ? 28 : 32} />
-          {!collapsed ? <Text style={styles.brandName}>FACTEO</Text> : null}
+          {!collapsed ? <Text style={styles.brandName}>Factume</Text> : null}
         </View>
 
         {!collapsed && activeCompany ? (

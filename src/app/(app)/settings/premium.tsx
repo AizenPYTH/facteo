@@ -31,7 +31,7 @@ export default function PremiumScreen() {
 
   async function handleSubscribe() {
     if (isPremium) {
-      showSuccess('Vous êtes déjà abonné à FACTEO Premium.');
+      showSuccess('Vous êtes déjà abonné à Factume Premium.');
       return;
     }
 
@@ -44,7 +44,7 @@ export default function PremiumScreen() {
       const completed = await startCheckout();
 
       if (completed) {
-        showSuccess('FACTEO Premium est activé.');
+        showSuccess('Factume Premium est activé.');
       }
     } catch (error) {
       showError(readErrorMessage(error));
@@ -63,7 +63,7 @@ export default function PremiumScreen() {
     <SettingsScreenFrame title="Abonnement">
       <View style={styles.content}>
         <View style={styles.hero}>
-          <Text style={styles.heroTitle}>FACTEO Premium</Text>
+          <Text style={styles.heroTitle}>Factume Premium</Text>
           <Text style={styles.heroPrice}>
             {PREMIUM_PRICE_LABEL}
             <Text style={styles.heroPeriod}>{PREMIUM_PRICE_PERIOD_LABEL}</Text>

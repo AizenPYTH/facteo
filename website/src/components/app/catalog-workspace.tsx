@@ -848,7 +848,7 @@ function ProductFormPanel({
       if (imported.length === 0) {
         debugImport('Aucun produit extrait après traitement');
         throw new Error(
-          "Aucune ligne exploitable trouvée. Vérifiez que la première ligne contient les en-têtes ou utilisez le modèle FACTEO.",
+          "Aucune ligne exploitable trouvée. Vérifiez que la première ligne contient les en-têtes ou utilisez le modèle Factume.",
         );
       }
 
@@ -880,7 +880,7 @@ function ProductFormPanel({
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = 'facteo-modele-import-produits.xlsx';
+    link.download = 'factume-modele-import-produits.xlsx';
     link.click();
     URL.revokeObjectURL(url);
   }

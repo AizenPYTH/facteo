@@ -5,10 +5,10 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Copy, Download, Mail, Plus, Printer, Send, Share2 } from 'lucide-react';
-import type { InvoiceStatusFilter } from '@facteo/types/invoices-list';
-import type { QuoteStatusFilter } from '@facteo/types/quotes-list';
-import { INVOICE_STATUS_LABELS, type InvoiceStatus } from '@facteo/types/invoice';
-import { QUOTE_STATUS_LABELS, type QuoteStatus } from '@facteo/types/quote';
+import type { InvoiceStatusFilter } from '@factume/types/invoices-list';
+import type { QuoteStatusFilter } from '@factume/types/quotes-list';
+import { INVOICE_STATUS_LABELS, type InvoiceStatus } from '@factume/types/invoice';
+import { QUOTE_STATUS_LABELS, type QuoteStatus } from '@factume/types/quote';
 
 import { ActivityTimeline } from '@/components/app/activity-timeline';
 import { EmptyState, ErrorState } from '@/components/app/empty-state';

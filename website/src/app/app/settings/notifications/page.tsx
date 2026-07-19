@@ -15,7 +15,7 @@ type NotificationPrefs = {
   productUpdates: boolean;
 };
 
-const STORAGE_KEY = 'facteo-notification-prefs';
+const STORAGE_KEY = 'factume-notification-prefs';
 
 const DEFAULT_PREFS: NotificationPrefs = {
   invoicePaid: true,
@@ -30,7 +30,7 @@ const PREF_ITEMS: { key: keyof NotificationPrefs; label: string; description: st
   { key: 'invoiceOverdue', label: 'Facture en retard', description: 'Être notifié des échéances dépassées.' },
   { key: 'quoteAccepted', label: 'Devis accepté', description: 'Alerte lorsqu’un client accepte un devis.' },
   { key: 'weeklyDigest', label: 'Résumé hebdomadaire', description: 'Synthèse de votre activité chaque lundi.' },
-  { key: 'productUpdates', label: 'Nouveautés FACTEO', description: 'Fonctionnalités et améliorations du produit.' },
+  { key: 'productUpdates', label: 'Nouveautés Factume', description: 'Fonctionnalités et améliorations du produit.' },
 ];
 
 export default function NotificationsSettingsPage() {

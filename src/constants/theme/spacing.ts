@@ -1,5 +1,5 @@
 /**
- * FACTEO spacing tokens — 4pt grid, mobile-first.
+ * Factume spacing tokens — 4pt grid, mobile-first.
  */
 
 export const spacing = {

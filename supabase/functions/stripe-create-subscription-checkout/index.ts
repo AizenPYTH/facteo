@@ -50,8 +50,8 @@ Deno.serve(async (request) => {
     const planId = body.planId ?? 'premium';
     const appReturnUrl =
       body.returnUrl?.trim() ||
-      Deno.env.get('FACTEO_SUBSCRIPTION_RETURN_URL')?.trim() ||
-      'facteo://settings/premium';
+      Deno.env.get('FACTUME_SUBSCRIPTION_RETURN_URL')?.trim() ||
+      'factume://settings/premium';
 
     const serviceClient = createClient(supabaseUrl, supabaseServiceRoleKey);
 
@@ -90,7 +90,7 @@ Deno.serve(async (request) => {
       subscriptionRow?.stripe_subscription_id &&
       (subscriptionRow.plan === 'premium' || subscriptionRow.status === 'active')
     ) {
-      return jsonResponse({ error: 'Vous êtes déjà abonné à FACTEO Premium.' }, 400);
+      return jsonResponse({ error: 'Vous êtes déjà abonné à Factume Premium.' }, 400);
     }
 
     let customerId = subscriptionRow?.stripe_customer_id ?? null;
@@ -100,7 +100,7 @@ Deno.serve(async (request) => {
         email: user.email ?? undefined,
         metadata: {
           user_id: user.id,
-          source: 'facteo_app',
+          source: 'factume_app',
         },
       });
 
@@ -131,7 +131,7 @@ Deno.serve(async (request) => {
       metadata: {
         user_id: user.id,
         plan_id: plan.id,
-        source: 'facteo_subscription_checkout',
+        source: 'factume_subscription_checkout',
       },
       subscription_data: {
         metadata: {

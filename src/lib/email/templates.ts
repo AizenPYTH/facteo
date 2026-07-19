@@ -12,7 +12,7 @@ export function buildEmailTemplate(input: EmailTemplateInput): {
   subject: string;
   body: string;
 } {
-  const company = input.companyName?.trim() || 'FACTEO';
+  const company = input.companyName?.trim() || 'Factume';
   const greeting = `Bonjour ${input.clientName},`;
 
   if (input.documentType === 'quote') {

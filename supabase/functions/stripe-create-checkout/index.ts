@@ -72,10 +72,10 @@ Deno.serve(async (request) => {
     const stripe = new Stripe(stripeSecret, { apiVersion: '2024-12-18.acacia' });
     const currency = (body.currency ?? 'EUR').toLowerCase();
     const amountInCents = Math.round(body.amount * 100);
-    const clientName = 'Client FACTEO';
+    const clientName = 'Client Factume';
 
-    const successUrl = `facteo://invoices/${invoice.id}?payment=success&session_id={CHECKOUT_SESSION_ID}`;
-    const cancelUrl = `facteo://invoices/${invoice.id}?payment=canceled`;
+    const successUrl = `factume://invoices/${invoice.id}?payment=success&session_id={CHECKOUT_SESSION_ID}`;
+    const cancelUrl = `factume://invoices/${invoice.id}?payment=canceled`;
 
     const session = await stripe.checkout.sessions.create({
       mode: 'payment',
@@ -128,7 +128,7 @@ Deno.serve(async (request) => {
       currency: currency.toUpperCase(),
       status: 'pending',
       metadata: {
-        source: 'facteo_app',
+        source: 'factume_app',
       },
       updated_at: now,
     });

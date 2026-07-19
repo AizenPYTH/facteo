@@ -1,4 +1,5 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://facteo.app/sitemap.xml
+Sitemap: https://factume.vercel.app/sitemap.xml
+

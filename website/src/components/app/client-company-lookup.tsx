@@ -120,12 +120,12 @@ export function ClientCompanyLookup({ control, errors, setValue }: ClientCompany
       description={
         sirenSearchEnabled
           ? 'Saisissez un SIREN (9 chiffres) ou un SIRET (14 chiffres) pour remplir automatiquement les informations de l’entreprise.'
-          : 'La saisie manuelle reste possible. La recherche automatique est incluse dans FACTEO Premium.'
+          : 'La saisie manuelle reste possible. La recherche automatique est incluse dans Factume Premium.'
       }
       title="Recherche entreprise">
       {!sirenSearchEnabled ? (
         <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-          <p className="font-medium">Recherche SIREN / SIRET — FACTEO Premium</p>
+          <p className="font-medium">Recherche SIREN / SIRET — Factume Premium</p>
           <p className="mt-1 text-amber-800/90">
             Passez à Premium pour préremplir automatiquement les informations entreprise.{' '}
             <Link className="font-medium underline underline-offset-2" href="/app/settings/subscription">

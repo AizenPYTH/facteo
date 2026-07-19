@@ -1,7 +1,7 @@
 import { Platform, type TextStyle } from 'react-native';
 
 /**
- * FACTEO typography tokens — iOS Dynamic Type scale.
+ * Factume typography tokens — iOS Dynamic Type scale.
  */
 
 export const fontFamily = Platform.select({

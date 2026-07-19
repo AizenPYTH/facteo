@@ -41,10 +41,10 @@ import { calculateLineTotals } from '@/lib/calculations/totals';
 import { getDefaultComposerTemplateId } from '@/lib/domain/pdf/composer-templates';
 import { requireScope } from '@/lib/domain/tenant/scope';
 import { formatCurrency } from '@/lib/domain/format/currency';
-import { createEmptyInvoiceLine } from '@facteo/types/invoice';
-import { createEmptyQuoteLine, createLocalLineId } from '@facteo/types/quote';
+import { createEmptyInvoiceLine } from '@factume/types/invoice';
+import { createEmptyQuoteLine, createLocalLineId } from '@factume/types/quote';
 import type { Product } from '@/types/product';
-import { CLIENTS_PAGE_SIZE } from '@facteo/types/clients-list';
+import { CLIENTS_PAGE_SIZE } from '@factume/types/clients-list';
 import { cn } from '@/lib/utils';
 
 function parseDecimal(value: string): number {

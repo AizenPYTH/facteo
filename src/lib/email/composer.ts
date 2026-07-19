@@ -61,7 +61,7 @@ export async function composeDocumentEmail(input: ComposeDocumentEmailInput): Pr
   }
 
   if (__DEV__) {
-    console.log('[FACTEO:mail] compose', {
+    console.log('[Factume:mail] compose', {
       recipient,
       attachmentUri,
       pdfUri: input.pdfUri,
@@ -86,7 +86,7 @@ export async function composeDocumentEmail(input: ComposeDocumentEmailInput): Pr
         : 'Erreur inconnue';
 
     if (__DEV__) {
-      console.log('[FACTEO:mail] composeAsync error', message);
+      console.log('[Factume:mail] composeAsync error', message);
     }
 
     throw new MailComposerError(
@@ -96,7 +96,7 @@ export async function composeDocumentEmail(input: ComposeDocumentEmailInput): Pr
   }
 
   if (__DEV__) {
-    console.log('[FACTEO:mail] result', result.status);
+    console.log('[Factume:mail] result', result.status);
   }
 
   if (result.status === MailComposer.MailComposerStatus.CANCELLED) {

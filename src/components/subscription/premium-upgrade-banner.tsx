@@ -14,7 +14,7 @@ type PremiumUpgradeBannerProps = {
 };
 
 export function PremiumUpgradeBanner({
-  message = 'Disponible avec FACTEO Premium',
+  message = 'Disponible avec Factume Premium',
   compact = false,
 }: PremiumUpgradeBannerProps) {
   const styles = useStyles(compact);
@@ -32,7 +32,7 @@ export function PremiumUpgradeBanner({
       const completed = await startCheckout();
 
       if (completed) {
-        showSuccess('FACTEO Premium est activé.');
+        showSuccess('Factume Premium est activé.');
       }
     } catch (error) {
       showError(readErrorMessage(error));

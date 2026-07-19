@@ -36,7 +36,7 @@ export default function SettingsScreen() {
 
   const isDarkMode = preference === 'dark';
   const darkModeSupported = Platform.OS !== 'web';
-  const planLabel = isPremium ? 'FACTEO Premium' : 'FACTEO Standard';
+  const planLabel = isPremium ? 'Factume Premium' : 'Factume Standard';
 
   async function handleToggleDarkMode(value: boolean) {
     if (!darkModeSupported) {
@@ -69,9 +69,9 @@ export default function SettingsScreen() {
           onPress: () => {
             void Linking.openURL(
               `mailto:${MARKETING_CONTACT.support}?subject=${encodeURIComponent(
-                'Demande de suppression de compte FACTEO',
+                'Demande de suppression de compte Factume',
               )}&body=${encodeURIComponent(
-                `Bonjour,\n\nJe souhaite supprimer définitivement mon compte FACTEO associé à l’adresse : ${user?.email ?? ''}.\n\nMerci.`,
+                `Bonjour,\n\nJe souhaite supprimer définitivement mon compte Factume associé à l’adresse : ${user?.email ?? ''}.\n\nMerci.`,
               )}`,
             );
           },
@@ -178,7 +178,7 @@ export default function SettingsScreen() {
             />
             <View style={styles.separator} />
             <SettingsRow
-              label="Site web FACTEO"
+              label="Site web Factume"
               onPress={() => void openMarketingSite()}
             />
           </SettingsSection>
@@ -203,7 +203,7 @@ export default function SettingsScreen() {
           </SettingsSection>
 
           <Text style={styles.version}>
-            FACTEO v{versionInfo.version} · build {versionInfo.buildNumber}
+            Factume v{versionInfo.version} · build {versionInfo.buildNumber}
           </Text>
         </>
       )}

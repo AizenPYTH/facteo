@@ -16,7 +16,7 @@ import { companiesQueryKeys } from '@/lib/supabase/query-keys';
 import { clearTenantCache } from '@/lib/tenant/clear-tenant-cache';
 import type { CreateCompanyInput, DataScope, TenantCompany } from '@/types/tenant';
 
-const ACTIVE_COMPANY_KEY = 'facteo:active-company-id';
+const ACTIVE_COMPANY_KEY = 'factume:active-company-id';
 
 type CompanyContextValue = {
   companies: TenantCompany[];

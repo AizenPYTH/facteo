@@ -10,7 +10,7 @@ import { APP_DASHBOARD_URL } from '@/lib/constants';
 export const metadata: Metadata = {
   title: 'Télécharger l’application',
   description:
-    'Téléchargez FACTEO sur iOS, Android ou accédez à l’application web depuis votre navigateur.',
+    'Téléchargez Factume sur iOS, Android ou accédez à l’application web depuis votre navigateur.',
 };
 
 export default function DownloadPage() {

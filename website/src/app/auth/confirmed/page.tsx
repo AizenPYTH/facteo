@@ -17,7 +17,7 @@ export default function AuthConfirmedPage() {
         </div>
         <h2 className="mt-4 text-lg font-semibold text-emerald-900">Votre e-mail est confirmé</h2>
         <p className="mt-2 text-sm text-emerald-800">
-          Votre compte FACTEO est prêt. Vous pouvez accéder à votre espace et commencer à facturer.
+          Votre compte Factume est prêt. Vous pouvez accéder à votre espace et commencer à facturer.
         </p>
         <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
           <Link

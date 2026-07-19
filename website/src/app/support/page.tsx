@@ -7,7 +7,7 @@ import { SUPPORT_EMAIL } from '@/lib/constants';
 export const metadata: Metadata = {
   title: 'Support & guide d’utilisation',
   description:
-    'Centre d’aide FACTEO : guide d’utilisation, suppression de compte, codes promo et assistance technique.',
+    'Centre d’aide Factume : guide d’utilisation, suppression de compte, codes promo et assistance technique.',
 };
 
 const GUIDE_SECTIONS = [
@@ -28,7 +28,7 @@ const GUIDE_SECTIONS = [
     body: 'Convertissez un devis accepté en facture, suivez les paiements et les relances. Les numéros sont gérés automatiquement selon vos préfixes.',
   },
   {
-    title: 'FACTEO Premium',
+    title: 'Factume Premium',
     body: 'L’abonnement Premium (6,99 €/mois) débloque les fonctionnalités avancées. Lors du paiement Stripe, vous pouvez saisir un code promo si vous en avez reçu un.',
   },
   {
@@ -41,7 +41,7 @@ export default function SupportPage() {
   return (
     <>
       <PageHero
-        subtitle="Guides, codes promo et assistance pour utiliser FACTEO au quotidien."
+        subtitle="Guides, codes promo et assistance pour utiliser Factume au quotidien."
         title="Support"
       />
       <section className="px-6 py-20 lg:px-8">
@@ -74,7 +74,7 @@ export default function SupportPage() {
           <FadeIn>
             <h2 className="text-2xl font-semibold text-foreground">Guide d’utilisation</h2>
             <p className="mt-2 text-sm text-muted">
-              Les bases pour démarrer avec FACTEO sur mobile et sur le web.
+              Les bases pour démarrer avec Factume sur mobile et sur le web.
             </p>
           </FadeIn>
           <div className="mt-8 grid gap-6">

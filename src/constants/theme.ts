@@ -1,5 +1,5 @@
 /**
- * FACTEO design system entry point.
+ * Factume design system entry point.
  * Token modules live in ./theme/.
  */
 

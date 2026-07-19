@@ -102,7 +102,7 @@ export function HeroSection() {
               <div className="h-3 w-3 rounded-full bg-red-400" />
               <div className="h-3 w-3 rounded-full bg-amber-400" />
               <div className="h-3 w-3 rounded-full bg-green-400" />
-              <span className="ml-2 text-xs text-muted">facteo.app/app</span>
+              <span className="ml-2 text-xs text-muted">Espace web /app</span>
             </div>
             <div className="grid grid-cols-3 gap-4 p-6">
               {['CA mensuel', 'Factures impayées', 'Clients actifs'].map((label, i) => (

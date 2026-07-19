@@ -1,5 +1,5 @@
 -- =============================================================================
--- FACTEO — Colonnes settings manquantes (quote_validity_days, etc.)
+-- Factume — Colonnes settings manquantes (quote_validity_days, etc.)
 -- =============================================================================
 -- Idempotent : corrige les bases créées sans le schéma MVP complet.
 -- =============================================================================

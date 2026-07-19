@@ -68,7 +68,7 @@ export function VoiceRecordModal({
           <View style={styles.transcriptBox}>
             <Text style={styles.transcriptLabel}>Transcription en cours</Text>
             <Text style={styles.transcriptText}>
-              {transcriptPreview || 'Parlez naturellement, FACTEO prépare votre devis ou facture.'}
+              {transcriptPreview || 'Parlez naturellement, Factume prépare votre devis ou facture.'}
             </Text>
           </View>
 

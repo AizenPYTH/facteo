@@ -7,7 +7,7 @@ import { useTenant } from '@/providers/company-provider';
 import { fetchQuotesPage } from '@/lib/domain/supabase/quotes';
 import { quotesQueryKeys } from '@/lib/domain/supabase/query-keys';
 import { requireScope } from '@/lib/domain/tenant/scope';
-import { QUOTES_PAGE_SIZE, type QuoteStatusFilter } from '@facteo/types/quotes-list';
+import { QUOTES_PAGE_SIZE, type QuoteStatusFilter } from '@factume/types/quotes-list';
 
 export function useInfiniteQuotes(search: string, status: QuoteStatusFilter = 'all') {
   const { user, loading: authLoading } = useAuth();

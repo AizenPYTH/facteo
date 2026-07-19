@@ -8,6 +8,7 @@ import {
   MobileGateShell,
   PhoneMockCarousel,
 } from '@/components/mobile-gate/mobile-gate-ui';
+import { SUPPORT_EMAIL } from '@/lib/constants';
 import { DEVICE_ACCESS } from '@/lib/device-access';
 import { cn } from '@/lib/utils';
 
@@ -29,7 +30,7 @@ export function IosGatePage() {
             <span className="block text-blue-200/90">Depuis votre poche.</span>
           </h1>
           <p className="mx-auto mt-4 max-w-md text-sm leading-relaxed text-slate-300">
-            FACTEO est disponible sur iPhone. Créez devis et factures, faites signer vos clients et
+            Factume est disponible sur iPhone. Créez devis et factures, faites signer vos clients et
             suivez vos encaissements — pensé pour le terrain.
           </p>
         </motion.div>
@@ -45,7 +46,7 @@ export function IosGatePage() {
           className="space-y-3"
           initial={{ opacity: 0, y: 12 }}
           transition={{ delay: 0.45 }}>
-          <p className="text-base font-semibold text-white">FACTEO est disponible sur iPhone.</p>
+          <p className="text-base font-semibold text-white">Factume est disponible sur iPhone.</p>
 
           {storeHref ? (
             <a
@@ -80,8 +81,10 @@ export function IosGatePage() {
           </p>
         </motion.div>
 
-        <Link className="inline-block text-xs font-medium text-slate-500 underline-offset-4 hover:text-slate-300 hover:underline" href="mailto:support@facteo.app">
-          Besoin d’aide ? support@facteo.app
+        <Link
+          className="inline-block text-xs font-medium text-slate-500 underline-offset-4 hover:text-slate-300 hover:underline"
+          href={`mailto:${SUPPORT_EMAIL}`}>
+          Besoin d’aide ? {SUPPORT_EMAIL}
         </Link>
       </div>
     </MobileGateShell>

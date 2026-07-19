@@ -1,8 +1,8 @@
 /**
- * Variante optionnelle pour un futur "FACTEO Dev".
+ * Variante optionnelle pour un futur "Factume Dev".
  * En local on utilise Expo Go (npm start → --go), pas ce scheme.
  *
- * EAS preview/production → APP_VARIANT=production (scheme facteo).
+ * EAS preview/production → APP_VARIANT=production (scheme factume).
  */
 const appJson = require('./app.json');
 
@@ -14,15 +14,15 @@ const base = appJson.expo;
 module.exports = {
   expo: {
     ...base,
-    name: IS_DEV ? 'FACTEO Dev' : base.name,
-    scheme: IS_DEV ? 'facteo-dev' : base.scheme,
+    name: IS_DEV ? 'Factume Dev' : base.name,
+    scheme: IS_DEV ? 'factume-dev' : base.scheme,
     ios: {
       ...base.ios,
-      bundleIdentifier: IS_DEV ? 'com.facteo.app.dev' : base.ios.bundleIdentifier,
+      bundleIdentifier: IS_DEV ? 'com.factume.app.dev' : base.ios.bundleIdentifier,
     },
     android: {
       ...base.android,
-      package: IS_DEV ? 'com.facteo.app.dev' : base.android.package,
+      package: IS_DEV ? 'com.factume.app.dev' : base.android.package,
     },
   },
 };

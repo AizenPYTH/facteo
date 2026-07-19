@@ -8,8 +8,8 @@ import { useAuth } from '@/providers/auth-provider';
 import { useTenant } from '@/providers/company-provider';
 import { buildInvoicePdfHtml, buildQuotePdfHtml } from '@/lib/domain/pdf/document-pdf';
 import { requireScope } from '@/lib/domain/tenant/scope';
-import type { InvoiceDetail } from '@facteo/types/invoice';
-import type { QuoteDetail } from '@facteo/types/quote';
+import type { InvoiceDetail } from '@factume/types/invoice';
+import type { QuoteDetail } from '@factume/types/quote';
 
 export function PdfPreviewPanel({
   kind,

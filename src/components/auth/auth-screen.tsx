@@ -52,8 +52,8 @@ export function AuthScreen({
           <Animated.View entering={FadeIn.duration(motion.slow)} style={styles.header}>
             <Image
               accessibilityIgnoresInvertColors
-              accessibilityLabel="FACTEO"
-              source={require('@/assets/images/facteo-logo.png')}
+              accessibilityLabel="Factume"
+              source={require('@/assets/images/factume-logo.png')}
               style={styles.logo}
             />
             <Animated.View entering={FadeInDown.delay(80).duration(motion.normal).springify()}>

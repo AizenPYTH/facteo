@@ -6,7 +6,7 @@ import { CONTACT_EMAIL } from '@/lib/constants';
 
 export const metadata: Metadata = {
   title: 'Carrières',
-  description: 'Rejoignez l’équipe FACTEO.',
+  description: 'Rejoignez l’équipe Factume.',
 };
 
 export default function CareersPage() {

@@ -1,5 +1,5 @@
 /**
- * FACTEO color tokens — light theme, iOS-inspired semantic palette.
+ * Factume color tokens — light theme, iOS-inspired semantic palette.
  * Primary: #2563EB
  */
 

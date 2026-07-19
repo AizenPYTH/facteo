@@ -72,7 +72,7 @@ function DashboardMobileScreen() {
             {hasNoActivity ? <DashboardWelcome /> : null}
             <StatsGrid stats={stats} />
             <PremiumGatedSection
-              bannerMessage="Statistiques avancées — FACTEO Premium"
+              bannerMessage="Statistiques avancées — Factume Premium"
               locked={advancedStatsLocked}>
               <ExtendedStatsGrid premiumLocked={advancedStatsLocked} stats={stats} />
               <RevenueChart data={extended.revenueByMonth} premiumLocked={advancedStatsLocked} />

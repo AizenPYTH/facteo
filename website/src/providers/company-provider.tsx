@@ -16,9 +16,9 @@ import { createCompany, fetchUserCompanies } from '@/lib/domain/supabase/compani
 import { assertPlanLimit } from '@/lib/domain/supabase/subscriptions';
 import { companiesQueryKeys } from '@/lib/domain/supabase/query-keys';
 import { clearTenantCache } from '@/lib/domain/tenant/clear-tenant-cache';
-import type { CreateCompanyInput, DataScope, TenantCompany } from '@facteo/types/tenant';
+import type { CreateCompanyInput, DataScope, TenantCompany } from '@factume/types/tenant';
 
-const ACTIVE_COMPANY_KEY = 'facteo:active-company-id';
+const ACTIVE_COMPANY_KEY = 'factume:active-company-id';
 
 type CompanyContextValue = {
   companies: TenantCompany[];

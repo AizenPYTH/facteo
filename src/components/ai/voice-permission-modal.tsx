@@ -29,7 +29,7 @@ export function VoicePermissionModal({
         <Pressable onPress={(event) => event.stopPropagation()} style={styles.card}>
           <Text style={styles.title}>Microphone requis</Text>
           <Text style={styles.subtitle}>
-            FACTEO a besoin de votre microphone pour créer un devis ou une facture à la voix.
+            Factume a besoin de votre microphone pour créer un devis ou une facture à la voix.
           </Text>
 
           <View style={styles.actions}>

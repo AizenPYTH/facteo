@@ -5,7 +5,7 @@ import { LEGAL_LAST_UPDATED, PRIVACY_SECTIONS } from '@/lib/legal-content';
 
 export const metadata: Metadata = {
   title: 'Politique de confidentialité',
-  description: 'Politique de confidentialité FACTEO — protection des données, RGPD et sécurité.',
+  description: 'Politique de confidentialité Factume — protection des données, RGPD et sécurité.',
 };
 
 export default function PrivacyPage() {

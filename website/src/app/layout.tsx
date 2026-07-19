@@ -21,7 +21,7 @@ export const metadata: Metadata = {
     template: `%s — ${SITE_NAME}`,
   },
   description:
-    'FACTEO simplifie la facturation, les devis, les signatures et les paiements. Application mobile et web pour artisans, freelances et petites entreprises.',
+    'Factume simplifie la facturation, les devis, les signatures et les paiements. Application mobile et web pour artisans, freelances et petites entreprises.',
   keywords: [
     'facturation',
     'devis',
@@ -56,7 +56,7 @@ const organizationJsonLd = {
   url: SITE_URL,
   email: CONTACT_EMAIL,
   description:
-    'FACTEO simplifie la facturation, les devis, les signatures et les paiements pour artisans, freelances et PME.',
+    'Factume simplifie la facturation, les devis, les signatures et les paiements pour artisans, freelances et PME.',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

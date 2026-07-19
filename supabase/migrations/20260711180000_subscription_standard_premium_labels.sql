@@ -2,7 +2,7 @@
 
 update public.subscription_plans
 set
-  display_name = 'FACTEO Standard',
+  display_name = 'Factume Standard',
   description = 'L''essentiel pour démarrer, sans personnalisation avancée.',
   features = jsonb_set(
     coalesce(features, '{}'::jsonb),
@@ -15,7 +15,7 @@ where id = 'free';
 
 update public.subscription_plans
 set
-  display_name = 'FACTEO Premium',
+  display_name = 'Factume Premium',
   description = 'Sans limites, avec toutes les fonctionnalités avancées et futures.',
   features = jsonb_set(
     jsonb_set(

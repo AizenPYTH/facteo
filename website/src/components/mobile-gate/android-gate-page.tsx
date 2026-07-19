@@ -66,7 +66,7 @@ export function AndroidGatePage() {
             <span className="block text-emerald-200/90">est en cours de développement.</span>
           </h1>
           <p className="mx-auto mt-4 max-w-md text-sm leading-relaxed text-slate-300">
-            FACTEO arrive bientôt sur Android. En attendant, laissez votre e-mail pour être informé
+            Factume arrive bientôt sur Android. En attendant, laissez votre e-mail pour être informé
             de la sortie — et découvrez l’app dès maintenant sur iPhone.
           </p>
         </motion.div>

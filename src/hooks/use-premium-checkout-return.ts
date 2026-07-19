@@ -40,7 +40,7 @@ export function usePremiumCheckoutReturn() {
         }
 
         await refresh();
-        showSuccess('FACTEO Premium est activé.');
+        showSuccess('Factume Premium est activé.');
       } catch (error) {
         if (!cancelled) {
           showError(readErrorMessage(error));

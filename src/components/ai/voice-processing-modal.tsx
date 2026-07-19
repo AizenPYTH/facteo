@@ -20,7 +20,7 @@ export function VoiceProcessingModal({ visible }: VoiceProcessingModalProps) {
           <ActivityIndicator color={colors.primary} size="large" />
           <Text style={styles.title}>Analyse de votre demande…</Text>
           <Text style={styles.subtitle}>
-            FACTEO transcrit votre voix puis prépare le devis ou la facture.
+            Factume transcrit votre voix puis prépare le devis ou la facture.
           </Text>
         </View>
       </View>

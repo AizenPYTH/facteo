@@ -1,4 +1,4 @@
-"""Generate FACTEO brand assets from the master app icon."""
+"""Generate Factume brand assets from the master app icon."""
 from __future__ import annotations
 
 from pathlib import Path
@@ -6,7 +6,7 @@ from pathlib import Path
 from PIL import Image, ImageChops, ImageEnhance, ImageFilter
 
 ROOT = Path(__file__).resolve().parents[1]
-SOURCE = ROOT / "assets" / "images" / "facteo-app-icon-source.png"
+SOURCE = ROOT / "assets" / "images" / "factume-app-icon-source.png"
 OUT = ROOT / "assets" / "images"
 
 BRAND_BLUE = (2, 116, 223, 255)  # #0274DF
@@ -48,7 +48,7 @@ def main() -> None:
     master = Image.open(SOURCE).convert("RGBA")
 
     master.save(OUT / "icon.png", optimize=True)
-    master.save(OUT / "facteo-logo.png", optimize=True)
+    master.save(OUT / "factume-logo.png", optimize=True)
 
     save_resized(master, OUT / "splash-icon.png", (288, 288))
     save_resized(master, OUT / "expo-logo.png", (256, 256))
