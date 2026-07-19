@@ -16,8 +16,8 @@ export const PRIVACY_SECTIONS: LegalSection[] = [
     id: 'responsable',
     title: '1. Responsable du traitement',
     paragraphs: [
-      'Factume, accessible à l’adresse factume.app, est responsable du traitement des données personnelles collectées via l’application mobile, l’application web et le site internet.',
-      'Pour toute question relative à la protection de vos données personnelles, vous pouvez nous contacter à l’adresse : contact@factume.app ou dpo@factume.app.',
+      'Factume, accessible via son site web et ses applications, est responsable du traitement des données personnelles collectées via l’application mobile, l’application web et le site internet.',
+      `Pour toute question relative à la protection de vos données personnelles, vous pouvez nous contacter à l’adresse : ${LEGAL_CONTACT.email}.`,
     ],
   },
   {
@@ -93,8 +93,8 @@ export const PRIVACY_SECTIONS: LegalSection[] = [
       '• Droit à la portabilité : recevoir vos données dans un format structuré.',
       '• Droit d’opposition : vous opposer au traitement fondé sur l’intérêt légitime.',
       '• Droit de retirer votre consentement à tout moment, sans affecter la licéité du traitement antérieur.',
-      'Vous pouvez demander la suppression de votre compte depuis Paramètres dans l’application, ou en écrivant à support@factume.app depuis l’adresse e-mail associée au compte. Nous traitons la demande sous 30 jours.',
-      'Pour exercer vos droits, contactez-nous à contact@factume.app. Vous pouvez également introduire une réclamation auprès de la CNIL (www.cnil.fr).',
+      `Vous pouvez demander la suppression de votre compte depuis Paramètres dans l’application, ou en écrivant à ${LEGAL_CONTACT.support} depuis l’adresse e-mail associée au compte. Nous traitons la demande sous 30 jours.`,
+      `Pour exercer vos droits, contactez-nous à ${LEGAL_CONTACT.email}. Vous pouvez également introduire une réclamation auprès de la CNIL (www.cnil.fr).`,
     ],
   },
   {
@@ -121,7 +121,7 @@ export const TERMS_SECTIONS: LegalSection[] = [
     id: 'objet',
     title: '1. Objet',
     paragraphs: [
-      'Les présentes Conditions Générales d’Utilisation (ci-après « CGU ») régissent l’accès et l’utilisation de l’application Factume, du site web factume.app et de l’ensemble des services associés.',
+      'Les présentes Conditions Générales d’Utilisation (ci-après « CGU ») régissent l’accès et l’utilisation de l’application Factume, du site web et de l’ensemble des services associés.',
       'En créant un compte ou en utilisant Factume, vous acceptez sans réserve les présentes CGU. Si vous n’acceptez pas ces conditions, vous ne devez pas utiliser le service.',
     ],
   },

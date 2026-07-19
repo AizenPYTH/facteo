@@ -61,7 +61,7 @@ export function HeroSection() {
             <p className="text-sm font-semibold uppercase tracking-widest text-primary">{HERO.overline}</p>
           </FadeIn>
           <FadeIn delay={0.1}>
-            <h1 className="mt-6 text-4xl font-bold tracking-tight text-foreground sm:text-5xl lg:text-6xl lg:leading-[1.08]">
+            <h1 className="mt-6 text-5xl font-bold tracking-tight text-foreground sm:text-6xl lg:text-7xl lg:leading-[1.05]">
               {HERO.title}
             </h1>
           </FadeIn>

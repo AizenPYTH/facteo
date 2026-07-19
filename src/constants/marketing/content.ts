@@ -1,8 +1,10 @@
+import { MARKETING_CONTACT, MARKETING_HELP_URLS, MARKETING_LEGAL_URLS } from '@/constants/marketing/site';
+
 export const HERO_CONTENT = {
-  overline: 'Facturation nouvelle génération',
-  title: 'Gérez vos devis et factures comme un pro.',
+  overline: 'Facturation pour les pros',
+  title: 'Factume',
   subtitle:
-    'Factume centralise clients, devis, factures, signatures et paiements. Une application pensée pour les artisans, freelances et PME qui veulent gagner du temps.',
+    'Gérez vos devis et factures comme un pro. Clients, signatures et encaissements — pensé pour les artisans, freelances et PME.',
   ctaPrimary: 'Commencer gratuitement',
   ctaSecondary: 'Découvrir les fonctionnalités',
 };
@@ -209,13 +211,13 @@ export const FOOTER_LINKS = {
   ],
   company: [
     { label: 'À propos', href: '/#presentation' },
-    { label: 'Contact', href: 'mailto:contact@factume.app' },
-    { label: 'Support', href: 'https://factume.app/support' },
+    { label: 'Contact', href: `mailto:${MARKETING_CONTACT.email}` },
+    { label: 'Support', href: MARKETING_HELP_URLS.support },
   ],
   legal: [
-    { label: 'Confidentialité', href: 'https://factume.app/confidentialite' },
-    { label: 'Conditions d’utilisation', href: 'https://factume.app/conditions-utilisation' },
-    { label: 'Mentions légales', href: 'https://factume.app/mentions-legales' },
-    { label: 'Politique des cookies', href: 'https://factume.app/cookies' },
+    { label: 'Confidentialité', href: MARKETING_LEGAL_URLS.privacy },
+    { label: 'Conditions d’utilisation', href: MARKETING_LEGAL_URLS.terms },
+    { label: 'Mentions légales', href: MARKETING_LEGAL_URLS.legal },
+    { label: 'Politique des cookies', href: MARKETING_LEGAL_URLS.cookies },
   ],
 } as const;

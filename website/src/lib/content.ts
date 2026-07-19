@@ -9,10 +9,10 @@ export const NAV_LINKS = [
 ] as const;
 
 export const HERO = {
-  overline: 'Facturation nouvelle génération',
-  title: 'Gérez vos devis et factures comme un pro.',
+  overline: 'Facturation pour les pros',
+  title: 'Factume',
   subtitle:
-    'Factume centralise clients, devis, factures et signatures. Une solution pensée pour les artisans, freelances et PME qui veulent gagner du temps.',
+    'Gérez vos devis et factures comme un pro. Clients, signatures et encaissements — pensé pour les artisans, freelances et PME.',
   ctaPrimary: 'Commencer gratuitement',
   ctaSecondary: 'Voir les fonctionnalités',
 };
