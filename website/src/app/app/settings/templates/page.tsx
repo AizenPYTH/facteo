@@ -8,6 +8,7 @@ import { AppTopBar } from '@/components/app/app-shell';
 import { FormActions, PrimaryButton } from '@/components/app/form-fields';
 import { Badge, LoadingState, Panel } from '@/components/app/ui';
 import { useSettings } from '@/hooks/use-settings';
+import { useSubscription } from '@/hooks/use-subscription';
 import { PDF_TEMPLATES } from '@/lib/pdf/engine/templates';
 import { updateDocumentTemplates } from '@/lib/supabase/settings';
 import { settingsQueryKeys } from '@/lib/domain/supabase/query-keys';
@@ -18,6 +19,8 @@ import { cn } from '@/lib/utils';
 export default function TemplatesSettingsPage() {
   const { scope } = useTenant();
   const { formValues, loading } = useSettings();
+  const { hasFeature } = useSubscription();
+  const templatesLocked = !hasFeature('pdf_templates');
   const queryClient = useQueryClient();
   const [quoteTemplateId, setQuoteTemplateId] = useState(formValues.quoteTemplateId);
   const [invoiceTemplateId, setInvoiceTemplateId] = useState(formValues.invoiceTemplateId);
@@ -48,8 +51,20 @@ export default function TemplatesSettingsPage() {
       </AppTopBar>
       <div className="flex-1 overflow-y-auto p-6 xl:p-8">
         <div className="mx-auto max-w-5xl space-y-8">
+          {templatesLocked ? (
+            <Panel title="Offre requise">
+              <p className="text-sm text-slate-600">
+                Les modèles PDF sont disponibles à partir de l’offre Basique. Passez à une offre
+                supérieure pour personnaliser vos documents.
+              </p>
+              <Link className="mt-3 inline-block text-sm font-semibold text-primary hover:underline" href="/tarifs">
+                Voir les offres
+              </Link>
+            </Panel>
+          ) : null}
+
           <Panel title="Modèle devis">
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div className={cn('grid gap-4 sm:grid-cols-2 lg:grid-cols-3', templatesLocked && 'pointer-events-none opacity-50')}>
               {PDF_TEMPLATES.map((template) => (
                 <button
                   className={cn(
@@ -58,6 +73,7 @@ export default function TemplatesSettingsPage() {
                       ? 'border-primary bg-blue-50/50 ring-2 ring-primary/20'
                       : 'border-slate-200 hover:border-primary/30',
                   )}
+                  disabled={templatesLocked}
                   key={template.id}
                   onClick={() => setQuoteTemplateId(template.id)}
                   type="button">
@@ -78,7 +94,7 @@ export default function TemplatesSettingsPage() {
           </Panel>
 
           <Panel title="Modèle facture">
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div className={cn('grid gap-4 sm:grid-cols-2 lg:grid-cols-3', templatesLocked && 'pointer-events-none opacity-50')}>
               {PDF_TEMPLATES.map((template) => (
                 <button
                   className={cn(
@@ -87,6 +103,7 @@ export default function TemplatesSettingsPage() {
                       ? 'border-primary bg-blue-50/50 ring-2 ring-primary/20'
                       : 'border-slate-200 hover:border-primary/30',
                   )}
+                  disabled={templatesLocked}
                   key={`inv-${template.id}`}
                   onClick={() => setInvoiceTemplateId(template.id)}
                   type="button">
@@ -107,7 +124,11 @@ export default function TemplatesSettingsPage() {
           </Panel>
 
           <FormActions>
-            <PrimaryButton loading={mutation.isPending} onClick={() => mutation.mutate()} type="button">
+            <PrimaryButton
+              disabled={templatesLocked}
+              loading={mutation.isPending}
+              onClick={() => mutation.mutate()}
+              type="button">
               Enregistrer les modèles
             </PrimaryButton>
           </FormActions>

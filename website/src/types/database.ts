@@ -551,6 +551,9 @@ export type SubscriptionPlanRow = {
   max_clients: number | null;
   max_quotes: number | null;
   max_invoices: number | null;
+  max_documents_per_month: number | null;
+  max_siren_searches_per_month: number | null;
+  max_companies: number | null;
   features: Record<string, unknown>;
   stripe_price_id: string | null;
   stripe_product_id: string | null;
@@ -571,6 +574,14 @@ export type DocumentSignatureRow = {
   signed_at: string;
   created_at: string;
   updated_at: string;
+};
+
+export type AndroidWaitlistRow = {
+  id: string;
+  email: string;
+  user_agent: string | null;
+  source: string;
+  created_at: string;
 };
 
 export type CompanyRow = {
@@ -607,6 +618,24 @@ export type CompanyMemberRow = {
 export type Database = {
   public: {
     Tables: {
+      android_waitlist: {
+        Row: AndroidWaitlistRow;
+        Insert: {
+          id?: string;
+          email: string;
+          user_agent?: string | null;
+          source?: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          email?: string;
+          user_agent?: string | null;
+          source?: string;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
       profiles: {
         Row: Profile;
         Insert: ProfileInsert;
@@ -784,6 +813,10 @@ export type Database = {
       };
       check_plan_limit: {
         Args: { p_resource: string };
+        Returns: Record<string, unknown>;
+      };
+      consume_siren_search: {
+        Args: Record<PropertyKey, never>;
         Returns: Record<string, unknown>;
       };
       reserve_next_quote_number: {

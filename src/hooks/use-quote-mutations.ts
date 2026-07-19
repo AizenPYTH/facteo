@@ -52,7 +52,7 @@ export function useQuoteMutations() {
 
   const createQuoteMutation = useMutation({
     mutationFn: async (input: CreateQuoteInput) => {
-      await enforcePlanLimit('quotes', showLimitModal);
+      await enforcePlanLimit('documents', showLimitModal);
       return createQuote(requireScope(scope), input);
     },
     onSuccess: () => invalidateQuotes(),
@@ -109,7 +109,7 @@ export function useQuoteMutations() {
 
   const duplicateQuoteMutation = useMutation({
     mutationFn: async (quoteId: string) => {
-      await enforcePlanLimit('quotes', showLimitModal);
+      await enforcePlanLimit('documents', showLimitModal);
       return duplicateQuote(requireScope(scope), quoteId);
     },
     onSuccess: () => invalidateQuotes(),
@@ -117,7 +117,7 @@ export function useQuoteMutations() {
 
   const convertToInvoiceMutation = useMutation({
     mutationFn: async (quoteId: string) => {
-      await enforcePlanLimit('invoices', showLimitModal);
+      await enforcePlanLimit('documents', showLimitModal);
       return convertQuoteToInvoice(requireScope(scope), quoteId);
     },
     onSuccess: () => {

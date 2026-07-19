@@ -7,6 +7,7 @@ import {
   normalizeRegistrationDigits,
   searchCompanyByRegistrationNumber,
 } from '@/lib/company-search';
+import { consumeSirenSearch } from '@/lib/supabase/subscriptions';
 import { companySearchQueryKeys } from '@/lib/domain/supabase/query-keys';
 
 const LOOKUP_DEBOUNCE_MS = 500;
@@ -26,7 +27,10 @@ export function useCompanyRegistrationLookup(
 
   const query = useQuery({
     queryKey: companySearchQueryKeys.lookup(debouncedDigits),
-    queryFn: ({ signal }) => searchCompanyByRegistrationNumber(debouncedDigits, { signal }),
+    queryFn: async ({ signal }) => {
+      await consumeSirenSearch();
+      return searchCompanyByRegistrationNumber(debouncedDigits, { signal });
+    },
     enabled: isEnabled,
     staleTime: 10 * 60 * 1000,
     gcTime: 30 * 60 * 1000,

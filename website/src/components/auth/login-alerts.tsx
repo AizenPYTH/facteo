@@ -19,15 +19,23 @@ function LoginAlertsInner() {
   if (error === 'auth') {
     return (
       <div className="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700" role="alert">
-        Lien de connexion invalide ou expiré. Réessayez.
+        Lien de confirmation ou de connexion invalide / expiré. Demandez un nouvel e-mail ou réessayez.
       </div>
     );
   }
 
   if (reset === '1') {
     return (
-      <div className="mb-5 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800">
-        Vous pouvez maintenant vous connecter avec votre nouveau mot de passe.
+      <div className="mb-5 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+        Mot de passe mis à jour. Vous pouvez vous connecter.
+      </div>
+    );
+  }
+
+  if (searchParams.get('confirmed') === '1') {
+    return (
+      <div className="mb-5 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+        E-mail confirmé. Connectez-vous pour accéder à FACTEO.
       </div>
     );
   }

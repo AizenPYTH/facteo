@@ -2,6 +2,7 @@ import { supabase } from '@/lib/supabase';
 import { logSupabaseError } from '@/lib/supabase/errors';
 import { resolveEffectivePlanId } from '@/lib/subscription/plans';
 import type {
+  EffectivePlanId,
   PlanFeatures,
   PlanLimitCheck,
   PlanResource,
@@ -23,7 +24,7 @@ const SUBSCRIPTION_COLUMNS =
   'user_id, plan, status, stripe_customer_id, stripe_subscription_id, current_period_start, current_period_end, cancel_at_period_end, trial_ends_at, created_at, updated_at';
 
 const PLAN_COLUMNS =
-  'id, display_name, description, sort_order, max_clients, max_quotes, max_invoices, features, stripe_price_id, stripe_product_id, app_store_product_id, play_store_product_id, is_active';
+  'id, display_name, description, sort_order, max_clients, max_quotes, max_invoices, max_documents_per_month, max_siren_searches_per_month, max_companies, features, stripe_price_id, stripe_product_id, app_store_product_id, play_store_product_id, is_active';
 
 function mapPlanFeatures(value: unknown): PlanFeatures {
   const source = (value ?? {}) as Partial<PlanFeatures>;
@@ -32,6 +33,7 @@ function mapPlanFeatures(value: unknown): PlanFeatures {
     custom_logo: Boolean(source.custom_logo),
     company_signature: Boolean(source.company_signature),
     client_signature: Boolean(source.client_signature),
+    pdf_templates: Boolean(source.pdf_templates),
     stripe_payments: Boolean(source.stripe_payments),
     ai_assistant: Boolean(source.ai_assistant),
     advanced_stats: Boolean(source.advanced_stats),
@@ -41,13 +43,16 @@ function mapPlanFeatures(value: unknown): PlanFeatures {
 
 function mapSubscriptionPlanRow(row: SubscriptionPlanRow): SubscriptionPlan {
   return {
-    id: row.id as SubscriptionPlanId,
+    id: row.id,
     displayName: row.display_name,
     description: row.description,
     sortOrder: row.sort_order,
     maxClients: row.max_clients,
     maxQuotes: row.max_quotes,
     maxInvoices: row.max_invoices,
+    maxDocumentsPerMonth: row.max_documents_per_month ?? null,
+    maxSirenSearchesPerMonth: row.max_siren_searches_per_month ?? null,
+    maxCompanies: row.max_companies ?? null,
     features: mapPlanFeatures(row.features),
     stripePriceId: row.stripe_price_id,
     stripeProductId: row.stripe_product_id,
@@ -77,12 +82,15 @@ function mapSubscriptionRow(row: SubscriptionRow): UserSubscription {
 }
 
 function mapUsage(value: unknown): SubscriptionUsage {
-  const source = (value ?? {}) as Partial<SubscriptionUsage>;
+  const source = (value ?? {}) as Record<string, unknown>;
 
   return {
     clients: Number(source.clients ?? 0),
     quotes: Number(source.quotes ?? 0),
     invoices: Number(source.invoices ?? 0),
+    documents: Number(source.documents ?? 0),
+    companies: Number(source.companies ?? 0),
+    sirenSearches: Number(source.siren_searches ?? source.sirenSearches ?? 0),
   };
 }
 
@@ -94,8 +102,8 @@ export function mapPlanLimitCheck(value: unknown): PlanLimitCheck {
     resource: (source.resource ?? 'clients') as PlanResource,
     current: Number(source.current ?? 0),
     limit: source.limit === null || source.limit === undefined ? null : Number(source.limit),
-    planId: (source.plan_id ?? source.planId ?? 'free') as 'free' | 'premium',
-    planName: String(source.plan_name ?? source.planName ?? 'Gratuit'),
+    planId: String(source.plan_id ?? source.planId ?? 'micro') as EffectivePlanId | string,
+    planName: String(source.plan_name ?? source.planName ?? 'Micro'),
     status: (source.status ?? 'active') as SubscriptionStatus,
     isPremium: Boolean(source.is_premium ?? source.isPremium),
   };
@@ -180,6 +188,23 @@ export async function assertPlanLimit(resource: PlanResource): Promise<PlanLimit
   return check;
 }
 
+export async function consumeSirenSearch(): Promise<PlanLimitCheck> {
+  const { data, error } = await supabase.rpc('consume_siren_search');
+
+  if (error) {
+    logSupabaseError('consumeSirenSearch', error);
+    throw error;
+  }
+
+  const check = mapPlanLimitCheck(data);
+
+  if (!check.allowed) {
+    throw new PlanLimitError('siren_searches', check);
+  }
+
+  return check;
+}
+
 export async function fetchSubscriptionSnapshot(userId: string): Promise<SubscriptionSnapshot> {
   const [subscription, plans, usage] = await Promise.all([
     fetchUserSubscription(userId),
@@ -193,7 +218,7 @@ export async function fetchSubscriptionSnapshot(userId: string): Promise<Subscri
 
   const plan =
     plans.find((entry) => entry.id === subscription.effectivePlanId) ??
-    plans.find((entry) => entry.id === 'free');
+    plans.find((entry) => entry.id === 'micro');
 
   if (!plan) {
     throw new Error('Subscription plan configuration not found.');

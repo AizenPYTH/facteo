@@ -8,8 +8,6 @@ import { shadows } from '@/constants/theme/theme';
 import { spacing } from '@/constants/theme/spacing';
 import { typography } from '@/constants/theme/typography';
 
-import { usePlanLimitGuard } from '@/hooks/use-plan-limit';
-
 export type AddClientFabProps = {
   onPress?: () => void;
   label?: string;
@@ -25,17 +23,10 @@ export function AddClientFab({
 }: AddClientFabProps) {
   const styles = useStyles();
   const colors = useColors();
-  const { guardResource } = usePlanLimitGuard();
 
-  async function handlePress() {
+  function handlePress() {
     if (onPress) {
       onPress();
-      return;
-    }
-
-    const allowed = await guardResource('clients');
-
-    if (!allowed) {
       return;
     }
 
@@ -45,9 +36,7 @@ export function AddClientFab({
   return (
     <Pressable
       accessibilityRole="button"
-      onPress={() => {
-        void handlePress();
-      }}
+      onPress={handlePress}
       style={({ pressed }) => [styles.fab, pressed && styles.pressed, style]}
       testID={testID}>
       <SymbolView

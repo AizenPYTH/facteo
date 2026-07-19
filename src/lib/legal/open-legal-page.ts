@@ -1,18 +1,36 @@
 import * as Linking from 'expo-linking';
-import { Platform } from 'react-native';
+import { Alert, Platform } from 'react-native';
 
-import { MARKETING_HELP_URLS, MARKETING_LEGAL_URLS } from '@/constants/marketing/site';
+import {
+  MARKETING_CONTACT,
+  MARKETING_HELP_URLS,
+  MARKETING_LEGAL_URLS,
+  MARKETING_SITE_URL,
+} from '@/constants/marketing/site';
 
 export type LegalPagePath = keyof typeof MARKETING_LEGAL_URLS;
 export type HelpPagePath = keyof typeof MARKETING_HELP_URLS;
 
-async function openExternalUrl(url: string): Promise<void> {
+/**
+ * Ouvre une URL externe dans le navigateur système (Safari sur iOS).
+ * Exigence App Store : les documents légaux doivent s’ouvrir hors de l’app.
+ */
+export async function openExternalUrl(url: string): Promise<void> {
   if (Platform.OS === 'web' && typeof window !== 'undefined') {
     window.open(url, '_blank', 'noopener,noreferrer');
     return;
   }
 
-  await Linking.openURL(url);
+  try {
+    const canOpen = await Linking.canOpenURL(url);
+    if (!canOpen) {
+      Alert.alert('Lien indisponible', `Impossible d’ouvrir :\n${url}`);
+      return;
+    }
+    await Linking.openURL(url);
+  } catch {
+    Alert.alert('Lien indisponible', `Impossible d’ouvrir :\n${url}`);
+  }
 }
 
 export async function openLegalPage(path: LegalPagePath): Promise<void> {
@@ -21,4 +39,18 @@ export async function openLegalPage(path: LegalPagePath): Promise<void> {
 
 export async function openHelpPage(path: HelpPagePath): Promise<void> {
   await openExternalUrl(MARKETING_HELP_URLS[path]);
+}
+
+export async function openMarketingSite(): Promise<void> {
+  await openExternalUrl(MARKETING_SITE_URL);
+}
+
+export async function openContactEmail(subject?: string): Promise<void> {
+  const query = subject ? `?subject=${encodeURIComponent(subject)}` : '';
+  await openExternalUrl(`mailto:${MARKETING_CONTACT.email}${query}`);
+}
+
+export async function openSupportEmail(subject?: string): Promise<void> {
+  const query = subject ? `?subject=${encodeURIComponent(subject)}` : '';
+  await openExternalUrl(`mailto:${MARKETING_CONTACT.support}${query}`);
 }

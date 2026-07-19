@@ -55,7 +55,7 @@ export function useInvoiceMutations() {
 
   const createInvoiceMutation = useMutation({
     mutationFn: async (input: CreateInvoiceInput) => {
-      await enforcePlanLimit('invoices', showLimitModal);
+      await enforcePlanLimit('documents', showLimitModal);
       return createInvoice(requireScope(scope), input);
     },
     onSuccess: () => invalidateInvoices(),
@@ -155,7 +155,7 @@ export function useInvoiceMutations() {
 
   const duplicateInvoiceMutation = useMutation({
     mutationFn: async (invoiceId: string) => {
-      await enforcePlanLimit('invoices', showLimitModal);
+      await enforcePlanLimit('documents', showLimitModal);
       return duplicateInvoice(requireScope(scope), invoiceId);
     },
     onSuccess: () => invalidateInvoices(),

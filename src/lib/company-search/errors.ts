@@ -1,4 +1,5 @@
 import type { CompanySearchErrorCode } from '@/lib/company-search/types';
+import { PlanLimitError } from '@/types/subscription';
 
 export class CompanySearchError extends Error {
   readonly code: CompanySearchErrorCode;
@@ -26,6 +27,13 @@ export function getCompanySearchErrorMessage(
   error: unknown,
   fallback = 'Impossible de rechercher l\'entreprise.',
 ): string {
+  if (
+    error instanceof PlanLimitError ||
+    (error instanceof Error && error.message === 'PLAN_LIMIT_REACHED')
+  ) {
+    return 'Quota de recherches SIREN / SIRET atteint pour votre offre ce mois-ci.';
+  }
+
   if (isCompanySearchError(error)) {
     return USER_MESSAGES[error.code] ?? fallback;
   }

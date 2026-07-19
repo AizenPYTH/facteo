@@ -12,7 +12,7 @@ export const HERO = {
   overline: 'Facturation nouvelle génération',
   title: 'Gérez vos devis et factures comme un pro.',
   subtitle:
-    'FACTEO centralise clients, devis, factures, signatures et paiements. Une solution pensée pour les artisans, freelances et PME qui veulent gagner du temps.',
+    'FACTEO centralise clients, devis, factures et signatures. Une solution pensée pour les artisans, freelances et PME qui veulent gagner du temps.',
   ctaPrimary: 'Commencer gratuitement',
   ctaSecondary: 'Voir les fonctionnalités',
 };
@@ -20,7 +20,7 @@ export const HERO = {
 export const PRESENTATION = {
   title: 'Tout votre activité, au même endroit',
   subtitle:
-    'Fini les tableurs, les PDF perdus et les relances oubliées. FACTEO vous accompagne du premier devis jusqu’au paiement.',
+    'Fini les tableurs, les PDF perdus et les relances oubliées. FACTEO vous accompagne du premier devis jusqu’à la facture signée.',
   bullets: [
     'Créez des devis professionnels en quelques minutes',
     'Transformez un devis accepté en facture en un clic',
@@ -35,7 +35,7 @@ export const WHY = {
   items: [
     { title: 'Simplicité', description: 'Interface claire, workflows guidés, zéro jargon comptable.', icon: 'sparkles' },
     { title: 'Conformité', description: 'Documents structurés, numérotation, mentions légales et archivage.', icon: 'shield' },
-    { title: 'Mobilité', description: 'Signez, envoyez et encaissez depuis le chantier ou le bureau.', icon: 'smartphone' },
+    { title: 'Mobilité', description: 'Signez et envoyez vos documents depuis le chantier ou le bureau.', icon: 'smartphone' },
     { title: 'Fiabilité', description: 'Synchronisation cloud, sauvegardes automatiques, données sécurisées.', icon: 'cloud' },
   ],
 };
@@ -49,7 +49,7 @@ export const FEATURES = {
     { title: 'Factures', description: 'Émission, relances, paiements partiels et suivi des impayés.', icon: 'receipt' },
     { title: 'PDF professionnels', description: '21 modèles, logo, couleurs et aperçu fidèle avant envoi.', icon: 'file' },
     { title: 'Signature client', description: 'Signature tactile sur devis et factures, intégrée au PDF.', icon: 'pen-line' },
-    { title: 'Paiements', description: 'Liens de paiement Stripe et suivi des encaissements.', icon: 'credit-card' },
+    { title: 'Statistiques', description: 'Suivez votre CA, vos impayés et l’activité de vos documents.', icon: 'bar-chart' },
     { title: 'Multi-entreprises', description: 'Gérez plusieurs espaces de travail depuis un seul compte.', icon: 'building-2' },
     { title: 'Application web', description: 'Interface desktop optimisée en plus des apps iOS et Android.', icon: 'monitor' },
   ],
@@ -72,32 +72,8 @@ export const TESTIMONIALS = {
   ],
 };
 
-export const PRICING = {
-  title: 'Tarifs simples et transparents',
-  subtitle: 'Commencez gratuitement, passez à Premium quand vous êtes prêt.',
-  plans: [
-    {
-      id: 'standard',
-      name: 'Standard',
-      price: '0 €',
-      period: '/ mois',
-      description: 'Pour démarrer et tester FACTEO.',
-      features: ['Clients illimités', 'Devis et factures', 'PDF et modèles', 'Application mobile'],
-      cta: 'Créer un compte',
-      highlighted: false,
-    },
-    {
-      id: 'premium',
-      name: 'Premium',
-      price: '6,99 €',
-      period: '/ mois',
-      description: 'Pour les professionnels exigeants.',
-      features: ['Tout Standard', 'Statistiques avancées', 'Paiements Stripe', 'Multi-entreprises', 'Support prioritaire'],
-      cta: 'Essayer Premium',
-      highlighted: true,
-    },
-  ],
-};
+/** @deprecated Utiliser SUBSCRIPTION_PRICING_COPY / SUBSCRIPTION_PLANS dans subscription-plans.ts */
+export { SUBSCRIPTION_PRICING_COPY as PRICING } from './subscription-plans';
 
 export const FAQ = {
   title: 'Questions fréquentes',

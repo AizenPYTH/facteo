@@ -13,6 +13,7 @@ import {
 
 import { useAuth } from '@/providers/auth-provider';
 import { createCompany, fetchUserCompanies } from '@/lib/domain/supabase/companies';
+import { assertPlanLimit } from '@/lib/domain/supabase/subscriptions';
 import { companiesQueryKeys } from '@/lib/domain/supabase/query-keys';
 import { clearTenantCache } from '@/lib/domain/tenant/clear-tenant-cache';
 import type { CreateCompanyInput, DataScope, TenantCompany } from '@facteo/types/tenant';
@@ -101,6 +102,7 @@ export function CompanyProvider({ children }: PropsWithChildren) {
   const createNewCompany = useCallback(
     async (input: CreateCompanyInput) => {
       if (!user?.id) throw new Error('Utilisateur non connecté.');
+      await assertPlanLimit('companies');
       const companyId = await createCompany(input);
       await queryClient.invalidateQueries({ queryKey: companiesQueryKeys.list(user.id) });
       await switchCompany(companyId);

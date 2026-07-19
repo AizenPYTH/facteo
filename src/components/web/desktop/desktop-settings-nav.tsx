@@ -63,6 +63,7 @@ const SETTINGS_NAV_GROUPS: SettingsNavGroup[] = [
     items: [
       { href: 'help:support', label: 'Centre d’aide', description: 'Assistance et contact' },
       { href: 'help:guide', label: 'Guide d’utilisation', description: 'Prise en main' },
+      { href: 'help:contact', label: 'Contact', description: 'Page contact' },
     ],
   },
   {
@@ -120,7 +121,10 @@ export function DesktopSettingsNav() {
                   }
 
                   if (item.href.startsWith('help:')) {
-                    const page = item.href.replace('help:', '') as 'support' | 'guide';
+                    const page = item.href.replace('help:', '') as
+                      | 'support'
+                      | 'guide'
+                      | 'contact';
                     void openHelpPage(page);
                     return;
                   }

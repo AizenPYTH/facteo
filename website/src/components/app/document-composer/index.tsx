@@ -32,6 +32,8 @@ import { useSettings } from '@/hooks/use-settings';
 import { fetchClientsPage } from '@/lib/domain/supabase/clients';
 import { createInvoice } from '@/lib/domain/supabase/invoices';
 import { createQuote } from '@/lib/domain/supabase/quotes';
+import { enforcePlanLimit } from '@/lib/subscription/limit-guard';
+import { PlanLimitError } from '@/types/subscription';
 import { fetchProductsByIds } from '@/lib/domain/supabase/products';
 import { clientsQueryKeys, invoicesQueryKeys, quotesQueryKeys } from '@/lib/domain/supabase/query-keys';
 import { analyzeProductImage, type ProductImageAnalysis } from '@/lib/domain/ai/product-image-analysis';
@@ -341,6 +343,8 @@ export function DocumentComposer({ kind }: { kind: 'invoice' | 'quote' }) {
         throw new Error('VALIDATION');
       }
 
+      await enforcePlanLimit('documents', () => undefined);
+
       const activeScope = requireScope(scope);
       const validLines = lines.filter((l) => l.description.trim());
 
@@ -367,10 +371,19 @@ export function DocumentComposer({ kind }: { kind: 'invoice' | 'quote' }) {
       router.replace(`${base}?selected=${doc.id}`);
     },
     onError: (err: Error) => {
-      if (err.message !== 'VALIDATION') {
-        setFieldErrors({ linesGlobal: err.message });
-        setSubmitAttempted(true);
+      if (err.message === 'VALIDATION') {
+        return;
       }
+      if (err instanceof PlanLimitError || err.message === 'PLAN_LIMIT_REACHED') {
+        setFieldErrors({
+          linesGlobal:
+            'Limite de documents atteinte pour votre offre. Passez à une offre supérieure.',
+        });
+        setSubmitAttempted(true);
+        return;
+      }
+      setFieldErrors({ linesGlobal: err.message });
+      setSubmitAttempted(true);
     },
   });
 

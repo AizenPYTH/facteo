@@ -4,7 +4,15 @@ import { usePathname } from 'next/navigation';
 
 import { SiteShell } from '@/components/layout/site-shell';
 
-const NO_MARKETING_SHELL_PREFIXES = ['/app', '/login', '/register', '/mot-de-passe-oublie'];
+const NO_MARKETING_SHELL_PREFIXES = [
+  '/app',
+  '/login',
+  '/register',
+  '/mot-de-passe-oublie',
+  '/reinitialiser-mot-de-passe',
+  '/auth',
+  '/mobile',
+];
 
 export function ConditionalSiteShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();

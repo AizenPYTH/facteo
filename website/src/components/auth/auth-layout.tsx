@@ -25,7 +25,7 @@ export function AuthLayout({
             La facturation moderne pour artisans et PME.
           </h2>
           <p className="mt-4 max-w-md text-blue-100">
-            Devis, factures, signatures et paiements — tout au même endroit, sur ordinateur et mobile.
+            Devis, factures et signatures — tout au même endroit, sur ordinateur et mobile.
           </p>
         </div>
         <p className="text-sm text-blue-200/80">© {new Date().getFullYear()} {SITE_NAME}</p>

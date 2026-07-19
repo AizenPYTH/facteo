@@ -10,7 +10,9 @@ export const metadata: Metadata = {
 
 export default function ForgotPasswordPage() {
   return (
-    <AuthLayout title="Réinitialiser le mot de passe">
+    <AuthLayout
+      subtitle="Recevez un lien sécurisé pour choisir un nouveau mot de passe."
+      title="Mot de passe oublié">
       <ForgotPasswordForm />
     </AuthLayout>
   );

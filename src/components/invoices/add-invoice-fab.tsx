@@ -33,7 +33,7 @@ export function AddInvoiceFab({
       return;
     }
 
-    const allowed = await guardResource('invoices');
+    const allowed = await guardResource('documents');
 
     if (!allowed) {
       return;

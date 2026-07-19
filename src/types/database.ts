@@ -551,6 +551,9 @@ export type SubscriptionPlanRow = {
   max_clients: number | null;
   max_quotes: number | null;
   max_invoices: number | null;
+  max_documents_per_month: number | null;
+  max_siren_searches_per_month: number | null;
+  max_companies: number | null;
   features: Record<string, unknown>;
   stripe_price_id: string | null;
   stripe_product_id: string | null;
@@ -784,6 +787,10 @@ export type Database = {
       };
       check_plan_limit: {
         Args: { p_resource: string };
+        Returns: Record<string, unknown>;
+      };
+      consume_siren_search: {
+        Args: Record<PropertyKey, never>;
         Returns: Record<string, unknown>;
       };
       reserve_next_quote_number: {

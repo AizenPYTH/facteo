@@ -102,6 +102,17 @@ body {
   animation: shimmer 1.5s infinite;
 }
 
+/* Chrome / Edge : détecte l’autofill du mot de passe suggéré */
+@keyframes onAutoFillStart {
+  from { opacity: 0.99; }
+  to { opacity: 1; }
+}
+
+.autofill-detect:-webkit-autofill {
+  animation-name: onAutoFillStart;
+  animation-duration: 0.001s;
+}
+
 .legal-prose h2 {
   scroll-margin-top: 6rem;
 }

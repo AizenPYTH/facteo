@@ -43,7 +43,7 @@ export function useSubscription() {
   const subscription = snapshot?.subscription ?? null;
   const plan = snapshot?.plan ?? null;
   const usage = snapshot?.usage ?? null;
-  const isPremium = subscription?.effectivePlanId === 'premium';
+  const isPremium = Boolean(subscription && subscription.effectivePlanId !== 'micro');
 
   function hasFeature(feature: PlanFeatureKey): boolean {
     if (!subscription || !plan) {
@@ -65,6 +65,12 @@ export function useSubscription() {
         return plan.maxQuotes;
       case 'invoices':
         return plan.maxInvoices;
+      case 'documents':
+        return plan.maxDocumentsPerMonth;
+      case 'companies':
+        return plan.maxCompanies;
+      case 'siren_searches':
+        return plan.maxSirenSearchesPerMonth;
       default:
         return null;
     }

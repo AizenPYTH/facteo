@@ -92,8 +92,8 @@ export function LoginForm() {
         ) : null}
       </div>
 
-      <div className="flex items-center justify-between text-sm">
-        <Link className="font-medium text-primary hover:underline" href="/mot-de-passe-oublie">
+      <div className="flex items-center justify-end text-sm">
+        <Link className="font-semibold text-primary hover:underline" href="/mot-de-passe-oublie">
           Mot de passe oublié ?
         </Link>
       </div>

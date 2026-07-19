@@ -11,6 +11,8 @@ import {
   marketingText,
   marketingTypography,
 } from '@/constants/marketing/theme';
+import { openExternalUrl, openLegalPage } from '@/lib/legal/open-legal-page';
+import { MARKETING_CONTACT } from '@/constants/marketing/site';
 
 export type LegalSection = {
   id?: string;
@@ -40,6 +42,22 @@ export function LegalDocument({
   const router = useRouter();
 
   function navigateTo(href: string) {
+    if (href === '/privacy') {
+      void openLegalPage('privacy');
+      return;
+    }
+    if (href === '/terms') {
+      void openLegalPage('terms');
+      return;
+    }
+    if (href === '/legal') {
+      void openLegalPage('legal');
+      return;
+    }
+    if (href === '/cookies') {
+      void openLegalPage('cookies');
+      return;
+    }
     router.push(href as '/');
   }
 
@@ -105,7 +123,9 @@ export function LegalDocument({
                 </Text>
                 <Pressable
                   accessibilityRole="link"
-                  onPress={() => navigateTo('/privacy')}
+                  onPress={() =>
+                    void openExternalUrl(`mailto:${MARKETING_CONTACT.email}`)
+                  }
                   style={styles.contactLink}>
                   <Text style={styles.contactLinkText}>{LEGAL_CONTACT.email}</Text>
                 </Pressable>

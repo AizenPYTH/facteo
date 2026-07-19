@@ -33,7 +33,7 @@ export function AddQuoteFab({
       return;
     }
 
-    const allowed = await guardResource('quotes');
+    const allowed = await guardResource('documents');
 
     if (!allowed) {
       return;

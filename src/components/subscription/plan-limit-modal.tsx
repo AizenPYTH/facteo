@@ -42,7 +42,8 @@ export function PlanLimitModal({ visible, onClose }: PlanLimitModalProps) {
         <Pressable onPress={(event) => event.stopPropagation()} style={styles.dialog}>
           <Text style={styles.title}>Limite atteinte</Text>
           <Text style={styles.description}>
-            Vous avez atteint la limite de votre offre Standard.
+            Vous avez atteint la limite de votre offre actuelle. Passez à une offre supérieure pour
+            continuer.
           </Text>
 
           <View style={styles.actions}>
@@ -51,7 +52,7 @@ export function PlanLimitModal({ visible, onClose }: PlanLimitModalProps) {
               onPress={() => {
                 void handleUpgrade();
               }}
-              title="Passer à Premium"
+              title="Voir les offres"
             />
             <Button onPress={onClose} title="Fermer" variant="ghost" />
           </View>

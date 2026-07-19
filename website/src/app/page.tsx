@@ -32,14 +32,8 @@ export default function HomePage() {
       <MobileSection />
       <TestimonialsSection />
       <section className="bg-slate-50 px-6 py-20 lg:px-8" id="pricing">
-        <div className="mx-auto max-w-6xl">
-          <FadeIn className="text-center">
-            <h2 className="text-3xl font-bold text-foreground">Tarifs simples et transparents</h2>
-            <p className="mt-4 text-muted">Commencez gratuitement, passez à Premium quand vous êtes prêt.</p>
-          </FadeIn>
-          <div className="mt-12">
-            <PricingSection />
-          </div>
+        <div className="mx-auto max-w-7xl">
+          <PricingSection showHeader />
         </div>
       </section>
       <section className="px-6 py-20 lg:px-8" id="faq">

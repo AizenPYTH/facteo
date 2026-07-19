@@ -10,7 +10,9 @@ export const metadata: Metadata = {
 
 export default function RegisterPage() {
   return (
-    <AuthLayout subtitle="Création de compte en 2 minutes. Aucune carte requise." title="Créer un compte">
+    <AuthLayout
+      subtitle="Pour les professionnels qui facturent. Aucune carte requise."
+      title="Créer un compte">
       <RegisterForm />
     </AuthLayout>
   );

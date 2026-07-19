@@ -3,9 +3,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTenant } from '@/hooks/use-tenant';
 import { requireScope } from '@/lib/tenant/scope';
 import { createClient, deleteClient, updateClient } from '@/lib/supabase/clients';
-import { enforcePlanLimit } from '@/lib/subscription/limit-guard';
 import { clientsQueryKeys, dashboardQueryKeys } from '@/lib/supabase/query-keys';
-import { useSubscriptionContext } from '@/providers/subscription-provider';
 import type { ClientFormValues } from '@/types/client';
 
 function useInvalidateClients() {
@@ -19,13 +17,11 @@ function useInvalidateClients() {
 
 export function useClientMutations() {
   const { scope } = useTenant();
-  const { showLimitModal } = useSubscriptionContext();
   const invalidateClients = useInvalidateClients();
   const queryClient = useQueryClient();
 
   const createClientMutation = useMutation({
     mutationFn: async (input: ClientFormValues) => {
-      await enforcePlanLimit('clients', showLimitModal);
       return createClient(requireScope(scope), input);
     },
     onSuccess: invalidateClients,

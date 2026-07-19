@@ -1,10 +1,10 @@
 import { useEffect } from 'react';
 import { ActivityIndicator, Pressable, Text, View } from 'react-native';
-import * as Linking from 'expo-linking';
 
 import { useColors, useThemedStyles } from '@/hooks/use-colors';
 import { spacing } from '@/constants/theme/spacing';
 import { typography } from '@/constants/theme/typography';
+import { openExternalUrl } from '@/lib/legal/open-legal-page';
 
 type LegalExternalRedirectProps = {
   url: string;
@@ -17,15 +17,15 @@ export function LegalExternalRedirect({ url, label }: LegalExternalRedirectProps
   const colors = useColors();
 
   useEffect(() => {
-    void Linking.openURL(url);
+    void openExternalUrl(url);
   }, [url]);
 
   return (
     <View style={styles.root}>
       <ActivityIndicator color={colors.primary} />
       <Text style={styles.title}>{label}</Text>
-      <Text style={styles.subtitle}>Redirection vers facteo.app…</Text>
-      <Pressable accessibilityRole="link" onPress={() => void Linking.openURL(url)}>
+      <Text style={styles.subtitle}>Ouverture dans le navigateur…</Text>
+      <Pressable accessibilityRole="link" onPress={() => void openExternalUrl(url)}>
         <Text style={styles.link}>Ouvrir la page</Text>
       </Pressable>
     </View>

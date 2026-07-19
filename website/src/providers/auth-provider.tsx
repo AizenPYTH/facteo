@@ -22,6 +22,8 @@ export type SignUpParams = {
   firstName: string;
   lastName: string;
   companyName: string;
+  activityType?: string;
+  phone?: string;
 };
 
 export type AuthResult = { error: AuthError | null; session: Session | null };
@@ -92,16 +94,26 @@ export function AuthProvider({ children }: PropsWithChildren) {
   }, []);
 
   const signUp = useCallback(
-    async ({ email, password, firstName, lastName, companyName }: SignUpParams) => {
+    async ({
+      email,
+      password,
+      firstName,
+      lastName,
+      companyName,
+      activityType,
+      phone,
+    }: SignUpParams) => {
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
-          emailRedirectTo: getAuthCallbackUrl('/app'),
+          emailRedirectTo: getAuthCallbackUrl('/auth/confirmed'),
           data: {
             first_name: firstName,
             last_name: lastName,
             company_name: companyName,
+            activity_type: activityType ?? null,
+            phone: phone ?? null,
           },
         },
       });

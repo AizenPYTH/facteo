@@ -7,6 +7,7 @@ import {
   deleteCompany,
   updateCompanyName,
 } from '@/lib/supabase/companies';
+import { assertPlanLimit } from '@/lib/supabase/subscriptions';
 import { companiesQueryKeys } from '@/lib/supabase/query-keys';
 import type { CreateCompanyInput } from '@/types/tenant';
 
@@ -17,7 +18,10 @@ export function useCompanyManagement() {
   const userId = user?.id;
 
   const createMutation = useMutation({
-    mutationFn: (input: CreateCompanyInput) => createCompany(input),
+    mutationFn: async (input: CreateCompanyInput) => {
+      await assertPlanLimit('companies');
+      return createCompany(input);
+    },
     onSuccess: async (newCompanyId) => {
       await queryClient.invalidateQueries({ queryKey: companiesQueryKeys.all });
       await switchCompany(newCompanyId);

@@ -38,7 +38,9 @@ export async function updateSession(request: NextRequest) {
   const isAuthRoute =
     pathname.startsWith('/login') ||
     pathname.startsWith('/register') ||
-    pathname.startsWith('/mot-de-passe-oublie');
+    pathname.startsWith('/mot-de-passe-oublie') ||
+    pathname.startsWith('/reinitialiser-mot-de-passe') ||
+    pathname.startsWith('/auth');
 
   if (isAppRoute && !user) {
     const loginUrl = request.nextUrl.clone();
@@ -48,6 +50,15 @@ export async function updateSession(request: NextRequest) {
   }
 
   if (isAuthRoute && user) {
+    // Laisser terminer le reset password / confirmation même si déjà connecté
+    if (
+      pathname.startsWith('/reinitialiser-mot-de-passe') ||
+      pathname.startsWith('/auth/confirm') ||
+      pathname.startsWith('/auth/callback') ||
+      pathname.startsWith('/auth/confirmed')
+    ) {
+      return response;
+    }
     const appUrl = request.nextUrl.clone();
     appUrl.pathname = '/app';
     return NextResponse.redirect(appUrl);

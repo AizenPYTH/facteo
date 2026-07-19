@@ -12,7 +12,7 @@ import { useColors, useThemedStyles } from '@/hooks/use-colors';
 import { spacing } from '@/constants/theme/spacing';
 import { typography } from '@/constants/theme/typography';
 import { MARKETING_CONTACT } from '@/constants/marketing/site';
-import { openHelpPage, openLegalPage } from '@/lib/legal/open-legal-page';
+import { openHelpPage, openLegalPage, openMarketingSite } from '@/lib/legal/open-legal-page';
 import { useAuth } from '@/hooks/use-auth';
 import { useCompanyProfile } from '@/hooks/use-company-profile';
 import { useSubscription } from '@/hooks/use-subscription';
@@ -138,6 +138,10 @@ export function SettingsDesktopContent() {
             <SettingsRow label="Centre d’aide" onPress={() => void openHelpPage('support')} />
             <View style={styles.separator} />
             <SettingsRow label="Guide d’utilisation" onPress={() => void openHelpPage('guide')} />
+            <View style={styles.separator} />
+            <SettingsRow label="Contact" onPress={() => void openHelpPage('contact')} />
+            <View style={styles.separator} />
+            <SettingsRow label="Site web FACTEO" onPress={() => void openMarketingSite()} />
           </SettingsSection>
 
           <SettingsSection title="Confidentialité & conditions">

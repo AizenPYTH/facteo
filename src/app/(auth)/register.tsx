@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/use-auth';
 import { useAuthScreenStyles } from '@/hooks/use-auth-screen-styles';
 import { getAuthErrorMessage } from '@/lib/auth/errors';
+import { openLegalPage } from '@/lib/legal/open-legal-page';
 import { registerSchema, type RegisterFormValues } from '@/lib/validations/register';
 import { useToast } from '@/providers/toast-provider';
 
@@ -165,6 +166,23 @@ export default function RegisterScreen() {
           )}
         />
       ))}
+      <Text style={authScreenStyles.footerText}>
+        En créant un compte, vous acceptez nos{' '}
+        <Text
+          accessibilityRole="link"
+          onPress={() => void openLegalPage('terms')}
+          style={authScreenStyles.footerLink}>
+          conditions d’utilisation
+        </Text>
+        {' '}et notre{' '}
+        <Text
+          accessibilityRole="link"
+          onPress={() => void openLegalPage('privacy')}
+          style={authScreenStyles.footerLink}>
+          politique de confidentialité
+        </Text>
+        .
+      </Text>
     </AuthScreen>
   );
 }

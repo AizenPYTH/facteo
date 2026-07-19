@@ -1,4 +1,14 @@
-export type SubscriptionPlanId = 'free' | 'premium' | 'starter' | 'pro' | 'enterprise';
+export type SubscriptionPlanId =
+  | 'free'
+  | 'premium'
+  | 'starter'
+  | 'pro'
+  | 'enterprise'
+  | 'micro'
+  | 'basique'
+  | 'standard';
+
+export type EffectivePlanId = 'micro' | 'basique' | 'standard' | 'pro';
 
 export type SubscriptionStatus =
   | 'trialing'
@@ -8,12 +18,19 @@ export type SubscriptionStatus =
   | 'unpaid'
   | 'incomplete';
 
-export type PlanResource = 'clients' | 'quotes' | 'invoices';
+export type PlanResource =
+  | 'clients'
+  | 'quotes'
+  | 'invoices'
+  | 'documents'
+  | 'companies'
+  | 'siren_searches';
 
 export type PlanFeatureKey =
   | 'custom_logo'
   | 'company_signature'
   | 'client_signature'
+  | 'pdf_templates'
   | 'stripe_payments'
   | 'ai_assistant'
   | 'advanced_stats'
@@ -22,13 +39,16 @@ export type PlanFeatureKey =
 export type PlanFeatures = Record<PlanFeatureKey, boolean>;
 
 export type SubscriptionPlan = {
-  id: SubscriptionPlanId;
+  id: SubscriptionPlanId | EffectivePlanId | string;
   displayName: string;
   description: string | null;
   sortOrder: number;
   maxClients: number | null;
   maxQuotes: number | null;
   maxInvoices: number | null;
+  maxDocumentsPerMonth: number | null;
+  maxSirenSearchesPerMonth: number | null;
+  maxCompanies: number | null;
   features: PlanFeatures;
   stripePriceId: string | null;
   stripeProductId: string | null;
@@ -40,7 +60,7 @@ export type SubscriptionPlan = {
 export type UserSubscription = {
   userId: string;
   plan: SubscriptionPlanId;
-  effectivePlanId: 'free' | 'premium';
+  effectivePlanId: EffectivePlanId;
   status: SubscriptionStatus;
   stripeCustomerId: string | null;
   stripeSubscriptionId: string | null;
@@ -56,6 +76,9 @@ export type SubscriptionUsage = {
   clients: number;
   quotes: number;
   invoices: number;
+  documents: number;
+  companies: number;
+  sirenSearches: number;
 };
 
 export type PlanLimitCheck = {
@@ -63,7 +86,7 @@ export type PlanLimitCheck = {
   resource: PlanResource;
   current: number;
   limit: number | null;
-  planId: 'free' | 'premium';
+  planId: EffectivePlanId | string;
   planName: string;
   status: SubscriptionStatus;
   isPremium: boolean;
@@ -79,16 +102,24 @@ export const PLAN_FEATURE_LABELS: Record<PlanFeatureKey, string> = {
   custom_logo: 'Logo personnalisé',
   company_signature: 'Signature entreprise',
   client_signature: 'Signature client',
+  pdf_templates: 'Modèles de factures et devis',
   stripe_payments: 'Paiement Stripe',
   ai_assistant: 'Assistant IA',
   advanced_stats: 'Statistiques avancées',
   siren_search: 'Recherche SIREN / SIRET',
 };
 
+export const MICRO_PLAN_LIMITS = {
+  maxDocumentsPerMonth: 3,
+  maxSirenSearchesPerMonth: 0,
+  maxCompanies: 1,
+} as const;
+
+/** @deprecated Utiliser MICRO_PLAN_LIMITS */
 export const FREE_PLAN_LIMITS = {
-  maxClients: 5,
-  maxQuotes: 10,
-  maxInvoices: 10,
+  maxClients: null as number | null,
+  maxQuotes: 3,
+  maxInvoices: 3,
 } as const;
 
 export class PlanLimitError extends Error {

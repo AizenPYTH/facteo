@@ -9,7 +9,9 @@ import { useAuth } from '@/hooks/use-auth';
 import { useThemedStyles } from '@/hooks/use-colors';
 import { spacing } from '@/constants/theme/spacing';
 import { useSettings, useUpdateDocumentTemplates } from '@/hooks/use-settings';
+import { useSubscription } from '@/hooks/use-subscription';
 import { useTenant } from '@/hooks/use-tenant';
+import { PremiumUpgradeBanner } from '@/components/subscription/premium-upgrade-banner';
 import { buildTemplatePreviewHtml } from '@/lib/pdf/template-preview-html';
 import { requireScope } from '@/lib/tenant/scope';
 import { useToast } from '@/providers/toast-provider';
@@ -21,6 +23,8 @@ export default function DocumentTemplatesScreen() {
   const { data, isLoading } = useSettings();
   const { scope } = useTenant();
   const { user } = useAuth();
+  const { hasFeature } = useSubscription();
+  const templatesLocked = !hasFeature('pdf_templates');
   const updateTemplates = useUpdateDocumentTemplates();
   const { showError } = useToast();
 
@@ -102,6 +106,10 @@ export default function DocumentTemplatesScreen() {
   return (
     <SettingsScreenFrame title="Modèles de documents">
       <View style={styles.content}>
+        {templatesLocked ? (
+          <PremiumUpgradeBanner message="Les modèles PDF sont disponibles à partir de l’offre Basique" />
+        ) : null}
+
         <AppText color="secondary" variant="subtitle">
           Parcourez les modèles en taille réelle. Le modèle sélectionné est enregistré
           automatiquement.
@@ -109,6 +117,7 @@ export default function DocumentTemplatesScreen() {
 
         <View style={styles.segment}>
           <Pressable
+            disabled={templatesLocked}
             onPress={() => setActiveKind('invoice')}
             style={[styles.segmentItem, activeKind === 'invoice' && styles.segmentItemActive]}>
             <AppText medium={activeKind === 'invoice'} variant="body">
@@ -116,6 +125,7 @@ export default function DocumentTemplatesScreen() {
             </AppText>
           </Pressable>
           <Pressable
+            disabled={templatesLocked}
             onPress={() => setActiveKind('quote')}
             style={[styles.segmentItem, activeKind === 'quote' && styles.segmentItemActive]}>
             <AppText medium={activeKind === 'quote'} variant="body">
@@ -124,12 +134,19 @@ export default function DocumentTemplatesScreen() {
           </Pressable>
         </View>
 
-        <Pressable onPress={() => setGalleryVisible(true)} style={styles.openGallery}>
+        <Pressable
+          disabled={templatesLocked}
+          onPress={() => {
+            if (!templatesLocked) setGalleryVisible(true);
+          }}
+          style={[styles.openGallery, templatesLocked && styles.openGalleryLocked]}>
           <AppText medium variant="body">
             Ouvrir la galerie des modèles de {kindLabel}
           </AppText>
           <AppText color="secondary" variant="caption">
-            Aperçu PDF réel · balayez entre les modèles
+            {templatesLocked
+              ? 'Disponible à partir de l’offre Basique'
+              : 'Aperçu PDF réel · balayez entre les modèles'}
           </AppText>
         </Pressable>
       </View>
@@ -141,7 +158,7 @@ export default function DocumentTemplatesScreen() {
         onSelect={handleSelectTemplate}
         selectedTemplateId={selectedTemplateId}
         title={activeKind === 'invoice' ? 'Modèles de factures' : 'Modèles de devis'}
-        visible={galleryVisible}
+        visible={galleryVisible && !templatesLocked}
       />
     </SettingsScreenFrame>
   );
@@ -176,6 +193,9 @@ function useStyles() {
       backgroundColor: colors.surface,
       borderWidth: StyleSheet.hairlineWidth,
       borderColor: colors.border,
+    },
+    openGalleryLocked: {
+      opacity: 0.55,
     },
   }));
 }
