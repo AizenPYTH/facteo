@@ -1,0 +1,50 @@
+# Configuration Google OAuth — marque INVEQ
+
+Le message « Accéder à l’application eogyopufctnqasjhsthp.supabase.co » vient de
+**Google Cloud Console** (écran de consentement OAuth), pas du code INVEQ.
+
+## 1. Google Cloud Console
+
+1. Ouvrir [Google Cloud Console](https://console.cloud.google.com/) → le projet lié à INVEQ
+2. **APIs & Services** → **OAuth consent screen**
+3. Renseigner :
+
+| Champ | Valeur |
+|-------|--------|
+| App name | `INVEQ` |
+| User support email | ton e-mail |
+| Application home page | `https://inveq.fr` |
+| Application privacy policy | `https://inveq.fr/confidentialite` |
+| Application terms of service | `https://inveq.fr/conditions-utilisation` |
+| Authorized domains | `inveq.fr` (+ `supabase.co` si demandé) |
+| App logo | logo INVEQ (carré, ≤ 120 Ko, PNG/JPG) |
+
+4. Enregistrer → **Publish app** (ou rester en Testing avec des test users)
+
+## 2. Identifiants OAuth
+
+**APIs & Services** → **Credentials** → client OAuth **Web** :
+
+- Authorized JavaScript origins :
+  - `https://inveq.fr`
+  - `http://localhost:3000`
+- Authorized redirect URIs :
+  - `https://eogyopufctnqasjhsthp.supabase.co/auth/v1/callback`
+  - (ne pas remplacer par inveq.fr — Supabase reçoit le callback Google)
+
+## 3. Supabase
+
+**Authentication** → **URL Configuration** :
+
+- Site URL : `https://inveq.fr`
+- Redirect URLs :
+  - `https://inveq.fr/auth/callback`
+  - `http://localhost:3000/auth/callback`
+
+**Authentication** → **Providers** → **Google** :
+- Client ID / Secret = ceux du client Web Google Cloud
+
+## 4. Vérification
+
+Après publication du consentement Google, la fenêtre doit afficher **INVEQ**
+(et non le sous-domaine Supabase). Un délai de quelques minutes est possible.

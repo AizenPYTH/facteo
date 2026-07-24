@@ -78,7 +78,7 @@ export async function syncUserProfileAfterAuth(
 
   if (!memberships?.length) {
     const { error: companyError } = await supabase.rpc('create_company_for_user', {
-      p_name: 'Mon entreprise',
+      p_name: '',
     });
     if (companyError) {
       logSupabaseError('syncUserProfileAfterAuth.company', companyError);

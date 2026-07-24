@@ -3,12 +3,16 @@
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { ArrowLeft, ArrowRight, Building2, Check, ImagePlus, Loader2 } from 'lucide-react';
 import Link from 'next/link';
-import { useEffect, useMemo, useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useEffect, useState } from 'react';
+import { useForm, type Resolver } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 
 import { BrandWordmark } from '@/components/brand/brand-logo';
-import { completeOnboarding } from '@/lib/domain/supabase/onboarding';
+import {
+  completeOnboarding,
+  loadOnboardingDraft,
+  saveOnboardingDraft,
+} from '@/lib/domain/supabase/onboarding';
 import { ACTIVITY_TYPES } from '@/lib/domain/validations/register';
 import {
   CURRENCIES,
@@ -35,7 +39,6 @@ const inputClass =
 export function OnboardingWizard() {
   const { user } = useAuth();
   const {
-    activeCompany,
     companies,
     scope,
     loading: companyLoading,
@@ -49,60 +52,60 @@ export function OnboardingWizard() {
   const [submitting, setSubmitting] = useState(false);
   const [bootstrapping, setBootstrapping] = useState(false);
   const [bootstrapAttempted, setBootstrapAttempted] = useState(false);
+  const [draftLoading, setDraftLoading] = useState(true);
+  const [draftReady, setDraftReady] = useState(false);
+
+  const {
+    register,
+    trigger,
+    getValues,
+    reset,
+    formState: { errors },
+  } = useForm<OnboardingFormValues>({
+    resolver: zodResolver(onboardingSchema) as Resolver<OnboardingFormValues>,
+    defaultValues: createEmptyOnboardingValues(),
+    mode: 'onBlur',
+  });
 
   useEffect(() => {
     if (companyLoading || !user || companies.length > 0 || bootstrapAttempted) return;
     setBootstrapAttempted(true);
     setBootstrapping(true);
-    void createNewCompany({ name: 'Mon entreprise' })
+    // Nom vide — jamais "Mon entreprise"
+    void createNewCompany({ name: '' })
       .catch(() => {
         /* handle_new_user may still be catching up */
       })
       .finally(() => setBootstrapping(false));
   }, [bootstrapAttempted, companies.length, companyLoading, createNewCompany, user]);
 
-  const defaults = useMemo(() => {
-    const base = createEmptyOnboardingValues();
-    if (!activeCompany) return base;
-    return {
-      ...base,
-      companyName:
-        activeCompany.name && activeCompany.name !== 'Mon entreprise'
-          ? activeCompany.name
-          : '',
-      phone: activeCompany.phone ?? '',
-      address: activeCompany.address ?? '',
-      city: activeCompany.city ?? '',
-      postalCode: activeCompany.postalCode ?? '',
-      country: activeCompany.country ?? 'France',
-      vatNumber: activeCompany.vatNumber ?? '',
-      siret: activeCompany.siret ?? '',
-    };
-  }, [activeCompany]);
-
-  const {
-    register,
-    trigger,
-    getValues,
-    setValue,
-    formState: { errors },
-  } = useForm<OnboardingFormValues>({
-    resolver: zodResolver(onboardingSchema),
-    defaultValues: defaults,
-    mode: 'onBlur',
-  });
-
   useEffect(() => {
-    setValue('companyName', defaults.companyName);
-    setValue('phone', defaults.phone);
-    setValue('address', defaults.address);
-    setValue('city', defaults.city);
-    setValue('postalCode', defaults.postalCode);
-    setValue('country', defaults.country);
-    setValue('vatNumber', defaults.vatNumber);
-    setValue('siret', defaults.siret);
-    if (activeCompany?.logoUrl) setLogoPreview(activeCompany.logoUrl);
-  }, [defaults, setValue, activeCompany?.logoUrl]);
+    if (!scope || companyLoading || bootstrapping) return;
+
+    let cancelled = false;
+    setDraftLoading(true);
+
+    void loadOnboardingDraft(scope)
+      .then(({ values, logoUrl, step: savedStep }) => {
+        if (cancelled) return;
+        reset(values);
+        setLogoPreview(logoUrl);
+        setStep(savedStep >= 1 && savedStep <= 3 ? savedStep : 1);
+        setDraftReady(true);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        reset(createEmptyOnboardingValues());
+        setDraftReady(true);
+      })
+      .finally(() => {
+        if (!cancelled) setDraftLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [scope, companyLoading, bootstrapping, reset]);
 
   useEffect(() => {
     return () => {
@@ -118,6 +121,11 @@ export function OnboardingWizard() {
 
   async function goNext() {
     setSubmitError(null);
+    if (!scope) {
+      setSubmitError('Espace entreprise introuvable. Rechargez la page.');
+      return;
+    }
+
     const fields =
       step === 1
         ? (['companyName', 'activityType'] as const)
@@ -134,19 +142,18 @@ export function OnboardingWizard() {
       return;
     }
 
-    if (step < 3) {
-      setStep((s) => s + 1);
-      return;
-    }
-
-    if (!scope) {
-      setSubmitError('Espace entreprise introuvable. Rechargez la page.');
-      return;
-    }
-
     setSubmitting(true);
     try {
-      await completeOnboarding(scope, getValues(), logoFile);
+      const values = getValues();
+
+      if (step < 3) {
+        await saveOnboardingDraft(scope, values, step as 1 | 2 | 3);
+        setStep((s) => s + 1);
+        setSubmitting(false);
+        return;
+      }
+
+      await completeOnboarding(scope, values, logoFile);
       window.location.href = '/app';
     } catch (err) {
       setSubmitError(
@@ -164,10 +171,10 @@ export function OnboardingWizard() {
   function onLogoChange(file: File | null) {
     if (logoPreview?.startsWith('blob:')) URL.revokeObjectURL(logoPreview);
     setLogoFile(file);
-    setLogoPreview(file ? URL.createObjectURL(file) : activeCompany?.logoUrl ?? null);
+    setLogoPreview(file ? URL.createObjectURL(file) : null);
   }
 
-  if (companyLoading || bootstrapping) {
+  if (companyLoading || bootstrapping || draftLoading || !draftReady) {
     return (
       <div className="flex min-h-svh items-center justify-center bg-slate-50">
         <Loader2 className="animate-spin text-primary" size={28} />
@@ -260,6 +267,7 @@ export function OnboardingWizard() {
                     error={errors.companyName?.message}
                     id="companyName"
                     label="Nom de l’entreprise"
+                    placeholder="Nom de votre entreprise"
                     required
                     {...register('companyName')}
                   />
@@ -270,6 +278,7 @@ export function OnboardingWizard() {
                       Type d’activité <span className="text-primary">*</span>
                     </label>
                     <select className={inputClass} id="activityType" {...register('activityType')}>
+                      <option value="">Sélectionnez…</option>
                       {ACTIVITY_TYPES.map((type) => (
                         <option key={type.value} value={type.value}>
                           {type.label}
@@ -291,6 +300,7 @@ export function OnboardingWizard() {
                     label="Téléphone"
                     type="tel"
                     autoComplete="tel"
+                    placeholder="06 12 34 56 78"
                     {...register('phone')}
                   />
                   <Field
@@ -298,6 +308,7 @@ export function OnboardingWizard() {
                     id="address"
                     label="Adresse"
                     autoComplete="street-address"
+                    placeholder="12 rue de la Paix"
                     {...register('address')}
                   />
                   <div className="grid gap-4 sm:grid-cols-2">
@@ -306,6 +317,7 @@ export function OnboardingWizard() {
                       id="postalCode"
                       label="Code postal"
                       autoComplete="postal-code"
+                      placeholder="75001"
                       {...register('postalCode')}
                     />
                     <Field
@@ -313,6 +325,7 @@ export function OnboardingWizard() {
                       id="city"
                       label="Ville"
                       autoComplete="address-level2"
+                      placeholder="Paris"
                       {...register('city')}
                     />
                   </div>
@@ -321,6 +334,7 @@ export function OnboardingWizard() {
                     id="country"
                     label="Pays"
                     autoComplete="country-name"
+                    placeholder="France"
                     {...register('country')}
                   />
                 </div>
@@ -332,9 +346,10 @@ export function OnboardingWizard() {
                     <label
                       className="mb-1.5 block text-sm font-medium text-slate-700"
                       htmlFor="currency">
-                      Devise
+                      Devise <span className="text-primary">*</span>
                     </label>
                     <select className={inputClass} id="currency" {...register('currency')}>
+                      <option value="">Sélectionnez…</option>
                       {CURRENCIES.map((c) => (
                         <option key={c.value} value={c.value}>
                           {c.label}
@@ -433,7 +448,7 @@ export function OnboardingWizard() {
         </div>
 
         <p className="mt-6 text-center text-xs text-slate-400">
-          Vous pourrez modifier ces informations plus tard dans les paramètres.
+          Votre progression est enregistrée à chaque étape.
         </p>
       </div>
     </div>

@@ -23,9 +23,13 @@ export const CURRENCIES = [
 
 export const onboardingStep1Schema = z.object({
   companyName: z.string().trim().min(1, 'Indiquez le nom de votre entreprise.'),
-  activityType: z.enum(activityTypeValues, {
-    errorMap: () => ({ message: 'Choisissez un type d’activité.' }),
-  }),
+  activityType: z
+    .string()
+    .refine(
+      (value): value is ActivityType =>
+        (activityTypeValues as readonly string[]).includes(value),
+      'Choisissez un type d’activité.',
+    ),
 });
 
 export const onboardingStep2Schema = z.object({
@@ -43,7 +47,7 @@ export const onboardingStep3Schema = z.object({
   currency: z
     .string()
     .trim()
-    .regex(/^[A-Z]{3}$/, 'Devise invalide.'),
+    .regex(/^[A-Z]{3}$/, 'Choisissez une devise.'),
   vatNumber: optionalText.refine(
     (value) => !value || /^[A-Z]{2}[A-Z0-9]{2,13}$/i.test(normalizeDigits(value)),
     'Numéro de TVA invalide',
@@ -59,7 +63,19 @@ export const onboardingSchema = onboardingStep1Schema
   .merge(onboardingStep2Schema)
   .merge(onboardingStep3Schema);
 
-export type OnboardingFormValues = z.infer<typeof onboardingSchema>;
+export type OnboardingFormValues = {
+  companyName: string;
+  activityType: ActivityType | '';
+  phone: string;
+  address: string;
+  city: string;
+  postalCode: string;
+  country: string;
+  currency: string;
+  vatNumber: string;
+  siret: string;
+};
+
 export type OnboardingStep1Values = z.infer<typeof onboardingStep1Schema>;
 export type OnboardingStep2Values = z.infer<typeof onboardingStep2Schema>;
 export type OnboardingStep3Values = z.infer<typeof onboardingStep3Schema>;
@@ -67,13 +83,13 @@ export type OnboardingStep3Values = z.infer<typeof onboardingStep3Schema>;
 export function createEmptyOnboardingValues(): OnboardingFormValues {
   return {
     companyName: '',
-    activityType: 'artisan',
+    activityType: '',
     phone: '',
     address: '',
     city: '',
     postalCode: '',
-    country: 'France',
-    currency: 'EUR',
+    country: '',
+    currency: '',
     vatNumber: '',
     siret: '',
   };

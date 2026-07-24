@@ -12,7 +12,7 @@ import type { Profile, ProfileInsert } from '@/types/database';
 import { normalizePaymentMethods } from '@/types/payment-methods';
 
 export const PROFILE_COLUMNS =
-  'id, first_name, last_name, company_name, email, phone, address, postal_code, city, country, siret, vat_number, iban, bic, payment_methods, logo_url, signature_url, avatar_url, activity_type, onboarding_completed, created_at, updated_at' as const;
+  'id, first_name, last_name, company_name, email, phone, address, postal_code, city, country, siret, vat_number, iban, bic, payment_methods, logo_url, signature_url, avatar_url, activity_type, onboarding_completed, onboarding_step, created_at, updated_at' as const;
 
 type UserMetadata = Record<string, unknown>;
 

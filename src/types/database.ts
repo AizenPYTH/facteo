@@ -23,6 +23,7 @@ export type Profile = {
   avatar_url: string | null;
   activity_type: string | null;
   onboarding_completed: boolean;
+  onboarding_step: number;
   created_at: string;
   updated_at: string;
 };
@@ -48,6 +49,7 @@ export type ProfileInsert = {
   avatar_url?: string | null;
   activity_type?: string | null;
   onboarding_completed?: boolean;
+  onboarding_step?: number;
   created_at?: string;
   updated_at?: string;
 };
