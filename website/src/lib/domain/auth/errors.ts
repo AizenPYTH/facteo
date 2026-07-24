@@ -6,6 +6,15 @@ export function getAuthErrorMessage(message: string): string {
 }
 
 function mapAuthErrorMessage(message: string): string {
+  const normalized = message.toLowerCase();
+
+  if (normalized.includes('provider is not enabled') || normalized.includes('unsupported provider')) {
+    return 'La connexion Google n’est pas encore activée. Réessayez plus tard ou utilisez votre e-mail.';
+  }
+  if (normalized.includes('popup') || normalized.includes('cancelled') || normalized.includes('canceled')) {
+    return 'Connexion Google annulée.';
+  }
+
   switch (message) {
     case 'Invalid login credentials':
       return 'Adresse e-mail ou mot de passe incorrect.';

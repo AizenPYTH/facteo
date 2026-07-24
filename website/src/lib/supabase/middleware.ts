@@ -9,13 +9,22 @@ async function fetchOnboardingCompleted(
   supabase: ReturnType<typeof createServerClient<Database>>,
   userId: string,
 ): Promise<boolean> {
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('profiles')
     .select('onboarding_completed')
     .eq('id', userId)
     .maybeSingle();
 
-  return Boolean(data?.onboarding_completed);
+  // Si le profil n'existe pas encore, forcer l'onboarding
+  if (error || !data) return false;
+  return Boolean(data.onboarding_completed);
+}
+
+function redirectTo(request: NextRequest, pathname: string, clearSearch = true) {
+  const url = request.nextUrl.clone();
+  url.pathname = pathname;
+  if (clearSearch) url.search = '';
+  return NextResponse.redirect(url);
 }
 
 export async function updateSession(request: NextRequest) {
@@ -49,13 +58,19 @@ export async function updateSession(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const isAppRoute = pathname.startsWith('/app');
   const isOnboardingRoute = pathname.startsWith('/onboarding');
-  const isAuthRoute =
+  const isPublicAuthRoute =
     pathname.startsWith('/login') ||
     pathname.startsWith('/register') ||
     pathname.startsWith('/mot-de-passe-oublie') ||
+    pathname.startsWith('/connexion') ||
+    pathname.startsWith('/inscription');
+  const isAuthFlowRoute =
     pathname.startsWith('/reinitialiser-mot-de-passe') ||
-    pathname.startsWith('/auth');
+    pathname.startsWith('/auth/confirm') ||
+    pathname.startsWith('/auth/callback') ||
+    pathname.startsWith('/auth/confirmed');
 
+  // Routes privées sans session
   if ((isAppRoute || isOnboardingRoute) && !user) {
     const loginUrl = request.nextUrl.clone();
     loginUrl.pathname = '/login';
@@ -63,39 +78,28 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  if (user && (isAppRoute || isOnboardingRoute || (isAuthRoute && !pathname.startsWith('/auth')))) {
-    const onboardingDone = await fetchOnboardingCompleted(supabase, user.id);
-
-    if (isAppRoute && !onboardingDone) {
-      const onboardingUrl = request.nextUrl.clone();
-      onboardingUrl.pathname = '/onboarding';
-      onboardingUrl.search = '';
-      return NextResponse.redirect(onboardingUrl);
-    }
-
-    if (isOnboardingRoute && onboardingDone) {
-      const appUrl = request.nextUrl.clone();
-      appUrl.pathname = '/app';
-      appUrl.search = '';
-      return NextResponse.redirect(appUrl);
-    }
+  if (!user) {
+    return response;
   }
 
-  if (isAuthRoute && user) {
-    if (
-      pathname.startsWith('/reinitialiser-mot-de-passe') ||
-      pathname.startsWith('/auth/confirm') ||
-      pathname.startsWith('/auth/callback') ||
-      pathname.startsWith('/auth/confirmed')
-    ) {
-      return response;
-    }
+  // Flux auth technique : ne pas bloquer
+  if (isAuthFlowRoute) {
+    return response;
+  }
 
-    const onboardingDone = await fetchOnboardingCompleted(supabase, user.id);
-    const dest = request.nextUrl.clone();
-    dest.pathname = onboardingDone ? '/app' : '/onboarding';
-    dest.search = '';
-    return NextResponse.redirect(dest);
+  const onboardingDone = await fetchOnboardingCompleted(supabase, user.id);
+
+  if (isAppRoute && !onboardingDone) {
+    return redirectTo(request, '/onboarding');
+  }
+
+  if (isOnboardingRoute && onboardingDone) {
+    return redirectTo(request, '/app');
+  }
+
+  // Déjà connecté → login/register inutiles
+  if (isPublicAuthRoute) {
+    return redirectTo(request, onboardingDone ? '/app' : '/onboarding');
   }
 
   return response;

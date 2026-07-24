@@ -96,7 +96,8 @@ export function AuthProvider({ children }: PropsWithChildren) {
         email,
         password,
         options: {
-          emailRedirectTo: getAuthCallbackUrl('/onboarding'),
+          // Sans next : /auth/callback route vers onboarding ou /app
+          emailRedirectTo: getAuthCallbackUrl(),
           data: {
             first_name: firstName,
             last_name: lastName,
@@ -112,14 +113,21 @@ export function AuthProvider({ children }: PropsWithChildren) {
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: getAuthCallbackUrl('/onboarding'),
+        // URL propre (sans ?next=) — plus fiable avec la allowlist Supabase
+        redirectTo: getAuthCallbackUrl(),
+        skipBrowserRedirect: true,
         queryParams: {
           access_type: 'offline',
           prompt: 'select_account',
         },
       },
     });
-    return { error, session: data.url ? null : null };
+
+    if (!error && data.url && typeof window !== 'undefined') {
+      window.location.assign(data.url);
+    }
+
+    return { error, session: null };
   }, []);
 
   const signOut = useCallback(async () => {

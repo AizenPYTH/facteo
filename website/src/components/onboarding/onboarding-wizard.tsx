@@ -34,13 +34,32 @@ const inputClass =
 
 export function OnboardingWizard() {
   const { user } = useAuth();
-  const { activeCompany, scope, loading: companyLoading } = useCompany();
+  const {
+    activeCompany,
+    companies,
+    scope,
+    loading: companyLoading,
+    createNewCompany,
+  } = useCompany();
   const reduceMotion = useReducedMotion();
   const [step, setStep] = useState(1);
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [bootstrapping, setBootstrapping] = useState(false);
+  const [bootstrapAttempted, setBootstrapAttempted] = useState(false);
+
+  useEffect(() => {
+    if (companyLoading || !user || companies.length > 0 || bootstrapAttempted) return;
+    setBootstrapAttempted(true);
+    setBootstrapping(true);
+    void createNewCompany({ name: 'Mon entreprise' })
+      .catch(() => {
+        /* handle_new_user may still be catching up */
+      })
+      .finally(() => setBootstrapping(false));
+  }, [bootstrapAttempted, companies.length, companyLoading, createNewCompany, user]);
 
   const defaults = useMemo(() => {
     const base = createEmptyOnboardingValues();
@@ -148,10 +167,26 @@ export function OnboardingWizard() {
     setLogoPreview(file ? URL.createObjectURL(file) : activeCompany?.logoUrl ?? null);
   }
 
-  if (companyLoading) {
+  if (companyLoading || bootstrapping) {
     return (
       <div className="flex min-h-svh items-center justify-center bg-slate-50">
         <Loader2 className="animate-spin text-primary" size={28} />
+      </div>
+    );
+  }
+
+  if (!scope) {
+    return (
+      <div className="flex min-h-svh flex-col items-center justify-center gap-4 bg-slate-50 px-6 text-center">
+        <p className="text-sm text-slate-600">
+          Impossible de préparer votre espace entreprise. Rechargez la page.
+        </p>
+        <button
+          className="rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-white"
+          onClick={() => window.location.reload()}
+          type="button">
+          Recharger
+        </button>
       </div>
     );
   }

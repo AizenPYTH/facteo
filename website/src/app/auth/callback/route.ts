@@ -1,29 +1,33 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
-import { NextResponse } from 'next/server';
+import { type NextRequest, NextResponse } from 'next/server';
 
 import type { Database } from '@inveq/types/database';
 
+import { resolvePostAuthDestination } from '@/lib/domain/auth/sync-profile';
 import { getSupabaseAnonKey, getSupabaseUrl } from '@/lib/supabase/env';
 
 /**
- * Échange le code PKCE (OAuth Google, confirmation e-mail, reset) contre une session.
+ * Échange le code PKCE (OAuth Google, confirmation e-mail, reset) contre une session,
+ * synchronise le profil, puis redirige vers /onboarding ou /app.
  */
-export async function GET(request: Request) {
-  const url = new URL(request.url);
-  const { searchParams, origin } = url;
+export async function GET(request: NextRequest) {
+  const { searchParams, origin } = request.nextUrl;
   const code = searchParams.get('code');
-  const rawNext = searchParams.get('next') ?? '/onboarding';
-  const next = rawNext.startsWith('/') ? rawNext : '/onboarding';
+  const rawNext = searchParams.get('next');
+  const next = rawNext && rawNext.startsWith('/') ? rawNext : null;
   const errorDescription = searchParams.get('error_description');
+  const oauthError = searchParams.get('error');
 
-  if (errorDescription) {
+  if (errorDescription || oauthError) {
+    const message = errorDescription || oauthError || 'auth';
     return NextResponse.redirect(
-      `${origin}/login?error=auth&message=${encodeURIComponent(errorDescription)}`,
+      `${origin}/login?error=auth&message=${encodeURIComponent(message)}`,
     );
   }
 
   if (!code) {
-    return NextResponse.redirect(`${origin}/auth/confirm?next=${encodeURIComponent(next)}`);
+    const fallbackNext = encodeURIComponent(next ?? '/onboarding');
+    return NextResponse.redirect(`${origin}/auth/confirm?next=${fallbackNext}`);
   }
 
   const forwardCookies: { name: string; value: string; options?: CookieOptions }[] = [];
@@ -31,16 +35,7 @@ export async function GET(request: Request) {
   const supabase = createServerClient<Database>(getSupabaseUrl(), getSupabaseAnonKey(), {
     cookies: {
       getAll() {
-        return (
-          request.headers
-            .get('cookie')
-            ?.split(';')
-            .map((part) => {
-              const [name, ...rest] = part.trim().split('=');
-              return { name, value: rest.join('=') };
-            })
-            .filter((cookie) => Boolean(cookie.name)) ?? []
-        );
+        return request.cookies.getAll();
       },
       setAll(cookiesToSet: { name: string; value: string; options?: CookieOptions }[]) {
         forwardCookies.push(...cookiesToSet);
@@ -50,57 +45,20 @@ export async function GET(request: Request) {
 
   const { data, error } = await supabase.auth.exchangeCodeForSession(code);
 
-  if (error) {
-    return NextResponse.redirect(`${origin}/login?error=auth`);
+  if (error || !data.session) {
+    return NextResponse.redirect(
+      `${origin}/login?error=auth&message=${encodeURIComponent(error?.message || 'session')}`,
+    );
   }
 
-  const user = data.user ?? data.session?.user;
-  let destination = next;
+  const user = data.user ?? data.session.user;
+  let destination = '/onboarding';
 
   if (user) {
-    const meta = user.user_metadata ?? {};
-    const firstName =
-      (typeof meta.first_name === 'string' && meta.first_name) ||
-      (typeof meta.given_name === 'string' && meta.given_name) ||
-      null;
-    const lastName =
-      (typeof meta.last_name === 'string' && meta.last_name) ||
-      (typeof meta.family_name === 'string' && meta.family_name) ||
-      null;
-    const avatarUrl =
-      (typeof meta.avatar_url === 'string' && meta.avatar_url) ||
-      (typeof meta.picture === 'string' && meta.picture) ||
-      null;
-
-    const { data: existing } = await supabase
-      .from('profiles')
-      .select('first_name, last_name, email, avatar_url, onboarding_completed')
-      .eq('id', user.id)
-      .maybeSingle();
-
-    await supabase
-      .from('profiles')
-      .update({
-        first_name: existing?.first_name || firstName,
-        last_name: existing?.last_name || lastName,
-        email: existing?.email || user.email || null,
-        avatar_url: existing?.avatar_url || avatarUrl,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', user.id);
-
-    const done = Boolean(existing?.onboarding_completed);
-    if (destination.startsWith('/app') && !done) {
-      destination = '/onboarding';
-    } else if (destination.startsWith('/onboarding') && done) {
-      destination = '/app';
-    } else if (destination.startsWith('/auth/confirmed')) {
-      destination = done ? '/app' : '/onboarding';
-    }
+    destination = await resolvePostAuthDestination(supabase, user, next);
   }
 
-  const redirectUrl = `${origin}${destination}`;
-  const response = NextResponse.redirect(redirectUrl);
+  const response = NextResponse.redirect(`${origin}${destination}`);
 
   forwardCookies.forEach(({ name, value, options }) => {
     response.cookies.set(name, value, options);

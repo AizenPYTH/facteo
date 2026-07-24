@@ -4,6 +4,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useState } from 'react';
 
 import { AuthLayout } from '@/components/auth/auth-layout';
+import { getPostAuthPath, syncAuthIdentityToProfile } from '@/lib/domain/auth/post-auth';
 import { supabase } from '@/lib/supabase';
 
 /**
@@ -13,7 +14,7 @@ import { supabase } from '@/lib/supabase';
 function AuthConfirmInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const next = searchParams.get('next') ?? '/auth/confirmed';
+  const next = searchParams.get('next') ?? '/onboarding';
   const [message, setMessage] = useState('Activation de votre compte…');
 
   useEffect(() => {
@@ -27,31 +28,42 @@ function AuthConfirmInner() {
       const type = hashParams.get('type');
 
       if (accessToken && refreshToken) {
-        const { error } = await supabase.auth.setSession({
+        const { data, error } = await supabase.auth.setSession({
           access_token: accessToken,
           refresh_token: refreshToken,
         });
 
         if (cancelled) return;
 
-        if (error) {
+        if (error || !data.session?.user) {
           setMessage('Lien invalide ou expiré.');
           router.replace('/login?error=auth');
           return;
         }
 
-        const destination =
-          type === 'recovery' ? '/reinitialiser-mot-de-passe' : next.startsWith('/') ? next : '/auth/confirmed';
         window.history.replaceState(null, '', window.location.pathname);
-        router.replace(destination);
+
+        if (type === 'recovery') {
+          router.replace('/reinitialiser-mot-de-passe');
+          return;
+        }
+
+        await syncAuthIdentityToProfile(data.session.user);
+        const path = await getPostAuthPath(data.session.user.id);
+        router.replace(path);
         return;
       }
 
       const { data } = await supabase.auth.getSession();
       if (cancelled) return;
 
-      if (data.session) {
-        router.replace(next.startsWith('/') ? next : '/auth/confirmed');
+      if (data.session?.user) {
+        await syncAuthIdentityToProfile(data.session.user);
+        const path = await getPostAuthPath(data.session.user.id);
+        const preferred = next.startsWith('/') ? next : path;
+        router.replace(
+          preferred.startsWith('/reinitialiser-mot-de-passe') ? preferred : path,
+        );
         return;
       }
 
