@@ -6,12 +6,10 @@ import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 
+import { AuthDivider, GoogleAuthButton } from '@/components/auth/google-auth-button';
 import { getAuthErrorMessage } from '@/lib/domain/auth/errors';
-import {
-  ACTIVITY_TYPES,
-  registerSchema,
-  type RegisterFormValues,
-} from '@/lib/domain/validations/register';
+import { getPostAuthPath } from '@/lib/domain/auth/post-auth';
+import { registerSchema, type RegisterFormValues } from '@/lib/domain/validations/register';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/providers/auth-provider';
 
@@ -42,9 +40,7 @@ export function RegisterForm() {
     defaultValues: {
       firstName: '',
       lastName: '',
-      companyName: '',
       email: '',
-      phone: '',
       password: '',
       confirmPassword: '',
     },
@@ -102,16 +98,14 @@ export function RegisterForm() {
       password,
       firstName: values.firstName,
       lastName: values.lastName,
-      companyName: values.companyName,
-      activityType: values.activityType,
-      phone: values.phone || undefined,
     });
     if (error) {
       setFormError(getAuthErrorMessage(error.message));
       return;
     }
-    if (session) {
-      window.location.href = '/app';
+    if (session?.user) {
+      const path = await getPostAuthPath(session.user.id);
+      window.location.href = path;
       return;
     }
     setSuccess(true);
@@ -122,8 +116,8 @@ export function RegisterForm() {
       <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-6 py-8 text-center">
         <h2 className="text-lg font-semibold text-emerald-900">Vérifiez votre e-mail</h2>
         <p className="mt-2 text-sm text-emerald-800">
-          Un lien de confirmation vous a été envoyé. Cliquez dessus pour activer votre compte.
-          Vérifiez aussi vos spams.
+          Un lien de confirmation vous a été envoyé. Après validation, vous configurerez votre
+          entreprise en quelques minutes.
         </p>
         <Link className="mt-6 inline-block text-sm font-semibold text-primary hover:underline" href="/login">
           Retour à la connexion
@@ -136,209 +130,171 @@ export function RegisterForm() {
   const confirmPasswordField = register('confirmPassword');
 
   return (
-    <form className="space-y-6" onSubmit={handleSubmit(onSubmit)} autoComplete="on">
-      {formError ? (
-        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700" role="alert">
-          {formError}
-        </div>
-      ) : null}
+    <div className="space-y-1">
+      <GoogleAuthButton label="S’inscrire avec Google" />
+      <AuthDivider />
 
-      <section className="space-y-4">
-        <div>
-          <h2 className="text-sm font-semibold text-slate-900">Vous</h2>
-          <p className="mt-0.5 text-xs text-slate-500">Identité du titulaire du compte.</p>
-        </div>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Field
-            error={errors.firstName?.message}
-            id="firstName"
-            label="Prénom"
-            autoComplete="given-name"
-            {...register('firstName')}
-          />
-          <Field
-            error={errors.lastName?.message}
-            id="lastName"
-            label="Nom"
-            autoComplete="family-name"
-            {...register('lastName')}
-          />
-        </div>
-        <Field
-          error={errors.email?.message}
-          id="email"
-          label="E-mail professionnel"
-          type="email"
-          autoComplete="email"
-          {...register('email')}
-        />
-        <Field
-          error={errors.phone?.message}
-          id="phone"
-          label="Téléphone (optionnel)"
-          type="tel"
-          autoComplete="tel"
-          {...register('phone')}
-        />
-      </section>
-
-      <section className="space-y-4 border-t border-slate-100 pt-6">
-        <div>
-          <h2 className="text-sm font-semibold text-slate-900">Votre activité</h2>
-          <p className="mt-0.5 text-xs text-slate-500">
-            INVEQ est conçu pour les professionnels qui émettent des devis et factures.
-          </p>
-        </div>
-        <Field
-          error={errors.companyName?.message}
-          id="companyName"
-          label="Nom de l’entreprise ou de l’activité"
-          autoComplete="organization"
-          placeholder="Ex. Dupont Électricité, Studio Martin…"
-          {...register('companyName')}
-        />
-        <div>
-          <label className="mb-1.5 block text-sm font-medium text-slate-700" htmlFor="activityType">
-            Type d’activité
-          </label>
-          <select
-            className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
-            id="activityType"
-            defaultValue=""
-            {...register('activityType')}>
-            <option disabled value="">
-              Sélectionnez…
-            </option>
-            {ACTIVITY_TYPES.map((type) => (
-              <option key={type.value} value={type.value}>
-                {type.label}
-              </option>
-            ))}
-          </select>
-          {errors.activityType ? (
-            <p className="mt-1 text-xs text-red-600">{errors.activityType.message}</p>
-          ) : null}
-        </div>
-      </section>
-
-      <section className="space-y-4 border-t border-slate-100 pt-6">
-        <div className="flex flex-wrap items-end justify-between gap-2">
-          <div>
-            <h2 className="text-sm font-semibold text-slate-900">Sécurité</h2>
-            <p className="mt-0.5 text-xs text-slate-500">Au moins 8 caractères.</p>
+      <form className="space-y-6" onSubmit={handleSubmit(onSubmit)} autoComplete="on">
+        {formError ? (
+          <div
+            className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+            role="alert">
+            {formError}
           </div>
-          <button
-            className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-primary transition hover:bg-blue-50"
-            onClick={applyGeneratedPassword}
-            type="button">
-            <RefreshCw size={14} />
-            Générer un mot de passe
-          </button>
-        </div>
+        ) : null}
 
-        <div>
-          <label className="mb-1.5 block text-sm font-medium text-slate-700" htmlFor="password">
-            Mot de passe
-          </label>
-          <div className="relative">
+        <section className="space-y-4">
+          <div>
+            <h2 className="text-sm font-semibold text-slate-900">Vous</h2>
+            <p className="mt-0.5 text-xs text-slate-500">Identité du titulaire du compte.</p>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field
+              error={errors.firstName?.message}
+              id="firstName"
+              label="Prénom"
+              autoComplete="given-name"
+              {...register('firstName')}
+            />
+            <Field
+              error={errors.lastName?.message}
+              id="lastName"
+              label="Nom"
+              autoComplete="family-name"
+              {...register('lastName')}
+            />
+          </div>
+          <Field
+            error={errors.email?.message}
+            id="email"
+            label="E-mail professionnel"
+            type="email"
+            autoComplete="email"
+            {...register('email')}
+          />
+        </section>
+
+        <section className="space-y-4 border-t border-slate-100 pt-6">
+          <div className="flex flex-wrap items-end justify-between gap-2">
+            <div>
+              <h2 className="text-sm font-semibold text-slate-900">Sécurité</h2>
+              <p className="mt-0.5 text-xs text-slate-500">Au moins 8 caractères.</p>
+            </div>
+            <button
+              className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-primary transition hover:bg-blue-50"
+              onClick={applyGeneratedPassword}
+              type="button">
+              <RefreshCw size={14} />
+              Générer un mot de passe
+            </button>
+          </div>
+
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-slate-700" htmlFor="password">
+              Mot de passe
+            </label>
+            <div className="relative">
+              <input
+                autoComplete="new-password"
+                className="autofill-detect w-full rounded-xl border border-slate-200 px-4 py-3 pr-12 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+                defaultValue=""
+                id="password"
+                name={passwordField.name}
+                onAnimationStart={syncPasswordsFromDom}
+                onBlur={(event) => {
+                  void passwordField.onBlur(event);
+                  syncPasswordsFromDom();
+                }}
+                onChange={(event) => {
+                  void passwordField.onChange(event);
+                  syncPasswordsFromDom();
+                }}
+                onInput={syncPasswordsFromDom}
+                ref={(element) => {
+                  passwordInputRef.current = element;
+                  passwordField.ref(element);
+                }}
+                type={showPassword ? 'text' : 'password'}
+              />
+              <button
+                aria-label={showPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700"
+                onClick={() => {
+                  syncPasswordsFromDom();
+                  setShowPassword((value) => !value);
+                }}
+                type="button">
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
+            {errors.password ? (
+              <p className="mt-1 text-xs text-red-600">{errors.password.message}</p>
+            ) : null}
+          </div>
+
+          <div>
+            <label
+              className="mb-1.5 block text-sm font-medium text-slate-700"
+              htmlFor="confirmPassword">
+              Confirmer le mot de passe
+            </label>
             <input
               autoComplete="new-password"
-              className="autofill-detect w-full rounded-xl border border-slate-200 px-4 py-3 pr-12 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+              className="autofill-detect w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
               defaultValue=""
-              id="password"
-              name={passwordField.name}
+              id="confirmPassword"
+              name={confirmPasswordField.name}
               onAnimationStart={syncPasswordsFromDom}
               onBlur={(event) => {
-                void passwordField.onBlur(event);
+                void confirmPasswordField.onBlur(event);
                 syncPasswordsFromDom();
               }}
               onChange={(event) => {
-                void passwordField.onChange(event);
+                void confirmPasswordField.onChange(event);
                 syncPasswordsFromDom();
               }}
               onInput={syncPasswordsFromDom}
               ref={(element) => {
-                passwordInputRef.current = element;
-                passwordField.ref(element);
+                confirmInputRef.current = element;
+                confirmPasswordField.ref(element);
               }}
               type={showPassword ? 'text' : 'password'}
             />
-            <button
-              aria-label={showPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700"
-              onClick={() => {
-                syncPasswordsFromDom();
-                setShowPassword((value) => !value);
-              }}
-              type="button">
-              {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-            </button>
+            {errors.confirmPassword ? (
+              <p className="mt-1 text-xs text-red-600">{errors.confirmPassword.message}</p>
+            ) : null}
           </div>
-          {errors.password ? (
-            <p className="mt-1 text-xs text-red-600">{errors.password.message}</p>
-          ) : null}
-        </div>
+        </section>
 
-        <div>
-          <label className="mb-1.5 block text-sm font-medium text-slate-700" htmlFor="confirmPassword">
-            Confirmer le mot de passe
-          </label>
-          <input
-            autoComplete="new-password"
-            className="autofill-detect w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
-            defaultValue=""
-            id="confirmPassword"
-            name={confirmPasswordField.name}
-            onAnimationStart={syncPasswordsFromDom}
-            onBlur={(event) => {
-              void confirmPasswordField.onBlur(event);
-              syncPasswordsFromDom();
-            }}
-            onChange={(event) => {
-              void confirmPasswordField.onChange(event);
-              syncPasswordsFromDom();
-            }}
-            onInput={syncPasswordsFromDom}
-            ref={(element) => {
-              confirmInputRef.current = element;
-              confirmPasswordField.ref(element);
-            }}
-            type={showPassword ? 'text' : 'password'}
-          />
-          {errors.confirmPassword ? (
-            <p className="mt-1 text-xs text-red-600">{errors.confirmPassword.message}</p>
-          ) : null}
-        </div>
-      </section>
+        <button
+          className={cn(
+            'w-full rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-primary/25 transition hover:bg-primary-dark disabled:opacity-60',
+          )}
+          disabled={isSubmitting}
+          type="submit">
+          {isSubmitting ? 'Création…' : 'Créer mon compte'}
+        </button>
 
-      <button
-        className={cn(
-          'w-full rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-primary/25 transition hover:bg-primary-dark disabled:opacity-60',
-        )}
-        disabled={isSubmitting}
-        type="submit">
-        {isSubmitting ? 'Création…' : 'Créer mon compte'}
-      </button>
+        <p className="text-center text-xs text-slate-500">
+          En créant un compte, vous acceptez nos{' '}
+          <Link className="font-medium text-primary hover:underline" href="/conditions-utilisation">
+            conditions d’utilisation
+          </Link>{' '}
+          et notre{' '}
+          <Link className="font-medium text-primary hover:underline" href="/confidentialite">
+            politique de confidentialité
+          </Link>
+          .
+        </p>
 
-      <p className="text-center text-xs text-slate-500">
-        En créant un compte, vous acceptez nos{' '}
-        <Link className="font-medium text-primary hover:underline" href="/conditions-utilisation">
-          conditions d’utilisation
-        </Link>
-        {' '}et notre{' '}
-        <Link className="font-medium text-primary hover:underline" href="/confidentialite">
-          politique de confidentialité
-        </Link>
-        .
-      </p>
-
-      <p className="text-center text-sm text-slate-500">
-        Déjà un compte ?{' '}
-        <Link className="font-semibold text-primary hover:underline" href="/login">
-          Se connecter
-        </Link>
-      </p>
-    </form>
+        <p className="text-center text-sm text-slate-500">
+          Déjà un compte ?{' '}
+          <Link className="font-semibold text-primary hover:underline" href="/login">
+            Se connecter
+          </Link>
+        </p>
+      </form>
+    </div>
   );
 }
 

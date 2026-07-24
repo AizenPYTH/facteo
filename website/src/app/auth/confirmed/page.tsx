@@ -17,13 +17,13 @@ export default function AuthConfirmedPage() {
         </div>
         <h2 className="mt-4 text-lg font-semibold text-emerald-900">Votre e-mail est confirmé</h2>
         <p className="mt-2 text-sm text-emerald-800">
-          Votre compte INVEQ est prêt. Vous pouvez accéder à votre espace et commencer à facturer.
+          Votre compte INVEQ est prêt. Configurez votre entreprise pour accéder à votre espace.
         </p>
         <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
           <Link
             className="inline-flex items-center justify-center rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-primary/25 hover:bg-primary-dark"
-            href="/app">
-            Ouvrir mon espace
+            href="/onboarding">
+            Continuer la configuration
           </Link>
           <Link
             className="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50"

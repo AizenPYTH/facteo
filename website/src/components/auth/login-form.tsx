@@ -6,7 +6,9 @@ import { useSearchParams } from 'next/navigation';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 
+import { AuthDivider, GoogleAuthButton } from '@/components/auth/google-auth-button';
 import { getAuthErrorMessage } from '@/lib/domain/auth/errors';
+import { getPostAuthPath } from '@/lib/domain/auth/post-auth';
 import { loginSchema, type LoginFormValues } from '@/lib/domain/validations/login';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/providers/auth-provider';
@@ -15,7 +17,7 @@ export function LoginForm() {
   const searchParams = useSearchParams();
   const { signIn } = useAuth();
   const [formError, setFormError] = useState<string | null>(null);
-  const redirect = searchParams.get('redirect') ?? '/app';
+  const requestedRedirect = searchParams.get('redirect');
 
   const {
     register,
@@ -37,82 +39,91 @@ export function LoginForm() {
         return;
       }
 
-      if (!session) {
+      if (!session?.user) {
         setFormError('Connexion impossible. Vérifiez votre e-mail et mot de passe.');
         return;
       }
 
-      // Laisse le temps aux cookies SSR de se synchroniser
       await new Promise((resolve) => setTimeout(resolve, 100));
-      window.location.href = redirect;
+      const path = await getPostAuthPath(session.user.id);
+      const dest =
+        path === '/app' && requestedRedirect?.startsWith('/app')
+          ? requestedRedirect
+          : path;
+      window.location.href = dest;
     } catch {
       setFormError('Erreur de connexion. Vérifiez votre connexion internet.');
     }
   }
 
   return (
-    <form className="space-y-5" onSubmit={handleSubmit(onSubmit)}>
-      {formError ? (
-        <div
-          className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
-          role="alert">
-          {formError}
-        </div>
-      ) : null}
+    <div className="space-y-1">
+      <GoogleAuthButton />
+      <AuthDivider />
 
-      <div>
-        <label className="mb-1.5 block text-sm font-medium text-slate-700" htmlFor="email">
-          Adresse e-mail
-        </label>
-        <input
-          autoComplete="email"
-          className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
-          id="email"
-          placeholder="vous@entreprise.fr"
-          type="email"
-          {...register('email')}
-        />
-        {errors.email ? <p className="mt-1 text-xs text-red-600">{errors.email.message}</p> : null}
-      </div>
-
-      <div>
-        <label className="mb-1.5 block text-sm font-medium text-slate-700" htmlFor="password">
-          Mot de passe
-        </label>
-        <input
-          autoComplete="current-password"
-          className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
-          id="password"
-          placeholder="Votre mot de passe"
-          type="password"
-          {...register('password')}
-        />
-        {errors.password ? (
-          <p className="mt-1 text-xs text-red-600">{errors.password.message}</p>
+      <form className="space-y-5" onSubmit={handleSubmit(onSubmit)}>
+        {formError ? (
+          <div
+            className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+            role="alert">
+            {formError}
+          </div>
         ) : null}
-      </div>
 
-      <div className="flex items-center justify-end text-sm">
-        <Link className="font-semibold text-primary hover:underline" href="/mot-de-passe-oublie">
-          Mot de passe oublié ?
-        </Link>
-      </div>
+        <div>
+          <label className="mb-1.5 block text-sm font-medium text-slate-700" htmlFor="email">
+            Adresse e-mail
+          </label>
+          <input
+            autoComplete="email"
+            className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+            id="email"
+            placeholder="vous@entreprise.fr"
+            type="email"
+            {...register('email')}
+          />
+          {errors.email ? <p className="mt-1 text-xs text-red-600">{errors.email.message}</p> : null}
+        </div>
 
-      <button
-        className={cn(
-          'w-full rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-primary/25 transition hover:bg-primary-dark disabled:opacity-60',
-        )}
-        disabled={isSubmitting}
-        type="submit">
-        {isSubmitting ? 'Connexion…' : 'Se connecter'}
-      </button>
+        <div>
+          <label className="mb-1.5 block text-sm font-medium text-slate-700" htmlFor="password">
+            Mot de passe
+          </label>
+          <input
+            autoComplete="current-password"
+            className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+            id="password"
+            placeholder="Votre mot de passe"
+            type="password"
+            {...register('password')}
+          />
+          {errors.password ? (
+            <p className="mt-1 text-xs text-red-600">{errors.password.message}</p>
+          ) : null}
+        </div>
 
-      <p className="text-center text-sm text-slate-500">
-        Pas encore de compte ?{' '}
-        <Link className="font-semibold text-primary hover:underline" href="/register">
-          Créer un compte
-        </Link>
-      </p>
-    </form>
+        <div className="flex items-center justify-end text-sm">
+          <Link className="font-semibold text-primary hover:underline" href="/mot-de-passe-oublie">
+            Mot de passe oublié ?
+          </Link>
+        </div>
+
+        <button
+          className={cn(
+            'w-full rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-primary/25 transition hover:bg-primary-dark disabled:opacity-60',
+          )}
+          disabled={isSubmitting}
+          type="submit">
+          {isSubmitting ? 'Connexion…' : 'Se connecter'}
+        </button>
+
+        <p className="text-center text-sm text-slate-500">
+          Pas encore de compte ?{' '}
+          <Link className="font-semibold text-primary hover:underline" href="/register">
+            Créer un compte
+          </Link>
+        </p>
+      </form>
+    </div>
   );
 }

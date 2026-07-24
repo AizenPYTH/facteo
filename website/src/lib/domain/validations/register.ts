@@ -10,28 +10,15 @@ export const ACTIVITY_TYPES = [
 
 export type ActivityType = (typeof ACTIVITY_TYPES)[number]['value'];
 
-const activityTypeValues = ACTIVITY_TYPES.map((type) => type.value) as [
-  ActivityType,
-  ...ActivityType[],
-];
-
 export const registerSchema = z
   .object({
     firstName: z.string().trim().min(1, 'Champ obligatoire.'),
     lastName: z.string().trim().min(1, 'Champ obligatoire.'),
-    companyName: z
-      .string()
-      .trim()
-      .min(1, 'Indiquez le nom de votre entreprise ou de votre activité.'),
-    activityType: z.enum(activityTypeValues, {
-      errorMap: () => ({ message: 'Choisissez un type d’activité.' }),
-    }),
     email: z
       .string()
       .trim()
       .min(1, 'Champ obligatoire.')
       .email('Adresse e-mail invalide.'),
-    phone: z.string().trim(),
     password: z
       .string()
       .min(1, 'Champ obligatoire.')

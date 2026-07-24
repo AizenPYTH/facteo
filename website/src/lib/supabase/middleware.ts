@@ -5,6 +5,19 @@ import type { Database } from '@inveq/types/database';
 
 import { getSupabaseAnonKey, getSupabaseUrl, isSupabaseConfigured } from '@/lib/supabase/env';
 
+async function fetchOnboardingCompleted(
+  supabase: ReturnType<typeof createServerClient<Database>>,
+  userId: string,
+): Promise<boolean> {
+  const { data } = await supabase
+    .from('profiles')
+    .select('onboarding_completed')
+    .eq('id', userId)
+    .maybeSingle();
+
+  return Boolean(data?.onboarding_completed);
+}
+
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request });
 
@@ -35,6 +48,7 @@ export async function updateSession(request: NextRequest) {
 
   const { pathname } = request.nextUrl;
   const isAppRoute = pathname.startsWith('/app');
+  const isOnboardingRoute = pathname.startsWith('/onboarding');
   const isAuthRoute =
     pathname.startsWith('/login') ||
     pathname.startsWith('/register') ||
@@ -42,15 +56,32 @@ export async function updateSession(request: NextRequest) {
     pathname.startsWith('/reinitialiser-mot-de-passe') ||
     pathname.startsWith('/auth');
 
-  if (isAppRoute && !user) {
+  if ((isAppRoute || isOnboardingRoute) && !user) {
     const loginUrl = request.nextUrl.clone();
     loginUrl.pathname = '/login';
     loginUrl.searchParams.set('redirect', pathname);
     return NextResponse.redirect(loginUrl);
   }
 
+  if (user && (isAppRoute || isOnboardingRoute || (isAuthRoute && !pathname.startsWith('/auth')))) {
+    const onboardingDone = await fetchOnboardingCompleted(supabase, user.id);
+
+    if (isAppRoute && !onboardingDone) {
+      const onboardingUrl = request.nextUrl.clone();
+      onboardingUrl.pathname = '/onboarding';
+      onboardingUrl.search = '';
+      return NextResponse.redirect(onboardingUrl);
+    }
+
+    if (isOnboardingRoute && onboardingDone) {
+      const appUrl = request.nextUrl.clone();
+      appUrl.pathname = '/app';
+      appUrl.search = '';
+      return NextResponse.redirect(appUrl);
+    }
+  }
+
   if (isAuthRoute && user) {
-    // Laisser terminer le reset password / confirmation même si déjà connecté
     if (
       pathname.startsWith('/reinitialiser-mot-de-passe') ||
       pathname.startsWith('/auth/confirm') ||
@@ -59,9 +90,12 @@ export async function updateSession(request: NextRequest) {
     ) {
       return response;
     }
-    const appUrl = request.nextUrl.clone();
-    appUrl.pathname = '/app';
-    return NextResponse.redirect(appUrl);
+
+    const onboardingDone = await fetchOnboardingCompleted(supabase, user.id);
+    const dest = request.nextUrl.clone();
+    dest.pathname = onboardingDone ? '/app' : '/onboarding';
+    dest.search = '';
+    return NextResponse.redirect(dest);
   }
 
   return response;

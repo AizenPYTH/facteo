@@ -39,6 +39,11 @@ export const DEVICE_ACCESS = {
 export const MOBILE_GATE_EXEMPT_PREFIXES = [
   '/mobile',
   '/auth',
+  '/login',
+  '/register',
+  '/onboarding',
+  '/mot-de-passe-oublie',
+  '/reinitialiser-mot-de-passe',
   '/_next',
   '/api',
   '/favicon',

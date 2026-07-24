@@ -20,6 +20,9 @@ export type Profile = {
   payment_methods: PaymentMethodId[] | null;
   logo_url: string | null;
   signature_url: string | null;
+  avatar_url: string | null;
+  activity_type: string | null;
+  onboarding_completed: boolean;
   created_at: string;
   updated_at: string;
 };
@@ -42,6 +45,9 @@ export type ProfileInsert = {
   payment_methods?: PaymentMethodId[] | null;
   logo_url?: string | null;
   signature_url?: string | null;
+  avatar_url?: string | null;
+  activity_type?: string | null;
+  onboarding_completed?: boolean;
   created_at?: string;
   updated_at?: string;
 };

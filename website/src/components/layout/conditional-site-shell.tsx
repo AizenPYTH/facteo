@@ -8,6 +8,7 @@ const NO_MARKETING_SHELL_PREFIXES = [
   '/app',
   '/login',
   '/register',
+  '/onboarding',
   '/mot-de-passe-oublie',
   '/reinitialiser-mot-de-passe',
   '/auth',

@@ -12,7 +12,7 @@ import {
 } from 'react';
 
 import { supabase } from '@/lib/supabase';
-import { getAuthCallbackUrl, getSiteUrl } from '@/lib/site-url';
+import { getAuthCallbackUrl } from '@/lib/site-url';
 
 export type SignInParams = { email: string; password: string };
 
@@ -21,9 +21,6 @@ export type SignUpParams = {
   password: string;
   firstName: string;
   lastName: string;
-  companyName: string;
-  activityType?: string;
-  phone?: string;
 };
 
 export type AuthResult = { error: AuthError | null; session: Session | null };
@@ -34,6 +31,7 @@ type AuthContextValue = {
   loading: boolean;
   signIn: (params: SignInParams) => Promise<AuthResult>;
   signUp: (params: SignUpParams) => Promise<AuthResult>;
+  signInWithGoogle: () => Promise<AuthResult>;
   signOut: () => Promise<AuthResult>;
   resetPassword: (email: string) => Promise<AuthResult>;
   updatePassword: (password: string) => Promise<AuthResult>;
@@ -83,7 +81,6 @@ export function AuthProvider({ children }: PropsWithChildren) {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
     if (!error && data.session) {
-      // Force la synchronisation cookie ↔ client pour le middleware SSR
       await supabase.auth.setSession({
         access_token: data.session.access_token,
         refresh_token: data.session.refresh_token,
@@ -94,26 +91,15 @@ export function AuthProvider({ children }: PropsWithChildren) {
   }, []);
 
   const signUp = useCallback(
-    async ({
-      email,
-      password,
-      firstName,
-      lastName,
-      companyName,
-      activityType,
-      phone,
-    }: SignUpParams) => {
+    async ({ email, password, firstName, lastName }: SignUpParams) => {
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
-          emailRedirectTo: getAuthCallbackUrl('/auth/confirmed'),
+          emailRedirectTo: getAuthCallbackUrl('/onboarding'),
           data: {
             first_name: firstName,
             last_name: lastName,
-            company_name: companyName,
-            activity_type: activityType ?? null,
-            phone: phone ?? null,
           },
         },
       });
@@ -121,6 +107,20 @@ export function AuthProvider({ children }: PropsWithChildren) {
     },
     [],
   );
+
+  const signInWithGoogle = useCallback(async () => {
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: getAuthCallbackUrl('/onboarding'),
+        queryParams: {
+          access_type: 'offline',
+          prompt: 'select_account',
+        },
+      },
+    });
+    return { error, session: data.url ? null : null };
+  }, []);
 
   const signOut = useCallback(async () => {
     const { error } = await supabase.auth.signOut();
@@ -135,7 +135,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
   }, []);
 
   const updatePassword = useCallback(async (password: string) => {
-    const { data, error } = await supabase.auth.updateUser({ password });
+    const { error } = await supabase.auth.updateUser({ password });
     const { data: sessionData } = await supabase.auth.getSession();
     return { error, session: sessionData.session };
   }, []);
@@ -147,11 +147,22 @@ export function AuthProvider({ children }: PropsWithChildren) {
       loading,
       signIn,
       signUp,
+      signInWithGoogle,
       signOut,
       resetPassword,
       updatePassword,
     }),
-    [user, session, loading, signIn, signUp, signOut, resetPassword, updatePassword],
+    [
+      user,
+      session,
+      loading,
+      signIn,
+      signUp,
+      signInWithGoogle,
+      signOut,
+      resetPassword,
+      updatePassword,
+    ],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
