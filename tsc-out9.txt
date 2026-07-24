@@ -1,0 +1,6 @@
+npm warn Unknown env config "devdir". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+src/app/api/android-waitlist/_typecheck.ts(6,5): error TS2353: Object literal may only specify known properties, and 'email' does not exist in type 'never[]'.
+src/app/api/android-waitlist/_typecheck.ts(13,5): error TS2353: Object literal may only specify known properties, and 'id' does not exist in type 'never[]'.
+src/app/api/android-waitlist/_typecheck.ts(20,5): error TS2353: Object literal may only specify known properties, and 'user_id' does not exist in type 'never[]'.
+src/app/api/android-waitlist/_typecheck.ts(27,5): error TS2353: Object literal may only specify known properties, and 'user_id' does not exist in type 'never[]'.
+src/app/api/android-waitlist/route.ts(29,7): error TS2353: Object literal may only specify known properties, and 'email' does not exist in type 'never[]'.

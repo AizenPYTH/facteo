@@ -1,0 +1,20 @@
+npm warn Unknown env config "devdir". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+src/app/(app)/settings/premium.tsx(85,11): error TS2322: Type 'EffectivePlanId | undefined' is not assignable to type '"free" | "premium" | undefined'.
+  Type '"standard"' is not assignable to type '"free" | "premium" | undefined'.
+src/components/marketing/fade-in-view.tsx(50,11): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(props: ViewProps): View', gave the following error.
+    Type 'false | { opacity: number; transform: string; transitionProperty: string; transitionDuration: string; transitionTimingFunction: string; transitionDelay: string; }' is not assignable to type 'ViewStyle | Falsy | RecursiveArray<ViewStyle | Falsy> | readonly (ViewStyle | Falsy)[]'.
+      Object literal may only specify known properties, and 'transitionProperty' does not exist in type 'ViewStyle | RecursiveArray<ViewStyle | Falsy> | readonly (ViewStyle | Falsy)[]'.
+  Overload 2 of 2, '(props: ViewProps, context: any): View', gave the following error.
+    Type 'false | { opacity: number; transform: string; transitionProperty: string; transitionDuration: string; transitionTimingFunction: string; transitionDelay: string; }' is not assignable to type 'ViewStyle | Falsy | RecursiveArray<ViewStyle | Falsy> | readonly (ViewStyle | Falsy)[]'.
+      Object literal may only specify known properties, and 'transitionProperty' does not exist in type 'ViewStyle | RecursiveArray<ViewStyle | Falsy> | readonly (ViewStyle | Falsy)[]'.
+src/components/marketing/legal-document.tsx(207,5): error TS2322: Type '"sticky"' is not assignable to type '"absolute" | "relative" | "static" | undefined'.
+src/components/web/desktop/desktop-shell.tsx(22,25): error TS2339: Property 'root' does not exist on type 'NamedStyles<unknown>'.
+src/components/web/desktop/desktop-shell.tsx(23,28): error TS2339: Property 'sidebarSlot' does not exist on type 'NamedStyles<unknown>'.
+src/components/web/desktop/desktop-shell.tsx(26,28): error TS2339: Property 'main' does not exist on type 'NamedStyles<unknown>'.
+src/components/web/desktop/desktop-shell.tsx(40,5): error TS2322: Type '{ position?: "fixed" | undefined; left?: number | undefined; top?: number | undefined; bottom?: number | undefined; zIndex?: number | undefined; }' is not assignable to type 'ViewStyle | TextStyle | ImageStyle'.
+  Type '{ position?: "fixed" | undefined; left?: number | undefined; top?: number | undefined; bottom?: number | undefined; zIndex?: number | undefined; }' is not assignable to type 'ImageStyle'.
+    Types of property 'position' are incompatible.
+      Type '"fixed" | undefined' is not assignable to type '"absolute" | "relative" | "static" | undefined'.
+        Type '"fixed"' is not assignable to type '"absolute" | "relative" | "static" | undefined'.
+src/lib/ai/voice-recorder.ts(8,8): error TS2307: Cannot find module 'expo-audio' or its corresponding type declarations.
