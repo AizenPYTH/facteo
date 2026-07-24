@@ -848,7 +848,7 @@ function ProductFormPanel({
       if (imported.length === 0) {
         debugImport('Aucun produit extrait après traitement');
         throw new Error(
-          "Aucune ligne exploitable trouvée. Vérifiez que la première ligne contient les en-têtes ou utilisez le modèle Factume.",
+          "Aucune ligne exploitable trouvée. Vérifiez que la première ligne contient les en-têtes ou utilisez le modèle INVEQ.",
         );
       }
 
@@ -880,7 +880,7 @@ function ProductFormPanel({
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = 'factume-modele-import-produits.xlsx';
+    link.download = 'INVEQ-modele-import-produits.xlsx';
     link.click();
     URL.revokeObjectURL(url);
   }
@@ -1201,7 +1201,7 @@ function CatalogWorkspaceInner({ type }: { type: ProductType }) {
     <div className="flex h-full min-h-0 flex-col">
       <WorkspaceToolbar subtitle={`${products.length} élément(s)`} title={title}>
         <button
-          className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-primary/25 hover:bg-primary-dark"
+          className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white shadow-[0_10px_24px_-10px_rgba(37,99,235,0.65)] transition duration-150 hover:-translate-y-0.5 hover:bg-primary-dark"
           onClick={() => {
             setSelectedId(null);
             setMode('form');

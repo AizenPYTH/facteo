@@ -3,6 +3,7 @@
 import { motion } from 'framer-motion';
 import type { ReactNode } from 'react';
 
+import { BrandMark } from '@/components/brand/brand-logo';
 import { SITE_NAME } from '@/lib/constants';
 import { cn } from '@/lib/utils';
 
@@ -16,7 +17,7 @@ export function MobileGateShell({
   const glow =
     accent === 'emerald'
       ? 'from-emerald-500/25 via-teal-400/10 to-transparent'
-      : 'from-blue-500/30 via-sky-400/10 to-transparent';
+      : 'from-violet-500/30 via-indigo-400/10 to-transparent';
 
   return (
     <div className="relative min-h-dvh overflow-hidden bg-[#070b14] text-white">
@@ -28,9 +29,7 @@ export function MobileGateShell({
           className="flex items-center gap-3"
           initial={{ opacity: 0, y: -8 }}
           transition={{ duration: 0.45 }}>
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 text-lg font-bold backdrop-blur">
-            F
-          </div>
+          <BrandMark className="rounded-xl" size={40} />
           <span className="text-lg font-semibold tracking-wide">{SITE_NAME}</span>
         </motion.header>
         <div className="flex flex-1 flex-col justify-center py-8">{children}</div>

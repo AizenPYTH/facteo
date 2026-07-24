@@ -1,6 +1,6 @@
 import { spawn } from 'node:child_process';
 
-/** Dev client custom (scheme factume-dev) — seulement si Factume Dev est déjà installé. */
+/** Dev client custom (scheme inveq-dev) — seulement si INVEQ Dev est déjà installé. */
 process.env.APP_VARIANT = 'development';
 
 const child = spawn('npx', ['expo', 'start', '--dev-client', ...process.argv.slice(2)], {

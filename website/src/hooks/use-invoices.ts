@@ -7,7 +7,7 @@ import { useTenant } from '@/providers/company-provider';
 import { fetchInvoicesPage } from '@/lib/domain/supabase/invoices';
 import { invoicesQueryKeys } from '@/lib/domain/supabase/query-keys';
 import { requireScope } from '@/lib/domain/tenant/scope';
-import { INVOICES_PAGE_SIZE, type InvoiceStatusFilter } from '@factume/types/invoices-list';
+import { INVOICES_PAGE_SIZE, type InvoiceStatusFilter } from '@inveq/types/invoices-list';
 
 export function useInfiniteInvoices(search: string, status: InvoiceStatusFilter = 'all') {
   const { user, loading: authLoading } = useAuth();

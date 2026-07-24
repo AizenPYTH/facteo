@@ -1,22 +1,22 @@
 {
   "expo": {
-    "name": "Factume",
+    "name": "INVEQ",
     "slug": "FACTEO",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "factume",
+    "scheme": "inveq",
     "userInterfaceStyle": "automatic",
     "ios": {
       "icon": "./assets/images/icon.png",
-      "bundleIdentifier": "com.factume.app",
+      "bundleIdentifier": "com.inveq.app",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#0274DF",
+        "backgroundColor": "#4F46E5",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
@@ -25,7 +25,7 @@
       "permissions": [
         "android.permission.RECORD_AUDIO"
       ],
-      "package": "com.factume.app"
+      "package": "com.inveq.app"
     },
     "web": {
       "output": "static",
@@ -37,7 +37,7 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#0274DF",
+          "backgroundColor": "#4F46E5",
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 120
         }
@@ -48,15 +48,15 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "Factume a besoin d’accéder à vos photos pour importer le logo et la signature.",
-          "cameraPermission": "Factume a besoin d’accéder à l’appareil photo pour importer le logo et la signature."
+          "photosPermission": "INVEQ a besoin d’accéder à vos photos pour importer le logo et la signature.",
+          "cameraPermission": "INVEQ a besoin d’accéder à l’appareil photo pour importer le logo et la signature."
         }
       ],
       [
         "expo-notifications",
         {
           "icon": "./assets/images/icon.png",
-          "color": "#0274DF",
+          "color": "#4F46E5",
           "sounds": []
         }
       ]

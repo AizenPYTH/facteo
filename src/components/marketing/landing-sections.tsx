@@ -181,7 +181,7 @@ export function ScreenshotsSection() {
   const placeholders = ['Tableau de bord', 'Liste clients', 'Création devis', 'Aperçu PDF'];
 
   return (
-    <MarketingSection id="screenshots" subtitle="Aperçu de l’interface Factume" title="Captures d’écran">
+    <MarketingSection id="screenshots" subtitle="Aperçu de l’interface INVEQ" title="Captures d’écran">
       <View style={styles.screenshotGrid}>
         {placeholders.map((label, index) => (
           <FadeInView delay={index * 80} key={label} style={styles.screenshotCard}>

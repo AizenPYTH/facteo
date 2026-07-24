@@ -72,10 +72,10 @@ Deno.serve(async (request) => {
     const stripe = new Stripe(stripeSecret, { apiVersion: '2024-12-18.acacia' });
     const currency = (body.currency ?? 'EUR').toLowerCase();
     const amountInCents = Math.round(body.amount * 100);
-    const clientName = 'Client Factume';
+    const clientName = 'Client INVEQ';
 
-    const successUrl = `factume://invoices/${invoice.id}?payment=success&session_id={CHECKOUT_SESSION_ID}`;
-    const cancelUrl = `factume://invoices/${invoice.id}?payment=canceled`;
+    const successUrl = `INVEQ://invoices/${invoice.id}?payment=success&session_id={CHECKOUT_SESSION_ID}`;
+    const cancelUrl = `INVEQ://invoices/${invoice.id}?payment=canceled`;
 
     const session = await stripe.checkout.sessions.create({
       mode: 'payment',
@@ -128,7 +128,7 @@ Deno.serve(async (request) => {
       currency: currency.toUpperCase(),
       status: 'pending',
       metadata: {
-        source: 'factume_app',
+        source: 'INVEQ_app',
       },
       updated_at: now,
     });

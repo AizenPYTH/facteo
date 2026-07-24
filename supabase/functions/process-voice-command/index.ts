@@ -114,7 +114,7 @@ Deno.serve(async (request) => {
     });
 
     const systemPrompt = [
-      'Tu analyses une commande vocale artisan pour Factume.',
+      'Tu analyses une commande vocale artisan pour INVEQ.',
       'Tu retournes un JSON structuré propre sans blabla.',
       'Comprends les nombres en lettres (ex: "deux heures", "cent vingt euros").',
       'Comprends TVA, remise, délai de paiement, unités.',

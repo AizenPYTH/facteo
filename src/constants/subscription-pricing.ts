@@ -1,4 +1,4 @@
-/** Prix affiché Factume Premium (aligné sur le Price Stripe en EUR). */
+/** Prix affiché INVEQ Premium (aligné sur le Price Stripe en EUR). */
 export const PREMIUM_PRICE_EUR = 6.99;
 
 export const PREMIUM_PRICE_LABEL = '6,99 €';

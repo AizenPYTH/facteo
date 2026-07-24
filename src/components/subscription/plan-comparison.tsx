@@ -66,7 +66,7 @@ export function PlanComparison({ standardPlan, premiumPlan, currentPlanId }: Pla
 
       <View style={[styles.planCard, currentPlanId === 'free' ? styles.planCardCurrent : null]}>
         <View style={styles.planHeader}>
-          <Text style={styles.planTitle}>Factume Standard</Text>
+          <Text style={styles.planTitle}>INVEQ Standard</Text>
           {currentPlanId === 'free' ? <PlanBadge label="Actuel" /> : null}
         </View>
         <Text style={styles.planSubtitle}>Gratuit · l’essentiel pour démarrer</Text>
@@ -79,7 +79,7 @@ export function PlanComparison({ standardPlan, premiumPlan, currentPlanId }: Pla
           currentPlanId === 'premium' ? styles.planCardCurrent : null,
         ]}>
         <View style={styles.planHeader}>
-          <Text style={[styles.planTitle, styles.planTitlePremium]}>Factume Premium</Text>
+          <Text style={[styles.planTitle, styles.planTitlePremium]}>INVEQ Premium</Text>
           {currentPlanId === 'premium' ? (
             <PlanBadge label="Actuel" premium />
           ) : (

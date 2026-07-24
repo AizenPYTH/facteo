@@ -7,7 +7,7 @@ import { useTenant } from '@/providers/company-provider';
 import { fetchClientsPage } from '@/lib/domain/supabase/clients';
 import { clientsQueryKeys } from '@/lib/domain/supabase/query-keys';
 import { requireScope } from '@/lib/domain/tenant/scope';
-import { CLIENTS_PAGE_SIZE } from '@factume/types/clients-list';
+import { CLIENTS_PAGE_SIZE } from '@inveq/types/clients-list';
 
 export function useInfiniteClients(search: string) {
   const { user, loading: authLoading } = useAuth();

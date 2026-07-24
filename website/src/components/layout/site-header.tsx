@@ -6,8 +6,9 @@ import { Menu, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 import { Button } from '@/components/ui/button';
+import { BrandWordmark } from '@/components/brand/brand-logo';
 import { NAV_LINKS } from '@/lib/content';
-import { APP_LOGIN_URL, APP_REGISTER_URL, SITE_NAME } from '@/lib/constants';
+import { APP_LOGIN_URL, APP_REGISTER_URL } from '@/lib/constants';
 
 export function SiteHeader() {
   const [open, setOpen] = useState(false);
@@ -15,11 +16,8 @@ export function SiteHeader() {
   return (
     <header className="glass sticky top-0 z-50">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6 lg:px-8">
-        <Link className="flex items-center gap-2.5" href="/">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-sm font-bold text-white">
-            F
-          </div>
-          <span className="text-lg font-bold tracking-tight text-foreground">{SITE_NAME}</span>
+        <Link className="flex items-center" href="/">
+          <BrandWordmark markSize={30} />
         </Link>
 
         <nav className="hidden items-center gap-8 md:flex">

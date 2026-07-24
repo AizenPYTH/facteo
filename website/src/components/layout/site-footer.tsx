@@ -1,5 +1,6 @@
 import Link from 'next/link';
 
+import { BrandWordmark } from '@/components/brand/brand-logo';
 import { FOOTER } from '@/lib/content';
 import { CONTACT_EMAIL, SITE_NAME } from '@/lib/constants';
 
@@ -7,15 +8,10 @@ export function SiteFooter() {
   const year = new Date().getFullYear();
 
   return (
-    <footer className="mt-auto border-t border-border bg-slate-900 text-slate-300">
+    <footer className="mt-auto border-t border-border bg-[#0B0E14] text-slate-300">
       <div className="mx-auto grid max-w-6xl gap-12 px-6 py-16 lg:grid-cols-4 lg:px-8">
         <div className="lg:col-span-1">
-          <div className="flex items-center gap-2.5">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-sm font-bold text-white">
-              F
-            </div>
-            <span className="text-lg font-bold text-white">{SITE_NAME}</span>
-          </div>
+          <BrandWordmark className="[&_span]:text-white" markSize={30} />
           <p className="mt-4 max-w-xs text-sm leading-relaxed text-slate-400">
             La facturation moderne pour artisans, freelances et PME.
           </p>
@@ -30,7 +26,7 @@ export function SiteFooter() {
       <div className="border-t border-slate-800">
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-6 py-6 text-sm text-slate-500 sm:flex-row lg:px-8">
           <p>© {year} {SITE_NAME}. Tous droits réservés.</p>
-          <p>Fait en France · Factume</p>
+          <p>Fait en France · INVEQ</p>
         </div>
       </div>
     </footer>

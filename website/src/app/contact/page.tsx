@@ -7,7 +7,7 @@ import { CONTACT_EMAIL, SUPPORT_EMAIL } from '@/lib/constants';
 
 export const metadata: Metadata = {
   title: 'Contact',
-  description: 'Contactez l’équipe Factume pour toute question commerciale ou support technique.',
+  description: 'Contactez l’équipe INVEQ pour toute question commerciale ou support technique.',
 };
 
 export default function ContactPage() {

@@ -1,5 +1,5 @@
-import type { InvoiceLineValue } from '@factume/types/invoice';
-import type { QuoteLineValue } from '@factume/types/quote';
+import type { InvoiceLineValue } from '@inveq/types/invoice';
+import type { QuoteLineValue } from '@inveq/types/quote';
 
 export type LineValue = QuoteLineValue | InvoiceLineValue;
 

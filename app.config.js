@@ -1,8 +1,8 @@
 /**
- * Variante optionnelle pour un futur "Factume Dev".
+ * Variante optionnelle pour un futur "INVEQ Dev".
  * En local on utilise Expo Go (npm start → --go), pas ce scheme.
  *
- * EAS preview/production → APP_VARIANT=production (scheme factume).
+ * EAS preview/production → APP_VARIANT=production (scheme inveq).
  */
 const appJson = require('./app.json');
 
@@ -14,15 +14,15 @@ const base = appJson.expo;
 module.exports = {
   expo: {
     ...base,
-    name: IS_DEV ? 'Factume Dev' : base.name,
-    scheme: IS_DEV ? 'factume-dev' : base.scheme,
+    name: IS_DEV ? 'INVEQ Dev' : base.name,
+    scheme: IS_DEV ? 'inveq-dev' : base.scheme,
     ios: {
       ...base.ios,
-      bundleIdentifier: IS_DEV ? 'com.factume.app.dev' : base.ios.bundleIdentifier,
+      bundleIdentifier: IS_DEV ? 'com.inveq.app.dev' : base.ios.bundleIdentifier,
     },
     android: {
       ...base.android,
-      package: IS_DEV ? 'com.factume.app.dev' : base.android.package,
+      package: IS_DEV ? 'com.inveq.app.dev' : base.android.package,
     },
   },
 };

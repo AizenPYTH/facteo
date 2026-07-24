@@ -63,7 +63,7 @@ export function LegalDocument({
 
   return (
     <>
-      <MarketingSeo description={description} path={path} title={`${title} — Factume`} />
+      <MarketingSeo description={description} path={path} title={`${title} — INVEQ`} />
       <MarketingShell>
         <View style={styles.page}>
           <View style={styles.hero}>
@@ -117,7 +117,7 @@ export function LegalDocument({
               ))}
 
               <View style={styles.contactCard}>
-                <Text style={styles.contactTitle}>Contact Factume</Text>
+                <Text style={styles.contactTitle}>Contact INVEQ</Text>
                 <Text style={styles.contactText}>
                   {LEGAL_CONTACT.company} — {LEGAL_CONTACT.website}
                 </Text>

@@ -6,7 +6,7 @@ import { PageHero } from '@/components/sections/landing-sections';
 
 export const metadata: Metadata = {
   title: 'Blog',
-  description: 'Le blog Factume — conseils facturation, gestion commerciale et actualités.',
+  description: 'Le blog INVEQ — conseils facturation, gestion commerciale et actualités.',
 };
 
 export default function BlogPage() {
@@ -14,7 +14,7 @@ export default function BlogPage() {
     <>
       <PageHero
         subtitle="Conseils, guides et actualités pour les professionnels. Bientôt disponible."
-        title="Blog Factume"
+        title="Blog INVEQ"
       />
       <section className="px-6 py-20 text-center lg:px-8">
         <FadeIn>

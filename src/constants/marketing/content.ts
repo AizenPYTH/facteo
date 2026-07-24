@@ -2,7 +2,7 @@ import { MARKETING_CONTACT, MARKETING_HELP_URLS, MARKETING_LEGAL_URLS } from '@/
 
 export const HERO_CONTENT = {
   overline: 'Facturation pour les pros',
-  title: 'Factume',
+  title: 'INVEQ',
   subtitle:
     'Gérez vos devis et factures comme un pro. Clients, signatures et encaissements — pensé pour les artisans, freelances et PME.',
   ctaPrimary: 'Commencer gratuitement',
@@ -12,7 +12,7 @@ export const HERO_CONTENT = {
 export const PRESENTATION_CONTENT = {
   title: 'Tout votre activité, au même endroit',
   subtitle:
-    'Fini les tableurs, les PDF perdus et les relances oubliées. Factume vous accompagne du premier devis jusqu’au paiement.',
+    'Fini les tableurs, les PDF perdus et les relances oubliées. INVEQ vous accompagne du premier devis jusqu’au paiement.',
   bullets: [
     'Créez des devis professionnels en quelques minutes',
     'Transformez un devis accepté en facture en un clic',
@@ -22,7 +22,7 @@ export const PRESENTATION_CONTENT = {
 };
 
 export const WHY_CONTENT = {
-  title: 'Pourquoi choisir Factume ?',
+  title: 'Pourquoi choisir INVEQ ?',
   subtitle: 'Un outil conçu pour le terrain, pas pour les comptables.',
   items: [
     {
@@ -104,7 +104,7 @@ export const MOBILE_CONTENT = {
 
 export const TESTIMONIALS_CONTENT = {
   title: 'Ils nous font confiance',
-  subtitle: 'Des artisans et indépendants utilisent Factume au quotidien.',
+  subtitle: 'Des artisans et indépendants utilisent INVEQ au quotidien.',
   items: [
     {
       quote: 'Je gagne au moins 2 heures par semaine sur ma paperasse. Les devis sont enfin propres.',
@@ -133,7 +133,7 @@ export const PRICING_CONTENT = {
       name: 'Standard',
       price: '0 €',
       period: '/ mois',
-      description: 'Pour démarrer et tester Factume.',
+      description: 'Pour démarrer et tester INVEQ.',
       features: ['Clients illimités', 'Devis et factures', 'PDF et modèles', 'Application mobile'],
       cta: 'Créer un compte',
       highlighted: false,
@@ -161,14 +161,14 @@ export const FAQ_CONTENT = {
   title: 'Questions fréquentes',
   items: [
     {
-      question: 'Factume est-il adapté aux artisans ?',
+      question: 'INVEQ est-il adapté aux artisans ?',
       answer:
-        'Oui. Factume est pensé pour les artisans, freelances et TPE qui veulent une facturation simple sans logiciel comptable complexe.',
+        'Oui. INVEQ est pensé pour les artisans, freelances et TPE qui veulent une facturation simple sans logiciel comptable complexe.',
     },
     {
-      question: 'Puis-je utiliser Factume sur ordinateur ?',
+      question: 'Puis-je utiliser INVEQ sur ordinateur ?',
       answer:
-        'Oui. Factume est disponible en application web avec une interface desktop optimisée, en plus des apps iOS et Android.',
+        'Oui. INVEQ est disponible en application web avec une interface desktop optimisée, en plus des apps iOS et Android.',
     },
     {
       question: 'Mes données sont-elles sécurisées ?',
@@ -188,7 +188,7 @@ export const FAQ_CONTENT = {
     {
       question: 'Puis-je utiliser un code promo ?',
       answer:
-        'Oui. Au moment du paiement Stripe Checkout, vous pouvez saisir un code promo si vous en avez un. Les codes sont communiqués ponctuellement par Factume.',
+        'Oui. Au moment du paiement Stripe Checkout, vous pouvez saisir un code promo si vous en avez un. Les codes sont communiqués ponctuellement par INVEQ.',
     },
     {
       question: 'Puis-je annuler mon abonnement ?',
@@ -199,7 +199,7 @@ export const FAQ_CONTENT = {
 
 export const CTA_CONTENT = {
   title: 'Prêt à simplifier votre facturation ?',
-  subtitle: 'Rejoignez les professionnels qui ont choisi Factume. Création de compte en 2 minutes.',
+  subtitle: 'Rejoignez les professionnels qui ont choisi INVEQ. Création de compte en 2 minutes.',
   cta: 'Créer mon compte gratuit',
 };
 

@@ -35,7 +35,7 @@ function LoginAlertsInner() {
   if (searchParams.get('confirmed') === '1') {
     return (
       <div className="mb-5 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
-        E-mail confirmé. Connectez-vous pour accéder à Factume.
+        E-mail confirmé. Connectez-vous pour accéder à INVEQ.
       </div>
     );
   }

@@ -11,7 +11,7 @@ type LegalExternalRedirectProps = {
   label: string;
 };
 
-/** Ouvre la page légale sur factume.app (exigence App Store / store listing). */
+/** Ouvre la page légale sur INVEQ.app (exigence App Store / store listing). */
 export function LegalExternalRedirect({ url, label }: LegalExternalRedirectProps) {
   const styles = useStyles();
   const colors = useColors();

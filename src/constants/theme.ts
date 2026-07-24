@@ -1,5 +1,5 @@
 /**
- * Factume design system entry point.
+ * INVEQ design system entry point.
  * Token modules live in ./theme/.
  */
 

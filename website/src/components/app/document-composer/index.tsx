@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 
 import { CatalogPicker } from '@/components/app/catalog-picker';
+import { ClientPicker } from '@/components/app/client-picker';
 import { ComposerErrorBanner, InlineFieldError } from '@/components/app/document-composer/field-errors';
 import { ComposerTemplateBar } from '@/components/app/document-composer/template-bar';
 import {
@@ -25,7 +26,7 @@ import {
   type LineValue,
 } from '@/components/app/document-composer/validation';
 import { LoadingState } from '@/components/app/ui';
-import { SelectInput, TextArea, TextInput } from '@/components/app/form-fields';
+import { TextArea, TextInput } from '@/components/app/form-fields';
 import { useAuth } from '@/providers/auth-provider';
 import { useTenant } from '@/providers/company-provider';
 import { useSettings } from '@/hooks/use-settings';
@@ -41,10 +42,10 @@ import { calculateLineTotals } from '@/lib/calculations/totals';
 import { getDefaultComposerTemplateId } from '@/lib/domain/pdf/composer-templates';
 import { requireScope } from '@/lib/domain/tenant/scope';
 import { formatCurrency } from '@/lib/domain/format/currency';
-import { createEmptyInvoiceLine } from '@factume/types/invoice';
-import { createEmptyQuoteLine, createLocalLineId } from '@factume/types/quote';
+import { createEmptyInvoiceLine } from '@inveq/types/invoice';
+import { createEmptyQuoteLine, createLocalLineId } from '@inveq/types/quote';
 import type { Product } from '@/types/product';
-import { CLIENTS_PAGE_SIZE } from '@factume/types/clients-list';
+import { CLIENTS_PAGE_SIZE } from '@inveq/types/clients-list';
 import { cn } from '@/lib/utils';
 
 function parseDecimal(value: string): number {
@@ -552,11 +553,11 @@ export function DocumentComposer({ kind }: { kind: 'invoice' | 'quote' }) {
   ].filter((m): m is string => Boolean(m));
 
   return (
-    <div className="flex h-full min-h-0 flex-col overflow-hidden bg-slate-50">
+    <div className="flex h-full min-h-0 flex-col overflow-hidden bg-[#F4F6F9]">
       <CatalogPicker onClose={() => setCatalogOpen(false)} onSelectMany={addFromCatalogMany} open={catalogOpen} />
 
       {/* Barre supérieure */}
-      <header className="shrink-0 border-b border-slate-200 bg-white">
+      <header className="shrink-0 border-b border-slate-200/90 bg-white/95 backdrop-blur-sm">
         <div className="flex items-center justify-between gap-4 px-4 py-3 lg:px-5">
           <div className="flex min-w-0 items-center gap-3">
             <button
@@ -567,19 +568,19 @@ export function DocumentComposer({ kind }: { kind: 'invoice' | 'quote' }) {
               Retour
             </button>
             <div className="min-w-0">
-              <h1 className="truncate text-lg font-bold text-slate-900">{title}</h1>
+              <h1 className="truncate text-lg font-semibold tracking-tight text-slate-900">{title}</h1>
               <p className="text-xs text-slate-500">Éditeur clair et simplifié</p>
             </div>
           </div>
           <div className="flex shrink-0 items-center gap-2">
             <button
-              className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+              className="rounded-xl border border-slate-200/90 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition duration-150 hover:-translate-y-0.5 hover:bg-slate-50"
               onClick={handleCancel}
               type="button">
               Annuler
             </button>
             <button
-              className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-primary/20 transition hover:bg-primary-dark disabled:opacity-60"
+              className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white shadow-[0_10px_24px_-10px_rgba(37,99,235,0.65)] transition duration-150 hover:-translate-y-0.5 hover:bg-primary-dark disabled:opacity-60 disabled:hover:translate-y-0"
               disabled={createMutation.isPending}
               onClick={handleSubmit}
               type="button">
@@ -588,7 +589,7 @@ export function DocumentComposer({ kind }: { kind: 'invoice' | 'quote' }) {
             </button>
           </div>
         </div>
-        <div className="border-t border-slate-100 bg-slate-50/50 px-4 py-2.5 lg:px-5">
+        <div className="border-t border-slate-100 bg-slate-50/60 px-4 py-2.5 lg:px-5">
           <ComposerTemplateBar onChange={setTemplateId} value={templateId} />
         </div>
       </header>
@@ -606,24 +607,18 @@ export function DocumentComposer({ kind }: { kind: 'invoice' | 'quote' }) {
               <h2 className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-400">
                 Client
               </h2>
-              <SelectInput
-                className={cn(fieldErrors.clientId && 'border-red-300 ring-2 ring-red-100')}
-                onChange={(e) => {
-                  setClientId(e.target.value);
+              <ClientPicker
+                clients={clients}
+                error={Boolean(fieldErrors.clientId)}
+                loading={clientsQuery.isLoading}
+                onChange={(id) => {
+                  setClientId(id);
                   if (submitAttempted) {
-                    setFieldErrors(validateDocumentDraft(e.target.value, lines));
+                    setFieldErrors(validateDocumentDraft(id, lines));
                   }
                 }}
-                value={clientId}>
-                <option value="">— Choisir un client —</option>
-                {clients.map((client) => (
-                  <option key={client.id} value={client.id}>
-                    {client.company ||
-                      `${client.firstName} ${client.lastName}`.trim() ||
-                      client.lastName}
-                  </option>
-                ))}
-              </SelectInput>
+                value={clientId}
+              />
               <InlineFieldError message={submitAttempted ? fieldErrors.clientId : undefined} />
             </section>
 
@@ -745,7 +740,7 @@ export function DocumentComposer({ kind }: { kind: 'invoice' | 'quote' }) {
                   const rowErrors = fieldErrors.lineErrors?.[line.id];
 
                   return (
-                    <tr className="border-b border-slate-100 align-top transition-colors hover:bg-slate-50/60" key={line.id}>
+                    <tr className="border-b border-slate-100/90 align-top transition-colors duration-150 hover:bg-slate-50/80" key={line.id}>
                       <td className="px-3 py-2">
                         <TextInput
                           className={cn('py-1.5 text-sm', rowErrors?.description && 'border-red-300')}

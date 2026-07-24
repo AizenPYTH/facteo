@@ -18,7 +18,7 @@ export function Button({ href, children, variant = 'primary', className, externa
 
   const variants = {
     primary: 'bg-primary text-white shadow-lg shadow-primary/25 hover:bg-primary-dark hover:shadow-primary/30',
-    secondary: 'bg-surface text-foreground border border-border hover:border-primary/40 hover:bg-blue-50/50',
+    secondary: 'bg-surface text-foreground border border-border hover:border-primary/40 hover:bg-indigo-50/50',
     ghost: 'text-muted hover:text-foreground hover:bg-slate-100',
   };
 

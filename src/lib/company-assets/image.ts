@@ -4,7 +4,7 @@ import * as ImagePicker from 'expo-image-picker';
 
 import type { CompanyAssetKind } from '@/lib/supabase/storage';
 
-const CACHE_PREFIX = '@factume/company-asset/';
+const CACHE_PREFIX = '@inveq/company-asset/';
 
 const ASSET_CONFIG: Record<
   CompanyAssetKind,

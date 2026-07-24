@@ -1,5 +1,5 @@
 /**
- * Configuration centralisée des offres Factume (prix HT, limites, fonctionnalités).
+ * Configuration centralisée des offres INVEQ (prix HT, limites, fonctionnalités).
  * Modifier ce fichier pour mettre à jour la page tarifs sans toucher à l’UI.
  */
 
@@ -111,14 +111,14 @@ export const SUBSCRIPTION_PRICING_COPY = {
 } as const;
 
 /**
- * Matrice produits réelle Factume (uniquement ce qui est disponible aujourd’hui).
+ * Matrice produits réelle INVEQ (uniquement ce qui est disponible aujourd’hui).
  * Différenciation : volume documents, SIREN/SIRET, signature, nombre d’entreprises.
  */
 export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
   {
     id: 'micro',
     name: 'Micro',
-    description: 'Pour découvrir Factume et facturer vos premiers clients.',
+    description: 'Pour découvrir INVEQ et facturer vos premiers clients.',
     priceMonthlyHt: 0,
     priceYearlyMonthlyHt: null,
     cta: 'Commencer gratuitement',

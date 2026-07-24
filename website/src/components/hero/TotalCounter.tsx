@@ -8,7 +8,8 @@ export default function TotalCounter({ value }: { value: number }) {
 
   useEffect(() => {
     const controls = animate(display, value, {
-      duration: 1.2,
+      duration: 0.9,
+      ease: [0.22, 1, 0.36, 1],
       onUpdate(v) {
         setDisplay(Number(v.toFixed(2)));
       },

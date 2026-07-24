@@ -16,7 +16,7 @@ export default function Root({ children }: PropsWithChildren) {
         <link href={`${MARKETING_SITE_URL}/`} rel="canonical" />
 
         <meta content="website" property="og:type" />
-        <meta content="Factume" property="og:site_name" />
+        <meta content="INVEQ" property="og:site_name" />
         <meta content={MARKETING_SEO.defaultTitle} property="og:title" />
         <meta content={MARKETING_SEO.defaultDescription} property="og:description" />
         <meta content={`${MARKETING_SITE_URL}/`} property="og:url" />

@@ -1,14 +1,14 @@
 /**
  * URL publique du site.
- * Sans domaine custom : mets ton URL Vercel, ex. https://factume.vercel.app
- * Avec domaine : https://factume.app
+ * Production : https://inveq.fr
+ * Override : EXPO_PUBLIC_SITE_URL ou NEXT_PUBLIC_SITE_URL
  */
 function resolveSiteUrl(): string {
   const fromEnv =
     process.env.EXPO_PUBLIC_SITE_URL?.trim() ||
     process.env.NEXT_PUBLIC_SITE_URL?.trim() ||
     '';
-  return fromEnv.replace(/\/$/, '') || 'https://factume.vercel.app';
+  return fromEnv.replace(/\/$/, '') || 'https://inveq.fr';
 }
 
 export const MARKETING_SITE_URL = resolveSiteUrl();
@@ -58,10 +58,10 @@ export const ALL_PUBLIC_EXTERNAL_URLS = [
 ] as const;
 
 export const MARKETING_SEO = {
-  defaultTitle: 'Factume — Facturation, devis et gestion pour artisans et PME',
+  defaultTitle: 'INVEQ — Facturation, devis et gestion pour artisans et PME',
   defaultDescription:
-    'Factume simplifie la facturation, les devis, les signatures et les paiements. Application mobile et web pour artisans, freelances et petites entreprises.',
-  ogImage: `${MARKETING_SITE_URL}/og-image.png`,
-  twitterHandle: '@factume',
+    'INVEQ simplifie la facturation, les devis, les signatures et les paiements. Application mobile et web pour artisans, freelances et petites entreprises.',
+  ogImage: `${MARKETING_SITE_URL}/opengraph-image`,
+  twitterHandle: '@inveq',
   locale: 'fr_FR',
 } as const;

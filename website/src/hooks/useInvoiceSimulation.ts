@@ -4,9 +4,9 @@ import { useEffect, useState } from 'react';
 
 export function useInvoiceSimulation() {
   const [items] = useState(() => [
-    { label: 'Conception site web', price: 650.0 },
-    { label: 'Maintenance (1 an)', price: 150.0 },
-    { label: 'Hébergement', price: 49.0 },
+    { label: 'Installation électrique — 3 pièces', price: 1280.0 },
+    { label: 'Mise en conformité tableau', price: 420.0 },
+    { label: 'Déplacement & diagnostic', price: 95.0 },
   ]);
 
   const [revealedCount, setRevealedCount] = useState(0);
@@ -34,5 +34,14 @@ export function useInvoiceSimulation() {
 
   const subtotal = items.reduce((s, it) => s + it.price, 0);
 
-  return { items, revealedCount, showPdf, signed, paid, subtotal, tvaRate, client: { name: 'Société Durand' } };
+  return {
+    items,
+    revealedCount,
+    showPdf,
+    signed,
+    paid,
+    subtotal,
+    tvaRate,
+    client: { name: 'Martin SARL' },
+  };
 }

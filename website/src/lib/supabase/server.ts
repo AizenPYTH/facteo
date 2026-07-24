@@ -1,7 +1,7 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 
-import type { Database } from '@factume/types/database';
+import type { Database } from '@inveq/types/database';
 
 import { getSupabaseAnonKey, getSupabaseUrl } from '@/lib/supabase/env';
 

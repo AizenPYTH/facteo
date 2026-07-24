@@ -3,11 +3,11 @@ import type { LegalSection } from '@/components/marketing/legal-document';
 export const LEGAL_LAST_UPDATED = '15 juillet 2026';
 
 export const LEGAL_CONTACT = {
-  company: 'Factume',
+  company: 'INVEQ',
   email: 'farouqdib@gmail.com',
   support: 'farouqdib@gmail.com',
   dpo: 'farouqdib@gmail.com',
-  website: 'https://factume.vercel.app',
+  website: 'https://inveq.fr',
   address: 'France',
 } as const;
 
@@ -16,7 +16,7 @@ export const PRIVACY_SECTIONS: LegalSection[] = [
     id: 'responsable',
     title: '1. Responsable du traitement',
     paragraphs: [
-      'Factume, accessible via son site web et ses applications, est responsable du traitement des données personnelles collectées via l’application mobile, l’application web et le site internet.',
+      'INVEQ, accessible via son site web et ses applications, est responsable du traitement des données personnelles collectées via l’application mobile, l’application web et le site internet.',
       `Pour toute question relative à la protection de vos données personnelles, vous pouvez nous contacter à l’adresse : ${LEGAL_CONTACT.email}.`,
     ],
   },
@@ -29,7 +29,7 @@ export const PRIVACY_SECTIONS: LegalSection[] = [
       'Données professionnelles : raison sociale, SIRET, numéro de TVA, adresse postale, coordonnées bancaires professionnelles (IBAN, BIC), logo et signature.',
       'Données clients : informations relatives à vos propres clients que vous saisissez dans l’application (identité, coordonnées, historique commercial).',
       'Données documentaires : devis, factures, lignes de prestation, signatures électroniques, historique d’envoi.',
-      'Données de paiement : les transactions sont traitées par Stripe. Factume ne stocke jamais vos numéros de carte bancaire complets.',
+      'Données de paiement : les transactions sont traitées par Stripe. INVEQ ne stocke jamais vos numéros de carte bancaire complets.',
       'Données techniques : logs de connexion, adresse IP, type d’appareil, version de l’application, cookies de session.',
     ],
   },
@@ -52,14 +52,14 @@ export const PRIVACY_SECTIONS: LegalSection[] = [
     id: 'base-legale',
     title: '4. Base légale',
     paragraphs: [
-      'Le traitement de vos données repose sur : l’exécution du contrat (utilisation de Factume), votre consentement lorsque la réglementation l’exige (cookies non essentiels, communications marketing), et nos intérêts légitimes (sécurité, amélioration du service, prévention de la fraude).',
+      'Le traitement de vos données repose sur : l’exécution du contrat (utilisation de INVEQ), votre consentement lorsque la réglementation l’exige (cookies non essentiels, communications marketing), et nos intérêts légitimes (sécurité, amélioration du service, prévention de la fraude).',
     ],
   },
   {
     id: 'securite',
     title: '5. Sécurité des données',
     paragraphs: [
-      'Factume met en œuvre des mesures techniques et organisationnelles appropriées pour protéger vos données : chiffrement des communications (HTTPS/TLS), authentification sécurisée, hébergement cloud certifié (Supabase), sauvegardes régulières, contrôle d’accès par rôles, et surveillance des accès.',
+      'INVEQ met en œuvre des mesures techniques et organisationnelles appropriées pour protéger vos données : chiffrement des communications (HTTPS/TLS), authentification sécurisée, hébergement cloud certifié (Supabase), sauvegardes régulières, contrôle d’accès par rôles, et surveillance des accès.',
       'En cas de violation de données susceptible d’engendrer un risque pour vos droits, nous vous en informerons dans les délais prévus par le RGPD.',
     ],
   },
@@ -67,7 +67,7 @@ export const PRIVACY_SECTIONS: LegalSection[] = [
     id: 'conservation',
     title: '6. Durée de conservation',
     paragraphs: [
-      'Vos données de compte sont conservées pendant toute la durée de votre utilisation de Factume, puis supprimées ou anonymisées dans un délai de 30 jours après la clôture de votre compte.',
+      'Vos données de compte sont conservées pendant toute la durée de votre utilisation de INVEQ, puis supprimées ou anonymisées dans un délai de 30 jours après la clôture de votre compte.',
       'Les documents commerciaux (devis, factures) sont conservés conformément aux obligations légales en matière de comptabilité et de facturation, soit une durée minimale de 10 ans à compter de la clôture de l’exercice comptable.',
       'Les logs techniques sont conservés pour une durée maximale de 12 mois.',
     ],
@@ -76,7 +76,7 @@ export const PRIVACY_SECTIONS: LegalSection[] = [
     id: 'cookies',
     title: '7. Cookies et traceurs',
     paragraphs: [
-      'Factume utilise des cookies strictement nécessaires au fonctionnement du service (authentification, session, préférences). Des cookies analytiques peuvent être utilisés pour mesurer l’audience, sous réserve de votre consentement.',
+      'INVEQ utilise des cookies strictement nécessaires au fonctionnement du service (authentification, session, préférences). Des cookies analytiques peuvent être utilisés pour mesurer l’audience, sous réserve de votre consentement.',
       'Pour plus d’informations, consultez notre Politique des cookies.',
     ],
     links: [{ label: 'Politique des cookies', href: '/cookies' }],
@@ -121,16 +121,16 @@ export const TERMS_SECTIONS: LegalSection[] = [
     id: 'objet',
     title: '1. Objet',
     paragraphs: [
-      'Les présentes Conditions Générales d’Utilisation (ci-après « CGU ») régissent l’accès et l’utilisation de l’application Factume, du site web et de l’ensemble des services associés.',
-      'En créant un compte ou en utilisant Factume, vous acceptez sans réserve les présentes CGU. Si vous n’acceptez pas ces conditions, vous ne devez pas utiliser le service.',
+      'Les présentes Conditions Générales d’Utilisation (ci-après « CGU ») régissent l’accès et l’utilisation de l’application INVEQ, du site web et de l’ensemble des services associés.',
+      'En créant un compte ou en utilisant INVEQ, vous acceptez sans réserve les présentes CGU. Si vous n’acceptez pas ces conditions, vous ne devez pas utiliser le service.',
     ],
   },
   {
     id: 'service',
     title: '2. Description du service',
     paragraphs: [
-      'Factume est un logiciel de facturation en ligne (SaaS) permettant de gérer clients, devis, factures, signatures électroniques et paiements. Le service est accessible via application mobile (iOS, Android) et application web.',
-      'Factume est un outil de gestion commerciale. Il ne constitue pas un logiciel de comptabilité certifié et ne remplace pas les conseils d’un expert-comptable ou d’un commissaire aux comptes.',
+      'INVEQ est un logiciel de facturation en ligne (SaaS) permettant de gérer clients, devis, factures, signatures électroniques et paiements. Le service est accessible via application mobile (iOS, Android) et application web.',
+      'INVEQ est un outil de gestion commerciale. Il ne constitue pas un logiciel de comptabilité certifié et ne remplace pas les conseils d’un expert-comptable ou d’un commissaire aux comptes.',
     ],
   },
   {
@@ -146,9 +146,9 @@ export const TERMS_SECTIONS: LegalSection[] = [
     id: 'abonnement',
     title: '4. Abonnement et tarifs',
     paragraphs: [
-      'Factume propose une offre Standard gratuite avec des fonctionnalités limitées, et une offre Premium payante donnant accès à l’ensemble des fonctionnalités avancées.',
+      'INVEQ propose une offre Standard gratuite avec des fonctionnalités limitées, et une offre Premium payante donnant accès à l’ensemble des fonctionnalités avancées.',
       'Les tarifs en vigueur sont affichés sur le site et dans l’application au moment de la souscription. Les prix sont indiqués en euros, toutes taxes comprises (TTC) pour les consommateurs.',
-      'Factume se réserve le droit de modifier ses tarifs. Toute modification sera notifiée avec un préavis de 30 jours. En cas de désaccord, vous pouvez résilier votre abonnement avant l’entrée en vigueur du nouveau tarif.',
+      'INVEQ se réserve le droit de modifier ses tarifs. Toute modification sera notifiée avec un préavis de 30 jours. En cas de désaccord, vous pouvez résilier votre abonnement avant l’entrée en vigueur du nouveau tarif.',
     ],
   },
   {
@@ -156,15 +156,15 @@ export const TERMS_SECTIONS: LegalSection[] = [
     title: '5. Paiement',
     paragraphs: [
       'Les abonnements Premium sont facturés mensuellement ou annuellement selon l’offre choisie. Le paiement est traité par Stripe, prestataire de paiement sécurisé.',
-      'En cas de défaut de paiement, Factume se réserve le droit de suspendre l’accès aux fonctionnalités Premium après notification.',
-      'Les paiements de vos clients (liens de paiement Stripe) sont traités directement par Stripe. Factume n’est pas partie aux transactions entre vous et vos clients.',
+      'En cas de défaut de paiement, INVEQ se réserve le droit de suspendre l’accès aux fonctionnalités Premium après notification.',
+      'Les paiements de vos clients (liens de paiement Stripe) sont traités directement par Stripe. INVEQ n’est pas partie aux transactions entre vous et vos clients.',
     ],
   },
   {
     id: 'utilisation',
     title: '6. Utilisation acceptable',
     paragraphs: [
-      'Vous vous engagez à utiliser Factume conformément à la loi française et européenne, sans porter atteinte aux droits de tiers.',
+      'Vous vous engagez à utiliser INVEQ conformément à la loi française et européenne, sans porter atteinte aux droits de tiers.',
       'Il est interdit de : tenter de contourner les mesures de sécurité, utiliser le service à des fins illicites, surcharger intentionnellement les infrastructures, revendre l’accès au service sans autorisation, ou collecter des données d’autres utilisateurs.',
     ],
   },
@@ -173,22 +173,22 @@ export const TERMS_SECTIONS: LegalSection[] = [
     title: '7. Responsabilités',
     paragraphs: [
       'Vous êtes seul responsable du contenu des documents que vous créez (devis, factures) et de leur conformité aux obligations légales applicables à votre activité.',
-      'Factume ne vérifie pas l’exactitude comptable, fiscale ou juridique de vos documents. Vous restez responsable de la conformité de vos factures (mentions obligatoires, TVA, numérotation).',
+      'INVEQ ne vérifie pas l’exactitude comptable, fiscale ou juridique de vos documents. Vous restez responsable de la conformité de vos factures (mentions obligatoires, TVA, numérotation).',
     ],
   },
   {
     id: 'propriete',
     title: '8. Propriété intellectuelle',
     paragraphs: [
-      'Factume, son code source, son design, ses logos, icônes et contenus sont la propriété exclusive de Factume et sont protégés par le droit de la propriété intellectuelle.',
-      'Vous conservez la pleine propriété de vos données commerciales (clients, devis, factures, logos). Factume dispose d’une licence limitée pour héberger et traiter vos données aux fins de fournir le service.',
+      'INVEQ, son code source, son design, ses logos, icônes et contenus sont la propriété exclusive de INVEQ et sont protégés par le droit de la propriété intellectuelle.',
+      'Vous conservez la pleine propriété de vos données commerciales (clients, devis, factures, logos). INVEQ dispose d’une licence limitée pour héberger et traiter vos données aux fins de fournir le service.',
     ],
   },
   {
     id: 'disponibilite',
     title: '9. Disponibilité du service',
     paragraphs: [
-      'Factume s’efforce d’assurer une disponibilité continue du service, 24h/24 et 7j/7, hors maintenance programmée.',
+      'INVEQ s’efforce d’assurer une disponibilité continue du service, 24h/24 et 7j/7, hors maintenance programmée.',
       'Nous ne garantissons pas une disponibilité ininterrompue. Des interruptions peuvent survenir pour maintenance, mises à jour ou cas de force majeure.',
       'Les maintenances programmées seront, dans la mesure du possible, annoncées à l’avance.',
     ],
@@ -197,8 +197,8 @@ export const TERMS_SECTIONS: LegalSection[] = [
     id: 'limitation',
     title: '10. Limitation de responsabilité',
     paragraphs: [
-      'Factume est fourni « en l’état ». Dans les limites autorisées par la loi, Factume ne saurait être tenu responsable des dommages indirects, pertes de données, pertes de chiffre d’affaires ou manque à gagner.',
-      'La responsabilité totale de Factume est limitée au montant des sommes versées par l’utilisateur au cours des 12 mois précédant le fait générateur.',
+      'INVEQ est fourni « en l’état ». Dans les limites autorisées par la loi, INVEQ ne saurait être tenu responsable des dommages indirects, pertes de données, pertes de chiffre d’affaires ou manque à gagner.',
+      'La responsabilité totale de INVEQ est limitée au montant des sommes versées par l’utilisateur au cours des 12 mois précédant le fait générateur.',
     ],
   },
   {
@@ -206,14 +206,14 @@ export const TERMS_SECTIONS: LegalSection[] = [
     title: '11. Résiliation',
     paragraphs: [
       'Vous pouvez demander la suppression de votre compte à tout moment depuis les paramètres de l’application (contact support). La suppression entraîne la fermeture de votre accès et la suppression ou l’anonymisation de vos données personnelles dans un délai de 30 jours, sous réserve des obligations légales de conservation des documents comptables.',
-      'Factume peut suspendre ou résilier votre compte en cas de violation des présentes CGU, de non-paiement, ou d’usage abusif du service, après notification lorsque cela est possible.',
+      'INVEQ peut suspendre ou résilier votre compte en cas de violation des présentes CGU, de non-paiement, ou d’usage abusif du service, après notification lorsque cela est possible.',
     ],
   },
   {
     id: 'modification',
     title: '12. Modification des CGU',
     paragraphs: [
-      'Factume se réserve le droit de modifier les présentes CGU. Les utilisateurs seront informés par e-mail ou notification in-app au moins 30 jours avant l’entrée en vigueur des modifications substantielles.',
+      'INVEQ se réserve le droit de modifier les présentes CGU. Les utilisateurs seront informés par e-mail ou notification in-app au moins 30 jours avant l’entrée en vigueur des modifications substantielles.',
       'La poursuite de l’utilisation du service après l’entrée en vigueur des modifications vaut acceptation des nouvelles CGU.',
     ],
   },
@@ -222,7 +222,7 @@ export const TERMS_SECTIONS: LegalSection[] = [
     title: '13. Droit applicable et litiges',
     paragraphs: [
       'Les présentes CGU sont soumises au droit français. En cas de litige, une solution amiable sera recherchée en priorité.',
-      'À défaut d’accord amiable, les tribunaux compétents du ressort du siège social de Factume seront seuls compétents.',
+      'À défaut d’accord amiable, les tribunaux compétents du ressort du siège social de INVEQ seront seuls compétents.',
     ],
   },
   {
@@ -252,7 +252,7 @@ export const LEGAL_MENTIONS_SECTIONS: LegalSection[] = [
     id: 'publication',
     title: 'Directeur de la publication',
     paragraphs: [
-      'Le directeur de la publication est le représentant légal de Factume.',
+      'Le directeur de la publication est le représentant légal de INVEQ.',
     ],
   },
   {
@@ -268,7 +268,7 @@ export const LEGAL_MENTIONS_SECTIONS: LegalSection[] = [
     id: 'propriete',
     title: 'Propriété intellectuelle',
     paragraphs: [
-      'L’ensemble des éléments composant le site et l’application Factume (textes, graphismes, logos, icônes, logiciels, bases de données) est protégé par le droit de la propriété intellectuelle.',
+      'L’ensemble des éléments composant le site et l’application INVEQ (textes, graphismes, logos, icônes, logiciels, bases de données) est protégé par le droit de la propriété intellectuelle.',
       'Toute reproduction, représentation, modification ou exploitation non autorisée est strictement interdite.',
     ],
   },

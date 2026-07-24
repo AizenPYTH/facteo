@@ -156,7 +156,7 @@ Deno.serve(async (request) => {
       schemaName: 'product_analysis',
       schema: PRODUCT_ANALYSIS_SCHEMA,
       systemPrompt: [
-        'Tu es un assistant Factume qui extrait des produits depuis une photo.',
+        'Tu es un assistant INVEQ qui extrait des produits depuis une photo.',
         'Tu dois comprendre le contexte visuel, pas seulement lire du texte.',
         'Si plusieurs prix existent, choisis le prix actuel (et non barré).',
         'Si un prix est présent TTC avec TVA visible, renseigne aussi le HT.',

@@ -1,14 +1,16 @@
 @import "tailwindcss";
 
 :root {
-  --background: #fafbfc;
-  --foreground: #0f172a;
+  --background: #f7f8fc;
+  --foreground: #0b0e14;
   --muted: #64748b;
   --border: #e2e8f0;
-  --primary: #2563eb;
-  --primary-dark: #1d4ed8;
+  --primary: #4f46e5;
+  --primary-dark: #4338ca;
+  --primary-violet: #a855f7;
   --surface: #ffffff;
-  --accent: #0ea5e9;
+  --accent: #6366f1;
+  --brand-gradient: linear-gradient(145deg, #a855f7 0%, #6366f1 45%, #2563eb 100%);
 }
 
 @theme inline {
@@ -34,29 +36,40 @@ body {
 }
 
 ::selection {
-  background: #dbeafe;
-  color: #1e3a8a;
+  background: #e0e7ff;
+  color: #312e81;
 }
 
 .glass {
-  background: rgba(255, 255, 255, 0.72);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border-bottom: 1px solid rgba(226, 232, 240, 0.8);
+  background: rgba(255, 255, 255, 0.78);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-bottom: 1px solid rgba(226, 232, 240, 0.85);
 }
 
 .gradient-hero {
   background:
-    radial-gradient(ellipse 80% 60% at 50% -20%, rgba(37, 99, 235, 0.15), transparent),
-    radial-gradient(ellipse 50% 40% at 100% 0%, rgba(14, 165, 233, 0.08), transparent),
-    var(--background);
+    linear-gradient(180deg, #f4f2ff 0%, var(--background) 58%),
+    radial-gradient(ellipse 80% 55% at 50% -18%, rgba(168, 85, 247, 0.16), transparent),
+    radial-gradient(ellipse 50% 40% at 90% 0%, rgba(37, 99, 235, 0.1), transparent);
 }
 
 .marketing-gradient {
   background:
-    radial-gradient(ellipse 70% 50% at 50% -10%, rgba(37, 99, 235, 0.18), transparent),
-    radial-gradient(ellipse 40% 30% at 90% 10%, rgba(14, 165, 233, 0.1), transparent),
+    radial-gradient(ellipse 70% 50% at 50% -10%, rgba(168, 85, 247, 0.16), transparent),
+    radial-gradient(ellipse 40% 30% at 90% 10%, rgba(37, 99, 235, 0.12), transparent),
     var(--background);
+}
+
+.brand-gradient {
+  background: var(--brand-gradient);
+}
+
+.brand-text-gradient {
+  background: var(--brand-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
 
 .card-hover {
@@ -66,7 +79,7 @@ body {
 .card-hover:hover {
   transform: translateY(-2px);
   box-shadow: 0 12px 40px rgba(15, 23, 42, 0.08);
-  border-color: #cbd5e1;
+  border-color: #c7d2fe;
 }
 
 .app-workspace {
@@ -102,7 +115,6 @@ body {
   animation: shimmer 1.5s infinite;
 }
 
-/* Chrome / Edge : détecte l’autofill du mot de passe suggéré */
 @keyframes onAutoFillStart {
   from { opacity: 0.99; }
   to { opacity: 1; }
@@ -115,11 +127,4 @@ body {
 
 .legal-prose h2 {
   scroll-margin-top: 6rem;
-}
-
-.marketing-gradient {
-  background:
-    radial-gradient(ellipse 70% 50% at 50% -10%, rgba(37, 99, 235, 0.18), transparent),
-    radial-gradient(ellipse 40% 30% at 90% 10%, rgba(14, 165, 233, 0.1), transparent),
-    var(--background);
 }

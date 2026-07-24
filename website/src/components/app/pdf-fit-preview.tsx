@@ -195,22 +195,25 @@ export function PdfFitPreview({
   }
 
   return (
-    <div className={cn('flex h-full min-h-0 flex-col bg-slate-100/80', className)}>
+    <div className={cn('flex h-full min-h-0 flex-col bg-[radial-gradient(ellipse_at_top,rgba(37,99,235,0.05),transparent_50%),#f1f5f9]', className)}>
       {showToolbar ? (
-        <div className="flex shrink-0 items-center justify-between gap-2 border-b border-slate-200 bg-white px-3 py-2">
-          <p className="truncate text-xs font-semibold uppercase tracking-wider text-slate-400">
+        <div className="flex shrink-0 items-center justify-between gap-2 border-b border-slate-200/90 bg-white/95 px-3 py-2 backdrop-blur-sm">
+          <p className="truncate text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
             Aperçu PDF
           </p>
           <div className="flex items-center gap-1">
             {isUpdating ? (
-              <span className="mr-2 flex items-center gap-1 text-xs text-slate-400">
-                <Loader2 className="animate-spin" size={12} />
+              <span className="mr-2 flex items-center gap-1.5 rounded-full bg-slate-50 px-2 py-0.5 text-[11px] text-slate-500 ring-1 ring-slate-200/80">
+                <Loader2 className="animate-spin" size={11} />
+                Mise à jour
               </span>
             ) : null}
             <button
               className={cn(
-                'rounded-md px-2 py-1 text-[10px] font-semibold uppercase transition',
-                fitMode === 'page' ? 'bg-slate-900 text-white' : 'text-slate-500 hover:bg-slate-100',
+                'rounded-lg px-2 py-1 text-[10px] font-semibold uppercase tracking-wide transition',
+                fitMode === 'page'
+                  ? 'bg-slate-900 text-white shadow-sm'
+                  : 'text-slate-500 hover:bg-slate-100',
               )}
               onClick={() => setFitMode((m) => (m === 'page' ? 'auto' : 'page'))}
               title="Ajuster à la page"
@@ -219,8 +222,10 @@ export function PdfFitPreview({
             </button>
             <button
               className={cn(
-                'rounded-md px-2 py-1 text-[10px] font-semibold uppercase transition',
-                fitMode === 'width' ? 'bg-slate-900 text-white' : 'text-slate-500 hover:bg-slate-100',
+                'rounded-lg px-2 py-1 text-[10px] font-semibold uppercase tracking-wide transition',
+                fitMode === 'width'
+                  ? 'bg-slate-900 text-white shadow-sm'
+                  : 'text-slate-500 hover:bg-slate-100',
               )}
               onClick={() => setFitMode((m) => (m === 'width' ? 'auto' : 'width'))}
               title="Ajuster à la largeur"
@@ -228,7 +233,7 @@ export function PdfFitPreview({
               Largeur
             </button>
             <button
-              className="rounded-md p-1 text-slate-500 hover:bg-slate-100"
+              className="rounded-lg p-1.5 text-slate-500 transition hover:bg-slate-100"
               onClick={() => {
                 setFitMode('auto');
                 setZoomFactor(1);
@@ -239,16 +244,16 @@ export function PdfFitPreview({
               <Maximize2 size={14} />
             </button>
             <button
-              className="rounded-md p-1 text-slate-500 hover:bg-slate-100"
+              className="rounded-lg p-1.5 text-slate-500 transition hover:bg-slate-100"
               onClick={() => adjustZoom(-0.1)}
               type="button">
               <ZoomOut size={14} />
             </button>
-            <span className="min-w-[3rem] text-center text-xs font-medium text-slate-600">
+            <span className="min-w-[3rem] text-center text-xs font-semibold tabular-nums text-slate-600">
               {zoomPercent}%
             </span>
             <button
-              className="rounded-md p-1 text-slate-500 hover:bg-slate-100"
+              className="rounded-lg p-1.5 text-slate-500 transition hover:bg-slate-100"
               onClick={() => adjustZoom(0.1)}
               type="button">
               <ZoomIn size={14} />
@@ -267,7 +272,7 @@ export function PdfFitPreview({
             <p className="text-sm text-slate-500">Impossible de générer l&apos;aperçu.</p>
             {onRetry ? (
               <button
-                className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white"
+                className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white shadow-[0_10px_24px_-10px_rgba(37,99,235,0.65)] transition hover:-translate-y-0.5 hover:bg-primary-dark"
                 onClick={onRetry}
                 type="button">
                 Réessayer
@@ -275,9 +280,9 @@ export function PdfFitPreview({
             ) : null}
           </div>
         ) : html ? (
-          <div className="flex min-h-full w-full justify-center p-3">
+          <div className="flex min-h-full w-full justify-center p-4 sm:p-5">
             <div
-              className="relative shrink-0 rounded-lg bg-white shadow-md ring-1 ring-slate-200/80"
+              className="relative shrink-0 rounded-xl bg-white shadow-[0_24px_60px_-28px_rgba(15,23,42,0.45)] ring-1 ring-slate-200/70 transition-shadow"
               style={{
                 width: scaledW,
                 height: scaledH,

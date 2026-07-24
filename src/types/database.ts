@@ -1,4 +1,4 @@
-/** Row types for Factume Supabase tables. */
+/** Row types for INVEQ Supabase tables. */
 
 import type { PaymentMethodId } from '@/types/payment-methods';
 

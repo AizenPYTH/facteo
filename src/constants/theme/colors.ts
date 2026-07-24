@@ -1,20 +1,20 @@
 /**
- * Factume color tokens — light theme, iOS-inspired semantic palette.
- * Primary: #2563EB
+ * INVEQ color tokens — premium SaaS palette (violet → indigo → blue).
+ * Primary: #4F46E5
  */
 
 export const palette = {
   blue: {
-    50: '#EFF6FF',
-    100: '#DBEAFE',
-    200: '#BFDBFE',
-    300: '#93C5FD',
-    400: '#60A5FA',
-    500: '#3B82F6',
-    600: '#2563EB',
-    700: '#1D4ED8',
-    800: '#1E40AF',
-    900: '#1E3A8A',
+    50: '#EEF2FF',
+    100: '#E0E7FF',
+    200: '#C7D2FE',
+    300: '#A5B4FC',
+    400: '#818CF8',
+    500: '#6366F1',
+    600: '#4F46E5',
+    700: '#4338CA',
+    800: '#3730A3',
+    900: '#312E81',
   },
   gray: {
     50: '#F9FAFB',
@@ -26,7 +26,7 @@ export const palette = {
     600: '#8E8E93',
     700: '#636366',
     800: '#48484A',
-    900: '#1C1C1E',
+    900: '#0B0E14',
   },
   white: '#FFFFFF',
   black: '#000000',

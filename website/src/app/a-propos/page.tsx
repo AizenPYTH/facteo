@@ -5,7 +5,7 @@ import { PageHero } from '@/components/sections/landing-sections';
 
 export const metadata: Metadata = {
   title: 'À propos',
-  description: 'Découvrez la mission et les valeurs de Factume.',
+  description: 'Découvrez la mission et les valeurs de INVEQ.',
 };
 
 export default function AboutPage() {
@@ -13,12 +13,12 @@ export default function AboutPage() {
     <>
       <PageHero
         subtitle="Simplifier la facturation pour les professionnels qui créent de la valeur sur le terrain."
-        title="À propos de Factume"
+        title="À propos de INVEQ"
       />
       <section className="px-6 py-20 lg:px-8">
         <FadeIn className="mx-auto max-w-3xl space-y-6 text-lg leading-relaxed text-muted">
           <p>
-            Factume est né d’un constat simple : les artisans, freelances et petites entreprises perdent
+            INVEQ est né d’un constat simple : les artisans, freelances et petites entreprises perdent
             trop de temps sur la paperasse administrative.
           </p>
           <p>

@@ -14,7 +14,7 @@ type PremiumUpgradeBannerProps = {
 };
 
 export function PremiumUpgradeBanner({
-  message = 'Disponible avec Factume Premium',
+  message = 'Disponible avec INVEQ Premium',
   compact = false,
 }: PremiumUpgradeBannerProps) {
   const styles = useStyles(compact);
@@ -32,7 +32,7 @@ export function PremiumUpgradeBanner({
       const completed = await startCheckout();
 
       if (completed) {
-        showSuccess('Factume Premium est activé.');
+        showSuccess('INVEQ Premium est activé.');
       }
     } catch (error) {
       showError(readErrorMessage(error));

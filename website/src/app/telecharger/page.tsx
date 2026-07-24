@@ -10,7 +10,7 @@ import { APP_DASHBOARD_URL } from '@/lib/constants';
 export const metadata: Metadata = {
   title: 'Télécharger l’application',
   description:
-    'Téléchargez Factume sur iOS, Android ou accédez à l’application web depuis votre navigateur.',
+    'Téléchargez INVEQ sur iOS, Android ou accédez à l’application web depuis votre navigateur.',
 };
 
 export default function DownloadPage() {

@@ -5,7 +5,7 @@ import { LEGAL_LAST_UPDATED, TERMS_SECTIONS } from '@/lib/legal-content';
 
 export const metadata: Metadata = {
   title: 'Conditions générales d’utilisation',
-  description: 'CGU Factume — abonnement, responsabilités, paiement et droits des utilisateurs.',
+  description: 'CGU INVEQ — abonnement, responsabilités, paiement et droits des utilisateurs.',
 };
 
 export default function TermsPage() {
@@ -13,7 +13,7 @@ export default function TermsPage() {
     <LegalPage
       lastUpdated={LEGAL_LAST_UPDATED}
       sections={TERMS_SECTIONS}
-      subtitle="Conditions régissant l’utilisation de l’application et du site Factume."
+      subtitle="Conditions régissant l’utilisation de l’application et du site INVEQ."
       title="Conditions générales d’utilisation"
     />
   );

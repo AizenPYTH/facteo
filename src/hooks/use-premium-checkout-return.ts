@@ -40,7 +40,7 @@ export function usePremiumCheckoutReturn() {
         }
 
         await refresh();
-        showSuccess('Factume Premium est activé.');
+        showSuccess('INVEQ Premium est activé.');
       } catch (error) {
         if (!cancelled) {
           showError(readErrorMessage(error));

@@ -53,7 +53,7 @@ function ClientsWorkspaceInner() {
     <div className="flex h-full min-h-0 flex-col">
       <WorkspaceToolbar subtitle={`${clients.length} client(s)`} title="Clients">
         <Link
-          className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-primary/25 hover:bg-primary-dark"
+          className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white shadow-[0_10px_24px_-10px_rgba(37,99,235,0.65)] transition duration-150 hover:-translate-y-0.5 hover:bg-primary-dark"
           href="/app/clients/new">
           <Plus size={16} />
           Nouveau client
@@ -77,15 +77,15 @@ function ClientsWorkspaceInner() {
                 />
               </div>
             ) : (
-              <div className="h-full overflow-y-auto p-8">
+              <div className="h-full overflow-y-auto bg-[linear-gradient(180deg,#f8fafc_0%,#f1f5f9_100%)] p-6 sm:p-8">
                 <div className="mx-auto max-w-3xl">
-                  <div className="rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
+                  <div className="rounded-2xl border border-slate-200/90 bg-white p-6 shadow-[0_1px_2px_rgba(15,23,42,0.04),0_12px_32px_-20px_rgba(15,23,42,0.2)] sm:p-8">
                     <div className="flex items-start gap-4">
-                      <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-50 text-primary">
-                        <User size={28} />
+                      <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-50 text-primary ring-1 ring-blue-100">
+                        <User size={26} strokeWidth={1.75} />
                       </div>
                       <div>
-                        <h2 className="text-2xl font-bold text-slate-900">
+                        <h2 className="text-2xl font-semibold tracking-tight text-slate-900">
                           {getClientDisplayName(client)}
                         </h2>
                         <p className="mt-1 text-slate-500">{getClientSecondaryLabel(client)}</p>
@@ -148,7 +148,7 @@ function ClientsWorkspaceInner() {
                       { label: 'Modifier', href: `/app/clients/${client.id}/edit` },
                     ].map((action) => (
                       <Link
-                        className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-center text-sm font-semibold text-slate-800 transition hover:border-primary/30 hover:bg-blue-50/40"
+                        className="rounded-xl border border-slate-200/90 bg-white px-4 py-3 text-center text-sm font-semibold text-slate-800 shadow-[0_1px_2px_rgba(15,23,42,0.03)] transition duration-150 hover:-translate-y-0.5 hover:border-primary/25 hover:bg-blue-50/40"
                         href={action.href}
                         key={action.label}>
                         {action.label}
@@ -161,7 +161,7 @@ function ClientsWorkspaceInner() {
           }
           list={
             <div className="flex h-full min-h-0 flex-col">
-              <div className="border-b border-slate-100 p-4">
+              <div className="border-b border-slate-100/90 bg-gradient-to-b from-white to-slate-50/40 p-4">
                 <AppSearchInput
                   onChange={setSearch}
                   placeholder="Rechercher un client…"
@@ -178,18 +178,24 @@ function ClientsWorkspaceInner() {
                     <EmptyState title="Aucun client" />
                   </div>
                 ) : (
-                  <ul className="divide-y divide-slate-100">
+                  <ul className="divide-y divide-slate-100/90">
                     {clients.map((c) => (
                       <li key={c.id}>
                         <button
                           className={cn(
-                            'w-full px-4 py-3.5 text-left transition',
-                            c.id === selectedId ? 'bg-blue-50/80' : 'hover:bg-slate-50',
+                            'w-full px-4 py-3.5 text-left transition duration-150',
+                            c.id === selectedId
+                              ? 'border-l-[3px] border-primary bg-gradient-to-r from-blue-50/90 to-transparent pl-[13px]'
+                              : 'border-l-[3px] border-transparent hover:bg-slate-50/90',
                           )}
                           onClick={() => setSelectedId(c.id)}
                           type="button">
-                          <p className="font-semibold text-slate-900">{getClientDisplayName(c)}</p>
-                          <p className="text-sm text-slate-500">{getClientSecondaryLabel(c)}</p>
+                          <p className="text-[13px] font-semibold tracking-tight text-slate-900">
+                            {getClientDisplayName(c)}
+                          </p>
+                          <p className="mt-0.5 text-sm text-slate-500">
+                            {getClientSecondaryLabel(c)}
+                          </p>
                         </button>
                       </li>
                     ))}

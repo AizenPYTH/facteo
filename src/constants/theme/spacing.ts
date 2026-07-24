@@ -1,5 +1,5 @@
 /**
- * Factume spacing tokens — 4pt grid, mobile-first.
+ * INVEQ spacing tokens — 4pt grid, mobile-first.
  */
 
 export const spacing = {

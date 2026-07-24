@@ -1,9 +1,9 @@
 /**
- * Sans domaine custom : mets ton URL Vercel dans NEXT_PUBLIC_SITE_URL
- * ex. https://ton-projet.vercel.app
+ * Production : https://inveq.fr
+ * Override local : NEXT_PUBLIC_SITE_URL=http://localhost:3000
  */
 export const SITE_URL =
-  process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, '') || 'https://factume.vercel.app';
+  process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, '') || 'https://inveq.fr';
 
 export const APP_URL = SITE_URL;
 export const APP_DASHBOARD_URL = '/app';
@@ -15,6 +15,6 @@ export const CONTACT_EMAIL =
 export const SUPPORT_EMAIL =
   process.env.NEXT_PUBLIC_SUPPORT_EMAIL?.trim() || 'farouqdib@gmail.com';
 
-export const SITE_NAME = 'Factume';
+export const SITE_NAME = 'INVEQ';
 
-export const DEFAULT_OG_IMAGE = `${SITE_URL}/og-image.png`;
+export const DEFAULT_OG_IMAGE = `${SITE_URL}/opengraph-image`;

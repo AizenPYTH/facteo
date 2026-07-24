@@ -2,6 +2,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { CheckSquare, Package, Search, Square, Wrench, X } from 'lucide-react';
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { useEffect, useMemo, useState } from 'react';
 
 import { useAuth } from '@/providers/auth-provider';
@@ -26,6 +27,7 @@ export function CatalogPicker({
 }) {
   const { user } = useAuth();
   const { scope } = useTenant();
+  const reduceMotion = useReducedMotion();
   const [search, setSearch] = useState('');
   const [tab, setTab] = useState<CatalogTab>('all');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -57,21 +59,29 @@ export function CatalogPicker({
     }
   }, [open]);
 
-  if (!open) return null;
-
   const loading = productsQuery.isLoading || servicesQuery.isLoading;
-
   const selectedItems = items.filter((item) => selectedIds.includes(item.id));
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <button
-        aria-label="Fermer"
-        className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
-        onClick={onClose}
-        type="button"
-      />
-      <div className="relative flex max-h-[80vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
+    <AnimatePresence>
+      {open ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <motion.button
+            animate={{ opacity: 1 }}
+            aria-label="Fermer"
+            className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
+            exit={{ opacity: 0 }}
+            initial={{ opacity: 0 }}
+            onClick={onClose}
+            transition={{ duration: reduceMotion ? 0 : 0.2 }}
+            type="button"
+          />
+          <motion.div
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            className="relative flex max-h-[80vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl"
+            exit={{ opacity: 0, y: 8, scale: 0.98 }}
+            initial={reduceMotion ? false : { opacity: 0, y: 10, scale: 0.98 }}
+            transition={{ duration: reduceMotion ? 0 : 0.22, ease: [0.22, 1, 0.36, 1] }}>
         <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
           <div>
             <h3 className="font-semibold text-slate-900">Catalogue</h3>
@@ -175,7 +185,7 @@ export function CatalogPicker({
         <div className="flex items-center justify-between border-t border-slate-100 px-5 py-3">
           <p className="text-xs text-slate-500">{selectedItems.length} sélectionné(s)</p>
           <button
-            className="inline-flex items-center gap-2 rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-white disabled:opacity-50"
+            className="inline-flex items-center gap-2 rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-white transition duration-150 hover:-translate-y-0.5 hover:bg-primary-dark disabled:opacity-50 disabled:hover:translate-y-0"
             disabled={selectedItems.length === 0}
             onClick={() => {
               onSelectMany(selectedItems);
@@ -185,7 +195,9 @@ export function CatalogPicker({
             Ajouter la sélection
           </button>
         </div>
-      </div>
-    </div>
+          </motion.div>
+        </div>
+      ) : null}
+    </AnimatePresence>
   );
 }

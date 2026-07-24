@@ -38,7 +38,7 @@ export function MarketingFooter() {
     <View accessibilityRole="none" style={styles.footer}>
       <View style={styles.inner}>
         <View style={styles.brandColumn}>
-          <Text style={styles.brand}>Factume</Text>
+          <Text style={styles.brand}>INVEQ</Text>
           <Text style={styles.tagline}>
             La facturation moderne pour artisans, freelances et PME.
           </Text>
@@ -59,7 +59,7 @@ export function MarketingFooter() {
       </View>
 
       <View style={styles.bottom}>
-        <Text style={styles.copyright}>© {year} Factume. Tous droits réservés.</Text>
+        <Text style={styles.copyright}>© {year} INVEQ. Tous droits réservés.</Text>
       </View>
     </View>
   );

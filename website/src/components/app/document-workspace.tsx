@@ -5,13 +5,20 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Copy, Download, Mail, Plus, Printer, Send, Share2 } from 'lucide-react';
-import type { InvoiceStatusFilter } from '@factume/types/invoices-list';
-import type { QuoteStatusFilter } from '@factume/types/quotes-list';
-import { INVOICE_STATUS_LABELS, type InvoiceStatus } from '@factume/types/invoice';
-import { QUOTE_STATUS_LABELS, type QuoteStatus } from '@factume/types/quote';
+import type { InvoiceStatusFilter } from '@inveq/types/invoices-list';
+import type { QuoteStatusFilter } from '@inveq/types/quotes-list';
+import { INVOICE_STATUS_LABELS, type InvoiceStatus } from '@inveq/types/invoice';
+import { QUOTE_STATUS_LABELS, type QuoteStatus } from '@inveq/types/quote';
 
 import { ActivityTimeline } from '@/components/app/activity-timeline';
 import { EmptyState, ErrorState } from '@/components/app/empty-state';
+import {
+  DocumentHoverCard,
+  DocumentQuickPreviewButton,
+  DocumentQuickPreviewModal,
+  useHoverPreview,
+} from '@/components/app/document-quick-preview';
+import { DocumentStatusTimeline } from '@/components/app/document-status-timeline';
 import { MasterDetailLayout, WorkspaceToolbar } from '@/components/app/master-detail';
 import { PdfPreviewPanel } from '@/components/app/pdf-preview';
 import { useWorkspaceSidebarWidth } from '@/components/app/resize-handle';
@@ -108,6 +115,7 @@ function DocumentListPanel({
   onLoadMore,
   loadingMore,
   newHref,
+  onQuickPreview,
 }: {
   kind: DocumentKind;
   items: ListItem[];
@@ -123,17 +131,20 @@ function DocumentListPanel({
   onLoadMore: () => void;
   loadingMore: boolean;
   newHref: string;
+  onQuickPreview: (id: string) => void;
 }) {
+  const { hoveredId, onEnter, onLeave } = useHoverPreview();
+
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <div className="space-y-3 border-b border-slate-100 p-4">
+      <div className="space-y-3 border-b border-slate-100/90 bg-gradient-to-b from-white to-slate-50/40 p-4">
         <AppSearchInput
           onChange={onSearchChange}
           placeholder={kind === 'invoice' ? 'Rechercher une facture…' : 'Rechercher un devis…'}
           value={search}
         />
         <select
-          className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+          className="w-full rounded-xl border border-slate-200/90 bg-white px-3 py-2 text-sm outline-none transition hover:border-slate-300 focus:border-primary focus:ring-2 focus:ring-primary/20"
           onChange={(e) => onStatusChange(e.target.value)}
           value={status}>
           {statusOptions.map((opt) => (
@@ -164,7 +175,7 @@ function DocumentListPanel({
             />
           </div>
         ) : (
-          <ul className="divide-y divide-slate-100">
+          <ul className="divide-y divide-slate-100/90">
             {items.map((item) => {
               const active = item.id === selectedId;
               const variants = kind === 'invoice' ? INVOICE_STATUS_VARIANTS : QUOTE_STATUS_VARIANTS;
@@ -173,32 +184,49 @@ function DocumentListPanel({
               const statusKey = item.status as InvoiceStatus & QuoteStatus;
 
               return (
-                <li key={item.id}>
-                  <button
+                <li
+                  className="relative"
+                  key={item.id}
+                  onMouseEnter={() => onEnter(item.id)}
+                  onMouseLeave={onLeave}>
+                  <div
                     className={cn(
-                      'w-full px-4 py-3.5 text-left transition',
+                      'group flex w-full items-stretch gap-1 px-2 py-2 transition duration-150',
                       active
-                        ? 'border-l-2 border-primary bg-blue-50/70 pl-[14px]'
-                        : 'border-l-2 border-transparent hover:bg-slate-50',
-                    )}
-                    onClick={() => onSelect(item.id)}
-                    type="button">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0">
-                        <p className="truncate font-semibold text-slate-900">{item.number}</p>
-                        <p className="truncate text-sm text-slate-500">{item.clientName}</p>
+                        ? 'border-l-[3px] border-primary bg-gradient-to-r from-blue-50/90 to-transparent'
+                        : 'border-l-[3px] border-transparent hover:bg-slate-50/90',
+                    )}>
+                    <button
+                      className="min-w-0 flex-1 px-2 py-1.5 text-left"
+                      onClick={() => onSelect(item.id)}
+                      type="button">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className="truncate text-[13px] font-semibold tracking-tight text-slate-900">
+                            {item.number}
+                          </p>
+                          <p className="mt-0.5 truncate text-sm text-slate-500">{item.clientName}</p>
+                        </div>
+                        <Badge variant={variants[item.status] ?? 'default'}>
+                          {labels[statusKey as keyof typeof labels] ?? item.status}
+                        </Badge>
                       </div>
-                      <Badge variant={variants[item.status] ?? 'default'}>
-                        {labels[statusKey as keyof typeof labels] ?? item.status}
-                      </Badge>
+                      <div className="mt-2.5 flex items-center justify-between text-xs text-slate-400">
+                        <span>{formatDate(item.issuedAt)}</span>
+                        <span className="font-semibold tabular-nums text-slate-800">
+                          {formatCurrency(item.totalTtc)}
+                        </span>
+                      </div>
+                    </button>
+                    <div className="flex shrink-0 items-start pt-1.5">
+                      <DocumentQuickPreviewButton onClick={() => onQuickPreview(item.id)} />
                     </div>
-                    <div className="mt-2 flex items-center justify-between text-xs text-slate-400">
-                      <span>{formatDate(item.issuedAt)}</span>
-                      <span className="font-semibold text-slate-700">
-                        {formatCurrency(item.totalTtc)}
-                      </span>
-                    </div>
-                  </button>
+                  </div>
+                  <DocumentHoverCard
+                    item={item}
+                    kind={kind}
+                    visible={hoveredId === item.id && !active}
+                  />
                 </li>
               );
             })}
@@ -264,39 +292,46 @@ function DocumentSidebar({
 
   return (
     <div className="flex h-full min-h-0 flex-col overflow-y-auto">
-      <div className="border-b border-slate-100 bg-gradient-to-b from-white to-slate-50/80 p-5">
+      <div className="border-b border-slate-100 bg-gradient-to-b from-white via-white to-slate-50/70 p-5">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400">
               {kind === 'invoice' ? 'Facture' : 'Devis'}
             </p>
-            <h2 className="truncate text-lg font-bold text-slate-900">{number}</h2>
+            <h2 className="mt-0.5 truncate text-lg font-semibold tracking-tight text-slate-900">
+              {number}
+            </h2>
             <p className="mt-1 truncate text-sm text-slate-500">{clientName}</p>
           </div>
           <Badge variant={variants[status] ?? 'default'}>
             {labels[status as keyof typeof labels] ?? status}
           </Badge>
         </div>
-        <p className="mt-4 text-2xl font-bold tracking-tight text-slate-900">
+        <p className="mt-5 text-[1.65rem] font-semibold tracking-[-0.03em] tabular-nums text-slate-900">
           {formatCurrency(totalTtc)}
         </p>
-        <dl className="mt-4 grid grid-cols-2 gap-3 text-sm">
+        <dl className="mt-4 grid grid-cols-2 gap-3 rounded-xl border border-slate-100 bg-white/80 p-3 text-sm">
           <div>
-            <dt className="text-slate-400">Émission</dt>
-            <dd className="font-medium text-slate-700">{formatDate(issuedAt)}</dd>
+            <dt className="text-[11px] font-medium uppercase tracking-wider text-slate-400">
+              Émission
+            </dt>
+            <dd className="mt-0.5 font-medium text-slate-700">{formatDate(issuedAt)}</dd>
           </div>
           <div>
-            <dt className="text-slate-400">{kind === 'invoice' ? 'Échéance' : 'Validité'}</dt>
-            <dd className="font-medium text-slate-700">{formatDate(dueOrValid)}</dd>
+            <dt className="text-[11px] font-medium uppercase tracking-wider text-slate-400">
+              {kind === 'invoice' ? 'Échéance' : 'Validité'}
+            </dt>
+            <dd className="mt-0.5 font-medium text-slate-700">{formatDate(dueOrValid)}</dd>
           </div>
         </dl>
+        <DocumentStatusTimeline className="mt-4" kind={kind} status={status} />
       </div>
 
       <div className="border-b border-slate-100 p-4">
         {templateId && onTemplateChange ? (
           <ComposerTemplateSidebar onChange={onTemplateChange} value={templateId} />
         ) : null}
-        <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-400">
+        <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
           Actions rapides
         </p>
         <div className="grid grid-cols-2 gap-2">
@@ -309,12 +344,12 @@ function DocumentSidebar({
             { icon: Copy, label: 'Dupliquer', key: 'duplicate', onClick: onDuplicate },
           ].map((action) => (
             <button
-              className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition hover:border-primary/30 hover:bg-blue-50/50 disabled:opacity-50"
+              className="flex items-center gap-2 rounded-xl border border-slate-200/90 bg-white px-3 py-2.5 text-sm font-medium text-slate-700 shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition duration-150 hover:-translate-y-0.5 hover:border-primary/25 hover:bg-blue-50/50 hover:shadow-sm disabled:opacity-50 disabled:hover:translate-y-0"
               disabled={actionLoading === action.key}
               key={action.label}
               onClick={action.onClick}
               type="button">
-              <action.icon size={16} />
+              <action.icon className="text-slate-400" size={15} />
               {actionLoading === action.key ? '…' : action.label}
             </button>
           ))}
@@ -331,6 +366,7 @@ export function InvoicesWorkspace() {
   const [status, setStatus] = useState<InvoiceStatusFilter>('all');
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [previewTemplateId, setPreviewTemplateId] = useState('');
+  const [quickPreviewId, setQuickPreviewId] = useState<string | null>(null);
   const [sidebarWidth, setSidebarWidth] = useWorkspaceSidebarWidth(340);
   const { selectedId, setSelectedId } = useSelectedId();
   const { user } = useAuth();
@@ -398,12 +434,19 @@ export function InvoicesWorkspace() {
         subtitle={`${items.length} facture(s)`}
         title="Factures">
         <Link
-          className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-primary/25 hover:bg-primary-dark"
+          className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white shadow-[0_10px_24px_-10px_rgba(37,99,235,0.65)] transition duration-150 hover:-translate-y-0.5 hover:bg-primary-dark"
           href="/app/invoices?create=1">
           <Plus size={16} />
           Nouvelle facture
         </Link>
       </WorkspaceToolbar>
+
+      <DocumentQuickPreviewModal
+        documentId={quickPreviewId}
+        kind="invoice"
+        onClose={() => setQuickPreviewId(null)}
+        open={Boolean(quickPreviewId)}
+      />
 
       <div className="min-h-0 flex-1">
         <MasterDetailLayout
@@ -431,6 +474,7 @@ export function InvoicesWorkspace() {
               loadingMore={listQuery.isFetchingNextPage}
               newHref="/app/invoices?create=1"
               onLoadMore={() => void listQuery.fetchNextPage()}
+              onQuickPreview={setQuickPreviewId}
               onSearchChange={setSearch}
               onSelect={setSelectedId}
               onStatusChange={(v) => setStatus(v as InvoiceStatusFilter)}
@@ -497,6 +541,7 @@ export function QuotesWorkspace() {
   const [status, setStatus] = useState<QuoteStatusFilter>('all');
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [previewTemplateId, setPreviewTemplateId] = useState('');
+  const [quickPreviewId, setQuickPreviewId] = useState<string | null>(null);
   const [sidebarWidth, setSidebarWidth] = useWorkspaceSidebarWidth(340);
   const { selectedId, setSelectedId } = useSelectedId();
   const { user } = useAuth();
@@ -562,12 +607,19 @@ export function QuotesWorkspace() {
     <div className="flex h-full min-h-0 flex-col">
       <WorkspaceToolbar subtitle={`${items.length} devis`} title="Devis">
         <Link
-          className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-primary/25 hover:bg-primary-dark"
+          className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white shadow-[0_10px_24px_-10px_rgba(37,99,235,0.65)] transition duration-150 hover:-translate-y-0.5 hover:bg-primary-dark"
           href="/app/quotes?create=1">
           <Plus size={16} />
           Nouveau devis
         </Link>
       </WorkspaceToolbar>
+
+      <DocumentQuickPreviewModal
+        documentId={quickPreviewId}
+        kind="quote"
+        onClose={() => setQuickPreviewId(null)}
+        open={Boolean(quickPreviewId)}
+      />
 
       <div className="min-h-0 flex-1">
         <MasterDetailLayout
@@ -595,6 +647,7 @@ export function QuotesWorkspace() {
               loadingMore={listQuery.isFetchingNextPage}
               newHref="/app/quotes?create=1"
               onLoadMore={() => void listQuery.fetchNextPage()}
+              onQuickPreview={setQuickPreviewId}
               onSearchChange={setSearch}
               onSelect={setSelectedId}
               onStatusChange={(v) => setStatus(v as QuoteStatusFilter)}

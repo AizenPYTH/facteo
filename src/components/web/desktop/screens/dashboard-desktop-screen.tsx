@@ -84,7 +84,7 @@ export function DashboardDesktopScreen() {
               <View style={styles.centerColumn}>
                 <DesktopPanel title="Évolution du chiffre d'affaires">
                   <PremiumGatedSection
-                    bannerMessage="Statistiques avancées — Factume Premium"
+                    bannerMessage="Statistiques avancées — INVEQ Premium"
                     locked={advancedStatsLocked}>
                     <View style={styles.chartBody}>
                       <RevenueChart

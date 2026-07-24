@@ -61,7 +61,7 @@ export async function composeDocumentEmail(input: ComposeDocumentEmailInput): Pr
   }
 
   if (__DEV__) {
-    console.log('[Factume:mail] compose', {
+    console.log('[INVEQ:mail] compose', {
       recipient,
       attachmentUri,
       pdfUri: input.pdfUri,
@@ -86,7 +86,7 @@ export async function composeDocumentEmail(input: ComposeDocumentEmailInput): Pr
         : 'Erreur inconnue';
 
     if (__DEV__) {
-      console.log('[Factume:mail] composeAsync error', message);
+      console.log('[INVEQ:mail] composeAsync error', message);
     }
 
     throw new MailComposerError(
@@ -96,7 +96,7 @@ export async function composeDocumentEmail(input: ComposeDocumentEmailInput): Pr
   }
 
   if (__DEV__) {
-    console.log('[Factume:mail] result', result.status);
+    console.log('[INVEQ:mail] result', result.status);
   }
 
   if (result.status === MailComposer.MailComposerStatus.CANCELLED) {

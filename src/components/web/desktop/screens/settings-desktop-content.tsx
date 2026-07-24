@@ -32,7 +32,7 @@ export function SettingsDesktopContent() {
 
   const isDarkMode = preference === 'dark';
   const darkModeSupported = Platform.OS !== 'web';
-  const planLabel = isPremium ? 'Factume Premium' : 'Factume Standard';
+  const planLabel = isPremium ? 'INVEQ Premium' : 'INVEQ Standard';
 
   async function handleToggleDarkMode(value: boolean) {
     if (!darkModeSupported) {
@@ -65,9 +65,9 @@ export function SettingsDesktopContent() {
           onPress: () => {
             void Linking.openURL(
               `mailto:${MARKETING_CONTACT.support}?subject=${encodeURIComponent(
-                'Demande de suppression de compte Factume',
+                'Demande de suppression de compte INVEQ',
               )}&body=${encodeURIComponent(
-                `Bonjour,\n\nJe souhaite supprimer définitivement mon compte Factume associé à l’adresse : ${user?.email ?? ''}.\n\nMerci.`,
+                `Bonjour,\n\nJe souhaite supprimer définitivement mon compte INVEQ associé à l’adresse : ${user?.email ?? ''}.\n\nMerci.`,
               )}`,
             );
           },
@@ -141,7 +141,7 @@ export function SettingsDesktopContent() {
             <View style={styles.separator} />
             <SettingsRow label="Contact" onPress={() => void openHelpPage('contact')} />
             <View style={styles.separator} />
-            <SettingsRow label="Site web Factume" onPress={() => void openMarketingSite()} />
+            <SettingsRow label="Site web INVEQ" onPress={() => void openMarketingSite()} />
           </SettingsSection>
 
           <SettingsSection title="Confidentialité & conditions">
@@ -166,7 +166,7 @@ export function SettingsDesktopContent() {
       </DesktopPanel>
 
       <Text style={styles.version}>
-        Factume v{versionInfo.version} · build {versionInfo.buildNumber}
+        INVEQ v{versionInfo.version} · build {versionInfo.buildNumber}
       </Text>
     </View>
   );

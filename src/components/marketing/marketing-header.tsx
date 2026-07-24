@@ -50,10 +50,10 @@ export function MarketingHeader({ isWide }: MarketingHeaderProps) {
           <Image
             accessibilityIgnoresInvertColors
             contentFit="contain"
-            source={require('@/assets/images/factume-logo.png')}
+            source={require('@/assets/images/INVEQ-logo.png')}
             style={styles.logo}
           />
-          <Text style={styles.brandName}>Factume</Text>
+          <Text style={styles.brandName}>INVEQ</Text>
         </Pressable>
 
         {isWide ? (

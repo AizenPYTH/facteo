@@ -1,5 +1,5 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://factume.vercel.app/sitemap.xml
+Sitemap: https://inveq.vercel.app/sitemap.xml
 

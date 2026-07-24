@@ -1,16 +1,16 @@
-# Factume — Plateforme Web unifiée
+# INVEQ — Plateforme Web unifiée
 
-Site marketing + application web sur **un seul domaine** : `factume.app`
+Site marketing + application web sur **un seul domaine** : `inveq.app`
 
 ## Architecture
 
 ```
-factume.app/              → Site marketing
-factume.app/login         → Connexion
-factume.app/register      → Inscription
-factume.app/app           → Dashboard (protégé)
-factume.app/app/clients   → Clients
-factume.app/app/invoices  → Factures
+inveq.app/              → Site marketing
+inveq.app/login         → Connexion
+inveq.app/register      → Inscription
+inveq.app/app           → Dashboard (protégé)
+inveq.app/app/clients   → Clients
+inveq.app/app/invoices  → Factures
 …
 
 Application mobile       → Expo (iOS / Android) — inchangée
@@ -30,7 +30,7 @@ Le dossier `website/` est **totalement indépendant** de l'app mobile Expo :
 
 - Aucun package `expo-*` ni `react-native` dans `package.json`
 - Variables d'environnement préfixées `NEXT_PUBLIC_*` uniquement
-- Types locaux via `@factume/types/*` → `website/src/types/`
+- Types locaux via `@inveq/types/*` → `website/src/types/`
 - ESLint interdit les imports Expo/React Native (voir `eslint.config.mjs`)
 
 L'app Expo reste à la racine du monorepo ; les deux projets partagent la même base Supabase mais pas de code runtime commun.
@@ -60,7 +60,7 @@ NEXT_PUBLIC_COMPANY_SEARCH_PROVIDER=recherche-entreprises
 La recherche SIREN / SIRET (préremplissage client) nécessite `NEXT_PUBLIC_COMPANY_SEARCH_API_URL`
 et un abonnement Premium (`siren_search`), comme sur l’app mobile.
 
-### Déploiement Vercel (monorepo Factume + Expo)
+### Déploiement Vercel (monorepo INVEQ + Expo)
 
 Le dépôt contient deux apps indépendantes (Expo à la racine, Next.js dans `website/`).
 Next.js détecte automatiquement le monorepo via le `package-lock.json` racine et produit
@@ -85,7 +85,7 @@ dans `next.config.ts` : ces options forcent `relativeAppDir: ""` et font cherche
 
 | Variable | Valeur |
 |----------|--------|
-| `NEXT_PUBLIC_SITE_URL` | `https://factume.app` |
+| `NEXT_PUBLIC_SITE_URL` | `https://inveq.app` |
 | `NEXT_PUBLIC_SUPABASE_URL` | Même URL que l'app mobile |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Même clé anon que l'app mobile |
 | `NEXT_PUBLIC_COMPANY_SEARCH_API_URL` | `https://recherche-entreprises.api.gouv.fr` |
@@ -97,8 +97,8 @@ dans `next.config.ts` : ces options forcent `relativeAppDir: ""` et font cherche
 
 | Champ | Valeur locale | Valeur production |
 |-------|---------------|-------------------|
-| Site URL | `http://localhost:3000` | `https://factume.app` |
-| Redirect URLs | `http://localhost:3000/auth/callback` | `https://factume.app/auth/callback` |
+| Site URL | `http://localhost:3000` | `https://inveq.app` |
+| Redirect URLs | `http://localhost:3000/auth/callback` | `https://inveq.app/auth/callback` |
 
 Sans ces URLs, les e-mails de confirmation et de mot de passe oublié ne fonctionneront pas.
 
@@ -134,7 +134,7 @@ Sans ces URLs, les e-mails de confirmation et de mot de passe oublié ne fonctio
 
 La logique métier (services Supabase, validations, types, formatters) est partagée :
 
-- Types : `../src/types/` via alias `@factume/types/*`
+- Types : `../src/types/` via alias `@inveq/types/*`
 - Services : `website/src/lib/domain/supabase/` (copie avec alias d’imports)
 - Validations : `website/src/lib/domain/validations/`
 

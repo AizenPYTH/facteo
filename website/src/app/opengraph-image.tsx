@@ -17,7 +17,7 @@ export default function OpenGraphImage() {
           flexDirection: 'column',
           justifyContent: 'center',
           padding: '80px',
-          background: 'linear-gradient(135deg, #0f172a 0%, #1e3a8a 50%, #2563eb 100%)',
+          background: 'linear-gradient(135deg, #0B0E14 0%, #312e81 48%, #4f46e5 100%)',
           color: 'white',
           fontFamily: 'system-ui, sans-serif',
         }}>
@@ -33,22 +33,22 @@ export default function OpenGraphImage() {
               width: '72px',
               height: '72px',
               borderRadius: '16px',
-              background: 'white',
-              color: '#2563eb',
+              background: 'linear-gradient(145deg, #a855f7, #2563eb)',
+              color: 'white',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               fontSize: '36px',
               fontWeight: 700,
             }}>
-            F
+            I
           </div>
           <span style={{ fontSize: '48px', fontWeight: 700 }}>{SITE_NAME}</span>
         </div>
         <p style={{ fontSize: '42px', fontWeight: 700, lineHeight: 1.2, maxWidth: '900px' }}>
           Gérez vos devis et factures comme un pro.
         </p>
-        <p style={{ fontSize: '24px', marginTop: '24px', color: '#bfdbfe', maxWidth: '800px' }}>
+        <p style={{ fontSize: '24px', marginTop: '24px', color: '#c7d2fe', maxWidth: '800px' }}>
           Facturation, signatures et paiements pour artisans, freelances et PME.
         </p>
       </div>

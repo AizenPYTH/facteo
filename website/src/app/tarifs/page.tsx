@@ -6,7 +6,7 @@ import { SUBSCRIPTION_PRICING_COPY } from '@/lib/subscription-plans';
 export const metadata: Metadata = {
   title: 'Tarifs',
   description:
-    'Offres Factume : Micro gratuit, Basique, Standard et Pro. Paiement mensuel ou annuel HT, sans engagement.',
+    'Offres INVEQ : Micro gratuit, Basique, Standard et Pro. Paiement mensuel ou annuel HT, sans engagement.',
 };
 
 export default function PricingPage() {

@@ -7,5 +7,5 @@ export function debugProfileTrace(scope: string, payload: Record<string, unknown
     return;
   }
 
-  console.log(`[Factume:profile-debug] ${scope}`, payload);
+  console.log(`[INVEQ:profile-debug] ${scope}`, payload);
 }

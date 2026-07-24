@@ -1,5 +1,5 @@
 /**
- * Factume Design System — single source for layout, motion, and component tokens.
+ * INVEQ Design System — single source for layout, motion, and component tokens.
  */
 import { Platform } from 'react-native';
 

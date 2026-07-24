@@ -5,7 +5,7 @@ import { FEATURES } from '@/lib/content';
 
 export const metadata: Metadata = {
   title: 'Fonctionnalités',
-  description: 'Découvrez toutes les fonctionnalités de Factume : clients, devis, factures, PDF, signatures et paiements.',
+  description: 'Découvrez toutes les fonctionnalités de INVEQ : clients, devis, factures, PDF, signatures et paiements.',
 };
 
 export default function FeaturesPage() {

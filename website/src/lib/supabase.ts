@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 
-import type { Database } from '@factume/types/database';
+import type { Database } from '@inveq/types/database';
 
 import { isSupabaseConfigured } from '@/lib/supabase/env';
 import { getSupabaseBrowserClient } from '@/lib/supabase/browser';

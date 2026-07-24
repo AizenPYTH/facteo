@@ -3,7 +3,7 @@ export function getSiteUrl(): string {
   if (typeof window !== 'undefined') {
     return window.location.origin;
   }
-  return process.env.NEXT_PUBLIC_SITE_URL?.trim().replace(/\/$/, '') || 'https://factume.vercel.app';
+  return process.env.NEXT_PUBLIC_SITE_URL?.trim().replace(/\/$/, '') || 'https://inveq.fr';
 }
 
 export function getAuthCallbackUrl(next = '/app'): string {

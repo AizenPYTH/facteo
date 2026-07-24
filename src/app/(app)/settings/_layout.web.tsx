@@ -18,7 +18,7 @@ export default function SettingsLayout() {
   return (
     <View style={styles.root}>
       <DesktopTopHeader
-        subtitle="Configurez votre espace Factume"
+        subtitle="Configurez votre espace INVEQ"
         title="Paramètres"
       />
 

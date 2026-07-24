@@ -5,7 +5,7 @@ import { FAQ } from '@/lib/content';
 
 export const metadata: Metadata = {
   title: 'FAQ',
-  description: 'Réponses aux questions fréquentes sur Factume : artisans, sécurité, personnalisation, signature.',
+  description: 'Réponses aux questions fréquentes sur INVEQ : artisans, sécurité, personnalisation, signature.',
 };
 
 export default function FaqPage() {

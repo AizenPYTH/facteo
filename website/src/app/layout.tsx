@@ -21,7 +21,7 @@ export const metadata: Metadata = {
     template: `%s — ${SITE_NAME}`,
   },
   description:
-    'Factume simplifie la facturation, les devis, les signatures et les paiements. Application mobile et web pour artisans, freelances et petites entreprises.',
+    'INVEQ simplifie la facturation, les devis, les signatures et les paiements. Application mobile et web pour artisans, freelances et petites entreprises.',
   keywords: [
     'facturation',
     'devis',
@@ -32,6 +32,7 @@ export const metadata: Metadata = {
     'TPE',
     'gestion commerciale',
     'signature électronique',
+    'INVEQ',
   ],
   openGraph: {
     type: 'website',
@@ -56,7 +57,7 @@ const organizationJsonLd = {
   url: SITE_URL,
   email: CONTACT_EMAIL,
   description:
-    'Factume simplifie la facturation, les devis, les signatures et les paiements pour artisans, freelances et PME.',
+    'INVEQ simplifie la facturation, les devis, les signatures et les paiements pour artisans, freelances et PME.',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

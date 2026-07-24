@@ -1,6 +1,6 @@
 import { createBrowserClient } from '@supabase/ssr';
 
-import type { Database } from '@factume/types/database';
+import type { Database } from '@inveq/types/database';
 
 import { getSupabaseAnonKey, getSupabaseUrl } from '@/lib/supabase/env';
 
