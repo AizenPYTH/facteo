@@ -1,59 +1,53 @@
 # E-mails d’authentification INVEQ
 
-Les e-mails de confirmation / mot de passe oublié sont envoyés par **Supabase Auth**.
-Par défaut, l’expéditeur et le design sont ceux de Supabase — d’où le mail « bizarre ».
+Templates HTML premium (CSS inline, max-width 600px) prêts à coller dans
+**Supabase → Authentication → Email Templates**.
 
-## 1. Templates INVEQ (immédiat)
+## Fichiers
 
-Dans le dashboard Supabase → **Authentication** → **Email Templates** :
-
-| Template Supabase | Fichier à coller | Subject recommandé |
-|-------------------|------------------|--------------------|
+| Template Supabase | Fichier | Subject recommandé |
+|-------------------|---------|--------------------|
 | Confirm signup | `confirm-signup.html` | `Activez votre compte INVEQ` |
 | Reset password | `reset-password.html` | `Réinitialisez votre mot de passe INVEQ` |
+| Change email address | `change-email.html` | `Confirmez votre nouvelle adresse e-mail INVEQ` |
+| Invite user | `invite.html` | `Vous êtes invité à rejoindre INVEQ` |
+| Magic Link | `magic-link.html` | `Votre lien de connexion INVEQ` |
+
+## Installation
 
 1. Ouvrez le fichier HTML correspondant
 2. Copiez tout le contenu
 3. Collez-le dans le template Supabase (mode HTML / Source)
-4. Enregistrez
+4. Renseignez le subject recommandé
+5. Enregistrez
 
-Variables utilisées : `{{ .ConfirmationURL }}`
+## Variables Supabase utilisées
 
-## 2. Redirections (important pour éviter la page vide)
+| Variable | Templates |
+|----------|-----------|
+| `{{ .ConfirmationURL }}` | Tous |
+| `{{ .SiteURL }}` | Tous (lien logo) |
+| `{{ .Email }}` | confirmation, reset, invite, magic link, change email |
+| `{{ .NewEmail }}` | change email |
+| `{{ .Token }}` | magic link (code OTP de secours) |
 
-Dans **Authentication** → **URL Configuration** :
+## Logo
 
-- **Site URL** (local) : `http://localhost:3000`
-- **Site URL** (prod) : `https://inveq.app` (ou ton domaine)
-- **Redirect URLs** (ajouter toutes) :
-  - `http://localhost:3000/auth/callback`
-  - `http://localhost:3000/auth/confirm`
-  - `http://localhost:3000/auth/confirmed`
-  - `http://localhost:3000/reinitialiser-mot-de-passe`
-  - `https://TON_DOMAINE/auth/callback`
-  - `https://TON_DOMAINE/**`
+Par défaut, un wordmark texte **INVEQ** est affiché (fiable sans images).
+Pour utiliser le logo image, remplacez le bloc commenté par :
 
-Dans `website/.env.local` :
-
-```env
-NEXT_PUBLIC_SITE_URL=http://localhost:3000
+```html
+<img src="https://inveq.fr/logo-inveq.png" width="112" alt="INVEQ" style="display:block;border:0;height:auto;" />
 ```
 
-## 3. Vrai envoi (SMTP custom — Resend recommandé)
+## Redirections
 
-Toujours dans Supabase → **Project Settings** → **Authentication** → **SMTP Settings** :
+Dans **Authentication → URL Configuration** :
 
-1. Crée un compte [Resend](https://resend.com)
-2. Vérifie ton domaine (`INVEQ.app`) ou utilise le domaine de test Resend
-3. Active Custom SMTP dans Supabase :
+- **Site URL** (prod) : `https://inveq.fr`
+- **Redirect URLs** : `https://inveq.fr/**`, `http://localhost:3000/**`, plus les chemins `/auth/callback`, `/auth/confirm`, `/auth/confirmed`, `/reinitialiser-mot-de-passe`
 
-| Champ | Valeur typique Resend |
-|-------|------------------------|
-| Sender email | `noreply@INVEQ.app` |
-| Sender name | `INVEQ` |
-| Host | `smtp.resend.com` |
-| Port | `465` |
-| User | `resend` |
-| Password | ta clé API Resend |
+## SMTP (production)
 
-Après ça, les e-mails partent de **INVEQ**, avec ton design, plus le branding Supabase.
+Pour un envoi depuis INVEQ (et non le branding Supabase), configurez un SMTP custom
+(Resend recommandé) dans **Project Settings → Authentication → SMTP Settings**.

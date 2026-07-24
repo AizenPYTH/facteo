@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="color-scheme" content="light" />
     <meta name="supported-color-schemes" content="light" />
-    <title>Réinitialisez votre mot de passe INVEQ</title>
+    <title>Votre lien de connexion INVEQ</title>
     <!--[if mso]>
     <noscript>
       <xml>
@@ -18,7 +18,7 @@
   </head>
   <body style="margin:0;padding:0;background:#f1f5f9;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#0f172a;-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%;">
     <div style="display:none;max-height:0;overflow:hidden;mso-hide:all;">
-      Réinitialisez votre mot de passe INVEQ en toute sécurité.
+      Votre lien magique pour vous connecter à INVEQ.
     </div>
     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f1f5f9;border-collapse:collapse;mso-table-lspace:0;mso-table-rspace:0;">
       <tr>
@@ -40,31 +40,39 @@
                   </tr>
                   <tr>
                     <td style="padding:40px 40px 8px;">
-                      <p style="margin:0 0 8px;font-size:13px;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;color:#6366f1;">Sécurité</p>
-                      <h1 style="margin:0 0 16px;font-size:24px;line-height:1.35;font-weight:700;color:#0f172a;">Réinitialisation du mot de passe</h1>
+                      <p style="margin:0 0 8px;font-size:13px;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;color:#6366f1;">Connexion</p>
+                      <h1 style="margin:0 0 16px;font-size:24px;line-height:1.35;font-weight:700;color:#0f172a;">Votre lien magique</h1>
                       <p style="margin:0 0 8px;font-size:15px;line-height:1.65;color:#475569;">
-                        Une demande de réinitialisation a été faite{{ if .Email }} pour <strong style="color:#0f172a;font-weight:600;">{{ .Email }}</strong>{{ end }}.
+                        Bonjour{{ if .Email }} (<span style="color:#0f172a;">{{ .Email }}</span>){{ end }},
                       </p>
                       <p style="margin:0 0 28px;font-size:15px;line-height:1.65;color:#475569;">
-                        Cliquez sur le bouton ci-dessous pour choisir un nouveau mot de passe. Ce lien expire rapidement pour votre sécurité.
+                        Cliquez sur le bouton ci-dessous pour vous connecter à INVEQ sans mot de passe. Ce lien est à usage unique et expire rapidement.
                       </p>
                       <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="border-collapse:collapse;margin:0 0 28px;">
                         <tr>
                           <td align="center" bgcolor="#4f46e5" style="border-radius:10px;background:#4f46e5;">
                             <!--[if mso]>
-                            <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="{{ .ConfirmationURL }}" style="height:48px;v-text-anchor:middle;width:260px;" arcsize="21%" stroke="f" fillcolor="#4f46e5">
+                            <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="{{ .ConfirmationURL }}" style="height:48px;v-text-anchor:middle;width:200px;" arcsize="21%" stroke="f" fillcolor="#4f46e5">
                               <w:anchorlock/>
-                              <center style="color:#ffffff;font-family:Segoe UI,sans-serif;font-size:15px;font-weight:600;">Choisir un nouveau mot de passe</center>
+                              <center style="color:#ffffff;font-family:Segoe UI,sans-serif;font-size:15px;font-weight:600;">Se connecter</center>
                             </v:roundrect>
                             <![endif]-->
                             <!--[if !mso]><!-->
                             <a href="{{ .ConfirmationURL }}" style="display:inline-block;padding:14px 28px;font-size:15px;font-weight:600;line-height:1.2;color:#ffffff;text-decoration:none;border-radius:10px;background:#4f46e5;mso-hide:all;">
-                              Choisir un nouveau mot de passe
+                              Se connecter
                             </a>
                             <!--<![endif]-->
                           </td>
                         </tr>
                       </table>
+                      {{ if .Token }}
+                      <p style="margin:0 0 8px;font-size:13px;line-height:1.55;color:#64748b;">
+                        Ou saisissez ce code de connexion&nbsp;:
+                      </p>
+                      <p style="margin:0 0 28px;font-size:28px;line-height:1.2;font-weight:700;letter-spacing:0.18em;color:#0f172a;font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;">
+                        {{ .Token }}
+                      </p>
+                      {{ end }}
                       <p style="margin:0 0 8px;font-size:13px;line-height:1.55;color:#64748b;">
                         Si le bouton ne fonctionne pas, copiez ce lien dans votre navigateur&nbsp;:
                       </p>
@@ -72,7 +80,7 @@
                         <a href="{{ .ConfirmationURL }}" style="color:#4f46e5;text-decoration:underline;">{{ .ConfirmationURL }}</a>
                       </p>
                       <p style="margin:0;padding-top:24px;border-top:1px solid #f1f5f9;font-size:13px;line-height:1.55;color:#94a3b8;">
-                        Vous n’êtes pas à l’origine de cette demande&nbsp;? Ignorez cet e-mail. Votre mot de passe actuel reste inchangé.
+                        Vous n’avez pas demandé ce lien&nbsp;? Ignorez cet e-mail. Votre compte reste sécurisé.
                       </p>
                     </td>
                   </tr>
