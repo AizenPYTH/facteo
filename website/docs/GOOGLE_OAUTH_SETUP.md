@@ -11,7 +11,7 @@ Le message « Accéder à l’application eogyopufctnqasjhsthp.supabase.co » vi
 
 | Champ | Valeur |
 |-------|--------|
-| App name | `INVEQ` |
+| App name | `INVEQ` (identique au H1 + `<title>` de la homepage) |
 | User support email | ton e-mail |
 | Application home page | `https://www.inveq.fr/` |
 | Application privacy policy | `https://www.inveq.fr/confidentialite` |

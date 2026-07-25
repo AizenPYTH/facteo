@@ -21,7 +21,7 @@ export const metadata: Metadata = {
     canonical: SITE_URL,
   },
   title: {
-    default: `${SITE_NAME} — Facturation, devis et gestion pour artisans et PME`,
+    default: SITE_NAME,
     template: `%s — ${SITE_NAME}`,
   },
   description:

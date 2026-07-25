@@ -10,9 +10,10 @@ export const NAV_LINKS = [
 
 export const HERO = {
   overline: 'Facturation pour les pros',
-  title: 'INVEQ — Logiciel de facturation, devis et gestion pour artisans et PME',
+  /** Doit correspondre exactement au nom OAuth Google Cloud Console */
+  title: 'INVEQ',
   subtitle:
-    'Gérez vos devis et factures comme un pro. Clients, signatures et encaissements — pensé pour les artisans, freelances et PME.',
+    'Logiciel de facturation, devis et gestion pour artisans et PME. Gérez vos devis et factures comme un pro — clients, signatures et encaissements.',
   ctaPrimary: 'Commencer gratuitement',
   ctaSecondary: 'Voir les fonctionnalités',
 };
