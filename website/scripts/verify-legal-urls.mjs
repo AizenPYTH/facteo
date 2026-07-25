@@ -1,11 +1,14 @@
 /**
- * Vérifie les exemptions du gate mobile pour les pages légales (App Store).
+ * Vérifie les exemptions du gate mobile pour les pages légales (App Store)
+ * et l’absence de redirect sur la homepage `/`.
  * Usage : node scripts/verify-legal-urls.mjs
  */
 
 const MOBILE_GATE_EXEMPT_PREFIXES = [
   '/mobile',
   '/auth',
+  '/login',
+  '/register',
   '/_next',
   '/api',
   '/favicon',
@@ -22,6 +25,10 @@ const MOBILE_GATE_EXEMPT_PREFIXES = [
 ];
 
 function shouldRedirectMobile(userAgent, pathname) {
+  const path = pathname.replace(/\/+$/, '') || '/';
+  if (path === '/') {
+    return { redirect: false };
+  }
   if (MOBILE_GATE_EXEMPT_PREFIXES.some((prefix) => pathname.startsWith(prefix))) {
     return { redirect: false };
   }
@@ -35,6 +42,7 @@ const IPHONE_UA =
   'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1';
 
 const MUST_STAY_OPEN = [
+  '/',
   '/confidentialite',
   '/conditions-utilisation',
   '/conditions',
@@ -47,7 +55,7 @@ const MUST_STAY_OPEN = [
   '/contact',
 ];
 
-const MUST_REDIRECT = ['/', '/login', '/register', '/app', '/tarifs'];
+const MUST_REDIRECT = ['/tarifs', '/fonctionnalites', '/app'];
 
 let failed = 0;
 
@@ -76,4 +84,4 @@ if (failed > 0) {
   process.exit(1);
 }
 
-console.log('\nAll mobile-gate legal exemptions OK');
+console.log('\nAll mobile-gate exemptions OK (homepage never redirected)');

@@ -2,8 +2,9 @@
  * Contrôle d’accès web selon l’appareil.
  *
  * ENABLE_MOBILE_WEB = true  → les mobiles accèdent au site web normalement
- * ENABLE_MOBILE_WEB = false → redirection vers les pages /mobile/ios|android
+ * ENABLE_MOBILE_WEB = false → redirection vers /mobile/ios|android (sauf exemptions)
  *
+ * La homepage `/` n’est JAMAIS redirigée : même HTML pour desktop, mobile et Googlebot.
  * Variable d’env : NEXT_PUBLIC_ENABLE_MOBILE_WEB=true|false
  */
 
@@ -11,8 +12,8 @@ export type DevicePlatform = 'ios' | 'android' | 'desktop';
 
 export const DEVICE_ACCESS = {
   /**
-   * Quand true, iPhone / Android voient le site web comme sur desktop.
-   * Passer à true lorsque la web app sera réellement responsive.
+   * Quand true, iPhone / Android voient le site web comme sur desktop
+   * (toutes les routes, pas seulement `/`).
    */
   enableMobileWeb:
     process.env.NEXT_PUBLIC_ENABLE_MOBILE_WEB === 'true' ||
@@ -33,8 +34,8 @@ export const DEVICE_ACCESS = {
 
 /**
  * Chemins exclus de la redirection mobile.
- * Inclut les documents légaux / support : l’app iOS les ouvre dans Safari
- * (exigence App Store) — ils doivent rester accessibles sur téléphone.
+ * Inclut le légal et le support (ouverts depuis l’app native).
+ * La homepage `/` est gérée à part dans shouldRedirectMobile.
  */
 export const MOBILE_GATE_EXEMPT_PREFIXES = [
   '/mobile',
@@ -80,6 +81,12 @@ export function shouldRedirectMobile(
   pathname: string,
 ): { redirect: true; to: string } | { redirect: false } {
   if (DEVICE_ACCESS.enableMobileWeb) {
+    return { redirect: false };
+  }
+
+  // Homepage : jamais de gate — même HTML pour tous les UA (dont Googlebot Smartphone).
+  const path = pathname.replace(/\/+$/, '') || '/';
+  if (path === '/') {
     return { redirect: false };
   }
 
