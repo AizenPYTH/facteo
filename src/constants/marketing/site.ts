@@ -1,6 +1,6 @@
 /**
  * URL publique du site.
- * Production : https://inveq.fr
+ * Production : https://www.inveq.fr (domaine canonique unique)
  * Override : EXPO_PUBLIC_SITE_URL ou NEXT_PUBLIC_SITE_URL
  */
 function resolveSiteUrl(): string {
@@ -8,7 +8,7 @@ function resolveSiteUrl(): string {
     process.env.EXPO_PUBLIC_SITE_URL?.trim() ||
     process.env.NEXT_PUBLIC_SITE_URL?.trim() ||
     '';
-  return fromEnv.replace(/\/$/, '') || 'https://inveq.fr';
+  return fromEnv.replace(/\/$/, '') || 'https://www.inveq.fr';
 }
 
 export const MARKETING_SITE_URL = resolveSiteUrl();

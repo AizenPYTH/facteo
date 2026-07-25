@@ -7,7 +7,7 @@ export const LEGAL_CONTACT = {
   email: 'farouqdib@gmail.com',
   support: 'farouqdib@gmail.com',
   dpo: 'farouqdib@gmail.com',
-  website: 'https://inveq.fr',
+  website: 'https://www.inveq.fr',
   address: 'France',
 } as const;
 

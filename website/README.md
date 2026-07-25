@@ -1,16 +1,16 @@
 # INVEQ — Plateforme Web unifiée
 
-Site marketing + application web sur **un seul domaine** : `inveq.app`
+Site marketing + application web sur **un seul domaine** : `www.inveq.fr`
 
 ## Architecture
 
 ```
-inveq.app/              → Site marketing
-inveq.app/login         → Connexion
-inveq.app/register      → Inscription
-inveq.app/app           → Dashboard (protégé)
-inveq.app/app/clients   → Clients
-inveq.app/app/invoices  → Factures
+www.inveq.fr/              → Site marketing
+www.inveq.fr/login         → Connexion
+www.inveq.fr/register      → Inscription
+www.inveq.fr/app           → Dashboard (protégé)
+www.inveq.fr/app/clients   → Clients
+www.inveq.fr/app/invoices  → Factures
 …
 
 Application mobile       → Expo (iOS / Android) — inchangée
@@ -85,7 +85,7 @@ dans `next.config.ts` : ces options forcent `relativeAppDir: ""` et font cherche
 
 | Variable | Valeur |
 |----------|--------|
-| `NEXT_PUBLIC_SITE_URL` | `https://inveq.app` |
+| `NEXT_PUBLIC_SITE_URL` | `https://www.inveq.fr` |
 | `NEXT_PUBLIC_SUPABASE_URL` | Même URL que l'app mobile |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Même clé anon que l'app mobile |
 | `NEXT_PUBLIC_COMPANY_SEARCH_API_URL` | `https://recherche-entreprises.api.gouv.fr` |
@@ -97,8 +97,8 @@ dans `next.config.ts` : ces options forcent `relativeAppDir: ""` et font cherche
 
 | Champ | Valeur locale | Valeur production |
 |-------|---------------|-------------------|
-| Site URL | `http://localhost:3000` | `https://inveq.app` |
-| Redirect URLs | `http://localhost:3000/auth/callback` | `https://inveq.app/auth/callback` |
+| Site URL | `http://localhost:3000` | `https://www.inveq.fr` |
+| Redirect URLs | `http://localhost:3000/auth/callback` | `https://www.inveq.fr/auth/callback` |
 
 Sans ces URLs, les e-mails de confirmation et de mot de passe oublié ne fonctionneront pas.
 

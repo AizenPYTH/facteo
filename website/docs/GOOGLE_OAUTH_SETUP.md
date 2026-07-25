@@ -13,9 +13,9 @@ Le message « Accéder à l’application eogyopufctnqasjhsthp.supabase.co » vi
 |-------|--------|
 | App name | `INVEQ` |
 | User support email | ton e-mail |
-| Application home page | `https://inveq.fr` |
-| Application privacy policy | `https://inveq.fr/confidentialite` |
-| Application terms of service | `https://inveq.fr/conditions-utilisation` |
+| Application home page | `https://www.inveq.fr` |
+| Application privacy policy | `https://www.inveq.fr/confidentialite` |
+| Application terms of service | `https://www.inveq.fr/conditions-utilisation` |
 | Authorized domains | `inveq.fr` (+ `supabase.co` si demandé) |
 | App logo | logo INVEQ (carré, ≤ 120 Ko, PNG/JPG) |
 
@@ -26,7 +26,7 @@ Le message « Accéder à l’application eogyopufctnqasjhsthp.supabase.co » vi
 **APIs & Services** → **Credentials** → client OAuth **Web** :
 
 - Authorized JavaScript origins :
-  - `https://inveq.fr`
+  - `https://www.inveq.fr`
   - `http://localhost:3000`
 - Authorized redirect URIs :
   - `https://eogyopufctnqasjhsthp.supabase.co/auth/v1/callback`
@@ -36,9 +36,9 @@ Le message « Accéder à l’application eogyopufctnqasjhsthp.supabase.co » vi
 
 **Authentication** → **URL Configuration** :
 
-- Site URL : `https://inveq.fr`
+- Site URL : `https://www.inveq.fr`
 - Redirect URLs :
-  - `https://inveq.fr/auth/callback`
+  - `https://www.inveq.fr/auth/callback`
   - `http://localhost:3000/auth/callback`
 
 **Authentication** → **Providers** → **Google** :

@@ -1,9 +1,9 @@
 /**
- * Production : https://inveq.fr
+ * Production : https://www.inveq.fr (domaine canonique unique)
  * Override local : NEXT_PUBLIC_SITE_URL=http://localhost:3000
  */
 export const SITE_URL =
-  process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, '') || 'https://inveq.fr';
+  process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, '') || 'https://www.inveq.fr';
 
 export const APP_URL = SITE_URL;
 export const APP_DASHBOARD_URL = '/app';

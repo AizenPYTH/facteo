@@ -12,7 +12,7 @@ export const LEGAL_CONTACT = {
   email: process.env.NEXT_PUBLIC_CONTACT_EMAIL?.trim() || 'farouqdib@gmail.com',
   support: process.env.NEXT_PUBLIC_SUPPORT_EMAIL?.trim() || 'farouqdib@gmail.com',
   dpo: process.env.NEXT_PUBLIC_SUPPORT_EMAIL?.trim() || 'farouqdib@gmail.com',
-  website: process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, '') || 'https://inveq.fr',
+  website: process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, '') || 'https://www.inveq.fr',
   address: 'France',
 } as const;
 
