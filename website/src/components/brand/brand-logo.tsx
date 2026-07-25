@@ -47,7 +47,7 @@ export function BrandWordmark({
     <img
       alt="INVEQ — Facturation, devis et gestion"
       className={cn(
-        'h-auto w-[220px] max-w-full shrink-0 sm:w-[240px] lg:w-[252px]',
+        'h-auto w-[148px] max-w-full shrink-0 sm:w-[164px] lg:w-[176px]',
         className,
       )}
       decoding="async"

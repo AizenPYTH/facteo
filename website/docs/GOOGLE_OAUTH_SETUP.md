@@ -6,20 +6,26 @@ Le message « Accéder à l’application eogyopufctnqasjhsthp.supabase.co » vi
 ## 1. Google Cloud Console
 
 1. Ouvrir [Google Cloud Console](https://console.cloud.google.com/) → le projet lié à INVEQ
-2. **APIs & Services** → **OAuth consent screen**
+2. **APIs & Services** → **OAuth consent screen** / **Google Auth Platform → Branding**
 3. Renseigner :
 
 | Champ | Valeur |
 |-------|--------|
 | App name | `INVEQ` |
 | User support email | ton e-mail |
-| Application home page | `https://www.inveq.fr/` **ou** `https://www.inveq.fr/inveq.html` (H1 + title = `INVEQ` exact) |
+| Application home page | `https://www.inveq.fr/` |
 | Application privacy policy | `https://www.inveq.fr/confidentialite` |
 | Application terms of service | `https://www.inveq.fr/conditions-utilisation` |
 | Authorized domains | `inveq.fr` (+ `supabase.co` si demandé) |
 | App logo | `website/public/oauth-logo.png` (carré 512×512, icône + texte INVEQ, ≤ 120 Ko) |
 
 4. Enregistrer → **Publish app** (ou rester en Testing avec des test users)
+
+### Si le checker auto échoue (faux positifs fréquents en 2026)
+
+1. **View issues** → sélectionner **« Je pense que les problèmes détectés sont incorrects »** / *I believe the issues found are incorrect*
+2. Confirmer dans le Verification Center pour une **revue humaine** Trust & Safety
+3. La homepage marketing explique déjà le but (facturation / devis) et affiche le nom **INVEQ**
 
 ## 2. Identifiants OAuth
 

@@ -56,10 +56,7 @@ export default function InvoiceHero() {
           {HERO.overline}
         </p>
 
-        <h1
-          id="app-name"
-          className="mt-5 bg-[linear-gradient(145deg,#a855f7_0%,#6366f1_45%,#2563eb_100%)] bg-clip-text text-[2rem] font-semibold tracking-[-0.04em] text-transparent sm:text-5xl lg:text-[3.25rem] lg:leading-[1.05]"
-        >
+        <h1 className="mt-5 bg-[linear-gradient(145deg,#a855f7_0%,#6366f1_45%,#2563eb_100%)] bg-clip-text text-[2rem] font-semibold tracking-[-0.04em] text-transparent sm:text-5xl lg:text-[3.25rem] lg:leading-[1.05]">
           {HERO.title}
         </h1>
 

@@ -21,11 +21,11 @@ export const metadata: Metadata = {
     canonical: SITE_URL,
   },
   title: {
-    default: SITE_NAME,
+    default: `${SITE_NAME} — Facturation, devis et gestion pour artisans et PME`,
     template: `%s — ${SITE_NAME}`,
   },
   description:
-    'INVEQ est une application de facturation et de devis pour artisans, freelances et petites entreprises. Créez, envoyez et suivez vos factures et devis professionnels.',
+    'INVEQ simplifie la facturation, les devis, les signatures et les paiements. Application mobile et web pour artisans, freelances et petites entreprises.',
   keywords: [
     'facturation',
     'devis',
