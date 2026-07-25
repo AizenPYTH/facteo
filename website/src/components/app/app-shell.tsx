@@ -27,7 +27,7 @@ export function AppSidebar() {
     <aside className="flex h-screen w-64 shrink-0 flex-col border-r border-slate-200/90 bg-white/95 backdrop-blur-sm">
       <div className="border-b border-slate-100 px-5 py-5">
         <Link className="group flex items-center" href="/app">
-          <BrandWordmark markSize={28} />
+          <BrandWordmark className="w-[188px] sm:w-[188px] lg:w-[188px]" />
         </Link>
 
         <CompanySwitcher />

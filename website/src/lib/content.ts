@@ -10,7 +10,7 @@ export const NAV_LINKS = [
 
 export const HERO = {
   overline: 'Facturation pour les pros',
-  title: 'INVEQ',
+  title: 'INVEQ — Logiciel de facturation, devis et gestion pour artisans et PME',
   subtitle:
     'Gérez vos devis et factures comme un pro. Clients, signatures et encaissements — pensé pour les artisans, freelances et PME.',
   ctaPrimary: 'Commencer gratuitement',

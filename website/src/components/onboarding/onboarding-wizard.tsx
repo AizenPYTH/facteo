@@ -205,7 +205,7 @@ export function OnboardingWizard() {
       <div className="mx-auto flex min-h-svh max-w-xl flex-col px-6 py-8 sm:py-12">
         <header className="mb-8 flex items-center justify-between">
           <Link href="/">
-            <BrandWordmark markSize={28} />
+            <BrandWordmark />
           </Link>
           <p className="text-xs font-medium text-slate-400">
             Étape {step} / {STEPS.length}

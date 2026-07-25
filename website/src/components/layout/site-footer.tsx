@@ -11,7 +11,7 @@ export function SiteFooter() {
     <footer className="mt-auto border-t border-border bg-[#0B0E14] text-slate-300">
       <div className="mx-auto grid max-w-6xl gap-12 px-6 py-16 lg:grid-cols-4 lg:px-8">
         <div className="lg:col-span-1">
-          <BrandWordmark className="[&_span]:text-white" markSize={30} />
+          <BrandWordmark className="rounded-lg bg-white px-2.5 py-1.5" />
           <p className="mt-4 max-w-xs text-sm leading-relaxed text-slate-400">
             La facturation moderne pour artisans, freelances et PME.
           </p>

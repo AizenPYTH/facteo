@@ -37,7 +37,7 @@ Par défaut, un wordmark texte **INVEQ** est affiché (fiable sans images).
 Pour utiliser le logo image, remplacez le bloc commenté par :
 
 ```html
-<img src="https://inveq.fr/logo-inveq.png" width="112" alt="INVEQ" style="display:block;border:0;height:auto;" />
+<img src="https://inveq.fr/logo-inveq.png" width="220" alt="INVEQ" style="display:block;border:0;height:auto;" />
 ```
 
 ## Redirections

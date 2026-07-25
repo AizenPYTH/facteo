@@ -17,7 +17,7 @@ export function SiteHeader() {
     <header className="glass sticky top-0 z-50">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6 lg:px-8">
         <Link className="flex items-center" href="/">
-          <BrandWordmark markSize={30} />
+          <BrandWordmark />
         </Link>
 
         <nav className="hidden items-center gap-8 md:flex">

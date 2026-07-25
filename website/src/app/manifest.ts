@@ -26,6 +26,12 @@ export default function manifest(): MetadataRoute.Manifest {
         type: 'image/png',
         purpose: 'any',
       },
+      {
+        src: '/logo-inveq.png',
+        sizes: '897x240',
+        type: 'image/png',
+        purpose: 'any',
+      },
     ],
   };
 }

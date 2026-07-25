@@ -4,6 +4,14 @@ import Image from 'next/image';
 
 import { cn } from '@/lib/utils';
 
+/** Logo horizontal officiel (897×240). */
+export const BRAND_LOGO_SRC = '/logo-inveq.png';
+/** Icône carrée (facture + €). */
+export const BRAND_ICON_SRC = '/icon.png';
+
+const LOGO_WIDTH = 897;
+const LOGO_HEIGHT = 240;
+
 export function BrandMark({
   size = 32,
   className,
@@ -14,28 +22,41 @@ export function BrandMark({
   return (
     <Image
       alt="INVEQ"
-      className={cn('shrink-0 rounded-lg', className)}
+      className={cn('shrink-0', className)}
       height={size}
       priority
-      src="/icon.png"
+      src={BRAND_ICON_SRC}
       width={size}
     />
   );
 }
 
+/**
+ * Logo principal horizontal : icône + INVEQ (+ tagline).
+ * Largeur ~220–252 px selon le viewport.
+ */
 export function BrandWordmark({
   className,
-  showMark = true,
-  markSize = 32,
+  priority = true,
 }: {
   className?: string;
-  showMark?: boolean;
+  /** @deprecated Conservé pour compatibilité des appels existants. */
   markSize?: number;
+  showMark?: boolean;
+  priority?: boolean;
 }) {
   return (
-    <span className={cn('inline-flex items-center gap-2.5', className)}>
-      {showMark ? <BrandMark size={markSize} /> : null}
-      <span className="text-lg font-bold tracking-tight text-foreground">INVEQ</span>
-    </span>
+    <Image
+      alt="INVEQ — Facturation, devis et gestion"
+      className={cn(
+        'h-auto w-[220px] max-w-full shrink-0 sm:w-[240px] lg:w-[252px]',
+        className,
+      )}
+      height={LOGO_HEIGHT}
+      priority={priority}
+      sizes="(max-width: 640px) 220px, (max-width: 1024px) 240px, 252px"
+      src={BRAND_LOGO_SRC}
+      width={LOGO_WIDTH}
+    />
   );
 }

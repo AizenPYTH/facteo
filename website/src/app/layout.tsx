@@ -16,6 +16,10 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
+  applicationName: SITE_NAME,
+  alternates: {
+    canonical: SITE_URL,
+  },
   title: {
     default: `${SITE_NAME} — Facturation, devis et gestion pour artisans et PME`,
     template: `%s — ${SITE_NAME}`,
@@ -55,6 +59,7 @@ const organizationJsonLd = {
   '@type': 'Organization',
   name: SITE_NAME,
   url: SITE_URL,
+  logo: `${SITE_URL}/logo-inveq.png`,
   email: CONTACT_EMAIL,
   description:
     'INVEQ simplifie la facturation, les devis, les signatures et les paiements pour artisans, freelances et PME.',

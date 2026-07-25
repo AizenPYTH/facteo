@@ -24,8 +24,8 @@ export function AuthLayout({
           className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_20%_10%,rgba(168,85,247,0.28),transparent),radial-gradient(ellipse_60%_40%_at_90%_90%,rgba(99,102,241,0.2),transparent)]"
         />
 
-        <Link className="relative z-10 shrink-0" href="/">
-          <BrandWordmark className="[&_span]:text-white" markSize={32} />
+        <Link className="relative z-10 shrink-0 rounded-xl bg-white px-3 py-2" href="/">
+          <BrandWordmark />
         </Link>
 
         <div className="relative z-10 flex min-h-0 flex-1 flex-col justify-center">
@@ -49,7 +49,7 @@ export function AuthLayout({
       <div className="flex min-h-svh flex-1 flex-col justify-center px-6 py-10 sm:py-12 lg:px-14 lg:py-10 xl:px-16">
         <div className="mx-auto w-full max-w-md">
           <Link className="mb-8 flex lg:hidden" href="/">
-            <BrandWordmark markSize={30} />
+            <BrandWordmark />
           </Link>
           <h1 className="text-2xl font-bold tracking-tight text-slate-900">{title}</h1>
           {subtitle ? <p className="mt-2 text-sm text-slate-500">{subtitle}</p> : null}
