@@ -52,29 +52,17 @@ export default function InvoiceHero() {
   return (
     <div className="relative mx-auto max-w-6xl">
       <div className="mx-auto max-w-3xl text-center">
-        <motion.p
-          animate={{ opacity: 1, y: 0 }}
-          className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary"
-          initial={{ opacity: 0, y: 10 }}
-          transition={{ duration: 0.55, ease }}>
+        <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary">
           {HERO.overline}
-        </motion.p>
+        </p>
 
-        <motion.h1
-          animate={{ opacity: 1, y: 0 }}
-          className="mt-5 bg-[linear-gradient(145deg,#a855f7_0%,#6366f1_45%,#2563eb_100%)] bg-clip-text text-[3.25rem] font-semibold tracking-[-0.04em] text-transparent sm:text-6xl lg:text-[4.75rem] lg:leading-[0.95]"
-          initial={{ opacity: 0, y: 18 }}
-          transition={{ duration: 0.7, delay: 0.06, ease }}>
+        <h1 className="mt-5 bg-[linear-gradient(145deg,#a855f7_0%,#6366f1_45%,#2563eb_100%)] bg-clip-text text-[2rem] font-semibold tracking-[-0.04em] text-transparent sm:text-5xl lg:text-[3.25rem] lg:leading-[1.05]">
           {HERO.title}
-        </motion.h1>
+        </h1>
 
-        <motion.p
-          animate={{ opacity: 1, y: 0 }}
-          className="mx-auto mt-6 max-w-xl text-base leading-relaxed text-muted sm:text-lg"
-          initial={{ opacity: 0, y: 14 }}
-          transition={{ duration: 0.6, delay: 0.14, ease }}>
+        <p className="mx-auto mt-6 max-w-xl text-base leading-relaxed text-muted sm:text-lg">
           {HERO.subtitle}
-        </motion.p>
+        </p>
 
         <motion.div
           animate={{ opacity: 1, y: 0 }}

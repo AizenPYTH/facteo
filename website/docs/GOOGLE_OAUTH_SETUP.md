@@ -17,7 +17,7 @@ Le message « Accéder à l’application eogyopufctnqasjhsthp.supabase.co » vi
 | Application privacy policy | `https://www.inveq.fr/confidentialite` |
 | Application terms of service | `https://www.inveq.fr/conditions-utilisation` |
 | Authorized domains | `inveq.fr` (+ `supabase.co` si demandé) |
-| App logo | logo INVEQ (carré, ≤ 120 Ko, PNG/JPG) |
+| App logo | `website/public/oauth-logo.png` (carré 512×512, icône + texte INVEQ, ≤ 120 Ko) |
 
 4. Enregistrer → **Publish app** (ou rester en Testing avec des test users)
 
