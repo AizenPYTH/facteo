@@ -60,6 +60,8 @@ export const MOBILE_GATE_EXEMPT_PREFIXES = [
   // Aide & contact (ouverts depuis l’app)
   '/support',
   '/contact',
+  // Page produit OAuth Branding (doit être crawlable Googlebot Smartphone)
+  '/produit',
 ] as const;
 
 export function detectDevicePlatform(userAgent: string): DevicePlatform {

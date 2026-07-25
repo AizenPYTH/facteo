@@ -13,7 +13,7 @@ Le message « Accéder à l’application eogyopufctnqasjhsthp.supabase.co » vi
 |-------|--------|
 | App name | `INVEQ` |
 | User support email | ton e-mail |
-| Application home page | `https://www.inveq.fr` |
+| Application home page | `https://www.inveq.fr/produit` (page SSR dédiée branding OAuth — pas `/`) |
 | Application privacy policy | `https://www.inveq.fr/confidentialite` |
 | Application terms of service | `https://www.inveq.fr/conditions-utilisation` |
 | Authorized domains | `inveq.fr` (+ `supabase.co` si demandé) |

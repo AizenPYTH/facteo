@@ -11,6 +11,7 @@ const ROUTES = [
   '/blog',
   '/support',
   '/a-propos',
+  '/produit',
   '/carrieres',
   '/login',
   '/telecharger',
