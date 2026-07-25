@@ -140,7 +140,7 @@ export function QuoteClientStep({
       <Text style={styles.description}>
         {selectedClientId && selectedClientName
           ? `Client sélectionné : ${selectedClientName}. Vous pouvez en choisir un autre si besoin.`
-          : 'Choisissez le client pour ce devis.'}
+          : 'Choisissez le client pour ce document.'}
       </Text>
 
       <Button
