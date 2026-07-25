@@ -1,19 +1,21 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
 
 import { SITE_NAME, SITE_URL } from '@/lib/constants';
 
 export const metadata: Metadata = {
-  title: `${SITE_NAME} — Application de facturation et devis`,
+  title: {
+    absolute: SITE_NAME,
+  },
   description:
-    'INVEQ est une application de facturation et de devis pour artisans, freelances et TPE. Créez, envoyez et suivez vos factures et devis professionnels.',
+    'INVEQ is an invoicing and quotes application for freelancers, tradespeople and small businesses. Create, send and track professional invoices and quotes.',
+  applicationName: SITE_NAME,
   alternates: {
     canonical: `${SITE_URL}/produit`,
   },
   openGraph: {
-    title: `${SITE_NAME} — Application de facturation et devis`,
+    title: SITE_NAME,
     description:
-      'INVEQ est une application de facturation et de devis pour artisans, freelances et TPE.',
+      'INVEQ is an invoicing and quotes application for freelancers, tradespeople and small businesses.',
     url: `${SITE_URL}/produit`,
     siteName: SITE_NAME,
     locale: 'fr_FR',
@@ -23,7 +25,7 @@ export const metadata: Metadata = {
         url: `${SITE_URL}/oauth-logo.png`,
         width: 512,
         height: 512,
-        alt: 'Logo INVEQ',
+        alt: SITE_NAME,
       },
     ],
   },
@@ -33,53 +35,92 @@ export const metadata: Metadata = {
   },
 };
 
+const softwareJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'SoftwareApplication',
+  name: SITE_NAME,
+  applicationCategory: 'BusinessApplication',
+  operatingSystem: 'Web, iOS, Android',
+  url: `${SITE_URL}/produit`,
+  description:
+    'INVEQ is an invoicing and quotes application for freelancers, tradespeople and small businesses.',
+};
+
 /**
- * Page produit dédiée Google OAuth Branding Verification.
- * Contenu SSR minimal, sans animations : H1 = INVEQ, but clair, logo, liens légaux absolus.
- * À utiliser comme « Application home page » dans Google Cloud Console.
+ * Page produit OAuth Branding (version Next).
+ * Préférer https://www.inveq.fr/inveq.html (HTML statique) comme Application home page.
  */
 export default function ProduitPage() {
   return (
-    <main className="mx-auto flex min-h-[70vh] max-w-2xl flex-col items-center justify-center px-6 py-16 text-center">
-      {/* eslint-disable-next-line @next/next/no-img-element -- asset OAuth figé, pas d’optimisation dynamique */}
-      <img
-        src="/oauth-logo.png"
-        alt="Logo INVEQ"
-        width={160}
-        height={160}
-        className="mb-8 h-40 w-40"
+    <main
+      style={{
+        maxWidth: '40rem',
+        margin: '0 auto',
+        padding: '3rem 1.25rem 4rem',
+        textAlign: 'center',
+        fontFamily: 'Georgia, Times New Roman, serif',
+        lineHeight: 1.55,
+      }}
+    >
+      <script
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(softwareJsonLd) }}
+        type="application/ld+json"
       />
 
-      <h1 className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src="/oauth-logo.png"
+        alt="INVEQ"
+        width={160}
+        height={160}
+        style={{ display: 'block', margin: '0 auto 1.5rem', width: 160, height: 160 }}
+      />
+
+      <h1 id="app-name" style={{ fontSize: '2.75rem', margin: '0 0 1rem' }}>
         INVEQ
       </h1>
 
-      <p className="mt-6 text-lg leading-relaxed text-muted">
-        INVEQ est une application de facturation et de devis pour artisans, freelances et petites
-        entreprises. Créez, envoyez et suivez vos factures et devis professionnels en quelques
-        minutes.
+      <h2 style={{ fontSize: '1.15rem', margin: '2rem 0 0.75rem' }}>
+        Purpose of the application
+      </h2>
+      <p style={{ margin: '0.75rem 0', fontSize: '1.05rem' }}>
+        INVEQ is an application for creating invoices and quotes. Freelancers, tradespeople and
+        small businesses use INVEQ to create, send and track professional invoices and quotes.
       </p>
 
-      <p className="mt-4 text-base text-muted">
-        Connexion sécurisée via Google pour accéder à votre espace INVEQ.
+      <h2 style={{ fontSize: '1.15rem', margin: '2rem 0 0.75rem' }}>
+        Objectif de l&apos;application
+      </h2>
+      <p style={{ margin: '0.75rem 0', fontSize: '1.05rem' }}>
+        INVEQ est une application de facturation et de devis. Les artisans, freelances et petites
+        entreprises utilisent INVEQ pour créer, envoyer et suivre leurs factures et devis
+        professionnels.
       </p>
 
-      <nav className="mt-10 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm">
-        <a
-          href={`${SITE_URL}/confidentialite`}
-          className="text-brand underline-offset-4 hover:underline"
-        >
+      <nav
+        aria-label="Legal"
+        style={{
+          marginTop: '2.5rem',
+          display: 'flex',
+          flexWrap: 'wrap',
+          gap: '1rem 1.5rem',
+          justifyContent: 'center',
+          fontFamily: 'system-ui, sans-serif',
+          fontSize: '0.95rem',
+        }}
+      >
+        <a href={`${SITE_URL}/confidentialite`} style={{ color: '#1d4ed8' }}>
+          Privacy Policy
+        </a>
+        <a href={`${SITE_URL}/confidentialite`} style={{ color: '#1d4ed8' }}>
           Politique de confidentialité
         </a>
-        <a
-          href={`${SITE_URL}/conditions-utilisation`}
-          className="text-brand underline-offset-4 hover:underline"
-        >
+        <a href={`${SITE_URL}/conditions-utilisation`} style={{ color: '#1d4ed8' }}>
+          Terms of Service
+        </a>
+        <a href={`${SITE_URL}/conditions-utilisation`} style={{ color: '#1d4ed8' }}>
           Conditions d&apos;utilisation
         </a>
-        <Link href="/" className="text-muted underline-offset-4 hover:underline">
-          Accueil
-        </Link>
       </nav>
     </main>
   );

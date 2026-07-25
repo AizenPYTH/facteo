@@ -13,6 +13,8 @@ const NO_MARKETING_SHELL_PREFIXES = [
   '/reinitialiser-mot-de-passe',
   '/auth',
   '/mobile',
+  // OAuth branding pages — bare HTML for Google verification crawler
+  '/produit',
 ];
 
 export function ConditionalSiteShell({ children }: { children: React.ReactNode }) {

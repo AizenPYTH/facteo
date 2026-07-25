@@ -12,6 +12,7 @@ const ROUTES = [
   '/support',
   '/a-propos',
   '/produit',
+  '/inveq.html',
   '/carrieres',
   '/login',
   '/telecharger',
