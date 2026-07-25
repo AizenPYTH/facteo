@@ -21,6 +21,8 @@ Ce document est la **constitution produit**.
 2. **Je suis payé plus vite.**
 3. **Je ne saisis jamais deux fois la même chose.**
 
+Toute évolution (v1 ou après) doit renforcer **au moins une** de ces phrases.
+
 ### Filtre avant chaque chantier
 
 > Un artisan terrain utilisera-t-il cette fonctionnalité **au moins une fois par semaine** ?  
@@ -31,11 +33,35 @@ Ce document est la **constitution produit**.
 Chaque PR doit apporter au moins : **moins de clics**, **moins de saisies**, **moins de décisions**, ou **moins de temps**.  
 Sinon elle n’est probablement pas prioritaire.
 
-### Signature produit
+### Signature produit (v1)
 
 **« Comme la dernière fois »** — visible partout où elle apporte de la valeur (Accueil, fiche client, wizards, états vides, documents récents). Jamais cachée dans un menu.
 
-On n’évolue plus la vision : on exécute.
+### Roadmap v1 — figée (priorité absolue)
+
+**Aucune nouvelle fonctionnalité** tant que les bloquants de lancement ne sont pas verts.
+
+On ne développe **que** :
+
+- bloquants de lancement ;
+- sécurité / RLS / permissions ;
+- abonnement / Stripe / limites Freemium–Premium ;
+- packaging App Store / Play Store ;
+- stabilité ;
+- performances ;
+- derniers correctifs UX.
+
+**Préférence :** V1 extrêmement fiable > encore des features.  
+Ensuite : soft launch 10–20 artisans → retours → V2 sur besoins réels.
+
+### Signatures réservées (après V1 — ne pas construire maintenant)
+
+Identité produit post-lancement. **Interdit** de démarrer avant soft launch + retours.
+
+1. **Chronologie Client** — vue principale de la fiche client : une timeline unique (devis → envoi → acceptation → facture → relance → paiement → clôture). Plus de listes séparées pour comprendre l’histoire.
+2. **Dashboard « Aujourd’hui »** — centre d’action, pas un tableau de stats : priorités formulées en langage naturel, chaque ligne directement actionnable (relancer X €, devis qui attendent, échéances, transformer en facture…).
+
+On n’évolue plus la vision : on exécute la checklist de lancement.
 
 ---
 
