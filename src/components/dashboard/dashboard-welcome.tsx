@@ -1,11 +1,11 @@
 import { SymbolView } from 'expo-symbols';
 import { router, type Href } from 'expo-router';
 import { StyleSheet, Text, View, type ViewStyle } from 'react-native';
-import Animated, { FadeInDown } from 'react-native-reanimated';
+import Animated, { FadeIn } from 'react-native-reanimated';
 
 import { Button } from '@/components/ui/button';
 import { useColors, useThemedStyles } from '@/hooks/use-colors';
-import { entrance } from '@/constants/theme/motion';
+import { duration } from '@/constants/theme/motion';
 import { radius } from '@/constants/theme/radius';
 import { spacing } from '@/constants/theme/spacing';
 import { elevation } from '@/constants/theme/surfaces';
@@ -16,15 +16,14 @@ export type DashboardWelcomeProps = {
 };
 
 /**
- * First-run path — one decision: create a client, then invoice immediately.
- * Query `next=invoice` keeps the first-invoice journey under 5 minutes.
+ * First-run — one clear next step. No competing stats or actions.
  */
 export function DashboardWelcome({ style }: DashboardWelcomeProps) {
   const styles = useStyles();
   const colors = useColors();
   return (
     <Animated.View
-      entering={FadeInDown.duration(entrance.cardDuration).springify()}
+      entering={FadeIn.duration(duration.fast)}
       style={[styles.container, style]}>
       <View style={styles.iconWrap}>
         <SymbolView
@@ -35,17 +34,17 @@ export function DashboardWelcome({ style }: DashboardWelcomeProps) {
         />
       </View>
       <Text accessibilityRole="header" style={styles.title}>
-        Votre première facture en quelques minutes
+        Facturez en quelques minutes
       </Text>
       <Text style={styles.description}>
-        Ajoutez un client — on enchaîne directement sur la facture. Ensuite, « Comme la
-        dernière fois » fera le reste.
+        Créez un client, émettez votre première facture. La prochaine fois : un tap —
+        « Comme la dernière fois ».
       </Text>
       <Button
-        accessibilityLabel="Créer un client et facturer"
+        accessibilityLabel="Créer client et facturer"
         elevated
         onPress={() => router.push('/clients/new?next=invoice' as Href)}
-        title="Créer mon premier client"
+        title="Créer client et facturer"
       />
     </Animated.View>
   );

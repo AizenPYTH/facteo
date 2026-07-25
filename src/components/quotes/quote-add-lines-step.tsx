@@ -28,7 +28,6 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/use-auth';
 import { useClientDocumentMemory } from '@/hooks/use-client-document-memory';
 import { useThemedStyles } from '@/hooks/use-colors';
-import { usePlatformActionSheet } from '@/hooks/use-platform-action-sheet';
 import { useSubscription } from '@/hooks/use-subscription';
 import { spacing } from '@/constants/theme/spacing';
 import { typography } from '@/constants/theme/typography';
@@ -75,7 +74,6 @@ export function QuoteAddLinesStep({
   onReplaceLines,
 }: QuoteAddLinesStepProps) {
   const styles = useStyles();
-  const { openActionSheet, actionSheetNode } = usePlatformActionSheet();
   const { user } = useAuth();
   const { hasFeature } = useSubscription();
   const { showError, showSuccess } = useToast();
@@ -117,23 +115,11 @@ export function QuoteAddLinesStep({
   }
 
   function handleAddPrestation() {
-    openActionSheet({
-      title: 'Ajouter une prestation',
-      options: [
-        {
-          label: 'Depuis le catalogue',
-          onPress: () => setCatalogVisible(true),
-        },
-        {
-          label: 'Ajouter manuellement',
-          onPress: handleAddManualPrestation,
-        },
-        {
-          label: "Scanner un produit avec l'IA",
-          onPress: handleScanProductWithAi,
-        },
-      ],
-    });
+    handleAddManualPrestation();
+  }
+
+  function handleAddFromCatalog() {
+    setCatalogVisible(true);
   }
 
   function handleReplayLastDocument() {
@@ -253,8 +239,8 @@ export function QuoteAddLinesStep({
     <View style={styles.headerSection}>
       <Text style={styles.description}>
         {clientName
-          ? `Prestations pour ${clientName} : choisissez une suggestion ou ajoutez.`
-          : 'Ajoutez vos prestations : description, quantité, prix HT et TVA.'}
+          ? `Prestations pour ${clientName}. Remplissez la ligne ou reprenez la dernière fois.`
+          : 'Ajoutez une description et un prix HT, puis appuyez sur Suivant.'}
       </Text>
 
       {clientId ? (
@@ -269,6 +255,7 @@ export function QuoteAddLinesStep({
       ) : null}
 
       <Button onPress={handleAddPrestation} title="Ajouter une prestation" />
+      <Button onPress={handleAddFromCatalog} title="Depuis le catalogue" variant="ghost" />
       {Platform.OS === 'web' ? (
         <Button
           onPress={handleScanProductWithAi}
@@ -298,7 +285,6 @@ export function QuoteAddLinesStep({
             </Text>
           </View>
         </View>
-        {actionSheetNode}
         <SmartCatalogPicker
           defaultVatRate={memory?.defaults.vatRate ?? defaultVatRate}
           onClose={() => setCatalogVisible(false)}
@@ -344,7 +330,6 @@ export function QuoteAddLinesStep({
         )}
         showsVerticalScrollIndicator={false}
       />
-      {actionSheetNode}
       <SmartCatalogPicker
         defaultVatRate={memory?.defaults.vatRate ?? defaultVatRate}
         onClose={() => setCatalogVisible(false)}

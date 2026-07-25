@@ -6,14 +6,13 @@ import Animated, {
   withSpring,
 } from 'react-native-reanimated';
 
-import { useColors, useThemedStyles } from '@/hooks/use-colors';
+import { useThemedStyles } from '@/hooks/use-colors';
 import { press } from '@/constants/theme/interaction';
 import { spring } from '@/constants/theme/motion';
 import { spacing } from '@/constants/theme/spacing';
 import { type } from '@/constants/theme/type-roles';
 import { formatCurrency } from '@/lib/format/currency';
 import { triggerHaptic } from '@/lib/haptics';
-import { newInvoiceHref } from '@/lib/navigation/new-document';
 import type { Invoice } from '@/types/dashboard';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
@@ -26,6 +25,7 @@ export type RecentInvoiceCardProps = {
   testID?: string;
 };
 
+/** Row only — replay lives in the Accueil « Comme la dernière fois » section. */
 export function RecentInvoiceCard({
   invoice,
   onPress,
@@ -34,15 +34,12 @@ export function RecentInvoiceCard({
   testID,
 }: RecentInvoiceCardProps) {
   const styles = useStyles();
-  const colors = useColors();
   const scale = useSharedValue(1);
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
   }));
 
-  const canReplay = Boolean(invoice.clientId);
-
-  const row = (
+  const content = (
     <View style={[styles.row, style]}>
       <View style={styles.leading}>
         <Text style={styles.invoiceNumber}>{invoice.number}</Text>
@@ -68,26 +65,11 @@ export function RecentInvoiceCard({
             scale.value = withSpring(1, spring.snappy);
           }}
           style={animatedStyle}>
-          {row}
+          {content}
         </AnimatedPressable>
       ) : (
-        row
+        content
       )}
-      {canReplay ? (
-        <Pressable
-          accessibilityLabel="Comme la dernière fois"
-          accessibilityRole="button"
-          hitSlop={8}
-          onPress={() => {
-            void triggerHaptic('selection');
-            router.push(newInvoiceHref(invoice.clientId, { replay: true }));
-          }}
-          style={styles.replayLink}>
-          <Text style={[styles.replayText, { color: colors.primary }]}>
-            Comme la dernière fois
-          </Text>
-        </Pressable>
-      ) : null}
       {showSeparator ? <View style={styles.separator} /> : null}
     </View>
   );
@@ -100,8 +82,7 @@ function useStyles() {
       alignItems: 'center',
       justifyContent: 'space-between',
       paddingHorizontal: spacing.md,
-      paddingTop: spacing.md,
-      paddingBottom: spacing.sm,
+      paddingVertical: spacing.md,
       gap: spacing.md,
     },
     leading: {
@@ -116,16 +97,6 @@ function useStyles() {
     clientName: {
       ...type.caption,
       color: colors.textSecondary,
-    },
-    replayLink: {
-      alignSelf: 'flex-start',
-      paddingHorizontal: spacing.md,
-      paddingBottom: spacing.md,
-      paddingTop: 0,
-    },
-    replayText: {
-      ...type.micro,
-      fontWeight: '600',
     },
     amount: {
       ...type.primaryNumber,

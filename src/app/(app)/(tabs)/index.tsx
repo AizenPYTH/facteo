@@ -1,6 +1,6 @@
 import { router, type Href } from 'expo-router';
 import { ScrollView, View } from 'react-native';
-import Animated, { FadeInDown } from 'react-native-reanimated';
+import Animated, { FadeIn } from 'react-native-reanimated';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
@@ -22,7 +22,7 @@ import {
 import { PremiumGatedSection } from '@/components/subscription/premium-gated-section';
 import { DashboardDesktopScreen } from '@/components/web/desktop/screens/dashboard-desktop-screen';
 import { BottomTabInset } from '@/constants/theme';
-import { entrance } from '@/constants/theme/motion';
+import { duration } from '@/constants/theme/motion';
 import { spacing } from '@/constants/theme/spacing';
 import { useBreakpoint } from '@/hooks/use-breakpoint';
 import { useThemedStyles } from '@/hooks/use-colors';
@@ -48,6 +48,7 @@ function DashboardMobileScreen() {
   const advancedStatsLocked = !hasFeature('advanced_stats');
   const insets = useSafeAreaInsets();
   const hasNoActivity = stats.totalClients === 0 && recentInvoices.length === 0;
+  const hasClients = stats.totalClients > 0;
 
   return (
     <SafeAreaView edges={['top']} style={styles.safeArea}>
@@ -58,7 +59,7 @@ function DashboardMobileScreen() {
         ]}
         keyboardDismissMode="on-drag"
         showsVerticalScrollIndicator={false}>
-        <Animated.View entering={FadeInDown.duration(entrance.cardDuration).springify()}>
+        <Animated.View entering={FadeIn.duration(duration.fast)}>
           <DashboardHeader
             activeCompany={activeCompany}
             companies={companies}
@@ -73,12 +74,25 @@ function DashboardMobileScreen() {
 
         {loading ? (
           <DashboardSkeleton />
+        ) : hasNoActivity ? (
+          <DashboardWelcome />
         ) : (
           <>
-            {hasNoActivity ? <DashboardWelcome /> : null}
-            <StatsGrid stats={stats} />
             <DashboardAlerts stats={stats} />
-            {!hasNoActivity ? <ReplayLastSection invoices={recentInvoices} /> : null}
+            <ReplayLastSection invoices={recentInvoices} />
+
+            <View style={styles.section}>
+              <SectionHeader title="Actions rapides" />
+              <QuickActions hasClients={hasClients} />
+            </View>
+
+            <RecentInvoicesSection
+              invoices={recentInvoices}
+              onInvoicePress={(invoice) => router.push(`/invoices/${invoice.id}` as Href)}
+            />
+
+            <StatsGrid stats={stats} />
+
             <PremiumGatedSection
               bannerMessage="Statistiques avancées — INVEQ Premium"
               locked={advancedStatsLocked}>
@@ -96,25 +110,6 @@ function DashboardMobileScreen() {
             </PremiumGatedSection>
           </>
         )}
-
-        <Animated.View
-          entering={FadeInDown.delay(entrance.listStagger * 4)
-            .duration(entrance.cardDuration)
-            .springify()}
-          style={styles.section}>
-          <SectionHeader title="Actions rapides" />
-          <QuickActions />
-        </Animated.View>
-
-        <Animated.View
-          entering={FadeInDown.delay(entrance.listStagger * 5)
-            .duration(entrance.cardDuration)
-            .springify()}>
-          <RecentInvoicesSection
-            invoices={recentInvoices}
-            onInvoicePress={(invoice) => router.push(`/invoices/${invoice.id}` as Href)}
-          />
-        </Animated.View>
       </ScrollView>
     </SafeAreaView>
   );

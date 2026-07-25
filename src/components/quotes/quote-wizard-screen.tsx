@@ -246,7 +246,7 @@ export function QuoteWizardScreen({
         if (state.lines.length === 0) {
           showError('Ajoutez au moins une prestation au devis.');
         } else {
-          showError('Renseignez la description, la quantité et le prix de chaque prestation.');
+          showError('Indiquez une description et un prix HT pour chaque prestation.');
         }
         break;
       case 3:
@@ -300,9 +300,9 @@ export function QuoteWizardScreen({
 
     try {
       if (mode === 'create') {
-        await createQuote.mutateAsync(input);
-        showSuccess('Devis créé.');
-        router.replace('/quotes' as Href);
+        const created = await createQuote.mutateAsync(input);
+        showSuccess('Devis créé — envoyez-le ou transformez-le en facture.');
+        router.replace(`/quotes/${created.id}` as Href);
         return;
       }
 
@@ -376,7 +376,6 @@ export function QuoteWizardScreen({
             backLabel={step === 1 ? 'Annuler' : 'Précédent'}
             onBack={handleBack}
             onPrimary={step < TOTAL_STEPS ? handleNext : handleSave}
-            primaryDisabled={step < TOTAL_STEPS ? !canGoNext() : false}
             primaryLabel={primaryActionLabel}
             primaryLoading={step >= TOTAL_STEPS && isSaving}
           />
@@ -396,7 +395,6 @@ export function QuoteWizardScreen({
             backLabel={step === 1 ? 'Annuler' : 'Précédent'}
             onBack={handleBack}
             onPrimary={step < TOTAL_STEPS ? handleNext : handleSave}
-            primaryDisabled={step < TOTAL_STEPS ? !canGoNext() : false}
             primaryLabel={primaryActionLabel}
             primaryLoading={step >= TOTAL_STEPS && isSaving}
           />

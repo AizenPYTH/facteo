@@ -67,7 +67,7 @@ export default function NewClientScreen() {
         />
       }
       testID="add-client-screen">
-      <ClientForm control={control} errors={errors} setValue={setValue} />
+      <ClientForm compact={goToInvoice} control={control} errors={errors} setValue={setValue} />
     </FormScreen>
   );
 }

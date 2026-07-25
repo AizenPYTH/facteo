@@ -48,7 +48,6 @@ export function SmartLineSuggestions({
             onReplayLastDocument();
           }}
           style={({ pressed }) => [styles.replay, pressed && styles.pressed]}>
-          <Text style={styles.replayEyebrow}>Signature INVEQ</Text>
           <Text style={styles.replayLabel}>Comme la dernière fois</Text>
           <Text style={styles.replayHint}>
             Reprendre {lastDocumentLabel} — toutes les lignes d’un coup
@@ -112,12 +111,6 @@ function useStyles() {
       borderRadius: radius.card,
       backgroundColor: colors.primarySubtle,
       gap: 2,
-    },
-    replayEyebrow: {
-      ...type.micro,
-      color: colors.primary,
-      textTransform: 'uppercase',
-      letterSpacing: 0.4,
     },
     replayLabel: {
       ...type.cardTitle,

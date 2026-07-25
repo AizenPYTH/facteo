@@ -299,7 +299,7 @@ export function InvoiceWizardScreen({
         if (state.lines.length === 0) {
           showError('Ajoutez au moins une prestation à la facture.');
         } else {
-          showError('Renseignez la description, la quantité et le prix de chaque prestation.');
+          showError('Indiquez une description et un prix HT pour chaque prestation.');
         }
         break;
       case 3:
@@ -353,9 +353,9 @@ export function InvoiceWizardScreen({
 
     try {
       if (mode === 'create') {
-        await createInvoice.mutateAsync(input);
-        showSuccess('Facture créée.');
-        router.replace('/invoices' as Href);
+        const created = await createInvoice.mutateAsync(input);
+        showSuccess('Facture créée — vous pouvez l’envoyer.');
+        router.replace(`/invoices/${created.id}` as Href);
         return;
       }
 
@@ -438,7 +438,6 @@ export function InvoiceWizardScreen({
             backLabel={step === 1 ? 'Annuler' : 'Précédent'}
             onBack={handleBack}
             onPrimary={step < TOTAL_STEPS ? handleNext : handleSave}
-            primaryDisabled={step < TOTAL_STEPS ? !canGoNext() : false}
             primaryLabel={primaryActionLabel}
             primaryLoading={step >= TOTAL_STEPS && isSaving}
           />
@@ -458,7 +457,6 @@ export function InvoiceWizardScreen({
             backLabel={step === 1 ? 'Annuler' : 'Précédent'}
             onBack={handleBack}
             onPrimary={step < TOTAL_STEPS ? handleNext : handleSave}
-            primaryDisabled={step < TOTAL_STEPS ? !canGoNext() : false}
             primaryLabel={primaryActionLabel}
             primaryLoading={step >= TOTAL_STEPS && isSaving}
           />

@@ -635,8 +635,8 @@ export async function convertQuoteToInvoice(
     throw new Error('Quote already converted.');
   }
 
-  if (quote.status !== 'accepted') {
-    throw new Error('Quote must be accepted before conversion.');
+  if (quote.status === 'rejected' || quote.status === 'expired') {
+    throw new Error('Quote cannot be converted.');
   }
 
   if (!quote.clientId) {
