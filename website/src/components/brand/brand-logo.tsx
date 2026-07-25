@@ -1,7 +1,5 @@
 'use client';
 
-import Image from 'next/image';
-
 import { cn } from '@/lib/utils';
 
 /** Logo horizontal officiel (897×240). */
@@ -20,11 +18,11 @@ export function BrandMark({
   className?: string;
 }) {
   return (
-    <Image
+    // eslint-disable-next-line @next/next/no-img-element -- servi directement depuis /public (évite /_next/image)
+    <img
       alt="INVEQ"
       className={cn('shrink-0', className)}
       height={size}
-      priority
       src={BRAND_ICON_SRC}
       width={size}
     />
@@ -33,11 +31,10 @@ export function BrandMark({
 
 /**
  * Logo principal horizontal : icône + INVEQ (+ tagline).
- * Largeur ~220–252 px selon le viewport.
+ * <img> direct depuis /public pour Content-Type image/png fiable (SEO / bots).
  */
 export function BrandWordmark({
   className,
-  priority = true,
 }: {
   className?: string;
   /** @deprecated Conservé pour compatibilité des appels existants. */
@@ -46,15 +43,15 @@ export function BrandWordmark({
   priority?: boolean;
 }) {
   return (
-    <Image
+    // eslint-disable-next-line @next/next/no-img-element -- servi directement depuis /public (évite /_next/image)
+    <img
       alt="INVEQ — Facturation, devis et gestion"
       className={cn(
         'h-auto w-[220px] max-w-full shrink-0 sm:w-[240px] lg:w-[252px]',
         className,
       )}
+      decoding="async"
       height={LOGO_HEIGHT}
-      priority={priority}
-      sizes="(max-width: 640px) 220px, (max-width: 1024px) 240px, 252px"
       src={BRAND_LOGO_SRC}
       width={LOGO_WIDTH}
     />
