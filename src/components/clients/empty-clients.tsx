@@ -15,8 +15,8 @@ export function EmptyClients({ isSearching = false, style, testID }: EmptyClient
       actionLabel={isSearching ? undefined : 'Créer un client'}
       description={
         isSearching
-          ? 'Essayez un autre nom, e-mail ou entreprise.'
-          : 'Ajoutez votre premier client pour commencer.'
+          ? 'Aucun client ne correspond. Essayez un autre nom ou e-mail.'
+          : 'Ajoutez un client — puis facturez. Ensuite, plus jamais la même saisie.'
       }
       icon={{
         ios: isSearching ? 'magnifyingglass' : 'person.2',
@@ -24,11 +24,13 @@ export function EmptyClients({ isSearching = false, style, testID }: EmptyClient
         web: isSearching ? 'search' : 'group',
       }}
       onAction={
-        isSearching ? undefined : () => router.push('/clients/new' as Href)
+        isSearching
+          ? undefined
+          : () => router.push('/clients/new?next=invoice' as Href)
       }
       style={style}
       testID={testID}
-      title={isSearching ? 'Aucun résultat' : 'Aucun client'}
+      title={isSearching ? 'Aucun résultat' : 'Vos clients apparaîtront ici'}
     />
   );
 }

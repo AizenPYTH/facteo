@@ -21,6 +21,8 @@ export { InvoiceStatusBadge } from './invoice-status-badge';
 export { InvoicesList } from './invoices-list';
 export type { InvoicesListProps } from './invoices-list';
 
+export { InvoiceBatchBar } from './invoice-batch-bar';
+
 export { InvoicesScreenHeader } from './invoices-screen-header';
 export type { InvoicesScreenHeaderProps } from './invoices-screen-header';
 

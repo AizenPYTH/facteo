@@ -13,6 +13,10 @@ export const clientsQueryKeys = {
   details: () => [...clientsQueryKeys.all, 'detail'] as const,
   detail: (companyId: string, clientId: string) =>
     [...clientsQueryKeys.details(), companyId, clientId] as const,
+  documents: (companyId: string, clientId: string) =>
+    [...clientsQueryKeys.detail(companyId, clientId), 'documents'] as const,
+  memory: (companyId: string, clientId: string) =>
+    [...clientsQueryKeys.detail(companyId, clientId), 'memory'] as const,
 };
 
 export const profilesQueryKeys = {
@@ -40,8 +44,8 @@ export const quotesQueryKeys = {
 export const invoicesQueryKeys = {
   all: ['invoices'] as const,
   lists: () => [...invoicesQueryKeys.all, 'list'] as const,
-  infiniteList: (companyId: string, search: string, status: string) =>
-    [...invoicesQueryKeys.lists(), 'infinite', companyId, search, status] as const,
+  infiniteList: (companyId: string, search: string, status: string, due = 'all') =>
+    [...invoicesQueryKeys.lists(), 'infinite', companyId, search, status, due] as const,
   details: () => [...invoicesQueryKeys.all, 'detail'] as const,
   detail: (companyId: string, invoiceId: string) =>
     [...invoicesQueryKeys.details(), companyId, invoiceId] as const,

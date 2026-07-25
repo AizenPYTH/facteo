@@ -1,14 +1,18 @@
 import { router, type Href } from 'expo-router';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, View } from 'react-native';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
+  DashboardAlerts,
   DashboardHeader,
+  DashboardSkeleton,
   DashboardWelcome,
   ExtendedStatsGrid,
   QuickActions,
   RecentActivitySection,
   RecentInvoicesSection,
+  ReplayLastSection,
   RevenueChart,
   SectionHeader,
   StatsGrid,
@@ -17,11 +21,11 @@ import {
 } from '@/components/dashboard';
 import { PremiumGatedSection } from '@/components/subscription/premium-gated-section';
 import { DashboardDesktopScreen } from '@/components/web/desktop/screens/dashboard-desktop-screen';
-import { LoadingView } from '@/components/ui/loading-view';
 import { BottomTabInset } from '@/constants/theme';
+import { entrance } from '@/constants/theme/motion';
+import { spacing } from '@/constants/theme/spacing';
 import { useBreakpoint } from '@/hooks/use-breakpoint';
 import { useThemedStyles } from '@/hooks/use-colors';
-import { spacing } from '@/constants/theme/spacing';
 import { useDashboard } from '@/hooks/use-dashboard';
 import { useSubscription } from '@/hooks/use-subscription';
 import { useTenant } from '@/hooks/use-tenant';
@@ -50,27 +54,31 @@ function DashboardMobileScreen() {
       <ScrollView
         contentContainerStyle={[
           styles.content,
-          { paddingBottom: insets.bottom + BottomTabInset + spacing.lg },
+          { paddingBottom: insets.bottom + BottomTabInset + spacing.xl },
         ]}
         keyboardDismissMode="on-drag"
         showsVerticalScrollIndicator={false}>
-        <DashboardHeader
-          activeCompany={activeCompany}
-          companies={companies}
-          companyName={companyName}
-          firstName={firstName}
-          onCreateCompany={async (name) => {
-            await createNewCompany({ name });
-          }}
-          onSwitchCompany={switchCompany}
-        />
+        <Animated.View entering={FadeInDown.duration(entrance.cardDuration).springify()}>
+          <DashboardHeader
+            activeCompany={activeCompany}
+            companies={companies}
+            companyName={companyName}
+            firstName={firstName}
+            onCreateCompany={async (name) => {
+              await createNewCompany({ name });
+            }}
+            onSwitchCompany={switchCompany}
+          />
+        </Animated.View>
 
         {loading ? (
-          <LoadingView message="Chargement..." size="small" />
+          <DashboardSkeleton />
         ) : (
           <>
             {hasNoActivity ? <DashboardWelcome /> : null}
             <StatsGrid stats={stats} />
+            <DashboardAlerts stats={stats} />
+            {!hasNoActivity ? <ReplayLastSection invoices={recentInvoices} /> : null}
             <PremiumGatedSection
               bannerMessage="Statistiques avancées — INVEQ Premium"
               locked={advancedStatsLocked}>
@@ -89,15 +97,24 @@ function DashboardMobileScreen() {
           </>
         )}
 
-        <View style={styles.section}>
+        <Animated.View
+          entering={FadeInDown.delay(entrance.listStagger * 4)
+            .duration(entrance.cardDuration)
+            .springify()}
+          style={styles.section}>
           <SectionHeader title="Actions rapides" />
           <QuickActions />
-        </View>
+        </Animated.View>
 
-        <RecentInvoicesSection
-          invoices={recentInvoices}
-          onInvoicePress={(invoice) => router.push(`/invoices/${invoice.id}` as Href)}
-        />
+        <Animated.View
+          entering={FadeInDown.delay(entrance.listStagger * 5)
+            .duration(entrance.cardDuration)
+            .springify()}>
+          <RecentInvoicesSection
+            invoices={recentInvoices}
+            onInvoicePress={(invoice) => router.push(`/invoices/${invoice.id}` as Href)}
+          />
+        </Animated.View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -105,17 +122,17 @@ function DashboardMobileScreen() {
 
 function useStyles() {
   return useThemedStyles((colors) => ({
-  safeArea: {
-    flex: 1,
-    backgroundColor: colors.backgroundGrouped,
-  },
-  content: {
-    paddingHorizontal: spacing.screenPaddingHorizontal,
-    paddingTop: spacing.md,
-    gap: spacing.sectionGap,
-  },
-  section: {
-    gap: spacing.md,
-  },
-}));
+    safeArea: {
+      flex: 1,
+      backgroundColor: colors.backgroundGrouped,
+    },
+    content: {
+      paddingHorizontal: spacing.screenPaddingHorizontal,
+      paddingTop: spacing.lg,
+      gap: spacing.xl,
+    },
+    section: {
+      gap: spacing.md,
+    },
+  }));
 }

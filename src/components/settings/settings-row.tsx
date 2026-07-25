@@ -1,10 +1,11 @@
 import { SymbolView } from 'expo-symbols';
 import { type ReactNode } from 'react';
-import { Pressable, StyleSheet, Text, View, type ViewStyle } from 'react-native';
+import { Pressable, Text, View, type ViewStyle } from 'react-native';
 
+import { type } from '@/constants/theme/type-roles';
 import { useColors, useThemedStyles } from '@/hooks/use-colors';
 import { spacing } from '@/constants/theme/spacing';
-import { typography } from '@/constants/theme/typography';
+import { triggerHaptic } from '@/lib/haptics';
 
 export type SettingsRowProps = {
   label: string;
@@ -30,13 +31,7 @@ export function SettingsRow({
   const shouldShowChevron = showChevron ?? (Boolean(onPress) && !trailing);
   const content = (
     <>
-      <Text
-        style={[
-          styles.label,
-          destructive ? styles.destructiveLabel : null,
-        ]}>
-        {label}
-      </Text>
+      <Text style={[styles.label, destructive ? styles.destructiveLabel : null]}>{label}</Text>
       <View style={styles.trailing}>
         {value ? <Text style={styles.value}>{value}</Text> : null}
         {trailing}
@@ -56,7 +51,10 @@ export function SettingsRow({
     return (
       <Pressable
         accessibilityRole="button"
-        onPress={onPress}
+        onPress={() => {
+          void triggerHaptic('selection');
+          onPress();
+        }}
         style={({ pressed }) => [styles.row, pressed && styles.pressed, style]}>
         {content}
       </Pressable>
@@ -68,39 +66,39 @@ export function SettingsRow({
 
 function useStyles() {
   return useThemedStyles((colors) => ({
-  row: {
-    minHeight: 48,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    gap: spacing.md,
-  },
-  pressed: {
-    backgroundColor: colors.backgroundSelected,
-  },
-  label: {
-    ...typography.body,
-    color: colors.text,
-    flex: 1,
-    flexShrink: 1,
-  },
-  destructiveLabel: {
-    color: colors.error,
-  },
-  trailing: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    flexShrink: 0,
-    maxWidth: '50%',
-  },
-  value: {
-    ...typography.body,
-    color: colors.textSecondary,
-    textAlign: 'right',
-    flexShrink: 1,
-  },
-}));
+    row: {
+      minHeight: 52,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.md,
+      gap: spacing.md,
+    },
+    pressed: {
+      backgroundColor: colors.backgroundSelected,
+    },
+    label: {
+      ...type.body,
+      color: colors.text,
+      flex: 1,
+      flexShrink: 1,
+    },
+    destructiveLabel: {
+      color: colors.error,
+    },
+    trailing: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.xs,
+      flexShrink: 0,
+      maxWidth: '50%',
+    },
+    value: {
+      ...type.secondary,
+      color: colors.textSecondary,
+      textAlign: 'right',
+      flexShrink: 1,
+    },
+  }));
 }

@@ -138,6 +138,11 @@ export function canMarkInvoiceAsPaid(status: InvoiceStatus): boolean {
   return status === 'sent' || status === 'overdue' || status === 'partially_paid';
 }
 
+/** Hard-delete only drafts (same product rule as editable invoices). */
+export function canDeleteInvoice(status: InvoiceStatus): boolean {
+  return status === 'draft';
+}
+
 export function canAddInvoicePayment(invoice: Pick<InvoiceDetail, 'status' | 'amountDue'>): boolean {
   return (
     invoice.amountDue > 0 &&

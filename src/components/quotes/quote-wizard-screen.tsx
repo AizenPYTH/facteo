@@ -1,5 +1,5 @@
 import { router, type Href } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { DocumentFinalizeStep } from '@/components/quotes/document-finalize-step';
 import { QuoteAddLinesStep } from '@/components/quotes/quote-add-lines-step';
@@ -8,6 +8,7 @@ import { QuoteScreenHeader } from '@/components/quotes/quote-screen-header';
 import { QuoteWizardProgress } from '@/components/quotes/quote-wizard-progress';
 import { WizardActionBar } from '@/components/ui/wizard-action-bar';
 import { WizardScreen } from '@/components/ui/wizard-screen';
+import { useClientDocumentMemory } from '@/hooks/use-client-document-memory';
 import { useCompanyProfile } from '@/hooks/use-company-profile';
 import { useQuoteMutations } from '@/hooks/use-quote-mutations';
 import { useSettings } from '@/hooks/use-settings';
@@ -19,6 +20,7 @@ import {
 } from '@/lib/quotes/form';
 import { mapLinesToDocumentTotals } from '@/lib/quotes/mappers';
 import { isQuoteInfoValid, areQuoteLinesValid, parseQuoteInfoValues } from '@/lib/quotes/validators';
+import { memoryLinesToQuoteLines } from '@/lib/supabase/client-document-memory';
 import { useToast } from '@/providers/toast-provider';
 import { getClientDisplayName, type Client } from '@/types/client';
 import { createEmptyQuoteLine, type QuoteLineValue } from '@/types/quote';
@@ -30,6 +32,10 @@ type QuoteWizardScreenProps = {
   title: string;
   quoteId?: string;
   initialState?: QuoteWizardState;
+  /** When the client is already known (e.g. from fiche client), start on lines. */
+  initialStep?: number;
+  /** Auto-apply last document lines ("Comme la dernière fois"). */
+  autoReplay?: boolean;
   variant?: 'mobile' | 'desktop';
   onStepChange?: (step: number) => void;
 };
@@ -39,6 +45,8 @@ export function QuoteWizardScreen({
   title,
   quoteId,
   initialState,
+  initialStep = 1,
+  autoReplay = false,
   variant = 'mobile',
   onStepChange,
 }: QuoteWizardScreenProps) {
@@ -47,7 +55,9 @@ export function QuoteWizardScreen({
   const { data: companyProfile } = useCompanyProfile();
   const { data: settings } = useSettings();
 
-  const [step, setStep] = useState(1);
+  const [step, setStep] = useState(() =>
+    Math.min(Math.max(initialStep, 1), TOTAL_STEPS),
+  );
 
   useEffect(() => {
     onStepChange?.(step);
@@ -55,10 +65,14 @@ export function QuoteWizardScreen({
   const [state, setState] = useState<QuoteWizardState>(
     initialState ?? createEmptyQuoteWizardState(),
   );
+  const memoryAppliedForClient = useRef<string | null>(null);
+  const replayApplied = useRef(false);
+  const { data: memory, isSuccess: memoryReady } = useClientDocumentMemory(state.clientId);
 
   const totals = useMemo(() => mapLinesToDocumentTotals(state.lines), [state.lines]);
   const companyName = companyProfile?.companyName?.trim() || 'Votre entreprise';
   const isSaving = mode === 'create' ? createQuote.isPending : updateQuote.isPending;
+  const defaultVatRate = settings?.defaultVatRate ?? 20;
 
   useEffect(() => {
     if (state.info.issuedAt) {
@@ -81,29 +95,110 @@ export function QuoteWizardScreen({
   }, [settings?.paymentTermsDays, settings?.quoteValidityDays, state.info.issuedAt]);
 
   useEffect(() => {
-    if (step !== 2 || state.lines.length > 0) {
+    if (!state.clientId || !memory || memoryAppliedForClient.current === state.clientId) {
+      return;
+    }
+
+    memoryAppliedForClient.current = state.clientId;
+    const paymentDays = memory.defaults.paymentTermsDays;
+    const notes = memory.defaults.notes;
+
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- apply client memory once per client
+    setState((current) => ({
+      ...current,
+      info: {
+        ...current.info,
+        paymentTermsDays:
+          paymentDays != null ? String(paymentDays) : current.info.paymentTermsDays,
+        notes: current.info.notes?.trim() ? current.info.notes : notes ?? current.info.notes,
+      },
+    }));
+  }, [memory, state.clientId]);
+
+  useEffect(() => {
+    if (!autoReplay || replayApplied.current || !state.clientId || !memoryReady) {
+      return;
+    }
+
+    replayApplied.current = true;
+    const last = memory?.lastDocument;
+    if (last && last.lines.length > 0) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- one-shot replay from URL
+      setState((current) => ({
+        ...current,
+        lines: memoryLinesToQuoteLines(last.lines),
+      }));
+      showSuccess('Comme la dernière fois — prestations reprises.');
+      return;
+    }
+
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- fallback empty line if no history
+    setState((current) => ({
+      ...current,
+      lines: [
+        createEmptyQuoteLine({
+          vatRate: memory?.defaults.vatRate ?? defaultVatRate,
+          discountPercent: memory?.defaults.discountPercent ?? 0,
+        }),
+      ],
+    }));
+  }, [
+    autoReplay,
+    defaultVatRate,
+    memory?.defaults.discountPercent,
+    memory?.defaults.vatRate,
+    memory?.lastDocument,
+    memoryReady,
+    showSuccess,
+    state.clientId,
+  ]);
+
+  useEffect(() => {
+    if (step !== 2 || state.lines.length > 0 || autoReplay) {
       return;
     }
 
     // eslint-disable-next-line react-hooks/set-state-in-effect -- add starter line when entering step 2
     setState((current) => ({
       ...current,
-      lines: [createEmptyQuoteLine()],
+      lines: [
+        createEmptyQuoteLine({
+          vatRate: memory?.defaults.vatRate ?? defaultVatRate,
+          discountPercent: memory?.defaults.discountPercent ?? 0,
+        }),
+      ],
     }));
-  }, [step, state.lines.length]);
+  }, [
+    autoReplay,
+    step,
+    state.lines.length,
+    memory?.defaults.vatRate,
+    memory?.defaults.discountPercent,
+    defaultVatRate,
+  ]);
 
   function handleSelectClient(client: Client) {
+    memoryAppliedForClient.current = null;
+    replayApplied.current = false;
     setState((current) => ({
       ...current,
       clientId: client.id,
       clientName: getClientDisplayName(client),
     }));
+    setStep(2);
   }
 
   function handleAddLine(line: QuoteLineValue) {
     setState((current) => ({
       ...current,
       lines: [...current.lines, line],
+    }));
+  }
+
+  function handleReplaceLines(lines: QuoteLineValue[]) {
+    setState((current) => ({
+      ...current,
+      lines,
     }));
   }
 
@@ -231,15 +326,20 @@ export function QuoteWizardScreen({
           <QuoteClientStep
             onSelectClient={handleSelectClient}
             selectedClientId={state.clientId}
+            selectedClientName={state.clientName || undefined}
           />
         );
       case 2:
         return (
           <QuoteAddLinesStep
+            clientId={state.clientId}
+            clientName={state.clientName || undefined}
+            defaultVatRate={defaultVatRate}
             lines={state.lines}
             onAddLine={handleAddLine}
             onChangeLine={handleChangeLine}
             onRemoveLine={handleRemoveLine}
+            onReplaceLines={handleReplaceLines}
           />
         );
       case 3:

@@ -14,6 +14,7 @@ import { typography } from '@/constants/theme/typography';
 import { useColors, useThemedStyles } from '@/hooks/use-colors';
 import { useSentDocuments } from '@/hooks/use-sent-documents';
 import { formatDate } from '@/lib/format/date';
+import { isReminderSubject } from '@/lib/email/templates';
 import type { SentDocumentType } from '@/types/sent-document';
 
 type DocumentActionsPanelProps = {
@@ -21,14 +22,17 @@ type DocumentActionsPanelProps = {
   documentId: string;
   documentNumber: string;
   onSend: () => void;
+  onRemind?: () => void;
   onDownload: () => void;
   onDuplicate: () => void;
   onPayment?: () => void;
   onEdit?: () => void;
   sendLoading?: boolean;
+  remindLoading?: boolean;
   downloadLoading?: boolean;
   duplicateLoading?: boolean;
   showPayment?: boolean;
+  showRemind?: boolean;
 };
 
 export function DocumentActionsPanel({
@@ -36,14 +40,17 @@ export function DocumentActionsPanel({
   documentId,
   documentNumber,
   onSend,
+  onRemind,
   onDownload,
   onDuplicate,
   onPayment,
   onEdit,
   sendLoading = false,
+  remindLoading = false,
   downloadLoading = false,
   duplicateLoading = false,
   showPayment = false,
+  showRemind = false,
 }: DocumentActionsPanelProps) {
   const styles = useStyles();
   const colors = useColors();
@@ -54,6 +61,14 @@ export function DocumentActionsPanel({
     <DesktopPanel flush subtitle={documentNumber} title="Actions">
       <ScrollView showsVerticalScrollIndicator={false} style={styles.scroll}>
         <View style={styles.actions}>
+          {showRemind && onRemind ? (
+            <DesktopActionButton
+              icon={{ ios: 'bell.badge', android: 'notifications_active', web: 'notifications_active' }}
+              label="Relancer le client"
+              loading={remindLoading}
+              onPress={onRemind}
+            />
+          ) : null}
           <DesktopActionButton
             icon={{ ios: 'paperplane', android: 'send', web: 'send' }}
             label="Envoyer par e-mail"
@@ -89,32 +104,39 @@ export function DocumentActionsPanel({
         </View>
 
         <View style={styles.history}>
-          <Text style={styles.historyTitle}>Historique d'envoi</Text>
+          <Text style={styles.historyTitle}>Envois & relances</Text>
           {isLoading ? (
             <ActivityIndicator color={colors.primary} size="small" />
           ) : sentDocs.length === 0 ? (
             <Text style={styles.historyEmpty}>Aucun envoi enregistré.</Text>
           ) : (
-            sentDocs.map((doc) => (
-              <View key={doc.id} style={styles.historyRow}>
-                <SymbolView
-                  name={{ ios: 'envelope', android: 'mail', web: 'mail' }}
-                  size={14}
-                  tintColor={colors.textSecondary}
-                  type="hierarchical"
-                />
-                <View style={styles.historyContent}>
-                  <Text numberOfLines={1} style={styles.historyLabel}>
-                    {doc.recipientEmail}
-                  </Text>
-                  <Text style={styles.historyMeta}>{formatDate(doc.sentAt)}</Text>
+            sentDocs.map((doc) => {
+              const reminder = isReminderSubject(doc.subject);
+              return (
+                <View key={doc.id} style={styles.historyRow}>
+                  <SymbolView
+                    name={
+                      reminder
+                        ? { ios: 'bell.badge', android: 'notifications_active', web: 'notifications_active' }
+                        : { ios: 'envelope', android: 'mail', web: 'mail' }
+                    }
+                    size={14}
+                    tintColor={colors.textSecondary}
+                    type="hierarchical"
+                  />
+                  <View style={styles.historyContent}>
+                    <Text numberOfLines={1} style={styles.historyLabel}>
+                      {doc.recipientEmail}
+                    </Text>
+                    <Text style={styles.historyMeta}>{formatDate(doc.sentAt)}</Text>
+                  </View>
+                  <DesktopBadge
+                    label={reminder ? 'Relance' : doc.status === 'sent' ? 'Envoyé' : doc.status}
+                    tone={reminder ? 'warning' : doc.status === 'sent' ? 'success' : 'default'}
+                  />
                 </View>
-                <DesktopBadge
-                  label={doc.status === 'sent' ? 'Envoyé' : doc.status}
-                  tone={doc.status === 'sent' ? 'success' : 'default'}
-                />
-              </View>
-            ))
+              );
+            })
           )}
         </View>
       </ScrollView>

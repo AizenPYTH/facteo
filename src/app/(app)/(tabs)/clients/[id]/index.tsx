@@ -4,27 +4,34 @@ import { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { ClientDetailView, ClientScreenHeader, DeleteClientModal } from '@/components/clients';
+import {
+  ClientDetailView,
+  ClientScreenHeader,
+  DeleteClientModal,
+  ClientDocumentsSection,
+} from '@/components/clients';
 import { Button } from '@/components/ui/button';
 import { LoadingView } from '@/components/ui/loading-view';
-import { useColors, useThemedStyles } from '@/hooks/use-colors';
+import { useThemedStyles } from '@/hooks/use-colors';
 import { spacing } from '@/constants/theme/spacing';
 import { useDesktopListRedirect } from '@/hooks/use-desktop-list-redirect';
 import { useBreakpoint } from '@/hooks/use-breakpoint';
+import { useClientDocumentMemory } from '@/hooks/use-client-document-memory';
 import { useClientMutations } from '@/hooks/use-client-mutations';
 import { useClient } from '@/hooks/use-clients';
 import { getClientErrorMessage } from '@/lib/clients/errors';
+import { newInvoiceHref } from '@/lib/navigation/new-document';
 import { getClientDisplayName } from '@/types/client';
 import { useToast } from '@/providers/toast-provider';
 
 export default function ClientDetailScreen() {
   const styles = useStyles();
-  const colors = useColors();
   const { isWeb, isDesktop, isTablet } = useBreakpoint();
   const { id } = useLocalSearchParams<{ id: string }>();
   useDesktopListRedirect('/clients');
   const clientId = Array.isArray(id) ? id[0] : id;
   const { data: client, isLoading, isFetched } = useClient(clientId ?? '');
+  const { data: memory } = useClientDocumentMemory(clientId);
   const { deleteClient } = useClientMutations();
   const { showError, showSuccess } = useToast();
   const [deleteVisible, setDeleteVisible] = useState(false);
@@ -69,6 +76,7 @@ export default function ClientDetailScreen() {
   }
 
   const title = getClientDisplayName(client);
+  const canReplay = Boolean(memory?.lastDocument);
 
   return (
     <SafeAreaView edges={['top', 'bottom']} style={styles.safeArea}>
@@ -81,12 +89,25 @@ export default function ClientDetailScreen() {
         keyboardDismissMode="on-drag"
         showsVerticalScrollIndicator={false}>
         <ClientDetailView client={client} />
+        <ClientDocumentsSection clientId={client.id} />
       </ScrollView>
 
       <View style={styles.footer}>
         <Button
+          elevated
+          onPress={() =>
+            router.push(
+              canReplay
+                ? newInvoiceHref(client.id, { replay: true })
+                : newInvoiceHref(client.id),
+            )
+          }
+          title={canReplay ? 'Comme la dernière fois' : 'Facturer'}
+        />
+        <Button
           onPress={() => router.push(`/clients/${client.id}/edit` as Href)}
           title="Modifier"
+          variant="ghost"
         />
         <Button
           onPress={() => setDeleteVisible(true)}
@@ -108,27 +129,27 @@ export default function ClientDetailScreen() {
 
 function useStyles() {
   return useThemedStyles((colors) => ({
-  safeArea: {
-    flex: 1,
-    backgroundColor: colors.backgroundGrouped,
-  },
-  header: {
-    paddingHorizontal: spacing.screenPaddingHorizontal,
-    paddingTop: spacing.sm,
-    paddingBottom: spacing.md,
-  },
-  content: {
-    paddingHorizontal: spacing.screenPaddingHorizontal,
-    paddingBottom: spacing.lg,
-  },
-  footer: {
-    paddingHorizontal: spacing.screenPaddingHorizontal,
-    paddingTop: spacing.sm,
-    paddingBottom: spacing.md,
-    gap: spacing.sm,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.separator,
-    backgroundColor: colors.surface,
-  },
-}));
+    safeArea: {
+      flex: 1,
+      backgroundColor: colors.backgroundGrouped,
+    },
+    header: {
+      paddingHorizontal: spacing.screenPaddingHorizontal,
+      paddingTop: spacing.sm,
+      paddingBottom: spacing.md,
+    },
+    content: {
+      paddingHorizontal: spacing.screenPaddingHorizontal,
+      paddingBottom: spacing.lg,
+    },
+    footer: {
+      paddingHorizontal: spacing.screenPaddingHorizontal,
+      paddingTop: spacing.sm,
+      paddingBottom: spacing.md,
+      gap: spacing.sm,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: colors.separator,
+      backgroundColor: colors.surface,
+    },
+  }));
 }
