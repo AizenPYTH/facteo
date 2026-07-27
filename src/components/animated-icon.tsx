@@ -1,20 +1,22 @@
-import { useEffect, useState } from 'react';
-import { Image, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import Animated, {
   Easing,
+  interpolate,
   useAnimatedStyle,
   useSharedValue,
   withDelay,
   withTiming,
 } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
+import { useEffect, useState } from 'react';
 
+import { BrandMark } from '@/components/brand/brand-mark';
 import { useColors } from '@/hooks/use-colors';
 
-/** Short, premium entrance: fade + subtle zoom (~1s total). */
-const FADE_IN_MS = 420;
-const HOLD_MS = 380;
-const FADE_OUT_MS = 320;
+/** Legacy overlay — prefer AuthShell opening. Kept for non-auth call sites. */
+const FADE_IN_MS = 700;
+const HOLD_MS = 550;
+const FADE_OUT_MS = 450;
 const TOTAL_MS = FADE_IN_MS + HOLD_MS + FADE_OUT_MS;
 
 type PremiumSplashOverlayProps = {
@@ -25,7 +27,8 @@ export function PremiumSplashOverlay({ onComplete }: PremiumSplashOverlayProps) 
   const colors = useColors();
   const overlayOpacity = useSharedValue(1);
   const logoOpacity = useSharedValue(0);
-  const logoScale = useSharedValue(0.96);
+  const logoScale = useSharedValue(0.8);
+  const glowProgress = useSharedValue(0);
 
   useEffect(() => {
     logoOpacity.value = withTiming(1, {
@@ -33,8 +36,12 @@ export function PremiumSplashOverlay({ onComplete }: PremiumSplashOverlayProps) 
       easing: Easing.out(Easing.cubic),
     });
     logoScale.value = withTiming(1, {
-      duration: FADE_IN_MS + 180,
+      duration: FADE_IN_MS + 120,
       easing: Easing.out(Easing.cubic),
+    });
+    glowProgress.value = withTiming(1, {
+      duration: FADE_IN_MS + HOLD_MS,
+      easing: Easing.out(Easing.quad),
     });
 
     overlayOpacity.value = withDelay(
@@ -46,26 +53,34 @@ export function PremiumSplashOverlay({ onComplete }: PremiumSplashOverlayProps) 
         }
       }),
     );
-  }, [logoOpacity, logoScale, onComplete, overlayOpacity]);
+  }, [glowProgress, logoOpacity, logoScale, onComplete, overlayOpacity]);
 
   const overlayStyle = useAnimatedStyle(() => ({ opacity: overlayOpacity.value }));
   const logoStyle = useAnimatedStyle(() => ({
     opacity: logoOpacity.value,
     transform: [{ scale: logoScale.value }],
   }));
+  const glowStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(glowProgress.value, [0, 0.45, 1], [0, 0.55, 0.28]),
+    transform: [{ scale: interpolate(glowProgress.value, [0, 1], [0.7, 1.15]) }],
+  }));
 
   return (
     <Animated.View
       pointerEvents="none"
       style={[styles.overlay, { backgroundColor: colors.background }, overlayStyle]}>
-      <Animated.View style={logoStyle}>
-        <Image
-          accessibilityIgnoresInvertColors
-          accessibilityLabel="INVEQ"
-          source={require('@/assets/images/INVEQ-logo.png')}
-          style={styles.logo}
+      <View style={styles.logoStage}>
+        <Animated.View
+          style={[
+            styles.glow,
+            { backgroundColor: colors.primary, shadowColor: colors.primary },
+            glowStyle,
+          ]}
         />
-      </Animated.View>
+        <Animated.View style={logoStyle}>
+          <BrandMark size={120} />
+        </Animated.View>
+      </View>
     </Animated.View>
   );
 }
@@ -83,16 +98,11 @@ export function AnimatedSplashOverlay() {
 export function AnimatedIcon() {
   return (
     <View style={styles.iconWrap}>
-      <Image
-        accessibilityIgnoresInvertColors
-        source={require('@/assets/images/INVEQ-logo.png')}
-        style={styles.logo}
-      />
+      <BrandMark size={120} />
     </View>
   );
 }
 
-// Keep TOTAL_MS referenced for documentation / future tuning.
 void TOTAL_MS;
 
 const styles = StyleSheet.create({
@@ -102,13 +112,23 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     zIndex: 1000,
   },
-  iconWrap: {
+  logoStage: {
     alignItems: 'center',
     justifyContent: 'center',
   },
-  logo: {
-    width: 180,
-    height: 50,
-    resizeMode: 'contain',
+  glow: {
+    position: 'absolute',
+    width: 220,
+    height: 220,
+    borderRadius: 110,
+    opacity: 0.35,
+    shadowOpacity: 0.65,
+    shadowRadius: 48,
+    shadowOffset: { width: 0, height: 0 },
+    elevation: 0,
+  },
+  iconWrap: {
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

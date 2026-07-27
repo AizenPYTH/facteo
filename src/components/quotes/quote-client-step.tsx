@@ -22,6 +22,7 @@ import { getClientDisplayName, type Client } from '@/types/client';
 
 type QuoteClientStepProps = {
   selectedClientId: string | null;
+  selectedClientName?: string;
   onSelectClient: (client: Client) => void;
 };
 
@@ -68,7 +69,11 @@ function ClientRow({
   );
 }
 
-export function QuoteClientStep({ selectedClientId, onSelectClient }: QuoteClientStepProps) {
+export function QuoteClientStep({
+  selectedClientId,
+  selectedClientName,
+  onSelectClient,
+}: QuoteClientStepProps) {
   const styles = useStyles();
   const colors = useColors();
   const [search, setSearch] = useState('');
@@ -132,7 +137,11 @@ export function QuoteClientStep({ selectedClientId, onSelectClient }: QuoteClien
 
   return (
     <View style={styles.container}>
-      <Text style={styles.description}>Choisissez le client pour ce devis.</Text>
+      <Text style={styles.description}>
+        {selectedClientId && selectedClientName
+          ? `Client sélectionné : ${selectedClientName}. Vous pouvez en choisir un autre si besoin.`
+          : 'Choisissez le client pour ce document.'}
+      </Text>
 
       <Button
         onPress={() => router.push('/clients/new' as Href)}

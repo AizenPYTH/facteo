@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 
 import { ConditionalSiteShell } from '@/components/layout/conditional-site-shell';
-import { SITE_URL, SITE_NAME, CONTACT_EMAIL } from '@/lib/constants';
+import { SITE_URL, SITE_NAME, CONTACT_EMAIL, hasPublicContactEmail } from '@/lib/constants';
 import { AuthProvider } from '@/providers/auth-provider';
 import { QueryProvider } from '@/providers/query-provider';
 
@@ -60,7 +60,7 @@ const organizationJsonLd = {
   name: SITE_NAME,
   url: SITE_URL,
   logo: `${SITE_URL}/logo-inveq.png`,
-  email: CONTACT_EMAIL,
+  ...(hasPublicContactEmail ? { email: CONTACT_EMAIL } : {}),
   description:
     'INVEQ simplifie la facturation, les devis, les signatures et les paiements pour artisans, freelances et PME.',
 };

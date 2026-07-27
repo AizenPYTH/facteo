@@ -1,7 +1,7 @@
 import { StyleSheet, View } from 'react-native';
 import Animated, { Easing, FadeIn, Keyframe } from 'react-native-reanimated';
 
-import { BrandLogo } from '@/components/brand-logo';
+import { BrandMark } from '@/components/brand/brand-mark';
 
 const DURATION = 900;
 
@@ -25,7 +25,7 @@ export function AnimatedIcon() {
   return (
     <View style={styles.iconContainer}>
       <Animated.View entering={logoKeyframe.duration(DURATION)} style={styles.imageContainer}>
-        <BrandLogo size={128} />
+        <BrandMark size={128} />
       </Animated.View>
     </View>
   );
@@ -34,7 +34,7 @@ export function AnimatedIcon() {
 export function PremiumSplashOverlay() {
   return (
     <Animated.View entering={FadeIn.duration(400)} style={styles.iconContainer}>
-      <BrandLogo size={128} />
+      <BrandMark size={128} />
     </Animated.View>
   );
 }

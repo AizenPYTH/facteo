@@ -51,7 +51,7 @@ Deno.serve(async (request) => {
     const appReturnUrl =
       body.returnUrl?.trim() ||
       Deno.env.get('INVEQ_SUBSCRIPTION_RETURN_URL')?.trim() ||
-      'INVEQ://settings/premium';
+      'inveq://settings/premium';
 
     const serviceClient = createClient(supabaseUrl, supabaseServiceRoleKey);
 

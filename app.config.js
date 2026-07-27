@@ -1,28 +1,84 @@
 /**
- * Variante optionnelle pour un futur "INVEQ Dev".
- * En local on utilise Expo Go (npm start → --go), pas ce scheme.
+ * Single Expo config source (no app.json — avoids expo-doctor dual-config warning).
  *
+ * APP_VARIANT=development → INVEQ Dev / com.inveq.app.dev (dev client).
  * EAS preview/production → APP_VARIANT=production (scheme inveq).
  */
-const appJson = require('./app.json');
-
 const variant = process.env.APP_VARIANT ?? 'production';
 const IS_DEV = variant === 'development';
 
-const base = appJson.expo;
-
 module.exports = {
   expo: {
-    ...base,
-    name: IS_DEV ? 'INVEQ Dev' : base.name,
-    scheme: IS_DEV ? 'inveq-dev' : base.scheme,
+    name: IS_DEV ? 'INVEQ Dev' : 'INVEQ',
+    slug: 'FACTEO',
+    version: '1.0.0',
+    orientation: 'portrait',
+    icon: './assets/images/icon.png',
+    scheme: IS_DEV ? 'inveq-dev' : 'inveq',
+    userInterfaceStyle: 'automatic',
     ios: {
-      ...base.ios,
-      bundleIdentifier: IS_DEV ? 'com.inveq.app.dev' : base.ios.bundleIdentifier,
+      icon: './assets/images/icon.png',
+      bundleIdentifier: IS_DEV ? 'com.inveq.app.dev' : 'com.inveq.app',
+      infoPlist: {
+        ITSAppUsesNonExemptEncryption: false,
+      },
     },
     android: {
-      ...base.android,
-      package: IS_DEV ? 'com.inveq.app.dev' : base.android.package,
+      adaptiveIcon: {
+        backgroundColor: '#4F46E5',
+        foregroundImage: './assets/images/android-icon-foreground.png',
+        backgroundImage: './assets/images/android-icon-background.png',
+        monochromeImage: './assets/images/android-icon-monochrome.png',
+      },
+      predictiveBackGestureEnabled: false,
+      permissions: ['android.permission.RECORD_AUDIO'],
+      package: IS_DEV ? 'com.inveq.app.dev' : 'com.inveq.app',
+    },
+    web: {
+      output: 'static',
+      favicon: './assets/images/favicon.png',
+      bundler: 'metro',
+    },
+    plugins: [
+      'expo-router',
+      [
+        'expo-splash-screen',
+        {
+          backgroundColor: '#4F46E5',
+          image: './assets/images/splash-icon.png',
+          imageWidth: 120,
+        },
+      ],
+      'expo-secure-store',
+      'expo-sharing',
+      'expo-mail-composer',
+      [
+        'expo-image-picker',
+        {
+          photosPermission:
+            'INVEQ a besoin d’accéder à vos photos pour importer le logo et la signature.',
+          cameraPermission:
+            'INVEQ a besoin d’accéder à l’appareil photo pour importer le logo et la signature.',
+        },
+      ],
+      [
+        'expo-notifications',
+        {
+          icon: './assets/images/icon.png',
+          color: '#4F46E5',
+          sounds: [],
+        },
+      ],
+    ],
+    experiments: {
+      typedRoutes: true,
+      reactCompiler: true,
+    },
+    extra: {
+      router: {},
+      eas: {
+        projectId: '55dde7c8-8d60-4b90-a665-53d800d2aa22',
+      },
     },
   },
 };

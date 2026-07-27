@@ -1,11 +1,19 @@
 /**
- * INVEQ Design System — single source for layout, motion, and component tokens.
+ * INVEQ Design System — Design Language hub.
+ *
+ * Import from here (or @/constants/theme) when building UI.
+ * Do not invent ad-hoc motion, shadows, or type sizes.
  */
+
 import { Platform } from 'react-native';
 
+import { componentLanguage } from './components';
+import { interactionLanguage } from './interaction';
+import { duration, motion, motionLanguage, spring } from './motion';
 import { radius } from './radius';
 import { spacing } from './spacing';
-import { shadows } from './theme';
+import { elevation, material, shadows, surface, surfaceLanguage } from './surfaces';
+import { type, typographyLanguage } from './type-roles';
 import { typography } from './typography';
 
 export const layout = {
@@ -16,17 +24,10 @@ export const layout = {
   maxContentWidth: 560,
 } as const;
 
-export const motion = {
-  fast: 180,
-  normal: 300,
-  slow: 460,
-  splash: 1000,
-  spring: { damping: 20, stiffness: 200 },
-} as const;
-
+/** @deprecated Prefer `componentLanguage` */
 export const components = {
-  buttonHeight: 48,
-  inputHeight: 48,
+  buttonHeight: componentLanguage.button.height,
+  inputHeight: componentLanguage.input.height,
   stickyFooterMinHeight: 56,
   actionTileIconSize: 44,
   workspaceAvatarSize: 48,
@@ -36,12 +37,38 @@ export const components = {
 export const designSystem = {
   layout,
   motion,
+  motionLanguage,
+  duration,
+  spring,
+  surfaceLanguage,
+  surface,
+  elevation,
+  material,
+  shadows,
+  typographyLanguage,
+  type,
+  interactionLanguage,
+  componentLanguage,
   components,
   spacing,
   radius,
-  shadows,
   typography,
   platform: Platform.OS,
 } as const;
 
 export type DesignSystem = typeof designSystem;
+
+export {
+  componentLanguage,
+  duration,
+  elevation,
+  interactionLanguage,
+  material,
+  motion,
+  motionLanguage,
+  spring,
+  surface,
+  surfaceLanguage,
+  type,
+  typographyLanguage,
+};

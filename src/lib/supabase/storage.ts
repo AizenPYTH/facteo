@@ -6,6 +6,9 @@ import type { ProfileUpdate } from '@/types/database';
 
 export const COMPANY_ASSETS_BUCKET = 'company-assets';
 
+/** Signed URL lifetime for logos / signatures (7 days). Refreshed on load. */
+export const COMPANY_ASSET_SIGNED_URL_SECONDS = 60 * 60 * 24 * 7;
+
 export type CompanyAssetKind = 'logo' | 'signature';
 
 function buildAssetPath(companyId: string, kind: CompanyAssetKind, extension: string): string {
@@ -13,6 +16,74 @@ function buildAssetPath(companyId: string, kind: CompanyAssetKind, extension: st
   return `${companyId}/${kind}-${timestamp}.${extension}`;
 }
 
+/**
+ * Extract storage object path from a public URL, signed URL, or raw path.
+ */
+export function extractCompanyAssetPath(stored: string | null | undefined): string | null {
+  if (!stored?.trim()) {
+    return null;
+  }
+
+  const value = stored.trim();
+
+  const publicMarker = `/storage/v1/object/public/${COMPANY_ASSETS_BUCKET}/`;
+  const signMarker = `/storage/v1/object/sign/${COMPANY_ASSETS_BUCKET}/`;
+
+  if (value.includes(publicMarker)) {
+    return decodeURIComponent(value.split(publicMarker)[1]?.split('?')[0] ?? '');
+  }
+
+  if (value.includes(signMarker)) {
+    return decodeURIComponent(value.split(signMarker)[1]?.split('?')[0] ?? '');
+  }
+
+  // Raw path: uuid/logo-….ext
+  if (!value.startsWith('http') && value.includes('/')) {
+    return value.replace(/^\/+/, '');
+  }
+
+  return null;
+}
+
+export async function createCompanyAssetSignedUrl(
+  path: string,
+  expiresIn = COMPANY_ASSET_SIGNED_URL_SECONDS,
+): Promise<string> {
+  const { data, error } = await supabase.storage
+    .from(COMPANY_ASSETS_BUCKET)
+    .createSignedUrl(path, expiresIn);
+
+  if (error || !data?.signedUrl) {
+    logSupabaseError('createCompanyAssetSignedUrl', error);
+    throw error ?? new Error('Unable to sign company asset URL.');
+  }
+
+  return data.signedUrl;
+}
+
+/** Resolve a stored logo/signature value to a usable URL (signed when private). */
+export async function resolveCompanyAssetUrl(
+  stored: string | null | undefined,
+): Promise<string | null> {
+  if (!stored?.trim()) {
+    return null;
+  }
+
+  const path = extractCompanyAssetPath(stored);
+  if (!path) {
+    return stored;
+  }
+
+  try {
+    return await createCompanyAssetSignedUrl(path);
+  } catch {
+    return stored;
+  }
+}
+
+/**
+ * @deprecated Public URLs are blocked after Sprint 1. Prefer signed URLs.
+ */
 export function getPublicStorageUrl(path: string): string {
   const { data } = supabase.storage.from(COMPANY_ASSETS_BUCKET).getPublicUrl(path);
   return data.publicUrl;
@@ -42,17 +113,12 @@ export async function uploadCompanyAsset(
     throw error;
   }
 
-  return getPublicStorageUrl(path);
+  // Persist relative path in DB; UI resolves to signed URL on read.
+  return path;
 }
 
 export async function deleteCompanyAssetByUrl(publicUrl: string): Promise<void> {
-  const marker = `/storage/v1/object/public/${COMPANY_ASSETS_BUCKET}/`;
-
-  if (!publicUrl.includes(marker)) {
-    return;
-  }
-
-  const path = publicUrl.split(marker)[1];
+  const path = extractCompanyAssetPath(publicUrl);
 
   if (!path) {
     return;
@@ -158,23 +224,5 @@ export async function updateProfileAssetUrl(
   if (error) {
     logSupabaseError('updateProfileAssetUrl', error);
     throw error;
-  }
-
-  const updatedRow = data?.[0] ?? null;
-
-  if (!updatedRow) {
-    const { data: profileAfter, error: profileAfterError } = await supabase
-      .from('profiles')
-      .select('id, logo_url, signature_url')
-      .eq('id', authUserId)
-      .maybeSingle();
-
-    debugProfileTrace('updateProfileAssetUrl.profileAfterFailure', {
-      authUserId,
-      profileAfter,
-      profileAfterError: profileAfterError?.message ?? null,
-    });
-
-    throw new Error('Profil introuvable après mise à jour.');
   }
 }

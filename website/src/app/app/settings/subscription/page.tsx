@@ -9,7 +9,7 @@ import { useAuth } from '@/providers/auth-provider';
 import { fetchSubscriptionSnapshot } from '@/lib/domain/supabase/subscriptions';
 import { subscriptionQueryKeys } from '@/lib/domain/supabase/query-keys';
 import { formatDate } from '@/lib/domain/format/date';
-import { SUPPORT_EMAIL } from '@/lib/constants';
+import { SUPPORT_EMAIL, hasPublicSupportEmail } from '@/lib/constants';
 
 export default function SubscriptionSettingsPage() {
   const { user } = useAuth();
@@ -35,10 +35,24 @@ export default function SubscriptionSettingsPage() {
         <div className="flex-1 p-8">
           <Panel>
             <p className="text-sm text-slate-600">
-              Impossible de charger les informations d’abonnement. Réessayez plus tard ou contactez{' '}
-              <a className="text-primary hover:underline" href={`mailto:${SUPPORT_EMAIL}`}>
-                {SUPPORT_EMAIL}
-              </a>
+              Impossible de charger les informations d’abonnement. Réessayez plus tard
+              {hasPublicSupportEmail ? (
+                <>
+                  {' '}
+                  ou contactez{' '}
+                  <a className="text-primary hover:underline" href={`mailto:${SUPPORT_EMAIL}`}>
+                    {SUPPORT_EMAIL}
+                  </a>
+                </>
+              ) : (
+                <>
+                  {' '}
+                  ou consultez la{' '}
+                  <Link className="text-primary hover:underline" href="/support">
+                    page Support
+                  </Link>
+                </>
+              )}
               .
             </p>
           </Panel>
@@ -109,10 +123,16 @@ export default function SubscriptionSettingsPage() {
           <Panel>
             <p className="text-sm text-slate-600">
               INVEQ Premium : 6,99 €/mois. Pour souscrire ou gérer votre facturation, utilisez
-              l’application mobile (paiement Stripe sécurisé, codes promo acceptés) ou contactez{' '}
-              <a className="font-medium text-primary hover:underline" href={`mailto:${SUPPORT_EMAIL}`}>
-                {SUPPORT_EMAIL}
-              </a>
+              l’application mobile (paiement Stripe sécurisé, codes promo acceptés)
+              {hasPublicSupportEmail ? (
+                <>
+                  {' '}
+                  ou contactez{' '}
+                  <a className="font-medium text-primary hover:underline" href={`mailto:${SUPPORT_EMAIL}`}>
+                    {SUPPORT_EMAIL}
+                  </a>
+                </>
+              ) : null}
               . Voir aussi la page{' '}
               <Link className="font-medium text-primary hover:underline" href="/tarifs">
                 tarifs

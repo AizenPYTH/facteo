@@ -17,7 +17,23 @@ import {
 
 import { AppTopBar } from '@/components/app/app-shell';
 import { Panel } from '@/components/app/ui';
-import { SUPPORT_EMAIL } from '@/lib/constants';
+import { SUPPORT_EMAIL, hasPublicSupportEmail } from '@/lib/constants';
+
+const deleteAccountItem = hasPublicSupportEmail
+  ? {
+      href: `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent('Demande de suppression de compte INVEQ')}`,
+      label: 'Supprimer le compte',
+      icon: Trash2,
+      desc: 'Demande via support (sous 30 jours)',
+      external: true as const,
+    }
+  : {
+      href: '/support',
+      label: 'Supprimer le compte',
+      icon: Trash2,
+      desc: 'Voir la procédure dans le centre d’aide',
+      external: false as const,
+    };
 
 const SETTINGS_SECTIONS = [
   {
@@ -25,13 +41,7 @@ const SETTINGS_SECTIONS = [
     items: [
       { href: '/app/settings/profile', label: 'Profil', icon: Shield, desc: 'Informations personnelles' },
       { href: '/app/settings/notifications', label: 'Notifications', icon: Bell, desc: 'Préférences d’alertes' },
-      {
-        href: `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent('Demande de suppression de compte INVEQ')}`,
-        label: 'Supprimer le compte',
-        icon: Trash2,
-        desc: 'Demande via support (sous 30 jours)',
-        external: true,
-      },
+      deleteAccountItem,
     ],
   },
   {

@@ -64,7 +64,7 @@ export function isInvoiceLineValid(line: InvoiceLineValue): boolean {
 
   return (
     quantity > 0 &&
-    unitPrice >= 0 &&
+    unitPrice > 0 &&
     vatRate >= 0 &&
     vatRate <= 100 &&
     discount >= 0 &&

@@ -13,7 +13,8 @@ export type SignUpParams = {
   password: string;
   firstName: string;
   lastName: string;
-  companyName: string;
+  /** Optional — filled during onboarding when omitted. */
+  companyName?: string;
 };
 
 export type AuthResult = {
@@ -90,7 +91,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
       password,
       firstName,
       lastName,
-      companyName,
+      companyName = '',
     }: SignUpParams): Promise<AuthResult> => {
       const { data, error } = await supabase.auth.signUp({
         email,

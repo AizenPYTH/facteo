@@ -6,6 +6,7 @@ import {
   addInvoicePayment,
   cancelInvoice,
   createInvoice,
+  deleteInvoice,
   duplicateInvoice,
   markInvoiceAsPaid,
   updateInvoice,
@@ -13,7 +14,7 @@ import {
   type AddPaymentInput,
 } from '@/lib/supabase/invoices';
 import { dashboardQueryKeys, invoicesQueryKeys } from '@/lib/supabase/query-keys';
-import { enforcePlanLimit } from '@/lib/subscription/limit-guard';
+import { enforcePlanLimit, withPlanLimitUi } from '@/lib/subscription/limit-guard';
 import { useSubscriptionContext } from '@/providers/subscription-provider';
 import type { CreateInvoiceInput, InvoiceDetail, InvoiceStatus, UpdateInvoiceInput } from '@/types/invoice';
 import type { InvoicesPage } from '@/types/invoices-list';
@@ -56,7 +57,7 @@ export function useInvoiceMutations() {
   const createInvoiceMutation = useMutation({
     mutationFn: async (input: CreateInvoiceInput) => {
       await enforcePlanLimit('documents', showLimitModal);
-      return createInvoice(requireScope(scope), input);
+      return withPlanLimitUi(showLimitModal, () => createInvoice(requireScope(scope), input));
     },
     onSuccess: () => invalidateInvoices(),
   });
@@ -156,9 +157,21 @@ export function useInvoiceMutations() {
   const duplicateInvoiceMutation = useMutation({
     mutationFn: async (invoiceId: string) => {
       await enforcePlanLimit('documents', showLimitModal);
-      return duplicateInvoice(requireScope(scope), invoiceId);
+      return withPlanLimitUi(showLimitModal, () =>
+        duplicateInvoice(requireScope(scope), invoiceId),
+      );
     },
     onSuccess: () => invalidateInvoices(),
+  });
+
+  const deleteInvoiceMutation = useMutation({
+    mutationFn: (invoiceId: string) => deleteInvoice(requireScope(scope), invoiceId),
+    onMutate: async (invoiceId) => {
+      await queryClient.cancelQueries({ queryKey: invoicesQueryKeys.all });
+      updateInvoicesInLists((invoices) => invoices.filter((invoice) => invoice.id !== invoiceId));
+      return {};
+    },
+    onSettled: () => invalidateInvoices(),
   });
 
   return {
@@ -169,5 +182,6 @@ export function useInvoiceMutations() {
     markAsPaid: markAsPaidMutation,
     addPayment: addPaymentMutation,
     duplicateInvoice: duplicateInvoiceMutation,
+    deleteInvoice: deleteInvoiceMutation,
   };
 }

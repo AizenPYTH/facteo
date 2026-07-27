@@ -46,11 +46,19 @@ export async function openMarketingSite(): Promise<void> {
 }
 
 export async function openContactEmail(subject?: string): Promise<void> {
+  if (!MARKETING_CONTACT.email) {
+    await openExternalUrl(MARKETING_HELP_URLS.contact);
+    return;
+  }
   const query = subject ? `?subject=${encodeURIComponent(subject)}` : '';
   await openExternalUrl(`mailto:${MARKETING_CONTACT.email}${query}`);
 }
 
 export async function openSupportEmail(subject?: string): Promise<void> {
+  if (!MARKETING_CONTACT.support) {
+    await openExternalUrl(MARKETING_HELP_URLS.support);
+    return;
+  }
   const query = subject ? `?subject=${encodeURIComponent(subject)}` : '';
   await openExternalUrl(`mailto:${MARKETING_CONTACT.support}${query}`);
 }

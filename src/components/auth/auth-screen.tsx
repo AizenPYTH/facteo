@@ -1,129 +1,122 @@
 import type { ReactNode } from 'react';
-import { Image, StyleSheet, Text, View } from 'react-native';
-import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
+import { StyleSheet, Text, View } from 'react-native';
+import Animated, { FadeInDown } from 'react-native-reanimated';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 
-import { FormScreen } from '@/components/ui/form-screen';
-import { useColors, useThemedStyles } from '@/hooks/use-colors';
-import { motion } from '@/constants/theme/design-system';
+import { duration } from '@/constants/theme/motion';
 import { radius } from '@/constants/theme/radius';
 import { spacing } from '@/constants/theme/spacing';
 import { typography } from '@/constants/theme/typography';
-import { shadows } from '@/constants/theme/theme';
+import { useThemedStyles } from '@/hooks/use-colors';
 
 type AuthScreenProps = {
-  title: string;
+  /** Optional title under the brand mark (register). Prefer slogan-only on login. */
+  title?: string;
   subtitle: string;
   children: ReactNode;
-  footer: ReactNode;
+  /** Primary actions stay in scroll — never jump with keyboard. */
+  actions?: ReactNode;
   footerLink?: ReactNode;
   error?: string | null;
+  /** Bumps to remount entering animations on login↔register. */
+  contentKey?: string;
 };
 
+/**
+ * Auth content panel (no logo — BrandMark lives in AuthShell).
+ * Keyboard-stable composition.
+ */
 export function AuthScreen({
   title,
   subtitle,
   children,
-  footer,
+  actions,
   footerLink,
   error,
+  contentKey = 'auth',
 }: AuthScreenProps) {
   const styles = useStyles();
-  const colors = useColors();
 
   return (
-    <View style={styles.root}>
-      <LinearGradient
-        colors={[colors.primarySubtle, colors.background, colors.background]}
-        end={{ x: 0.5, y: 1 }}
-        locations={[0, 0.42, 1]}
-        start={{ x: 0.5, y: 0 }}
-        style={StyleSheet.absoluteFill}
-      />
+    <KeyboardAwareScrollView
+      bottomOffset={spacing.lg}
+      contentContainerStyle={styles.content}
+      keyboardDismissMode="on-drag"
+      keyboardShouldPersistTaps="handled"
+      showsVerticalScrollIndicator={false}
+      style={styles.flex}>
+      <Animated.View
+        entering={FadeInDown.duration(duration.normal).springify()}
+        key={`${contentKey}-header`}
+        style={styles.header}>
+        {title ? (
+          <Text accessibilityRole="header" style={styles.title}>
+            {title}
+          </Text>
+        ) : null}
+        <Text style={[styles.subtitle, !title ? styles.slogan : null]}>{subtitle}</Text>
+      </Animated.View>
 
-      <SafeAreaView edges={['top', 'bottom']} style={styles.safeArea}>
-        <FormScreen
-          contentContainerStyle={styles.content}
-          edges={[]}
-          footer={footer}
-          scrollable
-          transparent>
-          <Animated.View entering={FadeIn.duration(motion.slow)} style={styles.header}>
-            <Image
-              accessibilityIgnoresInvertColors
-              accessibilityLabel="INVEQ"
-              source={require('@/assets/images/INVEQ-logo.png')}
-              style={styles.logo}
-            />
-            <Animated.View entering={FadeInDown.delay(80).duration(motion.normal).springify()}>
-              <Text accessibilityRole="header" style={styles.title}>
-                {title}
-              </Text>
-              <Text style={styles.subtitle}>{subtitle}</Text>
-            </Animated.View>
-          </Animated.View>
+      {error ? (
+        <Animated.View
+          accessibilityRole="alert"
+          entering={FadeInDown.duration(duration.fast)}
+          key={`${contentKey}-error`}
+          style={styles.errorBanner}>
+          <Text style={styles.errorBannerText}>{error}</Text>
+        </Animated.View>
+      ) : null}
 
-          {error ? (
-            <Animated.View
-              accessibilityRole="alert"
-              entering={FadeInDown.duration(motion.fast)}
-              style={styles.errorBanner}>
-              <Text style={styles.errorBannerText}>{error}</Text>
-            </Animated.View>
-          ) : null}
+      <Animated.View
+        entering={FadeInDown.delay(40).duration(duration.normal).springify()}
+        key={`${contentKey}-form`}
+        style={styles.form}>
+        {children}
+      </Animated.View>
 
-          <Animated.View
-            entering={FadeInDown.delay(140).duration(motion.normal).springify()}
-            style={styles.card}>
-            {children}
-          </Animated.View>
+      {actions ? (
+        <Animated.View
+          entering={FadeInDown.delay(80).duration(duration.normal)}
+          key={`${contentKey}-actions`}
+          style={styles.actions}>
+          {actions}
+        </Animated.View>
+      ) : null}
 
-          {footerLink ? (
-            <Animated.View
-              entering={FadeInDown.delay(220).duration(motion.normal)}
-              style={styles.footerLinkWrap}>
-              {footerLink}
-            </Animated.View>
-          ) : null}
-        </FormScreen>
-      </SafeAreaView>
-    </View>
+      <View style={styles.spacer} />
+
+      {footerLink ? (
+        <Animated.View
+          entering={FadeInDown.delay(100).duration(duration.normal)}
+          key={`${contentKey}-footer`}
+          style={styles.footerLinkWrap}>
+          {footerLink}
+        </Animated.View>
+      ) : null}
+    </KeyboardAwareScrollView>
   );
 }
 
 function useStyles() {
   return useThemedStyles((colors) => ({
-    root: {
-      flex: 1,
-      backgroundColor: colors.background,
-    },
-    safeArea: {
+    flex: {
       flex: 1,
     },
     content: {
       flexGrow: 1,
-      paddingHorizontal: spacing.screenPaddingHorizontal,
-      paddingTop: spacing['3xl'],
+      paddingHorizontal: spacing.screenPaddingHorizontal + spacing.xs,
       paddingBottom: spacing.xl,
       gap: spacing.xl,
-      justifyContent: 'center',
     },
     header: {
-      gap: spacing.lg,
+      gap: spacing.sm,
       alignItems: 'center',
-      paddingBottom: spacing.sm,
-    },
-    logo: {
-      width: 176,
-      height: 48,
-      resizeMode: 'contain',
+      paddingBottom: spacing.xs,
     },
     title: {
-      ...typography.title1,
+      ...typography.title2,
       color: colors.text,
       textAlign: 'center',
-      marginBottom: spacing.xs,
     },
     subtitle: {
       ...typography.subheadline,
@@ -132,14 +125,21 @@ function useStyles() {
       lineHeight: 22,
       paddingHorizontal: spacing.md,
     },
-    card: {
-      backgroundColor: colors.surface,
-      borderRadius: radius['2xl'],
-      borderWidth: StyleSheet.hairlineWidth,
-      borderColor: colors.border,
-      padding: spacing.lg,
-      gap: spacing.lg,
-      ...shadows.card,
+    slogan: {
+      ...typography.title3,
+      color: colors.textSecondary,
+      fontWeight: '500',
+      letterSpacing: 0.2,
+    },
+    form: {
+      gap: spacing.md + 2,
+    },
+    actions: {
+      gap: spacing.md,
+    },
+    spacer: {
+      flexGrow: 1,
+      minHeight: spacing.xl,
     },
     errorBanner: {
       backgroundColor: colors.errorSubtle,
@@ -156,7 +156,8 @@ function useStyles() {
     },
     footerLinkWrap: {
       alignItems: 'center',
-      paddingTop: spacing.xs,
+      paddingTop: spacing.sm,
+      paddingBottom: spacing.xs,
     },
   }));
 }

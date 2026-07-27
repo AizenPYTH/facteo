@@ -40,12 +40,14 @@ export function InvoicesDesktopScreen() {
   const { user } = useAuth();
   const { scope, isSwitching } = useTenant();
   const { showSuccess, showError } = useToast();
-  const { selected, status: statusParam } = useLocalSearchParams<{
+  const { selected, status: statusParam, due: dueParam } = useLocalSearchParams<{
     selected?: string | string[];
     status?: string | string[];
+    due?: string | string[];
   }>();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<InvoiceStatusFilter>('all');
+  const [dueFilter, setDueFilter] = useState<'week' | 'all'>('all');
   const [sortKey, setSortKey] = useState<SortKey>('date');
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [paymentVisible, setPaymentVisible] = useState(false);
@@ -61,7 +63,10 @@ export function InvoicesDesktopScreen() {
     const raw = statusParam;
     const value = Array.isArray(raw) ? raw[0] : raw;
     if (value && value !== 'all') setStatusFilter(value as InvoiceStatusFilter);
-  }, [statusParam]);
+
+    const rawDue = Array.isArray(dueParam) ? dueParam[0] : dueParam;
+    setDueFilter(rawDue === 'week' ? 'week' : 'all');
+  }, [statusParam, dueParam]);
 
   const {
     invoices: rawInvoices,
@@ -70,7 +75,7 @@ export function InvoicesDesktopScreen() {
     hasNextPage,
     fetchNextPage,
     data,
-  } = useInfiniteInvoices(debouncedSearch, statusFilter);
+  } = useInfiniteInvoices(debouncedSearch, statusFilter, dueFilter);
 
   const totalCount = data?.pages[0]?.totalCount ?? null;
 
@@ -118,6 +123,8 @@ export function InvoicesDesktopScreen() {
     documentNumber: selectedInvoice?.number ?? '',
     clientEmail: selectedInvoice?.clientEmail,
     clientName: selectedInvoice?.clientName ?? '',
+    amountDue: selectedInvoice?.amountDue,
+    dueAt: selectedInvoice?.dueAt,
     buildHtml,
   });
 
@@ -284,9 +291,17 @@ export function InvoicesDesktopScreen() {
                 : undefined
             }
             onPayment={() => setPaymentVisible(true)}
+            onRemind={() => void documentActions.handleRemindEmail()}
             onSend={() => void documentActions.handleSendEmail()}
+            remindLoading={documentActions.remindLoading}
             sendLoading={documentActions.emailLoading}
             showPayment={Boolean(selectedInvoice && selectedInvoice.amountDue > 0)}
+            showRemind={Boolean(
+              selectedInvoice &&
+                (selectedInvoice.status === 'sent' ||
+                  selectedInvoice.status === 'overdue' ||
+                  selectedInvoice.status === 'partially_paid'),
+            )}
           />
         </View>
       </View>

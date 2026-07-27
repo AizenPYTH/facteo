@@ -13,7 +13,7 @@ export function isQuoteLineValid(line: QuoteLineValue): boolean {
   const unitPrice = parseDecimalInput(line.unitPrice);
   const vatRate = parseDecimalInput(line.vatRate);
 
-  return quantity > 0 && unitPrice >= 0 && vatRate >= 0 && vatRate <= 100;
+  return quantity > 0 && unitPrice > 0 && vatRate >= 0 && vatRate <= 100;
 }
 
 export function areQuoteLinesValid(lines: QuoteLineValue[]): boolean {

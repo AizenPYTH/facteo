@@ -1,8 +1,9 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 
 import { FadeIn } from '@/components/ui/fade-in';
 import { PageHero } from '@/components/sections/landing-sections';
-import { SUPPORT_EMAIL } from '@/lib/constants';
+import { SUPPORT_EMAIL, hasPublicSupportEmail } from '@/lib/constants';
 
 export const metadata: Metadata = {
   title: 'Support & guide d’utilisation',
@@ -33,7 +34,9 @@ const GUIDE_SECTIONS = [
   },
   {
     title: 'Supprimer votre compte',
-    body: `Depuis Paramètres → Supprimer le compte, ou en écrivant à ${SUPPORT_EMAIL} depuis l’adresse de votre compte. Nous traitons la demande sous 30 jours.`,
+    body: hasPublicSupportEmail
+      ? `Depuis Paramètres → Supprimer le compte, ou en écrivant à ${SUPPORT_EMAIL} depuis l’adresse de votre compte. Nous traitons la demande sous 30 jours.`
+      : 'Depuis Paramètres → Supprimer le compte dans l’application. Nous traitons la demande sous 30 jours.',
   },
 ] as const;
 
@@ -63,9 +66,15 @@ export default function SupportPage() {
               <p className="mt-2 text-sm text-muted">
                 Bugs, questions d’utilisation, suggestions produit, codes promo.
               </p>
-              <a className="mt-4 block font-medium text-primary" href={`mailto:${SUPPORT_EMAIL}`}>
-                {SUPPORT_EMAIL}
-              </a>
+              {hasPublicSupportEmail ? (
+                <a className="mt-4 block font-medium text-primary" href={`mailto:${SUPPORT_EMAIL}`}>
+                  {SUPPORT_EMAIL}
+                </a>
+              ) : (
+                <p className="mt-4 text-sm text-muted">
+                  Consultez le guide ci-dessous. Un canal e-mail dédié sera annoncé sur cette page.
+                </p>
+              )}
             </div>
           </FadeIn>
         </div>
@@ -87,6 +96,17 @@ export default function SupportPage() {
               </FadeIn>
             ))}
           </div>
+          {!hasPublicSupportEmail ? (
+            <FadeIn className="mt-8">
+              <p className="text-sm text-muted">
+                Besoin d’aide supplémentaire ?{' '}
+                <Link className="font-medium text-primary hover:underline" href="/contact">
+                  Page contact
+                </Link>
+                .
+              </p>
+            </FadeIn>
+          ) : null}
         </div>
       </section>
     </>

@@ -23,8 +23,8 @@ export function EmptyInvoices({
       actionLabel={canCreate ? 'Créer une facture' : undefined}
       description={
         isSearching
-          ? 'Essayez un autre numéro de facture.'
-          : 'Créez votre première facture pour vos clients.'
+          ? 'Aucune facture ne correspond à votre recherche.'
+          : 'Émettez votre première facture. La prochaine fois, un tap suffira — « Comme la dernière fois ».'
       }
       icon={{
         ios: isSearching ? 'magnifyingglass' : 'doc.plaintext',
@@ -34,7 +34,7 @@ export function EmptyInvoices({
       onAction={canCreate ? () => router.push('/invoices/new' as Href) : undefined}
       style={style}
       testID={testID}
-      title={isSearching ? 'Aucun résultat' : 'Aucune facture'}
+      title={isSearching ? 'Aucun résultat' : 'Vos factures apparaîtront ici'}
     />
   );
 }

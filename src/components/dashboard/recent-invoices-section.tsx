@@ -1,8 +1,9 @@
 import { StyleSheet, View } from 'react-native';
 
-import { useColors, useThemedStyles } from '@/hooks/use-colors';
+import { useThemedStyles } from '@/hooks/use-colors';
 import { radius } from '@/constants/theme/radius';
 import { spacing } from '@/constants/theme/spacing';
+import { elevation } from '@/constants/theme/surfaces';
 import type { Invoice } from '@/types/dashboard';
 
 import { EmptyInvoices } from './empty-invoices';
@@ -16,7 +17,6 @@ type RecentInvoicesSectionProps = {
 
 export function RecentInvoicesSection({ invoices, onInvoicePress }: RecentInvoicesSectionProps) {
   const styles = useStyles();
-  const colors = useColors();
   return (
     <View style={styles.section}>
       <SectionHeader title="Factures récentes" />
@@ -40,15 +40,16 @@ export function RecentInvoicesSection({ invoices, onInvoicePress }: RecentInvoic
 
 function useStyles() {
   return useThemedStyles((colors) => ({
-  section: {
-    gap: spacing.md,
-  },
-  list: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.card,
-    borderWidth: 1,
-    borderColor: colors.border,
-    overflow: 'hidden',
-  },
-}));
+    section: {
+      gap: spacing.md,
+    },
+    list: {
+      backgroundColor: colors.surface,
+      borderRadius: radius.card,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: colors.border,
+      overflow: 'hidden',
+      ...elevation[1],
+    },
+  }));
 }

@@ -1,4 +1,4 @@
--- Factume — Système d'abonnement Freemium + signatures client
+-- INVEQ — Système d'abonnement Freemium + signatures client
 
 -- ---------------------------------------------------------------------------
 -- Plan enum: ajouter premium (évolutif: business, pro_plus plus tard)
@@ -29,7 +29,7 @@ create table if not exists public.subscription_plans (
 );
 
 comment on table public.subscription_plans is
-  'Catalogue des offres Factume (limites et fonctionnalités configurables).';
+  'Catalogue des offres INVEQ (limites et fonctionnalités configurables).';
 comment on column public.subscription_plans.max_clients is 'NULL = illimité.';
 comment on column public.subscription_plans.features is
   'Flags fonctionnels: custom_logo, company_signature, client_signature, stripe_payments, ai_assistant, advanced_stats, siren_search.';
@@ -47,7 +47,7 @@ insert into public.subscription_plans (
 values
   (
     'free',
-    'Factume Standard',
+    'INVEQ Standard',
     'L''essentiel pour démarrer, sans personnalisation avancée.',
     0,
     5,
@@ -65,7 +65,7 @@ values
   ),
   (
     'premium',
-    'Factume Premium',
+    'INVEQ Premium',
     'Sans limites, avec toutes les fonctionnalités avancées et futures.',
     1,
     null,

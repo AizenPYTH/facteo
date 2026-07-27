@@ -19,6 +19,15 @@ export function ColorsProvider({ children }: PropsWithChildren) {
   return <ColorsContext.Provider value={value}>{children}</ColorsContext.Provider>;
 }
 
+/** Force a color scheme for a subtree (e.g. auth always dark per brand brief). */
+export function ForcedSchemeColorsProvider({
+  scheme,
+  children,
+}: PropsWithChildren<{ scheme: 'light' | 'dark' }>) {
+  const value = useMemo(() => (scheme === 'dark' ? colorsDark : lightColors), [scheme]);
+  return <ColorsContext.Provider value={value}>{children}</ColorsContext.Provider>;
+}
+
 export function useColors(): AppColors {
   return useContext(ColorsContext);
 }

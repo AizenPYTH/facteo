@@ -8,7 +8,7 @@ import {
   MobileGateShell,
   PhoneMockCarousel,
 } from '@/components/mobile-gate/mobile-gate-ui';
-import { SUPPORT_EMAIL } from '@/lib/constants';
+import { SUPPORT_EMAIL, hasPublicSupportEmail } from '@/lib/constants';
 import { DEVICE_ACCESS } from '@/lib/device-access';
 import { cn } from '@/lib/utils';
 
@@ -81,11 +81,19 @@ export function IosGatePage() {
           </p>
         </motion.div>
 
-        <Link
-          className="inline-block text-xs font-medium text-slate-500 underline-offset-4 hover:text-slate-300 hover:underline"
-          href={`mailto:${SUPPORT_EMAIL}`}>
-          Besoin d’aide ? {SUPPORT_EMAIL}
-        </Link>
+        {hasPublicSupportEmail ? (
+          <Link
+            className="inline-block text-xs font-medium text-slate-500 underline-offset-4 hover:text-slate-300 hover:underline"
+            href={`mailto:${SUPPORT_EMAIL}`}>
+            Besoin d’aide ? {SUPPORT_EMAIL}
+          </Link>
+        ) : (
+          <Link
+            className="inline-block text-xs font-medium text-slate-500 underline-offset-4 hover:text-slate-300 hover:underline"
+            href="/support">
+            Besoin d’aide ? Centre d’aide
+          </Link>
+        )}
       </div>
     </MobileGateShell>
   );

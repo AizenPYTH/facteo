@@ -21,63 +21,61 @@ export function ExtendedStatsGrid({ stats, premiumLocked = false }: ExtendedStat
       <SectionHeader premiumLocked={premiumLocked} title="Vue d’ensemble" />
       <View style={styles.grid}>
         <StatCard
-          accentColor={colors.primary}
+          accentColor={premiumLocked ? undefined : colors.text}
           label="Aujourd’hui"
           premiumLocked={premiumLocked}
           style={styles.card}
           value={formatCurrency(stats.todayRevenue)}
         />
         <StatCard
-          accentColor={colors.info}
+          accentColor={premiumLocked ? undefined : colors.text}
           label="Cette semaine"
           premiumLocked={premiumLocked}
           style={styles.card}
           value={formatCurrency(stats.weeklyRevenue)}
         />
         <StatCard
-          accentColor={colors.success}
+          accentColor={premiumLocked ? undefined : colors.text}
           label="Ce mois"
           premiumLocked={premiumLocked}
           style={styles.card}
           value={formatCurrency(stats.monthlyRevenue)}
         />
         <StatCard
-          accentColor={colors.primary}
+          accentColor={premiumLocked ? undefined : colors.text}
           label="Cette année"
           premiumLocked={premiumLocked}
           style={styles.card}
           value={formatCurrency(stats.yearlyRevenue)}
         />
         <StatCard
-          accentColor={colors.warning}
+          accentColor={premiumLocked ? undefined : colors.warning}
           label="Encours"
           premiumLocked={premiumLocked}
           style={styles.card}
           value={formatCurrency(stats.outstandingAmount)}
         />
         <StatCard
-          accentColor={colors.error}
+          accentColor={premiumLocked ? undefined : colors.error}
           label="En retard"
           premiumLocked={premiumLocked}
           style={styles.card}
           value={String(stats.lateInvoices)}
         />
         <StatCard
-          accentColor={colors.iconSecondary}
           label="Délai moyen"
           premiumLocked={premiumLocked}
           style={styles.card}
           value={`${stats.averagePaymentDelayDays} j`}
         />
         <StatCard
-          accentColor={colors.iconSecondary}
           label="Facture moyenne"
           premiumLocked={premiumLocked}
           style={styles.card}
           value={formatCurrency(stats.averageInvoiceAmount)}
         />
         <StatCard
-          accentColor={colors.warning}
+          accentColor={premiumLocked ? undefined : colors.warning}
           label="Devis envoyés"
           premiumLocked={premiumLocked}
           style={styles.wideCard}
