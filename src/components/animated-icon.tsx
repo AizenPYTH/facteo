@@ -1,5 +1,4 @@
-import { useEffect, useState } from 'react';
-import { Image, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import Animated, {
   Easing,
   interpolate,
@@ -9,10 +8,12 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
+import { useEffect, useState } from 'react';
 
+import { BrandMark } from '@/components/brand/brand-mark';
 import { useColors } from '@/hooks/use-colors';
 
-/** Premium splash: fade + zoom 0.8→1 + soft violet glow (~1.7s). */
+/** Legacy overlay — prefer AuthShell opening. Kept for non-auth call sites. */
 const FADE_IN_MS = 700;
 const HOLD_MS = 550;
 const FADE_OUT_MS = 450;
@@ -77,12 +78,7 @@ export function PremiumSplashOverlay({ onComplete }: PremiumSplashOverlayProps) 
           ]}
         />
         <Animated.View style={logoStyle}>
-          <Image
-            accessibilityIgnoresInvertColors
-            accessibilityLabel="INVEQ"
-            source={require('@/assets/images/inveq-logo.png')}
-            style={styles.logo}
-          />
+          <BrandMark size={120} />
         </Animated.View>
       </View>
     </Animated.View>
@@ -102,11 +98,7 @@ export function AnimatedSplashOverlay() {
 export function AnimatedIcon() {
   return (
     <View style={styles.iconWrap}>
-      <Image
-        accessibilityIgnoresInvertColors
-        source={require('@/assets/images/inveq-logo.png')}
-        style={styles.logo}
-      />
+      <BrandMark size={120} />
     </View>
   );
 }
@@ -138,10 +130,5 @@ const styles = StyleSheet.create({
   iconWrap: {
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  logo: {
-    width: 180,
-    height: 50,
-    resizeMode: 'contain',
   },
 });

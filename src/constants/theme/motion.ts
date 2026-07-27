@@ -74,6 +74,16 @@ export const navigation = {
   tabSwitchDuration: duration.fast,
 } as const;
 
+/** Auth opening narrative (splash → settled header). */
+export const authOpening = {
+  act1Fade: 720,
+  act1Hold: 480,
+  act2Morph: duration.deliberate + 80,
+  modeCrossfade: duration.normal + 40,
+  markSplashSize: 120,
+  markHeaderSize: 72,
+} as const;
+
 /**
  * @deprecated Prefer `duration` + `spring`. Kept for gradual migration.
  */
@@ -92,6 +102,7 @@ export const motionLanguage = {
   overlay,
   entrance,
   navigation,
+  authOpening,
 } as const;
 
 export type DurationToken = keyof typeof duration;

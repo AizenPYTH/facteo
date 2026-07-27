@@ -8,12 +8,21 @@ import {
   type TextInputProps,
 } from 'react-native';
 import { useState } from 'react';
+import Animated, {
+  interpolateColor,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
 
 import { useColors, useThemedStyles } from '@/hooks/use-colors';
 import { components } from '@/constants/theme/design-system';
+import { duration } from '@/constants/theme/motion';
 import { radius } from '@/constants/theme/radius';
 import { spacing } from '@/constants/theme/spacing';
 import { typography } from '@/constants/theme/typography';
+
+const AnimatedView = Animated.createAnimatedComponent(View);
 
 type AuthTextFieldProps = TextInputProps & {
   label: string;
@@ -24,6 +33,9 @@ type AuthTextFieldProps = TextInputProps & {
   hideLabel?: boolean;
 };
 
+/**
+ * Floating auth field — depth, animated focus ring, no form clutter.
+ */
 export function AuthTextField({
   label,
   error,
@@ -40,6 +52,33 @@ export function AuthTextField({
   const colors = useColors();
   const [focused, setFocused] = useState(false);
   const [secure, setSecure] = useState(isPassword);
+  const focusProgress = useSharedValue(0);
+
+  const fieldStyle = useAnimatedStyle(() => ({
+    borderColor: interpolateColor(
+      focusProgress.value,
+      [0, 1],
+      [error ? colors.error : 'rgba(255,255,255,0.12)', error ? colors.error : colors.borderFocus],
+    ),
+    backgroundColor: interpolateColor(
+      focusProgress.value,
+      [0, 1],
+      ['rgba(255,255,255,0.06)', 'rgba(255,255,255,0.1)'],
+    ),
+    transform: [{ scale: 1 + focusProgress.value * 0.008 }],
+  }));
+
+  const handleFocus: NonNullable<TextInputProps['onFocus']> = (event) => {
+    setFocused(true);
+    focusProgress.value = withTiming(1, { duration: duration.fast });
+    onFocus?.(event);
+  };
+
+  const handleBlur: NonNullable<TextInputProps['onBlur']> = (event) => {
+    setFocused(false);
+    focusProgress.value = withTiming(0, { duration: duration.fast });
+    onBlur?.(event);
+  };
 
   return (
     <View style={styles.container}>
@@ -48,11 +87,11 @@ export function AuthTextField({
           {label}
         </Text>
       )}
-      <View
+      <AnimatedView
         style={[
           styles.field,
-          focused ? styles.fieldFocused : null,
           error ? styles.fieldError : null,
+          fieldStyle,
         ]}>
         <SymbolView
           name={icon}
@@ -68,14 +107,8 @@ export function AuthTextField({
           placeholderTextColor={colors.textPlaceholder}
           style={[styles.input, style]}
           {...props}
-          onBlur={(event) => {
-            setFocused(false);
-            onBlur?.(event);
-          }}
-          onFocus={(event) => {
-            setFocused(true);
-            onFocus?.(event);
-          }}
+          onBlur={handleBlur}
+          onFocus={handleFocus}
           secureTextEntry={isPassword ? secure : false}
         />
         {isPassword ? (
@@ -93,7 +126,7 @@ export function AuthTextField({
             />
           </Pressable>
         ) : null}
-      </View>
+      </AnimatedView>
       {error ? (
         <Text accessibilityRole="alert" maxFontSizeMultiplier={1.5} style={styles.error}>
           {error}
@@ -114,20 +147,18 @@ function useStyles() {
       marginLeft: spacing[0.5],
     },
     field: {
-      minHeight: components.inputHeight + 4,
+      minHeight: components.inputHeight + 6,
       flexDirection: 'row',
       alignItems: 'center',
       gap: spacing.sm,
-      paddingHorizontal: spacing.md,
+      paddingHorizontal: spacing.md + 2,
       borderRadius: radius.xl,
-      backgroundColor: colors.backgroundSecondary,
-      borderWidth: StyleSheet.hairlineWidth,
-      borderColor: colors.border,
-    },
-    fieldFocused: {
-      borderColor: colors.borderFocus,
       borderWidth: 1.5,
-      backgroundColor: colors.surface,
+      shadowColor: '#000',
+      shadowOpacity: 0.22,
+      shadowRadius: 16,
+      shadowOffset: { width: 0, height: 8 },
+      elevation: 3,
     },
     fieldError: {
       borderColor: colors.error,

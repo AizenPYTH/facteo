@@ -1,28 +1,15 @@
-import { Image } from 'expo-image';
-import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
+import { type StyleProp, type ViewStyle } from 'react-native';
+
+import { BrandMark } from '@/components/brand/brand-mark';
 
 type BrandLogoProps = {
   size?: number;
   style?: StyleProp<ViewStyle>;
   testID?: string;
+  variant?: 'full' | 'mono';
 };
 
-export function BrandLogo({ size = 88, style, testID }: BrandLogoProps) {
-  return (
-    <View style={[styles.container, { width: size, height: size }, style]} testID={testID}>
-      <Image
-        accessibilityIgnoresInvertColors
-        contentFit="contain"
-        source={require('@/assets/images/inveq-mark.png')}
-        style={{ width: size, height: size }}
-      />
-    </View>
-  );
+/** @deprecated Prefer BrandMark — kept as a thin alias for existing call sites. */
+export function BrandLogo({ size = 88, style, testID, variant = 'full' }: BrandLogoProps) {
+  return <BrandMark size={size} style={style} testID={testID} variant={variant} />;
 }
-
-const styles = StyleSheet.create({
-  container: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});

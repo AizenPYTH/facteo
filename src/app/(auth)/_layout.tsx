@@ -1,7 +1,7 @@
 import { Redirect, Stack, type Href } from 'expo-router';
 
-import { AnimatedSplashOverlay } from '@/components/animated-icon';
 import { AuthLoadingScreen } from '@/components/auth/auth-loading-screen';
+import { AuthShell } from '@/components/auth/auth-shell';
 import { useAuth } from '@/hooks/use-auth';
 import { ForcedSchemeColorsProvider } from '@/providers/colors-provider';
 
@@ -18,8 +18,15 @@ export default function AuthLayout() {
 
   return (
     <ForcedSchemeColorsProvider scheme="dark">
-      <Stack screenOptions={{ animation: 'fade', headerShown: false }} />
-      <AnimatedSplashOverlay />
+      <AuthShell>
+        <Stack
+          screenOptions={{
+            animation: 'none',
+            headerShown: false,
+            contentStyle: { backgroundColor: 'transparent' },
+          }}
+        />
+      </AuthShell>
     </ForcedSchemeColorsProvider>
   );
 }

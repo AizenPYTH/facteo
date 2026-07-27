@@ -1,10 +1,10 @@
 import { z } from 'zod';
 
+/** Slim register — identity + password. Company lives in onboarding. */
 export const registerSchema = z
   .object({
     firstName: z.string().trim().min(1, 'Champ obligatoire.'),
     lastName: z.string().trim().min(1, 'Champ obligatoire.'),
-    companyName: z.string().trim().min(1, 'Champ obligatoire.'),
     email: z
       .string()
       .trim()
