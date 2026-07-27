@@ -43,7 +43,9 @@ function applySearchFilter<T extends { or: (filters: string) => T }>(
     return query;
   }
 
-  return query.or(`number.ilike.%${sanitizedSearch}%`);
+  return query.or(
+    `number.ilike.%${sanitizedSearch}%,notes.ilike.%${sanitizedSearch}%`,
+  );
 }
 
 async function insertQuoteItems(
@@ -124,6 +126,29 @@ export async function fetchQuotesPage(
     nextPage: hasMore ? page + 1 : null,
     totalCount: count,
   };
+}
+
+/** Documents for a single client — CRM history on mobile detail. */
+export async function fetchQuotesForClient(
+  scope: DataScope,
+  clientId: string,
+  limit = 50,
+): Promise<Quote[]> {
+  const { data, error } = await supabase
+    .from('quotes')
+    .select(QUOTE_LIST_COLUMNS)
+    .eq('company_id', scope.companyId)
+    .eq('client_id', clientId)
+    .order('issued_at', { ascending: false, nullsFirst: false })
+    .order('created_at', { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    logSupabaseError('fetchQuotesForClient', error);
+    return [];
+  }
+
+  return (data as unknown as QuoteWithClient[] | null)?.map(mapQuoteRowToQuote) ?? [];
 }
 
 export async function fetchQuoteById(

@@ -1,8 +1,9 @@
 import { SymbolView } from 'expo-symbols';
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
 import { useColors, useThemedStyles } from '@/hooks/use-colors';
-import { typography } from '@/constants/theme/typography';
+import { spacing } from '@/constants/theme/spacing';
+import { type } from '@/constants/theme/type-roles';
 
 type SectionHeaderProps = {
   title: string;
@@ -33,18 +34,22 @@ function useStyles() {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
+      paddingBottom: spacing[0.5],
     },
     titleRow: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 6,
+      gap: spacing[1.5],
     },
     title: {
-      ...typography.title3,
+      ...type.section,
+      fontSize: 20,
+      lineHeight: 25,
       color: colors.text,
     },
     action: {
-      ...typography.subheadlineMedium,
+      ...type.secondary,
+      fontWeight: '600',
       color: colors.textLink,
     },
   }));

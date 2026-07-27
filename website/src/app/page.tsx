@@ -5,7 +5,7 @@ import {
   HeroSection,
   MobileSection,
   PresentationSection,
-  PricingSection,
+  PremiumPricingSection,
   TestimonialsSection,
   WhySection,
 } from '@/components/sections/landing-sections';
@@ -35,7 +35,7 @@ export default function HomePage() {
       <TestimonialsSection />
       <section className="border-y border-border/60 bg-[#F7F4EF]/50 px-5 py-20 sm:px-6 sm:py-24 lg:px-8 lg:py-28" id="pricing">
         <div className="mx-auto max-w-7xl">
-          <PricingSection showHeader />
+          <PremiumPricingSection showHeader />
         </div>
       </section>
       <section className="px-5 py-20 sm:px-6 sm:py-24 lg:px-8 lg:py-28" id="faq">

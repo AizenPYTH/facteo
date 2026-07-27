@@ -21,6 +21,7 @@ import { useInfiniteQuotes } from '@/hooks/use-quotes';
 import { useTenant } from '@/hooks/use-tenant';
 import { formatDate } from '@/lib/format/date';
 import { formatPriceHT } from '@/lib/format/currency';
+import { newInvoiceHref, newQuoteHref } from '@/lib/navigation/new-document';
 import { getClientDisplayName, getClientSecondaryLabel, type Client } from '@/types/client';
 
 const CLIENT_TABS: DesktopTab[] = [
@@ -136,18 +137,28 @@ export function ClientsDesktopScreen() {
                       <View style={styles.detailActions}>
                         <Button
                           onPress={() =>
-                            router.push(`/clients/${selectedClient.id}/edit` as Href)
+                            router.push(
+                              newInvoiceHref(selectedClient.id, {
+                                replay: clientInvoices.length > 0,
+                              }),
+                            )
                           }
-                          title="Modifier"
+                          title={
+                            clientInvoices.length > 0
+                              ? 'Comme la dernière fois'
+                              : 'Nouvelle facture'
+                          }
+                        />
+                        <Button
+                          onPress={() => router.push(newQuoteHref(selectedClient.id))}
+                          title="Nouveau devis"
                           variant="ghost"
                         />
                         <Button
-                          onPress={() => router.push('/invoices/new' as Href)}
-                          title="Nouvelle facture"
-                        />
-                        <Button
-                          onPress={() => router.push('/quotes/new' as Href)}
-                          title="Nouveau devis"
+                          onPress={() =>
+                            router.push(`/clients/${selectedClient.id}/edit` as Href)
+                          }
+                          title="Modifier"
                           variant="ghost"
                         />
                       </View>

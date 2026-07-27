@@ -1,5 +1,5 @@
 import { router, type Href } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { InvoiceScreenHeader } from '@/components/invoices/invoice-screen-header';
 import { DocumentFinalizeStep } from '@/components/quotes/document-finalize-step';
@@ -8,6 +8,7 @@ import { QuoteClientStep } from '@/components/quotes/quote-client-step';
 import { QuoteWizardProgress } from '@/components/quotes/quote-wizard-progress';
 import { WizardActionBar } from '@/components/ui/wizard-action-bar';
 import { WizardScreen } from '@/components/ui/wizard-screen';
+import { useClientDocumentMemory } from '@/hooks/use-client-document-memory';
 import { useCompanyProfile } from '@/hooks/use-company-profile';
 import { useInvoiceMutations } from '@/hooks/use-invoice-mutations';
 import { useSettings } from '@/hooks/use-settings';
@@ -27,6 +28,7 @@ import {
   isInvoiceInfoValid,
   parseInvoiceInfoValues,
 } from '@/lib/invoices/validators';
+import { memoryLinesToQuoteLines } from '@/lib/supabase/client-document-memory';
 import { useToast } from '@/providers/toast-provider';
 import { getClientDisplayName, type Client } from '@/types/client';
 import type { InvoiceLineValue } from '@/types/invoice';
@@ -43,6 +45,10 @@ type InvoiceWizardScreenProps = {
   title: string;
   invoiceId?: string;
   initialState?: InvoiceWizardState;
+  /** When the client is already known (e.g. from fiche client), start on lines. */
+  initialStep?: number;
+  /** Auto-apply last document lines ("Comme la dernière fois"). */
+  autoReplay?: boolean;
   variant?: 'mobile' | 'desktop';
   onStepChange?: (step: number) => void;
 };
@@ -52,6 +58,8 @@ export function InvoiceWizardScreen({
   title,
   invoiceId,
   initialState,
+  initialStep = 1,
+  autoReplay = false,
   variant = 'mobile',
   onStepChange,
 }: InvoiceWizardScreenProps) {
@@ -60,7 +68,9 @@ export function InvoiceWizardScreen({
   const { data: companyProfile } = useCompanyProfile();
   const { data: settings } = useSettings();
 
-  const [step, setStep] = useState(1);
+  const [step, setStep] = useState(() =>
+    Math.min(Math.max(initialStep, 1), TOTAL_STEPS),
+  );
 
   useEffect(() => {
     onStepChange?.(step);
@@ -68,10 +78,14 @@ export function InvoiceWizardScreen({
   const [state, setState] = useState<InvoiceWizardState>(
     initialState ?? createEmptyInvoiceWizardState(),
   );
+  const memoryAppliedForClient = useRef<string | null>(null);
+  const replayApplied = useRef(false);
+  const { data: memory, isSuccess: memoryReady } = useClientDocumentMemory(state.clientId);
 
   const totals = useMemo(() => mapInvoiceLinesToDocumentTotals(state.lines), [state.lines]);
   const companyName = companyProfile?.companyName?.trim() || 'Votre entreprise';
   const isSaving = mode === 'create' ? createInvoice.isPending : updateInvoice.isPending;
+  const defaultVatRate = settings?.defaultVatRate ?? 20;
 
   useEffect(() => {
     if (state.info.issuedAt) {
@@ -93,29 +107,118 @@ export function InvoiceWizardScreen({
   }, [settings?.paymentTermsDays, state.info.issuedAt]);
 
   useEffect(() => {
-    if (step !== 2 || state.lines.length > 0) {
+    if (!state.clientId || !memory || memoryAppliedForClient.current === state.clientId) {
+      return;
+    }
+
+    memoryAppliedForClient.current = state.clientId;
+    const paymentDays = memory.defaults.paymentTermsDays;
+    const notes = memory.defaults.notes;
+
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- apply client memory once per client
+    setState((current) => {
+      const nextPayment =
+        paymentDays != null ? String(paymentDays) : current.info.paymentTermsDays;
+      const days = Number(nextPayment);
+      return {
+        ...current,
+        info: {
+          ...current.info,
+          paymentTermsDays: nextPayment,
+          dueAt:
+            current.info.issuedAt && Number.isFinite(days) && days > 0
+              ? addDaysFrenchDateInput(days)
+              : current.info.dueAt,
+          notes: current.info.notes?.trim() ? current.info.notes : notes ?? current.info.notes,
+        },
+      };
+    });
+  }, [memory, state.clientId]);
+
+  useEffect(() => {
+    if (!autoReplay || replayApplied.current || !state.clientId || !memoryReady) {
+      return;
+    }
+
+    replayApplied.current = true;
+    const last = memory?.lastDocument;
+    if (last && last.lines.length > 0) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- one-shot replay from URL
+      setState((current) => ({
+        ...current,
+        lines: memoryLinesToQuoteLines(last.lines),
+      }));
+      showSuccess('Comme la dernière fois — prestations reprises.');
+      return;
+    }
+
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- fallback empty line if no history
+    setState((current) => ({
+      ...current,
+      lines: [
+        createEmptyQuoteLine({
+          vatRate: memory?.defaults.vatRate ?? defaultVatRate,
+          discountPercent: memory?.defaults.discountPercent ?? 0,
+        }),
+      ],
+    }));
+  }, [
+    autoReplay,
+    defaultVatRate,
+    memory?.defaults.discountPercent,
+    memory?.defaults.vatRate,
+    memory?.lastDocument,
+    memoryReady,
+    showSuccess,
+    state.clientId,
+  ]);
+
+  useEffect(() => {
+    if (step !== 2 || state.lines.length > 0 || autoReplay) {
       return;
     }
 
     // eslint-disable-next-line react-hooks/set-state-in-effect -- add starter line when entering step 2
     setState((current) => ({
       ...current,
-      lines: [createEmptyQuoteLine()],
+      lines: [
+        createEmptyQuoteLine({
+          vatRate: memory?.defaults.vatRate ?? defaultVatRate,
+          discountPercent: memory?.defaults.discountPercent ?? 0,
+        }),
+      ],
     }));
-  }, [step, state.lines.length]);
+  }, [
+    autoReplay,
+    step,
+    state.lines.length,
+    memory?.defaults.vatRate,
+    memory?.defaults.discountPercent,
+    defaultVatRate,
+  ]);
 
   function handleSelectClient(client: Client) {
+    memoryAppliedForClient.current = null;
+    replayApplied.current = false;
     setState((current) => ({
       ...current,
       clientId: client.id,
       clientName: getClientDisplayName(client),
     }));
+    setStep(2);
   }
 
   function handleAddLine(line: QuoteLineValue) {
     setState((current) => ({
       ...current,
       lines: [...current.lines, line],
+    }));
+  }
+
+  function handleReplaceLines(lines: QuoteLineValue[]) {
+    setState((current) => ({
+      ...current,
+      lines,
     }));
   }
 
@@ -196,7 +299,7 @@ export function InvoiceWizardScreen({
         if (state.lines.length === 0) {
           showError('Ajoutez au moins une prestation à la facture.');
         } else {
-          showError('Renseignez la description, la quantité et le prix de chaque prestation.');
+          showError('Indiquez une description et un prix HT pour chaque prestation.');
         }
         break;
       case 3:
@@ -250,9 +353,9 @@ export function InvoiceWizardScreen({
 
     try {
       if (mode === 'create') {
-        await createInvoice.mutateAsync(input);
-        showSuccess('Facture créée.');
-        router.replace('/invoices' as Href);
+        const created = await createInvoice.mutateAsync(input);
+        showSuccess('Facture créée — vous pouvez l’envoyer.');
+        router.replace(`/invoices/${created.id}` as Href);
         return;
       }
 
@@ -276,15 +379,20 @@ export function InvoiceWizardScreen({
           <QuoteClientStep
             onSelectClient={handleSelectClient}
             selectedClientId={state.clientId}
+            selectedClientName={state.clientName || undefined}
           />
         );
       case 2:
         return (
           <QuoteAddLinesStep
+            clientId={state.clientId}
+            clientName={state.clientName || undefined}
+            defaultVatRate={defaultVatRate}
             lines={asQuoteLines(state.lines)}
             onAddLine={handleAddLine}
             onChangeLine={handleChangeLine}
             onRemoveLine={handleRemoveLine}
+            onReplaceLines={handleReplaceLines}
           />
         );
       case 3:
@@ -330,7 +438,6 @@ export function InvoiceWizardScreen({
             backLabel={step === 1 ? 'Annuler' : 'Précédent'}
             onBack={handleBack}
             onPrimary={step < TOTAL_STEPS ? handleNext : handleSave}
-            primaryDisabled={step < TOTAL_STEPS ? !canGoNext() : false}
             primaryLabel={primaryActionLabel}
             primaryLoading={step >= TOTAL_STEPS && isSaving}
           />
@@ -350,7 +457,6 @@ export function InvoiceWizardScreen({
             backLabel={step === 1 ? 'Annuler' : 'Précédent'}
             onBack={handleBack}
             onPrimary={step < TOTAL_STEPS ? handleNext : handleSave}
-            primaryDisabled={step < TOTAL_STEPS ? !canGoNext() : false}
             primaryLabel={primaryActionLabel}
             primaryLoading={step >= TOTAL_STEPS && isSaving}
           />

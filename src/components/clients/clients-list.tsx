@@ -3,16 +3,16 @@ import {
   FlatList,
   RefreshControl,
   StyleSheet,
-  Text,
   View,
   type ListRenderItem,
   type ViewStyle,
 } from 'react-native';
 
+import { DocumentListSkeleton } from '@/components/ui/document-list-skeleton';
 import { useColors, useThemedStyles } from '@/hooks/use-colors';
 import { radius } from '@/constants/theme/radius';
 import { spacing } from '@/constants/theme/spacing';
-import { typography } from '@/constants/theme/typography';
+import { elevation } from '@/constants/theme/surfaces';
 import type { Client } from '@/types/client';
 
 import { ClientCard } from './client-card';
@@ -47,7 +47,7 @@ export function ClientsList({
   const colors = useColors();
   const renderItem: ListRenderItem<Client> = ({ item, index }) => (
     <View>
-      <ClientCard client={item} onPress={onClientPress} />
+      <ClientCard client={item} index={index} onPress={onClientPress} />
       {index < clients.length - 1 ? <View style={styles.separator} /> : null}
     </View>
   );
@@ -65,12 +65,7 @@ export function ClientsList({
   };
 
   if (isInitialLoading) {
-    return (
-      <View style={styles.loading}>
-        <ActivityIndicator color={colors.primary} size="large" />
-        <Text style={styles.loadingText}>Chargement des clients...</Text>
-      </View>
-    );
+    return <DocumentListSkeleton />;
   }
 
   return (
@@ -107,40 +102,30 @@ export function ClientsList({
 
 function useStyles() {
   return useThemedStyles((colors) => ({
-  list: {
-    flex: 1,
-  },
-  listContent: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.card,
-    borderWidth: 1,
-    borderColor: colors.border,
-    overflow: 'hidden',
-  },
-  emptyContent: {
-    flexGrow: 1,
-    justifyContent: 'center',
-  },
-  loading: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: spacing['3xl'],
-    gap: spacing.md,
-  },
-  loadingText: {
-    ...typography.subheadline,
-    color: colors.textSecondary,
-  },
-  footer: {
-    paddingVertical: spacing.lg,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  separator: {
-    height: StyleSheet.hairlineWidth,
-    backgroundColor: colors.separator,
-    marginLeft: spacing.md,
-  },
-}));
+    list: {
+      flex: 1,
+    },
+    listContent: {
+      backgroundColor: colors.surface,
+      borderRadius: radius.card,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: colors.border,
+      overflow: 'hidden',
+      ...elevation[1],
+    },
+    emptyContent: {
+      flexGrow: 1,
+      justifyContent: 'center',
+    },
+    footer: {
+      paddingVertical: spacing.lg,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    separator: {
+      height: StyleSheet.hairlineWidth,
+      backgroundColor: colors.separator,
+      marginLeft: spacing.md + 44 + spacing.md,
+    },
+  }));
 }

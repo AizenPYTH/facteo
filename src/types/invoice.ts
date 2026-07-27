@@ -123,7 +123,9 @@ export function isInvoiceStatus(value: string): value is InvoiceStatus {
 }
 
 export function canConvertQuoteToInvoice(status: QuoteStatus): boolean {
-  return status === 'accepted';
+  // Artisans facturent souvent sans cycle d’acceptation formel.
+  // Bloquer seulement les états terminaux / déjà convertis.
+  return status === 'draft' || status === 'sent' || status === 'accepted';
 }
 
 export function canEditInvoice(status: InvoiceStatus): boolean {
@@ -136,6 +138,11 @@ export function canCancelInvoice(status: InvoiceStatus): boolean {
 
 export function canMarkInvoiceAsPaid(status: InvoiceStatus): boolean {
   return status === 'sent' || status === 'overdue' || status === 'partially_paid';
+}
+
+/** Hard-delete only drafts (same product rule as editable invoices). */
+export function canDeleteInvoice(status: InvoiceStatus): boolean {
+  return status === 'draft';
 }
 
 export function canAddInvoicePayment(invoice: Pick<InvoiceDetail, 'status' | 'amountDue'>): boolean {

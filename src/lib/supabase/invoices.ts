@@ -52,7 +52,9 @@ function applySearchFilter<T extends { or: (filters: string) => T }>(
     return query;
   }
 
-  return query.or(`number.ilike.%${sanitizedSearch}%`);
+  return query.or(
+    `number.ilike.%${sanitizedSearch}%,notes.ilike.%${sanitizedSearch}%`,
+  );
 }
 
 async function insertInvoiceItems(
@@ -168,7 +170,13 @@ async function syncInvoicePaymentStatus(
 
 export async function fetchInvoicesPage(
   scope: DataScope,
-  { search = '', status = 'all', page = 0, pageSize = INVOICES_PAGE_SIZE }: InvoicesPageParams = {},
+  {
+    search = '',
+    status = 'all',
+    due = 'all',
+    page = 0,
+    pageSize = INVOICES_PAGE_SIZE,
+  }: InvoicesPageParams = {},
 ): Promise<InvoicesPage> {
   const from = page * pageSize;
   const to = from + pageSize - 1;
@@ -181,7 +189,20 @@ export async function fetchInvoicesPage(
     .order('created_at', { ascending: false })
     .range(from, to);
 
-  if (status !== 'all') {
+  if (due === 'week') {
+    const weekStart = new Date();
+    const day = weekStart.getDay();
+    const diff = day === 0 ? 6 : day - 1;
+    weekStart.setDate(weekStart.getDate() - diff);
+    weekStart.setHours(0, 0, 0, 0);
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekEnd.getDate() + 7);
+
+    query = query
+      .in('status', ['sent', 'partially_paid', 'overdue'])
+      .gte('due_at', weekStart.toISOString())
+      .lt('due_at', weekEnd.toISOString());
+  } else if (status !== 'all') {
     query = query.eq('status', status);
   }
 
@@ -204,6 +225,29 @@ export async function fetchInvoicesPage(
     nextPage: hasMore ? page + 1 : null,
     totalCount: count,
   };
+}
+
+/** Documents for a single client — CRM history on mobile detail. */
+export async function fetchInvoicesForClient(
+  scope: DataScope,
+  clientId: string,
+  limit = 50,
+): Promise<Invoice[]> {
+  const { data, error } = await supabase
+    .from('invoices')
+    .select(INVOICE_LIST_COLUMNS)
+    .eq('company_id', scope.companyId)
+    .eq('client_id', clientId)
+    .order('issued_at', { ascending: false, nullsFirst: false })
+    .order('created_at', { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    logSupabaseError('fetchInvoicesForClient', error);
+    return [];
+  }
+
+  return (data as unknown as InvoiceWithClient[] | null)?.map(mapInvoiceRowToInvoice) ?? [];
 }
 
 export async function fetchInvoiceById(
@@ -447,6 +491,44 @@ export async function cancelInvoice(scope: DataScope, invoiceId: string): Promis
   return updateInvoiceStatus(scope, invoiceId, 'canceled');
 }
 
+/**
+ * Permanently delete a draft invoice. Non-draft invoices must be canceled instead.
+ * Uses existing RLS delete policies — no schema change.
+ */
+export async function deleteInvoice(scope: DataScope, invoiceId: string): Promise<void> {
+  const existing = await fetchInvoiceById(scope, invoiceId);
+
+  if (!existing) {
+    throw new Error('Invoice not found.');
+  }
+
+  if (existing.status !== 'draft') {
+    throw new Error('Only draft invoices can be deleted.');
+  }
+
+  const { error: itemsError } = await supabase
+    .from('invoice_items')
+    .delete()
+    .eq('invoice_id', invoiceId)
+    .eq('user_id', scope.userId);
+
+  if (itemsError) {
+    logSupabaseError('deleteInvoiceItems', itemsError);
+    throw itemsError;
+  }
+
+  const { error } = await supabase
+    .from('invoices')
+    .delete()
+    .eq('id', invoiceId)
+    .eq('company_id', scope.companyId);
+
+  if (error) {
+    logSupabaseError('deleteInvoice', error);
+    throw error;
+  }
+}
+
 export async function markInvoiceAsPaid(
   scope: DataScope,
   invoiceId: string,
@@ -553,8 +635,8 @@ export async function convertQuoteToInvoice(
     throw new Error('Quote already converted.');
   }
 
-  if (quote.status !== 'accepted') {
-    throw new Error('Quote must be accepted before conversion.');
+  if (quote.status === 'rejected' || quote.status === 'expired') {
+    throw new Error('Quote cannot be converted.');
   }
 
   if (!quote.clientId) {

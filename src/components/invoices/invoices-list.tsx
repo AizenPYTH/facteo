@@ -3,16 +3,16 @@ import {
   FlatList,
   RefreshControl,
   StyleSheet,
-  Text,
   View,
   type ListRenderItem,
   type ViewStyle,
 } from 'react-native';
 
+import { DocumentListSkeleton } from '@/components/ui/document-list-skeleton';
 import { useColors, useThemedStyles } from '@/hooks/use-colors';
 import { radius } from '@/constants/theme/radius';
 import { spacing } from '@/constants/theme/spacing';
-import { typography } from '@/constants/theme/typography';
+import { elevation } from '@/constants/theme/surfaces';
 import type { Invoice } from '@/types/invoice';
 
 import { EmptyInvoices } from './empty-invoices';
@@ -21,6 +21,9 @@ import { InvoiceCard } from './invoice-card';
 export type InvoicesListProps = {
   invoices: Invoice[];
   onInvoicePress?: (invoice: Invoice) => void;
+  onInvoiceLongPress?: (invoice: Invoice) => void;
+  selectionMode?: boolean;
+  selectedIds?: ReadonlySet<string>;
   isInitialLoading?: boolean;
   isRefreshing?: boolean;
   isFetchingNextPage?: boolean;
@@ -39,9 +42,12 @@ export function InvoicesList({
   isFetchingNextPage = false,
   isSearching = false,
   showCreateAction = true,
+  selectionMode = false,
+  selectedIds,
   onRefresh,
   onEndReached,
   onInvoicePress,
+  onInvoiceLongPress,
   contentContainerStyle,
   testID,
 }: InvoicesListProps) {
@@ -49,7 +55,14 @@ export function InvoicesList({
   const colors = useColors();
   const renderItem: ListRenderItem<Invoice> = ({ item, index }) => (
     <View>
-      <InvoiceCard invoice={item} onPress={onInvoicePress} />
+      <InvoiceCard
+        index={index}
+        invoice={item}
+        onLongPress={onInvoiceLongPress}
+        onPress={onInvoicePress}
+        selected={selectedIds?.has(item.id) ?? false}
+        selectionMode={selectionMode}
+      />
       {index < invoices.length - 1 ? <View style={styles.separator} /> : null}
     </View>
   );
@@ -67,12 +80,7 @@ export function InvoicesList({
   };
 
   if (isInitialLoading) {
-    return (
-      <View style={styles.loading}>
-        <ActivityIndicator color={colors.primary} size="large" />
-        <Text style={styles.loadingText}>Chargement des factures...</Text>
-      </View>
-    );
+    return <DocumentListSkeleton />;
   }
 
   return (
@@ -82,6 +90,7 @@ export function InvoicesList({
         contentContainerStyle,
       ]}
       data={invoices}
+      extraData={selectionMode ? selectedIds : undefined}
       keyExtractor={(item) => item.id}
       ListEmptyComponent={
         <EmptyInvoices isSearching={isSearching} showCreateAction={showCreateAction} />
@@ -111,40 +120,30 @@ export function InvoicesList({
 
 function useStyles() {
   return useThemedStyles((colors) => ({
-  list: {
-    flex: 1,
-  },
-  listContent: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.card,
-    borderWidth: 1,
-    borderColor: colors.border,
-    overflow: 'hidden',
-  },
-  emptyContent: {
-    flexGrow: 1,
-    justifyContent: 'center',
-  },
-  loading: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: spacing['3xl'],
-    gap: spacing.md,
-  },
-  loadingText: {
-    ...typography.subheadline,
-    color: colors.textSecondary,
-  },
-  footer: {
-    paddingVertical: spacing.lg,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  separator: {
-    height: StyleSheet.hairlineWidth,
-    backgroundColor: colors.separator,
-    marginLeft: spacing.md,
-  },
-}));
+    list: {
+      flex: 1,
+    },
+    listContent: {
+      backgroundColor: colors.surface,
+      borderRadius: radius.card,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: colors.border,
+      overflow: 'hidden',
+      ...elevation[1],
+    },
+    emptyContent: {
+      flexGrow: 1,
+      justifyContent: 'center',
+    },
+    footer: {
+      paddingVertical: spacing.lg,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    separator: {
+      height: StyleSheet.hairlineWidth,
+      backgroundColor: colors.separator,
+      marginLeft: spacing.md,
+    },
+  }));
 }

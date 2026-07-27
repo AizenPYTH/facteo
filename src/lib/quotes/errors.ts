@@ -29,7 +29,8 @@ function mapQuoteErrorMessage(message: string): string {
     case 'Unable to fetch quote.':
       return 'Impossible de charger le devis.';
     case 'Quote must be accepted before conversion.':
-      return 'Seuls les devis acceptés peuvent être convertis en facture.';
+    case 'Quote cannot be converted.':
+      return 'Ce devis ne peut pas être transformé en facture.';
     case 'Quote already converted.':
       return 'Ce devis a déjà été converti en facture.';
     default: {

@@ -110,7 +110,7 @@ export default function QuoteDetailScreen() {
 
     try {
       const invoice = await convertToInvoice.mutateAsync(quoteId);
-      showSuccess('Facture créée.');
+      showSuccess('Facture créée — vous pouvez l’envoyer.');
       router.push(`/invoices/${invoice.id}` as Href);
     } catch (error) {
       showError(getQuoteErrorMessage(readErrorMessage(error)));
@@ -210,6 +210,21 @@ export default function QuoteDetailScreen() {
       </ScrollView>
 
       <View style={styles.footer}>
+        {convertible ? (
+          <Button
+            elevated
+            loading={convertToInvoice.isPending}
+            onPress={handleConvert}
+            title="Transformer en facture"
+          />
+        ) : null}
+        {quote.convertedInvoiceId ? (
+          <Button
+            elevated
+            onPress={() => router.push(`/invoices/${quote.convertedInvoiceId}` as Href)}
+            title="Voir la facture"
+          />
+        ) : null}
         {editable ? (
           <Button
             onPress={() => router.push(`/quotes/${quote.id}/edit` as Href)}
@@ -223,21 +238,6 @@ export default function QuoteDetailScreen() {
           title="Dupliquer"
           variant="ghost"
         />
-        {convertible ? (
-          <Button
-            loading={convertToInvoice.isPending}
-            onPress={handleConvert}
-            title="Convertir en facture"
-            variant="ghost"
-          />
-        ) : null}
-        {quote.convertedInvoiceId ? (
-          <Button
-            onPress={() => router.push(`/invoices/${quote.convertedInvoiceId}` as Href)}
-            title="Voir la facture"
-            variant="ghost"
-          />
-        ) : null}
         {deletable ? (
           <Button onPress={() => setDeleteVisible(true)} title="Supprimer" variant="ghost" />
         ) : null}

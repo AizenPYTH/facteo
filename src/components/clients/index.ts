@@ -9,6 +9,8 @@ export { ClientCompanyLookup } from './client-company-lookup';
 export { ClientDetailView } from './client-detail-view';
 export type { ClientDetailViewProps } from './client-detail-view';
 
+export { ClientDocumentsSection } from './client-documents-section';
+
 export { ClientField } from './client-field';
 
 export { ClientForm } from './client-form';

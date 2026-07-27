@@ -1,113 +1,146 @@
 import { SymbolView } from 'expo-symbols';
-import { Pressable, StyleSheet, Text, View, type ViewStyle } from 'react-native';
+import { StyleSheet, Text, View, type ViewStyle } from 'react-native';
+import Animated, {
+  FadeInDown,
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+} from 'react-native-reanimated';
+import { Pressable } from 'react-native';
 
-import { useColors, useThemedStyles } from '@/hooks/use-colors';
+import { press } from '@/constants/theme/interaction';
+import { entrance, spring } from '@/constants/theme/motion';
+import { radius } from '@/constants/theme/radius';
 import { spacing } from '@/constants/theme/spacing';
-import { typography } from '@/constants/theme/typography';
+import { type } from '@/constants/theme/type-roles';
+import { useColors, useThemedStyles } from '@/hooks/use-colors';
 import { formatFrenchPhoneDisplay } from '@/lib/format/phone';
+import { triggerHaptic } from '@/lib/haptics';
 import { getClientDisplayName, getClientSecondaryLabel, type Client } from '@/types/client';
 
-import { ClientField } from './client-field';
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 export type ClientCardProps = {
   client: Client;
   onPress?: (client: Client) => void;
+  index?: number;
   style?: ViewStyle;
   testID?: string;
 };
 
-export function ClientCard({ client, onPress, style, testID }: ClientCardProps) {
+export function ClientCard({ client, onPress, index = 0, style, testID }: ClientCardProps) {
   const styles = useStyles();
   const colors = useColors();
   const primaryLabel = getClientDisplayName(client);
   const secondaryLabel = getClientSecondaryLabel(client);
+  const phone = formatFrenchPhoneDisplay(client.phone);
+  const scale = useSharedValue(1);
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
+  const stagger =
+    Math.min(index, entrance.listStaggerMax - 1) * entrance.listStagger;
+
+  const initial = (primaryLabel.trim().charAt(0) || '?').toUpperCase();
 
   const content = (
     <View style={[styles.card, style]}>
-      <View style={styles.header}>
-        <View style={styles.headerText}>
-          <Text numberOfLines={2} style={styles.primaryLabel}>
-            {primaryLabel}
+      <View style={styles.avatar}>
+        <Text style={styles.avatarText}>{initial}</Text>
+      </View>
+      <View style={styles.body}>
+        <Text numberOfLines={1} style={styles.primaryLabel}>
+          {primaryLabel}
+        </Text>
+        {secondaryLabel ? (
+          <Text numberOfLines={1} style={styles.secondaryLabel}>
+            {secondaryLabel}
           </Text>
-          {secondaryLabel ? (
-            <Text numberOfLines={2} style={styles.secondaryLabel}>
-              {secondaryLabel}
-            </Text>
-          ) : null}
-        </View>
-        {onPress ? (
-          <SymbolView
-            name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' }}
-            size={14}
-            tintColor={colors.iconTertiary}
-            type="hierarchical"
-          />
         ) : null}
+        <Text numberOfLines={1} style={styles.meta}>
+          {[phone, client.email].filter(Boolean).join(' · ') || 'Aucune coordonnée'}
+        </Text>
       </View>
-
-      <View style={styles.fields}>
-        <ClientField label="Téléphone" value={formatFrenchPhoneDisplay(client.phone)} />
-        <ClientField label="Adresse e-mail" value={client.email} />
-      </View>
+      {onPress ? (
+        <SymbolView
+          name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' }}
+          size={14}
+          tintColor={colors.iconTertiary}
+          type="hierarchical"
+        />
+      ) : null}
     </View>
   );
 
-  if (!onPress) {
-    return (
-      <View style={styles.wrapper} testID={testID}>
-        {content}
-      </View>
-    );
-  }
-
-  return (
-    <Pressable
+  const inner = onPress ? (
+    <AnimatedPressable
       accessibilityLabel={`Client ${primaryLabel}`}
       accessibilityRole="button"
-      onPress={() => onPress(client)}
-      style={({ pressed }) => [styles.wrapper, pressed && styles.pressed]}
+      onPress={() => {
+        void triggerHaptic('selection');
+        onPress(client);
+      }}
+      onPressIn={() => {
+        scale.value = withSpring(press.card.scale, spring.snappy);
+      }}
+      onPressOut={() => {
+        scale.value = withSpring(1, spring.snappy);
+      }}
+      style={animatedStyle}
       testID={testID}>
       {content}
-    </Pressable>
+    </AnimatedPressable>
+  ) : (
+    <View testID={testID}>{content}</View>
+  );
+
+  return (
+    <Animated.View
+      entering={FadeInDown.delay(stagger).duration(entrance.listItemDuration).springify()}>
+      {inner}
+    </Animated.View>
   );
 }
 
 function useStyles() {
   return useThemedStyles((colors) => ({
-  wrapper: {
-    backgroundColor: colors.surface,
-  },
-  pressed: {
-    backgroundColor: colors.backgroundSecondary,
-  },
-  card: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
-    gap: spacing.md,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    gap: spacing.sm,
-  },
-  headerText: {
-    flex: 1,
-    minWidth: 0,
-    gap: 2,
-  },
-  primaryLabel: {
-    ...typography.bodyMedium,
-    color: colors.text,
-    flexShrink: 1,
-  },
-  secondaryLabel: {
-    ...typography.footnote,
-    color: colors.textSecondary,
-    flexShrink: 1,
-  },
-  fields: {
-    gap: spacing.sm,
-  },
-}));
+    card: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.md,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.md,
+      backgroundColor: colors.surface,
+    },
+    avatar: {
+      width: 44,
+      height: 44,
+      borderRadius: radius.full,
+      backgroundColor: colors.primarySubtle,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    avatarText: {
+      ...type.cardTitle,
+      color: colors.primary,
+    },
+    body: {
+      flex: 1,
+      minWidth: 0,
+      gap: 2,
+    },
+    primaryLabel: {
+      ...type.cardTitle,
+      color: colors.text,
+    },
+    secondaryLabel: {
+      ...type.secondary,
+      color: colors.textSecondary,
+    },
+    meta: {
+      ...type.caption,
+      color: colors.textTertiary,
+      marginTop: 2,
+    },
+  }));
 }

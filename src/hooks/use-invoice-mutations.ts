@@ -6,6 +6,7 @@ import {
   addInvoicePayment,
   cancelInvoice,
   createInvoice,
+  deleteInvoice,
   duplicateInvoice,
   markInvoiceAsPaid,
   updateInvoice,
@@ -161,6 +162,16 @@ export function useInvoiceMutations() {
     onSuccess: () => invalidateInvoices(),
   });
 
+  const deleteInvoiceMutation = useMutation({
+    mutationFn: (invoiceId: string) => deleteInvoice(requireScope(scope), invoiceId),
+    onMutate: async (invoiceId) => {
+      await queryClient.cancelQueries({ queryKey: invoicesQueryKeys.all });
+      updateInvoicesInLists((invoices) => invoices.filter((invoice) => invoice.id !== invoiceId));
+      return {};
+    },
+    onSettled: () => invalidateInvoices(),
+  });
+
   return {
     createInvoice: createInvoiceMutation,
     updateInvoice: updateInvoiceMutation,
@@ -169,5 +180,6 @@ export function useInvoiceMutations() {
     markAsPaid: markAsPaidMutation,
     addPayment: addPaymentMutation,
     duplicateInvoice: duplicateInvoiceMutation,
+    deleteInvoice: deleteInvoiceMutation,
   };
 }

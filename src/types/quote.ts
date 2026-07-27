@@ -102,7 +102,10 @@ export function formatDecimalForInput(value: number): string {
   }).format(value);
 }
 
-export function createEmptyQuoteLine(): QuoteLineValue {
+export function createEmptyQuoteLine(defaults?: {
+  vatRate?: string | number;
+  discountPercent?: string | number;
+}): QuoteLineValue {
   return {
     id: createLocalLineId(),
     productId: null,
@@ -110,8 +113,18 @@ export function createEmptyQuoteLine(): QuoteLineValue {
     quantity: '1',
     unit: 'unité',
     unitPrice: '0',
-    vatRate: '20',
-    discountPercent: '0',
+    vatRate:
+      defaults?.vatRate !== undefined
+        ? typeof defaults.vatRate === 'number'
+          ? formatDecimalForInput(defaults.vatRate)
+          : defaults.vatRate
+        : '20',
+    discountPercent:
+      defaults?.discountPercent !== undefined
+        ? typeof defaults.discountPercent === 'number'
+          ? formatDecimalForInput(defaults.discountPercent)
+          : defaults.discountPercent
+        : '0',
   };
 }
 
