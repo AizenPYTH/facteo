@@ -1,6 +1,6 @@
 import { router, type Href } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
-import { Pressable, View, type ViewStyle } from 'react-native';
+import { Pressable, StyleSheet, View, type ViewStyle } from 'react-native';
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -28,6 +28,8 @@ export type DashboardHeaderProps = {
   activeCompany?: TenantCompany | null;
   onSwitchCompany?: (companyId: string) => void;
   onCreateCompany?: (name: string) => Promise<void>;
+  /** Show Premium badge when the user is on the free plan. */
+  showPremiumBadge?: boolean;
   style?: ViewStyle;
 };
 
@@ -39,6 +41,7 @@ export function DashboardHeader({
   activeCompany,
   onSwitchCompany,
   onCreateCompany,
+  showPremiumBadge = false,
   style,
 }: DashboardHeaderProps) {
   const styles = useStyles();
@@ -72,6 +75,27 @@ export function DashboardHeader({
           ) : null}
         </View>
         <View style={styles.chromeActions}>
+          {showPremiumBadge ? (
+            <AnimatedPressable
+              accessibilityLabel="Passer à Premium"
+              accessibilityRole="button"
+              hitSlop={8}
+              onPress={() => {
+                void triggerHaptic('selection');
+                router.push('/settings/premium' as Href);
+              }}
+              onPressIn={() => {
+                scale.value = withSpring(press.chrome.scale, spring.snappy);
+              }}
+              onPressOut={() => {
+                scale.value = withSpring(1, spring.snappy);
+              }}
+              style={[styles.premiumBadge, animatedStyle]}>
+              <AppText style={styles.premiumBadgeText} variant="caption">
+                Premium
+              </AppText>
+            </AnimatedPressable>
+          ) : null}
           <AnimatedPressable
             accessibilityLabel="Rechercher"
             accessibilityRole="button"
@@ -152,6 +176,20 @@ function useStyles() {
       justifyContent: 'center',
       backgroundColor: colors.surface,
       ...elevation[1],
+    },
+    premiumBadge: {
+      height: 32,
+      paddingHorizontal: spacing.sm + 2,
+      borderRadius: radius.full,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: colors.primarySubtle,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: colors.primary,
+    },
+    premiumBadgeText: {
+      color: colors.primary,
+      fontWeight: '700',
     },
   }));
 }

@@ -128,8 +128,8 @@ export function ClientCompanyLookup({ control, errors, setValue }: ClientCompany
           <p className="font-medium">Recherche SIREN / SIRET — INVEQ Premium</p>
           <p className="mt-1 text-amber-800/90">
             Passez à Premium pour préremplir automatiquement les informations entreprise.{' '}
-            <Link className="font-medium underline underline-offset-2" href="/app/settings/subscription">
-              Voir l’abonnement
+            <Link className="font-medium underline underline-offset-2" href="/tarifs">
+              Débloquer Premium
             </Link>
           </p>
         </div>
