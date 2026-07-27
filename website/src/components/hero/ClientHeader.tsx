@@ -20,7 +20,6 @@ export default function ClientHeader({
             Émetteur
           </p>
           <p className="mt-1 text-base font-semibold tracking-tight text-foreground">INVEQ</p>
-          <p className="mt-0.5 text-xs text-muted">contact@inveq.app</p>
         </div>
       </div>
 

@@ -2,14 +2,16 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Link, router, type Href } from 'expo-router';
 import { useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
-import { Text } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 
 import { AuthScreen } from '@/components/auth/auth-screen';
 import { AuthTextField } from '@/components/auth/auth-text-field';
 import { Button } from '@/components/ui/button';
+import { MARKETING_HELP_URLS } from '@/constants/marketing/site';
 import { useAuth } from '@/hooks/use-auth';
 import { useAuthScreenStyles } from '@/hooks/use-auth-screen-styles';
 import { getAuthErrorMessage } from '@/lib/auth/errors';
+import { openExternalUrl } from '@/lib/legal/open-legal-page';
 import { loginSchema, type LoginFormValues } from '@/lib/validations/login';
 
 export default function LoginScreen() {
@@ -40,15 +42,24 @@ export default function LoginScreen() {
 
   return (
     <AuthScreen
-      error={formError}
-      footer={
-        <Button
-          elevated
-          loading={isSubmitting}
-          onPress={handleSubmit(onSubmit)}
-          title="Connexion"
-        />
+      actions={
+        <View style={authScreenStyles.actionsBlock}>
+          <Button
+            elevated
+            loading={isSubmitting}
+            onPress={handleSubmit(onSubmit)}
+            title="Connexion"
+          />
+          <Pressable
+            accessibilityRole="link"
+            hitSlop={8}
+            onPress={() => void openExternalUrl(MARKETING_HELP_URLS.forgotPassword)}
+            style={authScreenStyles.forgotWrap}>
+            <Text style={authScreenStyles.forgotLink}>Mot de passe oublié ?</Text>
+          </Pressable>
+        </View>
       }
+      error={formError}
       footerLink={
         <Text style={authScreenStyles.footerText}>
           Pas encore de compte ?{' '}
@@ -57,8 +68,7 @@ export default function LoginScreen() {
           </Link>
         </Text>
       }
-      subtitle="Gérez vos devis et factures simplement."
-      title="Connexion">
+      subtitle="Facturez simplement.">
       <Controller
         control={control}
         name="email"
@@ -66,12 +76,13 @@ export default function LoginScreen() {
           <AuthTextField
             autoComplete="email"
             error={errors.email?.message}
+            hideLabel
             icon="envelope.fill"
             keyboardType="email-address"
             label="Adresse e-mail"
             onBlur={onBlur}
             onChangeText={onChange}
-            placeholder="vous@entreprise.fr"
+            placeholder="Adresse e-mail"
             returnKeyType="next"
             textContentType="emailAddress"
             value={value}
@@ -85,12 +96,13 @@ export default function LoginScreen() {
           <AuthTextField
             autoComplete="password"
             error={errors.password?.message}
+            hideLabel
             icon="lock.fill"
             isPassword
             label="Mot de passe"
             onBlur={onBlur}
             onChangeText={onChange}
-            placeholder="Votre mot de passe"
+            placeholder="Mot de passe"
             returnKeyType="done"
             textContentType="password"
             value={value}

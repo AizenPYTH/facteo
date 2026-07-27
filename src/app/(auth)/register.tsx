@@ -123,8 +123,7 @@ export default function RegisterScreen() {
 
   return (
     <AuthScreen
-      error={formError}
-      footer={
+      actions={
         <Button
           elevated
           loading={isSubmitting}
@@ -132,6 +131,7 @@ export default function RegisterScreen() {
           title="Créer un compte"
         />
       }
+      error={formError}
       footerLink={
         <Text style={authScreenStyles.footerText}>
           Déjà un compte ?{' '}

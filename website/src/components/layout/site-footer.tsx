@@ -2,7 +2,7 @@ import Link from 'next/link';
 
 import { BrandWordmark } from '@/components/brand/brand-logo';
 import { FOOTER } from '@/lib/content';
-import { CONTACT_EMAIL, SITE_NAME } from '@/lib/constants';
+import { SITE_NAME } from '@/lib/constants';
 
 export function SiteFooter() {
   const year = new Date().getFullYear();
@@ -15,7 +15,6 @@ export function SiteFooter() {
           <p className="mt-4 max-w-xs text-sm leading-relaxed text-slate-400">
             La facturation moderne pour artisans, freelances et PME.
           </p>
-          <p className="mt-3 text-sm text-slate-500">{CONTACT_EMAIL}</p>
         </div>
 
         <FooterColumn links={FOOTER.product} title="Produit" />

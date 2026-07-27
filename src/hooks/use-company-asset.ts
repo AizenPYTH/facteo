@@ -10,6 +10,7 @@ import {
 import { updateCompanyAssetUrl } from '@/lib/supabase/companies';
 import {
   deleteCompanyAssetByUrl,
+  resolveCompanyAssetUrl,
   uploadCompanyAsset,
   type CompanyAssetKind,
 } from '@/lib/supabase/storage';
@@ -41,16 +42,17 @@ export function useCompanyAsset(kind: CompanyAssetKind) {
         }
       }
 
-      const publicUrl = await uploadCompanyAsset(
+      const storedPath = await uploadCompanyAsset(
         activeScope.companyId,
         kind,
         picked.uri,
         picked.mimeType,
       );
       const field = kind === 'logo' ? 'logo_url' : 'signature_url';
-      await updateCompanyAssetUrl(activeScope.companyId, field, publicUrl);
-      await cacheCompanyAssetUrl(activeScope.companyId, kind, publicUrl);
-      return { status: 'success', url: publicUrl };
+      await updateCompanyAssetUrl(activeScope.companyId, field, storedPath);
+      const displayUrl = (await resolveCompanyAssetUrl(storedPath)) ?? storedPath;
+      await cacheCompanyAssetUrl(activeScope.companyId, kind, displayUrl);
+      return { status: 'success', url: displayUrl };
     },
     onSuccess: (result) => {
       if (result.status !== 'success' || !scope?.companyId) {

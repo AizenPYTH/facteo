@@ -1,66 +1,65 @@
 import type { ReactNode } from 'react';
 import { Image, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
+import { StatusBar } from 'expo-status-bar';
 
-import { FormScreen } from '@/components/ui/form-screen';
-import { useColors, useThemedStyles } from '@/hooks/use-colors';
-import { motion } from '@/constants/theme/design-system';
+import { useThemedStyles } from '@/hooks/use-colors';
+import { motion } from '@/constants/theme/motion';
 import { radius } from '@/constants/theme/radius';
 import { spacing } from '@/constants/theme/spacing';
 import { typography } from '@/constants/theme/typography';
-import { shadows } from '@/constants/theme/theme';
 
 type AuthScreenProps = {
-  title: string;
+  /** Optional large title under the logo. Prefer slogan-only on login. */
+  title?: string;
   subtitle: string;
   children: ReactNode;
-  footer: ReactNode;
+  /** Primary actions (button, forgot link) — stay in scroll, above keyboard. */
+  actions?: ReactNode;
   footerLink?: ReactNode;
   error?: string | null;
 };
 
+/**
+ * Auth shell: dark premium layout, keyboard-stable (no sticky footer jump).
+ */
 export function AuthScreen({
   title,
   subtitle,
   children,
-  footer,
+  actions,
   footerLink,
   error,
 }: AuthScreenProps) {
   const styles = useStyles();
-  const colors = useColors();
 
   return (
     <View style={styles.root}>
-      <LinearGradient
-        colors={[colors.primarySubtle, colors.background, colors.background]}
-        end={{ x: 0.5, y: 1 }}
-        locations={[0, 0.42, 1]}
-        start={{ x: 0.5, y: 0 }}
-        style={StyleSheet.absoluteFill}
-      />
-
+      <StatusBar style="light" />
       <SafeAreaView edges={['top', 'bottom']} style={styles.safeArea}>
-        <FormScreen
+        <KeyboardAwareScrollView
+          bottomOffset={spacing.lg}
           contentContainerStyle={styles.content}
-          edges={[]}
-          footer={footer}
-          scrollable
-          transparent>
+          keyboardDismissMode="on-drag"
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+          style={styles.flex}>
           <Animated.View entering={FadeIn.duration(motion.slow)} style={styles.header}>
             <Image
               accessibilityIgnoresInvertColors
               accessibilityLabel="INVEQ"
-              source={require('@/assets/images/INVEQ-logo.png')}
+              source={require('@/assets/images/inveq-logo.png')}
               style={styles.logo}
             />
             <Animated.View entering={FadeInDown.delay(80).duration(motion.normal).springify()}>
-              <Text accessibilityRole="header" style={styles.title}>
-                {title}
-              </Text>
-              <Text style={styles.subtitle}>{subtitle}</Text>
+              {title ? (
+                <Text accessibilityRole="header" style={styles.title}>
+                  {title}
+                </Text>
+              ) : null}
+              <Text style={[styles.subtitle, !title ? styles.slogan : null]}>{subtitle}</Text>
             </Animated.View>
           </Animated.View>
 
@@ -75,9 +74,19 @@ export function AuthScreen({
 
           <Animated.View
             entering={FadeInDown.delay(140).duration(motion.normal).springify()}
-            style={styles.card}>
+            style={styles.form}>
             {children}
           </Animated.View>
+
+          {actions ? (
+            <Animated.View
+              entering={FadeInDown.delay(180).duration(motion.normal)}
+              style={styles.actions}>
+              {actions}
+            </Animated.View>
+          ) : null}
+
+          <View style={styles.spacer} />
 
           {footerLink ? (
             <Animated.View
@@ -86,7 +95,7 @@ export function AuthScreen({
               {footerLink}
             </Animated.View>
           ) : null}
-        </FormScreen>
+        </KeyboardAwareScrollView>
       </SafeAreaView>
     </View>
   );
@@ -101,22 +110,24 @@ function useStyles() {
     safeArea: {
       flex: 1,
     },
+    flex: {
+      flex: 1,
+    },
     content: {
       flexGrow: 1,
-      paddingHorizontal: spacing.screenPaddingHorizontal,
+      paddingHorizontal: spacing.screenPaddingHorizontal + spacing.xs,
       paddingTop: spacing['3xl'],
       paddingBottom: spacing.xl,
       gap: spacing.xl,
-      justifyContent: 'center',
     },
     header: {
-      gap: spacing.lg,
+      gap: spacing.md,
       alignItems: 'center',
       paddingBottom: spacing.sm,
     },
     logo: {
-      width: 176,
-      height: 48,
+      width: 168,
+      height: 46,
       resizeMode: 'contain',
     },
     title: {
@@ -132,14 +143,20 @@ function useStyles() {
       lineHeight: 22,
       paddingHorizontal: spacing.md,
     },
-    card: {
-      backgroundColor: colors.surface,
-      borderRadius: radius['2xl'],
-      borderWidth: StyleSheet.hairlineWidth,
-      borderColor: colors.border,
-      padding: spacing.lg,
+    slogan: {
+      ...typography.body,
+      color: colors.textSecondary,
+      marginTop: spacing.xs,
+    },
+    form: {
       gap: spacing.lg,
-      ...shadows.card,
+    },
+    actions: {
+      gap: spacing.md,
+    },
+    spacer: {
+      flexGrow: 1,
+      minHeight: spacing.xl,
     },
     errorBanner: {
       backgroundColor: colors.errorSubtle,
@@ -156,7 +173,8 @@ function useStyles() {
     },
     footerLinkWrap: {
       alignItems: 'center',
-      paddingTop: spacing.xs,
+      paddingTop: spacing.sm,
+      paddingBottom: spacing.xs,
     },
   }));
 }

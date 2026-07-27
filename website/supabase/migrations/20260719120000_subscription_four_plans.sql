@@ -1,4 +1,4 @@
--- Factume — Offres Micro / Basique / Standard / Pro + quotas mensuels
+-- INVEQ — Offres Micro / Basique / Standard / Pro + quotas mensuels
 
 -- ---------------------------------------------------------------------------
 -- Colonnes de quotas
@@ -64,7 +64,7 @@ values
   (
     'micro',
     'Micro',
-    'Pour découvrir Factume et facturer vos premiers clients.',
+    'Pour découvrir INVEQ et facturer vos premiers clients.',
     0,
     null,
     null,

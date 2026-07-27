@@ -28,22 +28,25 @@ export const MARKETING_HELP_URLS = {
   support: `${MARKETING_SITE_URL}/support`,
   guide: `${MARKETING_SITE_URL}/support#guide`,
   contact: `${MARKETING_SITE_URL}/contact`,
+  forgotPassword: `${MARKETING_SITE_URL}/mot-de-passe-oublie`,
 } as const;
 
 /**
- * Contacts — sans domaine mail custom, utilise ton Gmail (ou autre)
- * via EXPO_PUBLIC_CONTACT_EMAIL / EXPO_PUBLIC_SUPPORT_EMAIL.
+ * Contacts publics — vides tant que la boîte inveq.fr n’est pas provisionnée.
+ * Intended: support@inveq.fr via EXPO_PUBLIC_SUPPORT_EMAIL when ready.
  */
 export const MARKETING_CONTACT = {
   email:
     process.env.EXPO_PUBLIC_CONTACT_EMAIL?.trim() ||
     process.env.NEXT_PUBLIC_CONTACT_EMAIL?.trim() ||
-    'farouqdib@gmail.com',
+    '',
   support:
     process.env.EXPO_PUBLIC_SUPPORT_EMAIL?.trim() ||
     process.env.NEXT_PUBLIC_SUPPORT_EMAIL?.trim() ||
-    'farouqdib@gmail.com',
+    '',
 } as const;
+
+export const INTENDED_SUPPORT_EMAIL = 'support@inveq.fr';
 
 /** Liste plate pour audits App Store / tests de non-régression. */
 export const ALL_PUBLIC_EXTERNAL_URLS = [
@@ -51,6 +54,7 @@ export const ALL_PUBLIC_EXTERNAL_URLS = [
   ...Object.values(MARKETING_LEGAL_URLS),
   MARKETING_HELP_URLS.support,
   MARKETING_HELP_URLS.contact,
+  MARKETING_HELP_URLS.forgotPassword,
   `${MARKETING_SITE_URL}/privacy`,
   `${MARKETING_SITE_URL}/terms`,
   `${MARKETING_SITE_URL}/legal`,

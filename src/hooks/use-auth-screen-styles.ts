@@ -14,6 +14,17 @@ export function useAuthScreenStyles() {
       ...typography.subheadlineMedium,
       color: colors.primary,
     },
+    actionsBlock: {
+      gap: spacing.md,
+    },
+    forgotWrap: {
+      alignSelf: 'flex-end' as const,
+      paddingVertical: spacing.xs,
+    },
+    forgotLink: {
+      ...typography.footnote,
+      color: colors.textSecondary,
+    },
     // Kept for any residual callers during migration.
     container: {
       flex: 1,

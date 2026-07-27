@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase';
 import { logSupabaseError } from '@/lib/supabase/errors';
+import { resolveDocumentSignatureUrl } from '@/lib/supabase/document-signatures-storage';
 import { resolveEffectivePlanId } from '@/lib/subscription/plans';
 import type {
   EffectivePlanId,
@@ -109,8 +110,25 @@ export function mapPlanLimitCheck(value: unknown): PlanLimitCheck {
   };
 }
 
-export function isPlanLimitError(error: unknown): error is PlanLimitError {
-  return error instanceof PlanLimitError;
+export function isPlanLimitError(error: unknown): boolean {
+  if (error instanceof PlanLimitError) {
+    return true;
+  }
+
+  // DB trigger raise exception 'PLAN_LIMIT_REACHED' surfaces via PostgREST
+  if (error && typeof error === 'object') {
+    const message =
+      'message' in error && typeof error.message === 'string' ? error.message : '';
+    const details =
+      'details' in error && typeof error.details === 'string' ? error.details : '';
+    const hint = 'hint' in error && typeof error.hint === 'string' ? error.hint : '';
+    const combined = `${message} ${details} ${hint}`;
+    if (combined.includes('PLAN_LIMIT_REACHED')) {
+      return true;
+    }
+  }
+
+  return error instanceof Error && error.message.includes('PLAN_LIMIT_REACHED');
 }
 
 export async function ensureUserSubscription(): Promise<void> {
@@ -243,6 +261,16 @@ export type DocumentSignature = {
   updatedAt: string;
 };
 
+async function withSignedDocumentSignature(
+  signature: DocumentSignature,
+): Promise<DocumentSignature> {
+  return {
+    ...signature,
+    signatureUrl:
+      (await resolveDocumentSignatureUrl(signature.signatureUrl)) ?? signature.signatureUrl,
+  };
+}
+
 function mapDocumentSignatureRow(row: DocumentSignatureRow): DocumentSignature {
   return {
     id: row.id,
@@ -273,7 +301,7 @@ export async function fetchDocumentSignature(
     throw error;
   }
 
-  return data ? mapDocumentSignatureRow(data as DocumentSignatureRow) : null;
+  return data ? withSignedDocumentSignature(mapDocumentSignatureRow(data as DocumentSignatureRow)) : null;
 }
 
 export async function upsertDocumentSignature(input: {
@@ -305,7 +333,7 @@ export async function upsertDocumentSignature(input: {
     throw error;
   }
 
-  return mapDocumentSignatureRow(data as DocumentSignatureRow);
+  return withSignedDocumentSignature(mapDocumentSignatureRow(data as DocumentSignatureRow));
 }
 
 export async function deleteDocumentSignature(

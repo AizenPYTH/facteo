@@ -4,6 +4,8 @@ import { logSupabaseError } from '@/lib/supabase/errors';
 
 export const DOCUMENT_SIGNATURES_BUCKET = 'document-signatures';
 
+const SIGNED_URL_SECONDS = 60 * 60 * 24 * 7;
+
 function buildSignaturePath(
   userId: string,
   documentType: 'quote' | 'invoice',
@@ -13,6 +15,63 @@ function buildSignaturePath(
   return `${userId}/${documentType}/${documentId}-${timestamp}.png`;
 }
 
+export function extractDocumentSignaturePath(stored: string | null | undefined): string | null {
+  if (!stored?.trim()) {
+    return null;
+  }
+
+  const value = stored.trim();
+  const publicMarker = `/storage/v1/object/public/${DOCUMENT_SIGNATURES_BUCKET}/`;
+  const signMarker = `/storage/v1/object/sign/${DOCUMENT_SIGNATURES_BUCKET}/`;
+
+  if (value.includes(publicMarker)) {
+    return decodeURIComponent(value.split(publicMarker)[1]?.split('?')[0] ?? '');
+  }
+
+  if (value.includes(signMarker)) {
+    return decodeURIComponent(value.split(signMarker)[1]?.split('?')[0] ?? '');
+  }
+
+  if (!value.startsWith('http') && value.includes('/')) {
+    return value.replace(/^\/+/, '');
+  }
+
+  return null;
+}
+
+export async function createDocumentSignatureSignedUrl(path: string): Promise<string> {
+  const { data, error } = await supabase.storage
+    .from(DOCUMENT_SIGNATURES_BUCKET)
+    .createSignedUrl(path, SIGNED_URL_SECONDS);
+
+  if (error || !data?.signedUrl) {
+    logSupabaseError('createDocumentSignatureSignedUrl', error);
+    throw error ?? new Error('Unable to sign document signature URL.');
+  }
+
+  return data.signedUrl;
+}
+
+export async function resolveDocumentSignatureUrl(
+  stored: string | null | undefined,
+): Promise<string | null> {
+  if (!stored?.trim()) {
+    return null;
+  }
+
+  const path = extractDocumentSignaturePath(stored);
+  if (!path) {
+    return stored;
+  }
+
+  try {
+    return await createDocumentSignatureSignedUrl(path);
+  } catch {
+    return stored;
+  }
+}
+
+/** @deprecated Use signed URLs after Sprint 1. */
 export function getDocumentSignaturePublicUrl(path: string): string {
   const { data } = supabase.storage.from(DOCUMENT_SIGNATURES_BUCKET).getPublicUrl(path);
   return data.publicUrl;
@@ -38,7 +97,7 @@ export async function uploadDocumentSignatureFromDataUri(
     throw error;
   }
 
-  return getDocumentSignaturePublicUrl(path);
+  return path;
 }
 
 export async function uploadDocumentSignatureFromFile(
@@ -60,17 +119,11 @@ export async function uploadDocumentSignatureFromFile(
     throw error;
   }
 
-  return getDocumentSignaturePublicUrl(path);
+  return path;
 }
 
 export async function deleteDocumentSignatureByUrl(publicUrl: string): Promise<void> {
-  const marker = `/storage/v1/object/public/${DOCUMENT_SIGNATURES_BUCKET}/`;
-
-  if (!publicUrl.includes(marker)) {
-    return;
-  }
-
-  const path = publicUrl.split(marker)[1];
+  const path = extractDocumentSignaturePath(publicUrl);
 
   if (!path) {
     return;

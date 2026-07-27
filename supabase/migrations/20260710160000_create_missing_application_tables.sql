@@ -1,5 +1,5 @@
 -- =============================================================================
--- Factume — Tables applicatives manquantes (migration unique)
+-- INVEQ — Tables applicatives manquantes (migration unique)
 -- =============================================================================
 -- Contexte : profiles, settings et products existent déjà.
 -- Crée si absent : clients, subscriptions, quotes, quote_items, invoices,
@@ -206,7 +206,7 @@ create table if not exists public.subscriptions (
   updated_at timestamptz not null default timezone('utc', now())
 );
 
-comment on table public.subscriptions is 'Abonnement Factume par utilisateur.';
+comment on table public.subscriptions is 'Abonnement INVEQ par utilisateur.';
 
 create index if not exists subscriptions_user_id_idx on public.subscriptions (user_id);
 create index if not exists subscriptions_status_idx on public.subscriptions (status);

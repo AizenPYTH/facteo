@@ -1,6 +1,7 @@
 import { SymbolView } from 'expo-symbols';
 import {
   Pressable,
+  StyleSheet,
   Text,
   TextInput,
   View,
@@ -19,6 +20,8 @@ type AuthTextFieldProps = TextInputProps & {
   error?: string;
   icon: React.ComponentProps<typeof SymbolView>['name'];
   isPassword?: boolean;
+  /** When true, label is only used for a11y; placeholder carries the visual hint. */
+  hideLabel?: boolean;
 };
 
 export function AuthTextField({
@@ -26,6 +29,7 @@ export function AuthTextField({
   error,
   icon,
   isPassword = false,
+  hideLabel = false,
   style,
   accessibilityLabel,
   onBlur,
@@ -39,9 +43,11 @@ export function AuthTextField({
 
   return (
     <View style={styles.container}>
-      <Text maxFontSizeMultiplier={1.5} style={styles.label}>
-        {label}
-      </Text>
+      {hideLabel ? null : (
+        <Text maxFontSizeMultiplier={1.5} style={styles.label}>
+          {label}
+        </Text>
+      )}
       <View
         style={[
           styles.field,
@@ -115,11 +121,12 @@ function useStyles() {
       paddingHorizontal: spacing.md,
       borderRadius: radius.xl,
       backgroundColor: colors.backgroundSecondary,
-      borderWidth: 1.5,
+      borderWidth: StyleSheet.hairlineWidth,
       borderColor: colors.border,
     },
     fieldFocused: {
       borderColor: colors.borderFocus,
+      borderWidth: 1.5,
       backgroundColor: colors.surface,
     },
     fieldError: {

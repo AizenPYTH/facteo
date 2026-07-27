@@ -1,5 +1,5 @@
 -- =============================================================================
--- Factume — Colonnes manquantes (profiles.iban, products.type, etc.)
+-- INVEQ — Colonnes manquantes (profiles.iban, products.type, etc.)
 -- =============================================================================
 -- Aligne la base réelle avec le code applicatif.
 -- Idempotent : safe à ré-exécuter.

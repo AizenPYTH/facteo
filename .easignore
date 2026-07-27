@@ -1,0 +1,11 @@
+website
+.next
+.git
+.cursor
+.vscode
+.expo-export-test
+docs
+coverage
+dist
+build
+*.log

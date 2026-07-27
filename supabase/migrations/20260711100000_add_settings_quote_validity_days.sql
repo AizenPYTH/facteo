@@ -1,5 +1,5 @@
 -- =============================================================================
--- Factume — Colonnes settings manquantes (quote_validity_days, etc.)
+-- INVEQ — Colonnes settings manquantes (quote_validity_days, etc.)
 -- =============================================================================
 -- Idempotent : corrige les bases créées sans le schéma MVP complet.
 -- =============================================================================
