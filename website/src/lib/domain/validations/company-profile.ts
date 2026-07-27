@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+import { isValidPostalCode } from '@/lib/format/phone';
+
 const optionalText = z.string().trim();
 
 function normalizeDigits(value: string): string {
@@ -17,10 +19,7 @@ export const companyProfileSchema = z.object({
     .email('Adresse e-mail invalide.'),
   phone: optionalText,
   address: optionalText,
-  postalCode: optionalText.refine(
-    (value) => !value || /^\d{5}$/.test(value),
-    'Le code postal doit contenir 5 chiffres',
-  ),
+  postalCode: optionalText.refine(isValidPostalCode, 'Code postal invalide'),
   city: optionalText,
   country: optionalText,
   siret: optionalText.refine(

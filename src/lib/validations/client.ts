@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { isValidFrenchPhone } from '@/lib/format/phone';
+import { isValidPhone, isValidPostalCode } from '@/lib/format/phone';
 import { isValidSiren, isValidSiret, normalizeRegistrationDigits } from '@/lib/company-search';
 
 const optionalText = z.string().trim();
@@ -23,12 +23,9 @@ export const clientFormSchema = z.object({
     (value) => !value || z.string().email().safeParse(value).success,
     'Adresse e-mail invalide.',
   ),
-  phone: optionalText.refine(isValidFrenchPhone, 'Numéro de téléphone invalide.'),
+  phone: optionalText.refine(isValidPhone, 'Numéro de téléphone invalide.'),
   address: optionalText,
-  postalCode: optionalText.refine(
-    (value) => !value || /^\d{5}$/.test(value),
-    'Le code postal doit contenir 5 chiffres.',
-  ),
+  postalCode: optionalText.refine(isValidPostalCode, 'Code postal invalide.'),
   city: optionalText,
   country: optionalText,
   siren: optionalSiren,
