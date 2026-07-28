@@ -15,8 +15,13 @@ import { usePremiumCheckoutReturn } from '@/hooks/use-premium-checkout-return';
 import { useSubscription } from '@/hooks/use-subscription';
 import { getPlanDisplayName } from '@/lib/subscription/plans';
 import { useToast } from '@/providers/toast-provider';
-import type { BillingInterval, PaidPlanId } from '@/lib/stripe/subscription-checkout';
+import {
+  openBillingPortal,
+  type BillingInterval,
+  type PaidPlanId,
+} from '@/lib/stripe/subscription-checkout';
 import type { SubscriptionStatus } from '@/types/subscription';
+import * as WebBrowser from 'expo-web-browser';
 
 const PAID_PLANS: Array<{
   id: PaidPlanId;
@@ -171,9 +176,27 @@ export default function PremiumScreen() {
           ))}
         </View>
 
+        {isPremium ? (
+          <Button
+            onPress={() => {
+              void (async () => {
+                try {
+                  const url = await openBillingPortal();
+                  await WebBrowser.openBrowserAsync(url);
+                } catch (error) {
+                  showError(error instanceof Error ? error.message : 'Portail indisponible.');
+                }
+              })();
+            }}
+            title="Gérer mon abonnement (Stripe)"
+            variant="ghost"
+          />
+        ) : null}
+
         <Button onPress={() => router.back()} title="Retour" variant="ghost" />
         <Text style={styles.footnote}>
-          Les montants sont lus depuis Stripe. Aucun prix n’est figé dans l’app.
+          Les montants sont lus depuis Stripe (HT). Ordre des offres : Micro → Basique → Standard →
+          Pro → Max.
         </Text>
       </View>
     </SettingsScreenFrame>

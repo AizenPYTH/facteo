@@ -51,9 +51,10 @@ Deno.serve(async (request) => {
       case 'customer.subscription.updated':
       case 'customer.subscription.deleted': {
         const subscription = event.data.object as Stripe.Subscription;
-        await syncStripeSubscriptionObject(serviceClient, subscription);
+        await syncStripeSubscriptionObject(serviceClient, subscription, stripe);
         break;
       }
+      case 'invoice.paid':
       case 'invoice.payment_failed': {
         const invoice = event.data.object as Stripe.Invoice;
         const subscriptionId =
@@ -61,7 +62,7 @@ Deno.serve(async (request) => {
 
         if (subscriptionId) {
           const subscription = await stripe.subscriptions.retrieve(subscriptionId);
-          await syncStripeSubscriptionObject(serviceClient, subscription);
+          await syncStripeSubscriptionObject(serviceClient, subscription, stripe);
         }
 
         break;

@@ -189,6 +189,11 @@ Deno.serve(async (request) => {
       resolvedPromotionCodeId = match.id;
     }
 
+    // TVA : les Prices sont tax_behavior=exclusive (HT).
+    // Stripe Tax ne collecte la TVA que si une registration est active
+    // (Dashboard → Tax). Activer via secret STRIPE_AUTOMATIC_TAX=true.
+    const automaticTaxEnabled = Deno.env.get('STRIPE_AUTOMATIC_TAX')?.trim() === 'true';
+
     const session = await stripe.checkout.sessions.create({
       mode: 'subscription',
       customer: customerId,
@@ -203,6 +208,14 @@ Deno.serve(async (request) => {
       ...(resolvedPromotionCodeId
         ? { discounts: [{ promotion_code: resolvedPromotionCodeId }] }
         : { allow_promotion_codes: true }),
+      ...(automaticTaxEnabled
+        ? {
+            automatic_tax: { enabled: true },
+            customer_update: { address: 'auto', name: 'auto' },
+            tax_id_collection: { enabled: true },
+          }
+        : {}),
+      billing_address_collection: automaticTaxEnabled ? 'required' : 'auto',
       metadata: {
         user_id: user.id,
         plan_id: plan.id,

@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase';
 import { logSupabaseError } from '@/lib/supabase/errors';
+import { sortPlansByDisplayOrder } from '@/lib/subscription/plan-order';
 import { resolveEffectivePlanId } from '@/lib/subscription/plans';
 import type {
   EffectivePlanId,
@@ -137,7 +138,9 @@ export async function fetchSubscriptionPlans(): Promise<SubscriptionPlan[]> {
     throw error;
   }
 
-  return ((data as SubscriptionPlanRow[] | null) ?? []).map(mapSubscriptionPlanRow);
+  return sortPlansByDisplayOrder(
+    ((data as SubscriptionPlanRow[] | null) ?? []).map(mapSubscriptionPlanRow),
+  );
 }
 
 export async function fetchUserSubscription(userId: string): Promise<UserSubscription | null> {

@@ -110,6 +110,7 @@ export const SUBSCRIPTION_PRICING_COPY = {
  * Matrice produits réelle INVEQ (uniquement ce qui est disponible aujourd’hui).
  * Différenciation : volume documents, SIREN/SIRET, signature, nombre d’entreprises.
  */
+/** Toujours Micro → Basique → Standard → Pro → Max (sort_order 0..4). */
 export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
   {
     id: 'micro',

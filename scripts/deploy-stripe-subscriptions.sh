@@ -24,6 +24,7 @@ npx supabase functions deploy stripe-create-subscription-checkout --project-ref 
 npx supabase functions deploy stripe-confirm-subscription-checkout --project-ref "$PROJECT_REF"
 npx supabase functions deploy stripe-subscription-webhook --project-ref "$PROJECT_REF"
 npx supabase functions deploy list-subscription-prices --project-ref "$PROJECT_REF"
+npx supabase functions deploy stripe-create-billing-portal --project-ref "$PROJECT_REF"
 
 if [[ -n "${STRIPE_SECRET_KEY:-}" ]]; then
   echo "==> Provision Stripe prices (lookup_keys)"

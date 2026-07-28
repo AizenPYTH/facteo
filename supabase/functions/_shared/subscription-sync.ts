@@ -10,12 +10,45 @@ export type BillingInterval = 'monthly' | 'yearly';
 
 export const PAID_PLAN_IDS: PaidSubscriptionPlanId[] = ['basique', 'standard', 'pro', 'max'];
 
-const LOOKUP_KEYS: Record<PaidSubscriptionPlanId, Record<BillingInterval, string>> = {
+/** Lookup keys DÉFINITIFS — ne jamais renommer (alignés sur provision script). */
+export const LOOKUP_KEYS: Record<PaidSubscriptionPlanId, Record<BillingInterval, string>> = {
   basique: { monthly: 'monthly_basic', yearly: 'yearly_basic' },
   standard: { monthly: 'monthly_standard', yearly: 'yearly_standard' },
   pro: { monthly: 'monthly_pro', yearly: 'yearly_pro' },
   max: { monthly: 'monthly_max', yearly: 'yearly_max' },
 };
+
+/** Ordre d’affichage canonique : Micro → Basique → Standard → Pro → Max */
+export const PLAN_SORT_ORDER = ['micro', 'basique', 'standard', 'pro', 'max'] as const;
+
+const LOOKUP_KEY_TO_PLAN: Record<string, PaidSubscriptionPlanId> = {
+  monthly_basic: 'basique',
+  yearly_basic: 'basique',
+  monthly_standard: 'standard',
+  yearly_standard: 'standard',
+  monthly_pro: 'pro',
+  yearly_pro: 'pro',
+  monthly_max: 'max',
+  yearly_max: 'max',
+};
+
+export function resolvePlanIdFromLookupKey(
+  lookupKey: string | null | undefined,
+): PaidSubscriptionPlanId | null {
+  if (!lookupKey) return null;
+  return LOOKUP_KEY_TO_PLAN[lookupKey] ?? null;
+}
+
+export function resolvePlanIdFromStripePrice(
+  price: Stripe.Price | string | null | undefined,
+): PaidSubscriptionPlanId | null {
+  if (!price || typeof price === 'string') return null;
+  if (price.lookup_key) {
+    return resolvePlanIdFromLookupKey(price.lookup_key);
+  }
+  const fromMeta = price.metadata?.plan_id?.trim();
+  return isPaidPlanId(fromMeta) ? fromMeta : null;
+}
 
 export function isPaidPlanId(value: string | null | undefined): value is PaidSubscriptionPlanId {
   return PAID_PLAN_IDS.includes(value as PaidSubscriptionPlanId);
@@ -312,9 +345,28 @@ export async function syncSubscriptionCheckoutSession(
   return { userId, planId: effectivePlan };
 }
 
+/**
+ * Résout le plan depuis l’item Stripe (lookup_key / metadata price),
+ * puis fallback metadata subscription. Crucial pour le Customer Portal
+ * (changement d’offre) où metadata.plan_id peut être obsolète.
+ */
+export function resolvePlanIdFromSubscription(
+  subscription: Stripe.Subscription,
+): SubscriptionPlanId {
+  const item = subscription.items?.data?.[0];
+  const price = item?.price;
+  const fromPrice = resolvePlanIdFromStripePrice(price);
+  if (fromPrice) {
+    return fromPrice;
+  }
+
+  return resolvePlanId(subscription.metadata?.plan_id);
+}
+
 export async function syncStripeSubscriptionObject(
   serviceClient: SupabaseClient,
   subscription: Stripe.Subscription,
+  stripe?: Stripe,
 ): Promise<void> {
   const userId = await findUserIdForSubscription(serviceClient, subscription);
 
@@ -324,7 +376,21 @@ export async function syncStripeSubscriptionObject(
 
   const mappedStatus = mapStripeSubscriptionStatus(subscription.status);
   const isActivePaid = subscription.status === 'active' || subscription.status === 'trialing';
-  const planId = isActivePaid ? resolvePlanId(subscription.metadata?.plan_id) : 'free';
+
+  let planId: SubscriptionPlanId = 'free';
+  if (isActivePaid) {
+    planId = resolvePlanIdFromSubscription(subscription);
+
+    // Si le webhook n’embarque que l’id du price, récupérer lookup_key / metadata.
+    if (!isPaidPlanId(planId) && stripe) {
+      const priceRef = subscription.items?.data?.[0]?.price;
+      const priceId = typeof priceRef === 'string' ? priceRef : priceRef?.id;
+      if (priceId) {
+        const price = await stripe.prices.retrieve(priceId);
+        planId = resolvePlanIdFromStripePrice(price) ?? resolvePlanId(subscription.metadata?.plan_id);
+      }
+    }
+  }
 
   if (isActivePaid && (isPaidPlanId(planId) || planId === 'premium')) {
     await applyPaidSubscription(serviceClient, {

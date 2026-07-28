@@ -38,6 +38,7 @@ import {
   type SubscriptionPlan,
   type SubscriptionPlanId,
 } from '@/lib/subscription-plans';
+import { sortPlansByDisplayOrder } from '@/lib/subscription/plan-order';
 import {
   fetchStripeSubscriptionPrices,
   isSubscriptionCheckoutConfigured,
@@ -413,7 +414,7 @@ export function PricingSection({ showHeader = false }: PricingSectionProps) {
       ) : null}
 
       <Stagger className="mx-auto grid max-w-7xl gap-5 sm:grid-cols-2 xl:grid-cols-5">
-        {SUBSCRIPTION_PLANS.map((plan) => {
+        {sortPlansByDisplayOrder(SUBSCRIPTION_PLANS).map((plan) => {
           const paidId = plan.id as PaidPlanId;
           const stripeAmount =
             plan.id === 'micro'

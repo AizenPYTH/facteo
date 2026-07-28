@@ -17,6 +17,7 @@ import { getPlanDisplayName } from '@/lib/domain/subscription/plans';
 import {
   confirmSubscriptionCheckout,
   isSubscriptionCheckoutConfigured,
+  startBillingPortalRedirect,
 } from '@/lib/stripe/subscription-checkout';
 
 export default function SubscriptionSettingsContent() {
@@ -27,6 +28,7 @@ export default function SubscriptionSettingsContent() {
   const confirmStarted = useRef(false);
   const [confirmMessage, setConfirmMessage] = useState<string | null>(null);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
+  const [portalLoading, setPortalLoading] = useState(false);
 
   const query = useQuery({
     queryKey: subscriptionQueryKeys.snapshot(user?.id ?? ''),
@@ -147,11 +149,29 @@ export default function SubscriptionSettingsContent() {
           <Panel title={isPaid ? `Offre ${plan.displayName} active` : 'Choisir une offre'}>
             <p className="mb-4 text-sm text-slate-600">
               {isPaid
-                ? 'Pour changer d’offre, sélectionnez une autre formule ci-dessous. Les codes promo Stripe sont acceptés.'
+                ? 'Changez d’offre, résiliez ou mettez à jour votre carte via le portail Stripe, ou choisissez une formule ci-dessous.'
                 : isSubscriptionCheckoutConfigured()
                   ? 'Sélectionnez Basique, Standard, Pro ou Max. Un champ code promo est disponible au-dessus des cartes.'
                   : 'Le paiement n’est pas encore disponible.'}
             </p>
+            {isPaid ? (
+              <button
+                className="mb-6 inline-flex rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-800 shadow-sm transition hover:border-primary/30 hover:bg-blue-50/40 disabled:opacity-60"
+                disabled={portalLoading}
+                onClick={() => {
+                  setPortalLoading(true);
+                  setCheckoutError(null);
+                  void startBillingPortalRedirect().catch((error) => {
+                    setCheckoutError(
+                      error instanceof Error ? error.message : 'Impossible d’ouvrir le portail.',
+                    );
+                    setPortalLoading(false);
+                  });
+                }}
+                type="button">
+                {portalLoading ? 'Ouverture du portail…' : 'Gérer mon abonnement (Stripe)'}
+              </button>
+            ) : null}
             <PricingSection />
           </Panel>
 

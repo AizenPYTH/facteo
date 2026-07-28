@@ -3,6 +3,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
 
 import {
   PAID_PLAN_IDS,
+  PLAN_SORT_ORDER,
   resolveLookupKey,
   type BillingInterval,
   type PaidSubscriptionPlanId,
@@ -47,7 +48,11 @@ Deno.serve(async (request) => {
 
     const byLookup = new Map(prices.data.map((price) => [price.lookup_key ?? '', price]));
 
-    const plans = PAID_PLAN_IDS.map((planId: PaidSubscriptionPlanId) => {
+    const paidOrdered = PLAN_SORT_ORDER.filter(
+      (id): id is PaidSubscriptionPlanId => PAID_PLAN_IDS.includes(id as PaidSubscriptionPlanId),
+    );
+
+    const plans = paidOrdered.map((planId) => {
       const monthlyKey = resolveLookupKey(planId, 'monthly');
       const yearlyKey = resolveLookupKey(planId, 'yearly');
       const monthly = byLookup.get(monthlyKey) ?? null;
@@ -55,6 +60,7 @@ Deno.serve(async (request) => {
 
       return {
         planId,
+        sortOrder: PLAN_SORT_ORDER.indexOf(planId),
         monthly: serializePrice(monthly, 'monthly'),
         yearly: serializePrice(yearly, 'yearly'),
       };

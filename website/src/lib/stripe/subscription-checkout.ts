@@ -159,6 +159,45 @@ export async function startPremiumCheckoutRedirect(
   await startSubscriptionCheckoutRedirect('pro', options);
 }
 
+function getBillingPortalUrl(): string | null {
+  const baseUrl = getSupabaseFunctionsBaseUrl();
+  return baseUrl ? `${baseUrl}/stripe-create-billing-portal` : null;
+}
+
+/** Ouvre le Customer Portal Stripe (changer d’offre, résilier, CB). */
+export async function startBillingPortalRedirect(options?: {
+  returnUrl?: string;
+}): Promise<void> {
+  const endpoint = getBillingPortalUrl();
+  if (!endpoint) {
+    throw new Error('Portail Stripe non configuré.');
+  }
+
+  const accessToken = await getAccessToken();
+  const returnUrl = options?.returnUrl?.trim() || getSubscriptionWebReturnUrl();
+
+  const response = await fetch(endpoint, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ returnUrl }),
+  });
+
+  if (!response.ok) {
+    const payload = (await response.json().catch(() => null)) as { error?: string } | null;
+    throw new Error(payload?.error ?? 'Impossible d’ouvrir le portail d’abonnement.');
+  }
+
+  const payload = (await response.json()) as { portalUrl?: string };
+  if (!payload.portalUrl) {
+    throw new Error('Réponse portail Stripe invalide.');
+  }
+
+  window.location.assign(payload.portalUrl);
+}
+
 export type StripePlanPrice = {
   priceId: string;
   lookupKey: string | null;
