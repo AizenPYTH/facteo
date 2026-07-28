@@ -3,6 +3,7 @@ import { PAYMENT_METHOD_LABELS } from '@/types/payment-methods';
 import { formatDate } from '@/lib/format/date';
 import { formatDateTimeForPdf } from '@/lib/format/datetime';
 import { formatPriceHT } from '@/lib/format/currency';
+import { getLegalMentionForRegime } from '@/lib/invoices/legal-mentions';
 import { mapLineValueToTotals } from '@/lib/quotes/mappers';
 import type { PdfClientInfo, PdfCompanyInfo, PdfDocumentInput, PdfDocumentLine } from '@/lib/pdf/engine/types';
 
@@ -211,5 +212,12 @@ export function buildFooter(input: PdfDocumentInput): string {
       ? input.settings?.quoteFooter?.trim() || 'Merci pour votre confiance.'
       : input.settings?.invoiceFooter?.trim() || 'Merci pour votre confiance.';
 
-  return escapeHtml(footer);
+  if (input.kind !== 'invoice') {
+    return escapeHtml(footer);
+  }
+
+  const legal = getLegalMentionForRegime(input.vatRegime);
+  const combined = [footer, legal].filter(Boolean).join(' — ');
+
+  return escapeHtml(combined);
 }

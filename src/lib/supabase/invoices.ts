@@ -6,16 +6,29 @@ import {
 import { resolveInvoiceStatusFromPayments } from '@/lib/invoices/status';
 import { supabase } from '@/lib/supabase';
 import { logSupabaseError } from '@/lib/supabase/errors';
-import { mapInvoiceDetail, mapInvoiceRowToInvoice } from '@/lib/supabase/mappers';
+import {
+  mapInvoiceDetail,
+  mapInvoiceRevisionRow,
+  mapInvoiceRowToInvoice,
+} from '@/lib/supabase/mappers';
 import { fetchQuoteById } from '@/lib/supabase/quotes';
-import { computeDueDate, fetchSettings, reserveNextInvoiceNumber } from '@/lib/supabase/settings';
-import type {
-  CreateInvoiceInput,
-  Invoice,
-  InvoiceDetail,
-  InvoicePayment,
-  InvoiceStatus,
-  UpdateInvoiceInput,
+import {
+  computeDueDate,
+  fetchSettings,
+  reserveNextCreditNoteNumber,
+  reserveNextInvoiceNumber,
+} from '@/lib/supabase/settings';
+import {
+  canConvertInvoiceToCreditNote,
+  canCorrectInvoice,
+  createLocalInvoiceLineId,
+  type CreateInvoiceInput,
+  type Invoice,
+  type InvoiceDetail,
+  type InvoicePayment,
+  type InvoiceRevision,
+  type InvoiceStatus,
+  type UpdateInvoiceInput,
 } from '@/types/invoice';
 import {
   INVOICES_PAGE_SIZE,
@@ -23,12 +36,19 @@ import {
   type InvoicesPageParams,
 } from '@/types/invoices-list';
 import type { DataScope } from '@/types/tenant';
-import type { InvoiceItemInsert, InvoiceItemRow, InvoicePaymentRow, InvoiceWithClient, InvoiceInsert } from '@/types/database';
+import type {
+  InvoiceItemInsert,
+  InvoiceItemRow,
+  InvoicePaymentRow,
+  InvoiceRevisionInsert,
+  InvoiceWithClient,
+  InvoiceInsert,
+} from '@/types/database';
 
 export { INVOICES_PAGE_SIZE };
 
 export const INVOICE_COLUMNS =
-  'id, user_id, client_id, quote_id, number, status, subtotal_ht, total_vat, total_ttc, total, issued_at, due_at, paid_at, payment_method, payment_reference, notes, stripe_payment_link, created_at, updated_at' as const;
+  'id, user_id, client_id, quote_id, number, status, document_kind, credit_of_invoice_id, vat_regime, revision, subtotal_ht, total_vat, total_ttc, total, issued_at, due_at, paid_at, payment_method, payment_reference, notes, stripe_payment_link, created_at, updated_at' as const;
 
 export const INVOICE_LIST_COLUMNS = `${INVOICE_COLUMNS}, clients(name, company, email)` as const;
 
@@ -383,6 +403,14 @@ export async function updateInvoice(
     throw new Error('Invoice must have at least one line.');
   }
 
+  if (
+    typeof input.expectedRevision === 'number' &&
+    input.expectedRevision !== existing.revision
+  ) {
+    throw new Error('Invoice revision conflict.');
+  }
+
+  const nextRevision = existing.revision + 1;
   const { invoice, lines } = mapUpdateInvoiceInputToInsert(
     scope,
     input,
@@ -390,14 +418,23 @@ export async function updateInvoice(
     existing.dueAt,
   );
 
-  const { data: updatedRow, error } = await supabase
+  const payload: Partial<InvoiceInsert> = {
+    ...invoice,
+    revision: nextRevision,
+  };
+
+  let updateQuery = supabase
     .from('invoices')
-    .update(invoice)
+    .update(payload)
     .eq('id', invoiceId)
     .eq('company_id', scope.companyId)
-    .eq('status', 'draft')
-    .select('id')
-    .maybeSingle();
+    .eq('status', 'draft');
+
+  if (typeof input.expectedRevision === 'number') {
+    updateQuery = updateQuery.eq('revision', input.expectedRevision);
+  }
+
+  const { data: updatedRow, error } = await updateQuery.select('id').maybeSingle();
 
   if (error) {
     logSupabaseError('updateInvoice', error);
@@ -405,10 +442,35 @@ export async function updateInvoice(
   }
 
   if (!updatedRow) {
+    if (typeof input.expectedRevision === 'number') {
+      throw new Error('Invoice revision conflict.');
+    }
     throw new Error('Invoice is not editable.');
   }
 
   await replaceInvoiceItems(scope, invoiceId, lines);
+
+  await saveInvoiceRevision(
+    scope,
+    invoiceId,
+    input.revisionReason ?? 'Brouillon mis à jour',
+    {
+      number: existing.number,
+      status: existing.status,
+      documentKind: existing.documentKind,
+      vatRegime: existing.vatRegime,
+      revision: existing.revision,
+      clientId: existing.clientId,
+      lines: existing.lines,
+      notes: existing.notes,
+      issuedAt: existing.issuedAt,
+      dueAt: existing.dueAt,
+      subtotalHt: existing.subtotalHt,
+      totalVat: existing.totalVat,
+      totalTtc: existing.totalTtc,
+    },
+    existing.revision,
+  );
 
   const updated = await fetchInvoiceById(scope, invoiceId);
 
@@ -417,6 +479,183 @@ export async function updateInvoice(
   }
 
   return updated;
+}
+
+export async function saveInvoiceRevision(
+  scope: DataScope,
+  invoiceId: string,
+  reason: string,
+  snapshot: Record<string, unknown>,
+  revision?: number,
+): Promise<void> {
+  const resolvedRevision =
+    typeof revision === 'number'
+      ? revision
+      : ((await fetchInvoiceById(scope, invoiceId))?.revision ?? null);
+
+  if (resolvedRevision == null) {
+    throw new Error('Invoice not found.');
+  }
+
+  const insert: InvoiceRevisionInsert = {
+    invoice_id: invoiceId,
+    user_id: scope.userId,
+    company_id: scope.companyId,
+    revision: resolvedRevision,
+    reason: reason.trim() || null,
+    snapshot,
+  };
+
+  const { error } = await supabase.from('invoice_revisions').insert(insert);
+
+  if (error) {
+    logSupabaseError('saveInvoiceRevision', error);
+    throw error;
+  }
+}
+
+export async function fetchInvoiceRevisions(
+  scope: DataScope,
+  invoiceId: string,
+): Promise<InvoiceRevision[]> {
+  const { data, error } = await supabase
+    .from('invoice_revisions')
+    .select('id, invoice_id, user_id, company_id, revision, reason, snapshot, created_at')
+    .eq('invoice_id', invoiceId)
+    .eq('company_id', scope.companyId)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    logSupabaseError('fetchInvoiceRevisions', error);
+    return [];
+  }
+
+  return (data ?? []).map(mapInvoiceRevisionRow);
+}
+
+function negateInvoiceLines(lines: InvoiceDetail['lines']): InvoiceDetail['lines'] {
+  return lines.map((line) => {
+    const quantity = Number(String(line.quantity).replace(',', '.'));
+    const negatedQuantity = Number.isFinite(quantity) ? -Math.abs(quantity) : -1;
+
+    return {
+      ...line,
+      id: createLocalInvoiceLineId(),
+      quantity: String(negatedQuantity),
+    };
+  });
+}
+
+export async function createCreditNoteFromInvoice(
+  scope: DataScope,
+  invoiceId: string,
+): Promise<Invoice> {
+  const source = await fetchInvoiceById(scope, invoiceId);
+
+  if (!source || !source.clientId) {
+    throw new Error('Invoice not found.');
+  }
+
+  if (source.documentKind === 'credit_note') {
+    throw new Error('Cannot create a credit note from another credit note.');
+  }
+
+  if (!canConvertInvoiceToCreditNote(source.status)) {
+    throw new Error('Invoice cannot be converted to a credit note.');
+  }
+
+  const number = await reserveNextCreditNoteNumber(scope.companyId);
+  const { invoice, lines } = mapCreateInvoiceInputToInsert(
+    scope,
+    number,
+    {
+      clientId: source.clientId,
+      quoteId: source.quoteId,
+      lines: negateInvoiceLines(source.lines),
+      issuedAt: new Date().toISOString(),
+      dueAt: source.dueAt,
+      notes: source.notes
+        ? `Avoir sur ${source.number}\n${source.notes}`
+        : `Avoir sur ${source.number}`,
+      vatRegime: source.vatRegime,
+      documentKind: 'credit_note',
+      creditOfInvoiceId: source.id,
+    },
+    source.dueAt,
+  );
+
+  const { data: createdInvoice, error: invoiceError } = await supabase
+    .from('invoices')
+    .insert(invoice)
+    .select(INVOICE_COLUMNS)
+    .single();
+
+  if (invoiceError || !createdInvoice) {
+    logSupabaseError('createCreditNoteFromInvoice', invoiceError);
+    throw invoiceError ?? new Error('Unable to create credit note.');
+  }
+
+  const invoiceRow = createdInvoice as unknown as InvoiceWithClient;
+
+  try {
+    await insertInvoiceItems(invoiceRow.id, lines);
+  } catch (error) {
+    await supabase
+      .from('invoices')
+      .delete()
+      .eq('id', invoiceRow.id)
+      .eq('company_id', scope.companyId);
+    throw error;
+  }
+
+  const { data: fullInvoice, error: fetchError } = await supabase
+    .from('invoices')
+    .select(INVOICE_LIST_COLUMNS)
+    .eq('id', invoiceRow.id)
+    .eq('company_id', scope.companyId)
+    .single();
+
+  if (fetchError || !fullInvoice) {
+    return mapInvoiceRowToInvoice({ ...invoiceRow, clients: null });
+  }
+
+  return mapInvoiceRowToInvoice(fullInvoice as unknown as InvoiceWithClient);
+}
+
+export async function correctInvoice(
+  scope: DataScope,
+  invoiceId: string,
+): Promise<{ creditNote: Invoice; correctedInvoice: Invoice }> {
+  const source = await fetchInvoiceById(scope, invoiceId);
+
+  if (!source || !source.clientId) {
+    throw new Error('Invoice not found.');
+  }
+
+  if (source.documentKind === 'credit_note') {
+    throw new Error('Cannot correct a credit note.');
+  }
+
+  if (!canCorrectInvoice(source.status)) {
+    throw new Error('Invoice cannot be corrected.');
+  }
+
+  const creditNote = await createCreditNoteFromInvoice(scope, invoiceId);
+  const correctedInvoice = await createInvoice(scope, {
+    clientId: source.clientId,
+    quoteId: source.quoteId,
+    lines: source.lines.map((line) => ({
+      ...line,
+      id: createLocalInvoiceLineId(),
+    })),
+    issuedAt: new Date().toISOString(),
+    dueAt: source.dueAt,
+    notes: source.notes ?? undefined,
+    vatRegime: source.vatRegime,
+    documentKind: 'invoice',
+  });
+
+  return { creditNote, correctedInvoice };
 }
 
 export async function duplicateInvoice(scope: DataScope, invoiceId: string): Promise<Invoice> {
@@ -430,11 +669,13 @@ export async function duplicateInvoice(scope: DataScope, invoiceId: string): Pro
     clientId: source.clientId,
     lines: source.lines.map((line) => ({
       ...line,
-      id: `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+      id: createLocalInvoiceLineId(),
     })),
     issuedAt: source.issuedAt,
     dueAt: source.dueAt,
     notes: source.notes ?? undefined,
+    vatRegime: source.vatRegime,
+    documentKind: 'invoice',
   });
 }
 

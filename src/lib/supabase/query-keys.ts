@@ -49,6 +49,8 @@ export const invoicesQueryKeys = {
   details: () => [...invoicesQueryKeys.all, 'detail'] as const,
   detail: (companyId: string, invoiceId: string) =>
     [...invoicesQueryKeys.details(), companyId, invoiceId] as const,
+  revisions: (companyId: string, invoiceId: string) =>
+    [...invoicesQueryKeys.detail(companyId, invoiceId), 'revisions'] as const,
 };
 
 export const settingsQueryKeys = {

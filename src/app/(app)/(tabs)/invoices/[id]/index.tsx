@@ -24,7 +24,7 @@ import { spacing } from '@/constants/theme/spacing';
 import { typography } from '@/constants/theme/typography';
 import { useDesktopListRedirect } from '@/hooks/use-desktop-list-redirect';
 import { useBreakpoint } from '@/hooks/use-breakpoint';
-import { useInvoice } from '@/hooks/use-invoices';
+import { useInvoice, useInvoiceRevisions } from '@/hooks/use-invoices';
 import { useInvoiceMutations } from '@/hooks/use-invoice-mutations';
 import { getInvoiceErrorMessage } from '@/lib/invoices/errors';
 import { buildInvoicePdfHtml } from '@/lib/pdf/document-pdf';
@@ -38,6 +38,8 @@ import { useSubscription } from '@/hooks/use-subscription';
 import {
   canAddInvoicePayment,
   canCancelInvoice,
+  canConvertInvoiceToCreditNote,
+  canCorrectInvoice,
   canEditInvoice,
   canMarkInvoiceAsPaid,
   type InvoiceStatus,
@@ -57,10 +59,13 @@ export default function InvoiceDetailScreen() {
   const {
     cancelInvoice,
     duplicateInvoice,
+    createCreditNote,
+    correctInvoice,
     markAsPaid,
     addPayment,
     updateInvoiceStatus,
   } = useInvoiceMutations();
+  const { data: revisions = [] } = useInvoiceRevisions(invoiceId ?? '');
   const { hasFeature } = useSubscription();
   const { isConfigured, createLink, openPaymentLink } = useStripePayment(invoiceId ?? '');
   const { showError, showSuccess } = useToast();
@@ -192,6 +197,34 @@ export default function InvoiceDetailScreen() {
     }
   }
 
+  async function handleConvertToCreditNote() {
+    if (!invoiceId) {
+      return;
+    }
+
+    try {
+      const creditNote = await createCreditNote.mutateAsync(invoiceId);
+      showSuccess('Avoir créé.');
+      router.push(`/invoices/${creditNote.id}` as Href);
+    } catch (error) {
+      showError(getInvoiceErrorMessage(readErrorMessage(error)));
+    }
+  }
+
+  async function handleCorrectInvoice() {
+    if (!invoiceId) {
+      return;
+    }
+
+    try {
+      const { correctedInvoice } = await correctInvoice.mutateAsync(invoiceId);
+      showSuccess('Avoir créé et nouvelle facture en brouillon.');
+      router.push(`/invoices/${correctedInvoice.id}/edit` as Href);
+    } catch (error) {
+      showError(getInvoiceErrorMessage(readErrorMessage(error)));
+    }
+  }
+
   async function handleCancel() {
     if (!invoiceId) {
       return;
@@ -244,6 +277,10 @@ export default function InvoiceDetailScreen() {
     const cancelable = canCancelInvoice(invoice.status);
     const markableAsPaid = canMarkInvoiceAsPaid(invoice.status);
     const canPayPartially = canAddInvoicePayment(invoice);
+    const canCreditNote =
+      invoice.documentKind === 'invoice' && canConvertInvoiceToCreditNote(invoice.status);
+    const canCorrect =
+      invoice.documentKind === 'invoice' && canCorrectInvoice(invoice.status);
     const signatureLocked = !hasFeature('client_signature');
 
     const primary = [
@@ -371,6 +408,34 @@ export default function InvoiceDetailScreen() {
         icon: { ios: 'doc.on.doc', android: 'content_copy', web: 'content_copy' } as const,
         onPress: () => void handleDuplicate(),
       },
+      ...(canCreditNote
+        ? [
+            {
+              id: 'credit-note',
+              label: 'Convertir en avoir',
+              icon: {
+                ios: 'arrow.uturn.backward.circle.fill',
+                android: 'undo',
+                web: 'undo',
+              } as const,
+              onPress: () => void handleConvertToCreditNote(),
+            },
+          ]
+        : []),
+      ...(canCorrect
+        ? [
+            {
+              id: 'correct',
+              label: 'Corriger (avoir + nouvelle facture)',
+              icon: {
+                ios: 'arrow.triangle.2.circlepath',
+                android: 'sync',
+                web: 'sync',
+              } as const,
+              onPress: () => void handleCorrectInvoice(),
+            },
+          ]
+        : []),
       ...(cancelable
         ? [
             {
@@ -434,6 +499,7 @@ export default function InvoiceDetailScreen() {
           canAddPayment={false}
           invoice={invoice}
           onAddPayment={() => setPaymentVisible(true)}
+          revisions={revisions}
         />
 
         <DocumentClientSignatureBlock

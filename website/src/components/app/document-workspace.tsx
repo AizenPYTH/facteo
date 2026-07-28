@@ -4,10 +4,29 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Copy, Download, Mail, Plus, Printer, Send, Share2 } from 'lucide-react';
+import {
+  Copy,
+  Download,
+  FilePenLine,
+  Mail,
+  Plus,
+  Printer,
+  RotateCcw,
+  Send,
+  Share2,
+  Undo2,
+} from 'lucide-react';
 import type { InvoiceStatusFilter } from '@inveq/types/invoices-list';
 import type { QuoteStatusFilter } from '@inveq/types/quotes-list';
-import { INVOICE_STATUS_LABELS, type InvoiceStatus } from '@inveq/types/invoice';
+import {
+  canConvertInvoiceToCreditNote,
+  canCorrectInvoice,
+  canEditInvoice,
+  INVOICE_DOCUMENT_KIND_LABELS,
+  INVOICE_STATUS_LABELS,
+  VAT_REGIME_LABELS,
+  type InvoiceStatus,
+} from '@inveq/types/invoice';
 import { QUOTE_STATUS_LABELS, type QuoteStatus } from '@inveq/types/quote';
 
 import { ActivityTimeline } from '@/components/app/activity-timeline';
@@ -35,7 +54,12 @@ import { formatCurrency } from '@/lib/domain/format/currency';
 import { formatDate } from '@/lib/domain/format/date';
 import { useAuth } from '@/providers/auth-provider';
 import { useTenant } from '@/providers/company-provider';
-import { duplicateInvoice, updateInvoiceStatus } from '@/lib/domain/supabase/invoices';
+import {
+  correctInvoice,
+  createCreditNoteFromInvoice,
+  duplicateInvoice,
+  updateInvoiceStatus,
+} from '@/lib/domain/supabase/invoices';
 import { duplicateQuote, updateQuoteStatus } from '@/lib/domain/supabase/quotes';
 import { invoicesQueryKeys, quotesQueryKeys } from '@/lib/domain/supabase/query-keys';
 import { buildInvoicePdfHtml, buildQuotePdfHtml } from '@/lib/domain/pdf/document-pdf';
@@ -258,12 +282,17 @@ function DocumentSidebar({
   status,
   issuedAt,
   dueOrValid,
+  documentKind,
+  vatRegime,
   onSend,
   onDownload,
   onPrint,
   onShare,
   onEmail,
   onDuplicate,
+  onEdit,
+  onCreditNote,
+  onCorrect,
   actionLoading,
   templateId,
   onTemplateChange,
@@ -277,18 +306,47 @@ function DocumentSidebar({
   status: string;
   issuedAt: string | null;
   dueOrValid: string | null;
+  documentKind?: 'invoice' | 'credit_note';
+  vatRegime?: string | null;
   onSend?: () => void;
   onDownload?: () => void;
   onPrint?: () => void;
   onShare?: () => void;
   onEmail?: () => void;
   onDuplicate?: () => void;
+  onEdit?: () => void;
+  onCreditNote?: () => void;
+  onCorrect?: () => void;
   actionLoading?: string | null;
   templateId?: string;
   onTemplateChange?: (id: string) => void;
 }) {
   const variants = kind === 'invoice' ? INVOICE_STATUS_VARIANTS : QUOTE_STATUS_VARIANTS;
   const labels = kind === 'invoice' ? INVOICE_STATUS_LABELS : QUOTE_STATUS_LABELS;
+  const kindLabel =
+    kind === 'invoice'
+      ? INVOICE_DOCUMENT_KIND_LABELS[documentKind === 'credit_note' ? 'credit_note' : 'invoice']
+      : 'Devis';
+  const vatLabel =
+    vatRegime && vatRegime in VAT_REGIME_LABELS
+      ? VAT_REGIME_LABELS[vatRegime as keyof typeof VAT_REGIME_LABELS]
+      : null;
+
+  const actions = [
+    ...(onEdit ? [{ icon: FilePenLine, label: 'Modifier', key: 'edit', onClick: onEdit }] : []),
+    { icon: Send, label: 'Envoyer', key: 'send', onClick: onSend },
+    { icon: Download, label: 'PDF', key: 'download', onClick: onDownload },
+    { icon: Printer, label: 'Imprimer', key: 'print', onClick: onPrint },
+    { icon: Share2, label: 'Partager', key: 'share', onClick: onShare },
+    { icon: Mail, label: 'E-mail', key: 'email', onClick: onEmail },
+    { icon: Copy, label: 'Dupliquer', key: 'duplicate', onClick: onDuplicate },
+    ...(onCreditNote
+      ? [{ icon: Undo2, label: 'Avoir', key: 'credit-note', onClick: onCreditNote }]
+      : []),
+    ...(onCorrect
+      ? [{ icon: RotateCcw, label: 'Corriger', key: 'correct', onClick: onCorrect }]
+      : []),
+  ];
 
   return (
     <div className="flex h-full min-h-0 flex-col overflow-y-auto">
@@ -296,16 +354,21 @@ function DocumentSidebar({
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400">
-              {kind === 'invoice' ? 'Facture' : 'Devis'}
+              {kindLabel}
             </p>
             <h2 className="mt-0.5 truncate text-lg font-semibold tracking-tight text-slate-900">
               {number}
             </h2>
             <p className="mt-1 truncate text-sm text-slate-500">{clientName}</p>
           </div>
-          <Badge variant={variants[status] ?? 'default'}>
-            {labels[status as keyof typeof labels] ?? status}
-          </Badge>
+          <div className="flex flex-col items-end gap-1">
+            {documentKind === 'credit_note' ? (
+              <Badge variant="info">{INVOICE_DOCUMENT_KIND_LABELS.credit_note}</Badge>
+            ) : null}
+            <Badge variant={variants[status] ?? 'default'}>
+              {labels[status as keyof typeof labels] ?? status}
+            </Badge>
+          </div>
         </div>
         <p className="mt-5 text-[1.65rem] font-semibold tracking-[-0.03em] tabular-nums text-slate-900">
           {formatCurrency(totalTtc)}
@@ -323,6 +386,14 @@ function DocumentSidebar({
             </dt>
             <dd className="mt-0.5 font-medium text-slate-700">{formatDate(dueOrValid)}</dd>
           </div>
+          {vatLabel ? (
+            <div className="col-span-2">
+              <dt className="text-[11px] font-medium uppercase tracking-wider text-slate-400">
+                Régime de TVA
+              </dt>
+              <dd className="mt-0.5 font-medium text-slate-700">{vatLabel}</dd>
+            </div>
+          ) : null}
         </dl>
         <DocumentStatusTimeline className="mt-4" kind={kind} status={status} />
       </div>
@@ -335,18 +406,11 @@ function DocumentSidebar({
           Actions rapides
         </p>
         <div className="grid grid-cols-2 gap-2">
-          {[
-            { icon: Send, label: 'Envoyer', key: 'send', onClick: onSend },
-            { icon: Download, label: 'PDF', key: 'download', onClick: onDownload },
-            { icon: Printer, label: 'Imprimer', key: 'print', onClick: onPrint },
-            { icon: Share2, label: 'Partager', key: 'share', onClick: onShare },
-            { icon: Mail, label: 'E-mail', key: 'email', onClick: onEmail },
-            { icon: Copy, label: 'Dupliquer', key: 'duplicate', onClick: onDuplicate },
-          ].map((action) => (
+          {actions.map((action) => (
             <button
               className="flex items-center gap-2 rounded-xl border border-slate-200/90 bg-white px-3 py-2.5 text-sm font-medium text-slate-700 shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition duration-150 hover:-translate-y-0.5 hover:border-primary/25 hover:bg-blue-50/50 hover:shadow-sm disabled:opacity-50 disabled:hover:translate-y-0"
-              disabled={actionLoading === action.key}
-              key={action.label}
+              disabled={actionLoading === action.key || !action.onClick}
+              key={action.key}
               onClick={action.onClick}
               type="button">
               <action.icon className="text-slate-400" size={15} />
@@ -362,6 +426,7 @@ function DocumentSidebar({
 }
 
 export function InvoicesWorkspace() {
+  const router = useRouter();
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState<InvoiceStatusFilter>('all');
   const [actionLoading, setActionLoading] = useState<string | null>(null);
@@ -421,12 +486,38 @@ export function InvoicesWorkspace() {
     },
   });
 
+  const creditNoteMutation = useMutation({
+    mutationFn: () => createCreditNoteFromInvoice(requireScope(scope), detail!.id),
+    onSuccess: (invoice) => {
+      void queryClient.invalidateQueries({ queryKey: invoicesQueryKeys.all });
+      setSelectedId(invoice.id);
+    },
+  });
+
+  const correctMutation = useMutation({
+    mutationFn: () => correctInvoice(requireScope(scope), detail!.id),
+    onSuccess: ({ correctedInvoice }) => {
+      void queryClient.invalidateQueries({ queryKey: invoicesQueryKeys.all });
+      router.push(`/app/invoices?edit=${correctedInvoice.id}`);
+    },
+  });
+
   const sendMutation = useMutation({
     mutationFn: () => updateInvoiceStatus(requireScope(scope), detail!.id, 'sent'),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: invoicesQueryKeys.all });
     },
   });
+
+  const canCreditNote =
+    Boolean(detail) &&
+    detail!.documentKind === 'invoice' &&
+    canConvertInvoiceToCreditNote(detail!.status);
+  const canCorrect =
+    Boolean(detail) &&
+    detail!.documentKind === 'invoice' &&
+    canCorrectInvoice(detail!.status);
+  const canEdit = Boolean(detail) && canEditInvoice(detail!.status);
 
   return (
     <div className="flex h-full min-h-0 flex-col">
@@ -498,19 +589,31 @@ export function InvoicesWorkspace() {
                   actionLoading ??
                   (duplicateMutation.isPending
                     ? 'duplicate'
-                    : sendMutation.isPending
-                      ? 'send'
-                      : null)
+                    : creditNoteMutation.isPending
+                      ? 'credit-note'
+                      : correctMutation.isPending
+                        ? 'correct'
+                        : sendMutation.isPending
+                          ? 'send'
+                          : null)
                 }
                 clientEmail={detail.clientEmail}
                 clientName={detail.clientName}
                 documentId={detail.id}
+                documentKind={detail.documentKind}
                 dueOrValid={detail.dueAt}
                 issuedAt={detail.issuedAt}
                 kind="invoice"
                 number={detail.number}
+                onCorrect={canCorrect ? () => correctMutation.mutate() : undefined}
+                onCreditNote={canCreditNote ? () => creditNoteMutation.mutate() : undefined}
                 onDownload={() => void runPdfAction('download')}
                 onDuplicate={() => duplicateMutation.mutate()}
+                onEdit={
+                  canEdit
+                    ? () => router.push(`/app/invoices?edit=${detail.id}`)
+                    : undefined
+                }
                 onEmail={() =>
                   openMailto(
                     detail.clientEmail,
@@ -525,6 +628,7 @@ export function InvoicesWorkspace() {
                 status={detail.status}
                 templateId={previewTemplateId}
                 totalTtc={detail.totalTtc}
+                vatRegime={detail.vatRegime}
               />
             ) : undefined
           }

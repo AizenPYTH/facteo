@@ -76,6 +76,19 @@ export async function reserveNextInvoiceNumber(companyId: string): Promise<strin
   return data;
 }
 
+export async function reserveNextCreditNoteNumber(companyId: string): Promise<string> {
+  const { data, error } = await supabase.rpc('reserve_next_credit_note_number', {
+    p_company_id: companyId,
+  });
+
+  if (error || typeof data !== 'string') {
+    logSupabaseError('reserveNextCreditNoteNumber', error);
+    throw error ?? new Error('Unable to reserve credit note number.');
+  }
+
+  return data;
+}
+
 export function computeValidUntil(validityDays: number): string {
   const date = new Date();
   date.setDate(date.getDate() + validityDays);

@@ -3,7 +3,11 @@ import { useMemo } from 'react';
 
 import { useTenant } from '@/hooks/use-tenant';
 import { requireScope } from '@/lib/tenant/scope';
-import { fetchInvoiceById, fetchInvoicesPage } from '@/lib/supabase/invoices';
+import {
+  fetchInvoiceById,
+  fetchInvoiceRevisions,
+  fetchInvoicesPage,
+} from '@/lib/supabase/invoices';
 import { invoicesQueryKeys } from '@/lib/supabase/query-keys';
 import type { InvoiceStatusFilter, InvoicesPage } from '@/types/invoices-list';
 
@@ -13,6 +17,16 @@ export function useInvoice(invoiceId: string) {
   return useQuery({
     queryKey: invoicesQueryKeys.detail(scope?.companyId ?? '', invoiceId),
     queryFn: () => fetchInvoiceById(requireScope(scope), invoiceId),
+    enabled: Boolean(scope?.companyId && invoiceId) && !tenantLoading && !isSwitching,
+  });
+}
+
+export function useInvoiceRevisions(invoiceId: string) {
+  const { scope, loading: tenantLoading, isSwitching } = useTenant();
+
+  return useQuery({
+    queryKey: invoicesQueryKeys.revisions(scope?.companyId ?? '', invoiceId),
+    queryFn: () => fetchInvoiceRevisions(requireScope(scope), invoiceId),
     enabled: Boolean(scope?.companyId && invoiceId) && !tenantLoading && !isSwitching,
   });
 }

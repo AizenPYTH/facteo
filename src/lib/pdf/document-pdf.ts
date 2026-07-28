@@ -133,6 +133,7 @@ export async function buildInvoicePdfInput(
       ? { url: documentSignature.signatureUrl, signedAt: documentSignature.signedAt }
       : null,
     templateId: settings?.invoiceTemplateId ?? 'classic-blue',
+    vatRegime: invoice.vatRegime,
   };
 }
 

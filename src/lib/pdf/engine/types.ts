@@ -74,4 +74,5 @@ export type PdfDocumentInput = {
     signedAt: string;
   } | null;
   templateId?: string | null;
+  vatRegime?: string | null;
 };

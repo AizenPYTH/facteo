@@ -8,8 +8,10 @@ import { QuoteClientStep } from '@/components/quotes/quote-client-step';
 import { QuoteWizardProgress } from '@/components/quotes/quote-wizard-progress';
 import { WizardActionBar } from '@/components/ui/wizard-action-bar';
 import { WizardScreen } from '@/components/ui/wizard-screen';
+import { useClient } from '@/hooks/use-clients';
 import { useClientDocumentMemory } from '@/hooks/use-client-document-memory';
 import { useCompanyProfile } from '@/hooks/use-company-profile';
+import { useDebouncedValue } from '@/hooks/use-debounced-value';
 import { useInvoiceMutations } from '@/hooks/use-invoice-mutations';
 import { useSettings } from '@/hooks/use-settings';
 import {
@@ -23,6 +25,11 @@ import {
   type InvoiceWizardState,
 } from '@/lib/invoices/form';
 import { mapInvoiceLinesToDocumentTotals } from '@/lib/invoices/mappers';
+import { suggestVatRegime } from '@/lib/invoices/legal-mentions';
+import {
+  hasBlockingPreflightIssues,
+  validateInvoicePreflight,
+} from '@/lib/invoices/preflight-validation';
 import {
   areInvoiceLinesValid,
   isInvoiceInfoValid,
@@ -33,6 +40,8 @@ import { useToast } from '@/providers/toast-provider';
 import { getClientDisplayName, type Client } from '@/types/client';
 import type { InvoiceLineValue } from '@/types/invoice';
 import { createEmptyQuoteLine, type QuoteLineValue } from '@/types/quote';
+
+const AUTOSAVE_DEBOUNCE_MS = 6000;
 
 const TOTAL_STEPS = 3;
 
@@ -80,12 +89,115 @@ export function InvoiceWizardScreen({
   );
   const memoryAppliedForClient = useRef<string | null>(null);
   const replayApplied = useRef(false);
+  const autosaveBaselineRef = useRef<string | null>(null);
+  const revisionRef = useRef(state.revision);
   const { data: memory, isSuccess: memoryReady } = useClientDocumentMemory(state.clientId);
+  const { data: selectedClient } = useClient(state.clientId ?? '');
 
   const totals = useMemo(() => mapInvoiceLinesToDocumentTotals(state.lines), [state.lines]);
   const companyName = companyProfile?.companyName?.trim() || 'Votre entreprise';
   const isSaving = mode === 'create' ? createInvoice.isPending : updateInvoice.isPending;
   const defaultVatRate = settings?.defaultVatRate ?? 20;
+  const debouncedAutosaveState = useDebouncedValue(state, AUTOSAVE_DEBOUNCE_MS);
+
+  useEffect(() => {
+    revisionRef.current = state.revision;
+  }, [state.revision]);
+
+  useEffect(() => {
+    if (mode !== 'edit' || !initialState) {
+      return;
+    }
+
+    autosaveBaselineRef.current = JSON.stringify({
+      clientId: initialState.clientId,
+      lines: initialState.lines,
+      info: initialState.info,
+      vatRegime: initialState.vatRegime,
+    });
+  }, [initialState, mode]);
+
+  useEffect(() => {
+    if (mode !== 'edit' || !invoiceId) {
+      return;
+    }
+
+    if (!debouncedAutosaveState.clientId || debouncedAutosaveState.lines.length === 0) {
+      return;
+    }
+
+    if (!areInvoiceLinesValid(debouncedAutosaveState.lines)) {
+      return;
+    }
+
+    if (!isInvoiceInfoValid(debouncedAutosaveState.info)) {
+      return;
+    }
+
+    const snapshot = JSON.stringify({
+      clientId: debouncedAutosaveState.clientId,
+      lines: debouncedAutosaveState.lines,
+      info: debouncedAutosaveState.info,
+      vatRegime: debouncedAutosaveState.vatRegime,
+    });
+
+    if (autosaveBaselineRef.current === snapshot) {
+      return;
+    }
+
+    let cancelled = false;
+
+    async function runAutosave() {
+      let metadata;
+      try {
+        metadata = parseInvoiceInfoValues(debouncedAutosaveState.info);
+      } catch {
+        return;
+      }
+
+      try {
+        const updated = await updateInvoice.mutateAsync({
+          invoiceId: invoiceId!,
+          input: {
+            clientId: debouncedAutosaveState.clientId!,
+            lines: debouncedAutosaveState.lines,
+            ...metadata,
+            vatRegime: debouncedAutosaveState.vatRegime,
+            expectedRevision: revisionRef.current,
+            revisionReason: 'Enregistrement automatique',
+          },
+        });
+
+        if (cancelled) {
+          return;
+        }
+
+        autosaveBaselineRef.current = snapshot;
+        revisionRef.current = updated.revision;
+        setState((current) => ({ ...current, revision: updated.revision }));
+      } catch (error) {
+        if (cancelled) {
+          return;
+        }
+
+        const message = readErrorMessage(error);
+        if (message.includes('revision conflict')) {
+          showError(
+            'Conflit de modification : la facture a été mise à jour ailleurs. Rechargez l’écran.',
+          );
+          return;
+        }
+
+        showError(getInvoiceErrorMessage(message));
+      }
+    }
+
+    void runAutosave();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [debouncedAutosaveState, invoiceId, mode, showError, updateInvoice]);
 
   useEffect(() => {
     if (state.info.issuedAt) {
@@ -204,6 +316,11 @@ export function InvoiceWizardScreen({
       ...current,
       clientId: client.id,
       clientName: getClientDisplayName(client),
+      vatRegime: suggestVatRegime({
+        sellerCountry: companyProfile?.country,
+        clientCountry: client.country,
+        clientVatNumber: client.vatNumber,
+      }),
     }));
     setStep(2);
   }
@@ -330,9 +447,40 @@ export function InvoiceWizardScreen({
     router.back();
   }
 
+  function runPreflight(): boolean {
+    const issues = validateInvoicePreflight({
+      clientId: state.clientId,
+      clientEmail: selectedClient?.email,
+      clientPhone: selectedClient?.phone,
+      clientVatNumber: selectedClient?.vatNumber,
+      clientSiren: selectedClient?.siren,
+      clientSiret: selectedClient?.siret,
+      clientCountry: selectedClient?.country,
+      clientPostalCode: selectedClient?.postalCode,
+      companyIban: companyProfile?.iban,
+      companyVatNumber: companyProfile?.vatNumber,
+      currency: settings?.currency,
+      vatRegime: state.vatRegime,
+      linesCount: state.lines.filter((line) => line.description.trim()).length,
+      hasPositiveTotals: totals.totalTtc > 0,
+    });
+
+    if (hasBlockingPreflightIssues(issues)) {
+      const firstError = issues.find((issue) => issue.level === 'error');
+      showError(firstError?.message ?? 'La facture ne peut pas être enregistrée.');
+      return false;
+    }
+
+    return true;
+  }
+
   async function handleSave() {
     if (!state.clientId || !canGoNext()) {
       showError('La facture est incomplète.');
+      return;
+    }
+
+    if (!runPreflight()) {
       return;
     }
 
@@ -349,6 +497,8 @@ export function InvoiceWizardScreen({
       clientId: state.clientId,
       lines: state.lines,
       ...metadata,
+      vatRegime: state.vatRegime,
+      expectedRevision: mode === 'edit' ? revisionRef.current : undefined,
     };
 
     try {
@@ -364,7 +514,14 @@ export function InvoiceWizardScreen({
         return;
       }
 
-      await updateInvoice.mutateAsync({ invoiceId, input });
+      const updated = await updateInvoice.mutateAsync({ invoiceId, input });
+      autosaveBaselineRef.current = JSON.stringify({
+        clientId: state.clientId,
+        lines: state.lines,
+        info: state.info,
+        vatRegime: state.vatRegime,
+      });
+      revisionRef.current = updated.revision;
       showSuccess('Facture modifiée.');
       router.replace(`/invoices/${invoiceId}` as Href);
     } catch (error) {

@@ -69,6 +69,10 @@ export function mapCreateInvoiceInputToInsert(
     quote_id: input.quoteId ?? null,
     number,
     status: 'draft',
+    document_kind: input.documentKind ?? 'invoice',
+    credit_of_invoice_id: input.creditOfInvoiceId ?? null,
+    vat_regime: input.vatRegime ?? 'standard',
+    revision: 1,
     subtotal_ht: totals.subtotalHt,
     total_vat: totals.totalVat,
     total_ttc: totals.totalTtc,
@@ -98,6 +102,10 @@ export function mapUpdateInvoiceInputToInsert(
     ...mapInvoiceMetadata(input, existingIssuedAt ?? now, existingDueAt),
     updated_at: now,
   };
+
+  if (input.vatRegime) {
+    invoice.vat_regime = input.vatRegime;
+  }
 
   const lines = input.lines.map((line, index) => mapLineToInsert(scope, line, index));
 

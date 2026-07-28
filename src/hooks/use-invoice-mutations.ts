@@ -5,6 +5,8 @@ import { requireScope } from '@/lib/tenant/scope';
 import {
   addInvoicePayment,
   cancelInvoice,
+  correctInvoice,
+  createCreditNoteFromInvoice,
   createInvoice,
   deleteInvoice,
   duplicateInvoice,
@@ -162,6 +164,22 @@ export function useInvoiceMutations() {
     onSuccess: () => invalidateInvoices(),
   });
 
+  const createCreditNoteMutation = useMutation({
+    mutationFn: async (invoiceId: string) => {
+      await enforcePlanLimit('documents', showLimitModal);
+      return createCreditNoteFromInvoice(requireScope(scope), invoiceId);
+    },
+    onSuccess: () => invalidateInvoices(),
+  });
+
+  const correctInvoiceMutation = useMutation({
+    mutationFn: async (invoiceId: string) => {
+      await enforcePlanLimit('documents', showLimitModal);
+      return correctInvoice(requireScope(scope), invoiceId);
+    },
+    onSuccess: () => invalidateInvoices(),
+  });
+
   const deleteInvoiceMutation = useMutation({
     mutationFn: (invoiceId: string) => deleteInvoice(requireScope(scope), invoiceId),
     onMutate: async (invoiceId) => {
@@ -180,6 +198,8 @@ export function useInvoiceMutations() {
     markAsPaid: markAsPaidMutation,
     addPayment: addPaymentMutation,
     duplicateInvoice: duplicateInvoiceMutation,
+    createCreditNote: createCreditNoteMutation,
+    correctInvoice: correctInvoiceMutation,
     deleteInvoice: deleteInvoiceMutation,
   };
 }
