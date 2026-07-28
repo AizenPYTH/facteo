@@ -379,29 +379,41 @@ async function ensureCustomerPortal(stripe, priceIds) {
 }
 
 /**
+ * Synchronise uniquement les colonnes réelles de public.subscription_plans.
+ * (Pas de currency / price_*_cents — montants & devise vivent sur Stripe Price.)
+ *
+ * Colonnes schéma :
+ *   stripe_price_id          → Price mensuel (cache)
+ *   stripe_price_id_yearly   → Price annuel (cache)
+ *   stripe_product_id        → Product
+ *   stripe_lookup_key_*      → lookup_keys (source de vérité)
+ *
  * @param {import('@supabase/supabase-js').SupabaseClient} supabase
- * @param {PaidPlanId} planId
- * @param {string} monthlyPriceId
- * @param {string} yearlyPriceId
- * @param {number} monthlyCents
- * @param {number} yearlyCents
+ * @param {{
+ *   planId: PaidPlanId,
+ *   productId: string,
+ *   monthlyPriceId: string,
+ *   yearlyPriceId: string,
+ *   monthlyLookup: string,
+ *   yearlyLookup: string,
+ * }} input
  */
-async function syncSupabasePlan(supabase, planId, monthlyPriceId, yearlyPriceId, monthlyCents, yearlyCents) {
+async function syncSupabasePlan(supabase, input) {
   const { error } = await supabase
     .from('subscription_plans')
     .update({
-      stripe_price_id_monthly: monthlyPriceId,
-      stripe_price_id_yearly: yearlyPriceId,
-      price_monthly_cents: monthlyCents,
-      price_yearly_cents: yearlyCents,
-      currency,
+      stripe_product_id: input.productId,
+      stripe_price_id: input.monthlyPriceId,
+      stripe_price_id_yearly: input.yearlyPriceId,
+      stripe_lookup_key_monthly: input.monthlyLookup,
+      stripe_lookup_key_yearly: input.yearlyLookup,
       is_active: true,
       updated_at: new Date().toISOString(),
     })
-    .eq('id', planId);
+    .eq('id', input.planId);
 
   if (error) {
-    throw new Error(`Supabase update ${planId}: ${error.message}`);
+    throw new Error(`Supabase update ${input.planId}: ${error.message}`);
   }
 }
 
@@ -473,18 +485,19 @@ async function main() {
     console.log(`  Monthly ${monthly.price.id}${monthly.rotated ? ' (nouveau)' : ''}`);
     console.log(`  Yearly  ${yearly.price.id}${yearly.rotated ? ' (nouveau)' : ''}`);
 
-    await syncSupabasePlan(
-      supabase,
-      plan.planId,
-      monthly.price.id,
-      yearly.price.id,
-      plan.monthlyCents,
-      plan.yearlyCents
-    );
+    await syncSupabasePlan(supabase, {
+      planId: plan.planId,
+      productId: product.id,
+      monthlyPriceId: monthly.price.id,
+      yearlyPriceId: yearly.price.id,
+      monthlyLookup: plan.monthlyLookup,
+      yearlyLookup: plan.yearlyLookup,
+    });
     console.log(`  ✓ Supabase subscription_plans.${plan.planId} à jour`);
 
     orderedPriceIds.push(monthly.price.id, yearly.price.id);
     summary[plan.planId] = {
+      product: product.id,
       monthly: monthly.price.id,
       yearly: yearly.price.id,
       rotated: [
@@ -495,17 +508,23 @@ async function main() {
   }
 
   // Micro gratuit — pas de Price Stripe
-  await supabase
-    .from('subscription_plans')
-    .update({
-      stripe_price_id_monthly: null,
-      stripe_price_id_yearly: null,
-      price_monthly_cents: 0,
-      price_yearly_cents: 0,
-      is_active: true,
-      updated_at: new Date().toISOString(),
-    })
-    .eq('id', 'micro');
+  {
+    const { error: microError } = await supabase
+      .from('subscription_plans')
+      .update({
+        stripe_product_id: null,
+        stripe_price_id: null,
+        stripe_price_id_yearly: null,
+        stripe_lookup_key_monthly: null,
+        stripe_lookup_key_yearly: null,
+        is_active: true,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', 'micro');
+    if (microError) {
+      throw new Error(`Supabase update micro: ${microError.message}`);
+    }
+  }
 
   console.log('\n→ Customer Portal (changement d’offre / mensuel↔annuel / résiliation)');
   const portal = await ensureCustomerPortal(stripe, orderedPriceIds);
