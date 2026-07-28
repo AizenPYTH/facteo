@@ -1,15 +1,22 @@
 import { SITE_URL } from '@/lib/constants';
 import { supabase } from '@/lib/supabase';
 
+export type PaidPlanId = 'basique' | 'standard' | 'pro' | 'max';
+export type BillingInterval = 'monthly' | 'yearly';
+
 export type CreateSubscriptionCheckoutResult = {
   checkoutUrl: string;
   sessionId: string;
+  planId?: PaidPlanId;
+  interval?: BillingInterval;
+  priceId?: string;
 };
 
 export type ConfirmSubscriptionCheckoutResult = {
-  planId: 'free' | 'premium';
+  planId: string;
   status: string;
   isPremium: boolean;
+  isPaid?: boolean;
 };
 
 function getSupabaseFunctionsBaseUrl(): string | null {
@@ -35,9 +42,19 @@ function getSubscriptionConfirmUrl(): string | null {
   return baseUrl ? `${baseUrl}/stripe-confirm-subscription-checkout` : null;
 }
 
+export function getListSubscriptionPricesUrl(): string | null {
+  const baseUrl = getSupabaseFunctionsBaseUrl();
+  return baseUrl ? `${baseUrl}/list-subscription-prices` : null;
+}
+
 /** URL de retour web après Stripe Checkout. */
-export function getPremiumWebReturnUrl(): string {
+export function getSubscriptionWebReturnUrl(): string {
   return `${SITE_URL}/app/settings/subscription`;
+}
+
+/** @deprecated Prefer getSubscriptionWebReturnUrl */
+export function getPremiumWebReturnUrl(): string {
+  return getSubscriptionWebReturnUrl();
 }
 
 export function isSubscriptionCheckoutConfigured(): boolean {
@@ -49,15 +66,15 @@ async function getAccessToken(): Promise<string> {
   const accessToken = sessionData.session?.access_token;
 
   if (!accessToken) {
-    throw new Error('Connectez-vous pour souscrire à Premium.');
+    throw new Error('Connectez-vous pour souscrire.');
   }
 
   return accessToken;
 }
 
 export async function createSubscriptionCheckout(
-  planId: 'premium' = 'premium',
-  options?: { promotionCode?: string; returnUrl?: string },
+  planId: PaidPlanId,
+  options?: { promotionCode?: string; returnUrl?: string; interval?: BillingInterval },
 ): Promise<CreateSubscriptionCheckoutResult> {
   const endpoint = getSubscriptionCheckoutUrl();
 
@@ -67,7 +84,8 @@ export async function createSubscriptionCheckout(
 
   const accessToken = await getAccessToken();
   const promotionCode = options?.promotionCode?.trim() || undefined;
-  const returnUrl = options?.returnUrl?.trim() || getPremiumWebReturnUrl();
+  const returnUrl = options?.returnUrl?.trim() || getSubscriptionWebReturnUrl();
+  const interval = options?.interval ?? 'monthly';
 
   const response = await fetch(endpoint, {
     method: 'POST',
@@ -77,6 +95,7 @@ export async function createSubscriptionCheckout(
     },
     body: JSON.stringify({
       planId,
+      interval,
       returnUrl,
       ...(promotionCode ? { promotionCode } : {}),
     }),
@@ -84,7 +103,7 @@ export async function createSubscriptionCheckout(
 
   if (!response.ok) {
     const payload = (await response.json().catch(() => null)) as { error?: string } | null;
-    throw new Error(payload?.error ?? 'Impossible de démarrer l’abonnement Premium.');
+    throw new Error(payload?.error ?? 'Impossible de démarrer l’abonnement.');
   }
 
   const payload = (await response.json()) as CreateSubscriptionCheckoutResult;
@@ -118,16 +137,52 @@ export async function confirmSubscriptionCheckout(
 
   if (!response.ok) {
     const payload = (await response.json().catch(() => null)) as { error?: string } | null;
-    throw new Error(payload?.error ?? 'Impossible de confirmer l’abonnement Premium.');
+    throw new Error(payload?.error ?? 'Impossible de confirmer l’abonnement.');
   }
 
   return (await response.json()) as ConfirmSubscriptionCheckoutResult;
 }
 
 /** Crée la session et redirige le navigateur vers Stripe Checkout. */
-export async function startPremiumCheckoutRedirect(
-  options?: { promotionCode?: string; returnUrl?: string },
+export async function startSubscriptionCheckoutRedirect(
+  planId: PaidPlanId,
+  options?: { promotionCode?: string; returnUrl?: string; interval?: BillingInterval },
 ): Promise<void> {
-  const checkout = await createSubscriptionCheckout('premium', options);
+  const checkout = await createSubscriptionCheckout(planId, options);
   window.location.assign(checkout.checkoutUrl);
+}
+
+/** @deprecated Prefer startSubscriptionCheckoutRedirect with explicit planId */
+export async function startPremiumCheckoutRedirect(
+  options?: { promotionCode?: string; returnUrl?: string; interval?: BillingInterval },
+): Promise<void> {
+  await startSubscriptionCheckoutRedirect('pro', options);
+}
+
+export type StripePlanPrice = {
+  priceId: string;
+  lookupKey: string | null;
+  unitAmount: number;
+  currency: string;
+  interval: BillingInterval;
+  monthlyEquivalentAmount: number | null;
+};
+
+export type StripePlansPricesResponse = {
+  currency: string;
+  plans: Array<{
+    planId: PaidPlanId;
+    monthly: StripePlanPrice | null;
+    yearly: StripePlanPrice | null;
+  }>;
+};
+
+/** Prix lus depuis Stripe (edge function) — aucun montant hardcodé côté client. */
+export async function fetchStripeSubscriptionPrices(): Promise<StripePlansPricesResponse | null> {
+  const endpoint = getListSubscriptionPricesUrl();
+  if (!endpoint) return null;
+
+  const response = await fetch(endpoint, { method: 'GET' });
+  if (!response.ok) return null;
+  return (await response.json()) as StripePlansPricesResponse;
 }

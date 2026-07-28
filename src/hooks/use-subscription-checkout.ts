@@ -10,20 +10,20 @@ import {
 } from '@/lib/stripe/subscription-checkout';
 import { subscriptionQueryKeys } from '@/lib/supabase/query-keys';
 
-export function usePremiumCheckout() {
+export function useSubscriptionCheckout() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
   const subscribe = useMutation({
-    mutationFn: (input?: string | { planId?: PaidPlanId; interval?: BillingInterval; promotionCode?: string }) => {
-      if (typeof input === 'string' || input === undefined) {
-        return startSubscriptionCheckoutFlow('pro', { promotionCode: input });
-      }
-      return startSubscriptionCheckoutFlow(input.planId ?? 'pro', {
+    mutationFn: (input: {
+      planId: PaidPlanId;
+      interval?: BillingInterval;
+      promotionCode?: string;
+    }) =>
+      startSubscriptionCheckoutFlow(input.planId, {
         interval: input.interval,
         promotionCode: input.promotionCode,
-      });
-    },
+      }),
     onSuccess: async () => {
       if (!user?.id) {
         return;
@@ -38,21 +38,13 @@ export function usePremiumCheckout() {
     },
   });
 
-  async function startCheckout(
-    planOrCode?: PaidPlanId | string,
-    options?: { interval?: BillingInterval; promotionCode?: string },
-  ): Promise<boolean> {
-    const paidPlans: PaidPlanId[] = ['basique', 'standard', 'pro', 'max'];
-    const isPlan = typeof planOrCode === 'string' && paidPlans.includes(planOrCode as PaidPlanId);
-    const planId = (isPlan ? planOrCode : 'pro') as PaidPlanId;
-    const promotionCode = isPlan ? options?.promotionCode : planOrCode;
-
+  async function startCheckout(input: {
+    planId: PaidPlanId;
+    interval?: BillingInterval;
+    promotionCode?: string;
+  }): Promise<boolean> {
     try {
-      await subscribe.mutateAsync({
-        planId,
-        interval: options?.interval,
-        promotionCode,
-      });
+      await subscribe.mutateAsync(input);
       return true;
     } catch (error) {
       if (isSubscriptionCheckoutCanceledError(error)) {
@@ -68,5 +60,15 @@ export function usePremiumCheckout() {
     subscribe,
     startCheckout,
     isSubscriptionCheckoutCanceledError,
+  };
+}
+
+/** @deprecated Prefer useSubscriptionCheckout */
+export function usePremiumCheckout() {
+  const checkout = useSubscriptionCheckout();
+  return {
+    ...checkout,
+    startCheckout: (promotionCode?: string) =>
+      checkout.startCheckout({ planId: 'pro', promotionCode }),
   };
 }

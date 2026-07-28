@@ -6,9 +6,12 @@ export type SubscriptionPlanId =
   | 'enterprise'
   | 'micro'
   | 'basique'
-  | 'standard';
+  | 'standard'
+  | 'max';
 
-export type EffectivePlanId = 'micro' | 'basique' | 'standard' | 'pro';
+export type EffectivePlanId = 'micro' | 'basique' | 'standard' | 'pro' | 'max';
+
+export type PaidPlanId = 'basique' | 'standard' | 'pro' | 'max';
 
 export type SubscriptionStatus =
   | 'trialing'
@@ -51,6 +54,9 @@ export type SubscriptionPlan = {
   maxCompanies: number | null;
   features: PlanFeatures;
   stripePriceId: string | null;
+  stripePriceIdYearly: string | null;
+  stripeLookupKeyMonthly: string | null;
+  stripeLookupKeyYearly: string | null;
   stripeProductId: string | null;
   appStoreProductId: string | null;
   playStoreProductId: string | null;

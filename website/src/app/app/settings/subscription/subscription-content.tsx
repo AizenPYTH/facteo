@@ -7,20 +7,16 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { AppTopBar } from '@/components/app/app-shell';
 import { Badge, LoadingState, Panel, StatCard } from '@/components/app/ui';
+import { PricingSection } from '@/components/sections/pricing-section';
 import { useAuth } from '@/providers/auth-provider';
 import { fetchSubscriptionSnapshot } from '@/lib/domain/supabase/subscriptions';
 import { subscriptionQueryKeys } from '@/lib/domain/supabase/query-keys';
 import { formatDate } from '@/lib/domain/format/date';
 import { SUPPORT_EMAIL } from '@/lib/constants';
-import {
-  getPremiumQrImageUrl,
-  PREMIUM_APP_DEEP_LINK,
-  PREMIUM_MARKETING,
-} from '@/lib/premium-marketing';
+import { getPlanDisplayName } from '@/lib/domain/subscription/plans';
 import {
   confirmSubscriptionCheckout,
   isSubscriptionCheckoutConfigured,
-  startPremiumCheckoutRedirect,
 } from '@/lib/stripe/subscription-checkout';
 
 export default function SubscriptionSettingsContent() {
@@ -29,9 +25,8 @@ export default function SubscriptionSettingsContent() {
   const searchParams = useSearchParams();
   const queryClient = useQueryClient();
   const confirmStarted = useRef(false);
-  const [checkoutLoading, setCheckoutLoading] = useState(false);
-  const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [confirmMessage, setConfirmMessage] = useState<string | null>(null);
+  const [checkoutError, setCheckoutError] = useState<string | null>(null);
 
   const query = useQuery({
     queryKey: subscriptionQueryKeys.snapshot(user?.id ?? ''),
@@ -62,9 +57,10 @@ export default function SubscriptionSettingsContent() {
             queryKey: subscriptionQueryKeys.snapshot(user.id),
           });
         }
+        const planName = getPlanDisplayName(result.planId);
         setConfirmMessage(
-          result.isPremium
-            ? 'INVEQ Premium est activé. Merci !'
+          result.isPaid || result.isPremium
+            ? `Offre ${planName} activée. Merci !`
             : 'Paiement reçu. L’activation peut prendre quelques instants.',
         );
         router.replace('/app/settings/subscription');
@@ -75,23 +71,6 @@ export default function SubscriptionSettingsContent() {
       }
     })();
   }, [queryClient, router, searchParams, user?.id]);
-
-  async function handleCheckout() {
-    setCheckoutError(null);
-
-    if (!isSubscriptionCheckoutConfigured()) {
-      setCheckoutError('Le paiement n’est pas encore disponible. Réessayez plus tard.');
-      return;
-    }
-
-    setCheckoutLoading(true);
-    try {
-      await startPremiumCheckoutRedirect();
-    } catch (error) {
-      setCheckoutError(error instanceof Error ? error.message : 'Une erreur est survenue.');
-      setCheckoutLoading(false);
-    }
-  }
 
   if (query.isLoading) {
     return <LoadingState message="Chargement de l’abonnement…" />;
@@ -124,7 +103,7 @@ export default function SubscriptionSettingsContent() {
   }
 
   const { subscription, plan, usage } = query.data;
-  const isPremium = subscription.effectivePlanId !== 'micro' && subscription.plan !== 'free';
+  const isPaid = subscription.effectivePlanId !== 'micro' && subscription.plan !== 'free';
 
   return (
     <>
@@ -134,10 +113,15 @@ export default function SubscriptionSettingsContent() {
         </Link>
       </AppTopBar>
       <div className="flex-1 overflow-y-auto p-6 xl:p-8">
-        <div className="mx-auto max-w-5xl space-y-6">
+        <div className="mx-auto max-w-6xl space-y-6">
           {confirmMessage ? (
             <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
               {confirmMessage}
+            </div>
+          ) : null}
+          {checkoutError ? (
+            <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              {checkoutError}
             </div>
           ) : null}
 
@@ -160,65 +144,30 @@ export default function SubscriptionSettingsContent() {
             />
           </div>
 
-          {!isPremium ? (
-            <Panel title="Passer à Premium">
-              <p className="text-sm text-slate-600">
-                {PREMIUM_MARKETING.subtitle} {PREMIUM_MARKETING.priceDisplay}.
-              </p>
-              <button
-                className="mt-4 inline-flex w-full items-center justify-center rounded-xl bg-primary px-5 py-3.5 text-base font-semibold text-white shadow-lg shadow-primary/25 transition hover:bg-primary-dark disabled:opacity-60 sm:w-auto"
-                disabled={checkoutLoading}
-                onClick={() => void handleCheckout()}
-                type="button">
-                {checkoutLoading ? 'Redirection Stripe…' : PREMIUM_MARKETING.unlockCta}
-              </button>
-              {checkoutError ? (
-                <p className="mt-3 text-sm text-red-600">{checkoutError}</p>
-              ) : null}
-              <div className="mt-6 flex flex-col items-start gap-4 sm:flex-row sm:items-center">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  alt="QR Code Premium INVEQ"
-                  className="h-28 w-28 rounded-lg border border-slate-200 bg-white p-1"
-                  height={112}
-                  src={getPremiumQrImageUrl(112)}
-                  width={112}
-                />
-                <div>
-                  <p className="text-sm text-slate-600">
-                    Ou ouvrez l’abonnement dans l’application :
-                  </p>
-                  <a
-                    className="mt-2 inline-flex rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white"
-                    href={PREMIUM_APP_DEEP_LINK}>
-                    Ouvrir Premium dans l’app
-                  </a>
-                </div>
-              </div>
-              <p className="mt-4 text-xs text-slate-500">{PREMIUM_MARKETING.guarantee}</p>
-            </Panel>
-          ) : (
-            <Panel title="INVEQ Premium actif">
-              <p className="text-sm text-slate-600">
-                Merci pour votre abonnement. Pour toute question facturation, contactez{' '}
-                <a className="text-primary hover:underline" href={`mailto:${SUPPORT_EMAIL}`}>
-                  {SUPPORT_EMAIL}
-                </a>
-                .
-              </p>
-              <Link
-                className="mt-3 inline-block text-sm font-medium text-primary hover:underline"
-                href="/tarifs">
-                Voir les tarifs
-              </Link>
-            </Panel>
-          )}
+          <Panel title={isPaid ? `Offre ${plan.displayName} active` : 'Choisir une offre'}>
+            <p className="mb-4 text-sm text-slate-600">
+              {isPaid
+                ? 'Pour changer d’offre, sélectionnez une autre formule ci-dessous. Les codes promo Stripe sont acceptés.'
+                : isSubscriptionCheckoutConfigured()
+                  ? 'Sélectionnez Basique, Standard, Pro ou Max. Un champ code promo est disponible au-dessus des cartes.'
+                  : 'Le paiement n’est pas encore disponible.'}
+            </p>
+            <PricingSection />
+          </Panel>
 
           <Panel title="Utilisation">
             <div className="grid gap-4 sm:grid-cols-3">
-              <UsageBar current={usage.clients} label="Clients" max={plan.maxClients} />
-              <UsageBar current={usage.quotes} label="Devis" max={plan.maxQuotes} />
-              <UsageBar current={usage.invoices} label="Factures" max={plan.maxInvoices} />
+              <UsageBar
+                current={usage.documents}
+                label="Documents / mois"
+                max={plan.maxDocumentsPerMonth}
+              />
+              <UsageBar
+                current={usage.sirenSearches}
+                label="SIREN / mois"
+                max={plan.maxSirenSearchesPerMonth}
+              />
+              <UsageBar current={usage.companies} label="Entreprises" max={plan.maxCompanies} />
             </div>
           </Panel>
 
@@ -251,18 +200,14 @@ function UsageBar({ label, current, max }: { label: string; current: number; max
         <span className="text-slate-500">
           {current}
           {unlimited ? '' : ` / ${max}`}
+          {unlimited ? ' · ∞' : ''}
         </span>
       </div>
       {!unlimited ? (
-        <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-100">
-          <div
-            className="h-full rounded-full bg-primary transition-all"
-            style={{ width: `${percent}%` }}
-          />
+        <div className="mt-2 h-2 overflow-hidden rounded-full bg-slate-100">
+          <div className="h-full rounded-full bg-primary" style={{ width: `${percent}%` }} />
         </div>
-      ) : (
-        <p className="mt-2 text-xs text-emerald-600">Illimité</p>
-      )}
+      ) : null}
     </div>
   );
 }
@@ -272,11 +217,11 @@ function formatFeatureLabel(key: string): string {
     custom_logo: 'Logo personnalisé',
     company_signature: 'Signature entreprise',
     client_signature: 'Signature client',
+    pdf_templates: 'Modèles PDF',
     stripe_payments: 'Paiements Stripe',
     ai_assistant: 'Assistant IA',
     advanced_stats: 'Statistiques avancées',
-    siren_search: 'Recherche SIREN',
-    pdf_templates: 'Modèles PDF',
+    siren_search: 'Recherche SIREN / SIRET',
   };
   return labels[key] ?? key;
 }

@@ -1,7 +1,11 @@
 import Stripe from 'https://esm.sh/stripe@17.7.0?target=deno';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
 
-import { syncSubscriptionCheckoutSession } from '../_shared/subscription-sync.ts';
+import {
+  isPaidPlanId,
+  normalizePlanId,
+  syncSubscriptionCheckoutSession,
+} from '../_shared/subscription-sync.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -63,12 +67,14 @@ Deno.serve(async (request) => {
     }
 
     const result = await syncSubscriptionCheckoutSession(stripe, serviceClient, session);
+    const planId = normalizePlanId(result.planId);
 
     return jsonResponse(
       {
-        planId: result.planId,
+        planId,
         status: 'active',
-        isPremium: result.planId === 'premium',
+        isPremium: isPaidPlanId(planId),
+        isPaid: isPaidPlanId(planId),
       },
       200,
     );

@@ -1,7 +1,13 @@
 import Stripe from 'https://esm.sh/stripe@17.7.0?target=deno';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
 
-import { resolveStripePriceId } from '../_shared/subscription-sync.ts';
+import {
+  isPaidPlanId,
+  normalizePlanId,
+  resolveStripePriceIdForPlan,
+  type BillingInterval,
+  type PaidSubscriptionPlanId,
+} from '../_shared/subscription-sync.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -10,6 +16,7 @@ const corsHeaders = {
 
 type CreateSubscriptionCheckoutBody = {
   planId?: string;
+  interval?: BillingInterval | string;
   returnUrl?: string;
   /** Optional Stripe promotion code (e.g. WELCOME20). Applied if valid & active. */
   promotionCode?: string;
@@ -49,39 +56,76 @@ Deno.serve(async (request) => {
     }
 
     const body = (await request.json().catch(() => ({}))) as CreateSubscriptionCheckoutBody;
-    const planId = body.planId ?? 'premium';
+    const rawPlanId = body.planId?.trim() || '';
+    const normalizedPlan = normalizePlanId(rawPlanId);
+
+    // Cause historique du bug « Formule / Offre Premium introuvable » :
+    // le client envoyait planId=premium alors que premium est is_active=false.
+    if (!isPaidPlanId(normalizedPlan)) {
+      return jsonResponse(
+        {
+          error:
+            'Formule introuvable. Choisissez Basique, Standard, Pro ou Max (mensuel ou annuel).',
+          code: 'PLAN_NOT_FOUND',
+          receivedPlanId: rawPlanId || null,
+        },
+        404,
+      );
+    }
+
+    const planId = normalizedPlan as PaidSubscriptionPlanId;
+    const interval: BillingInterval = body.interval === 'yearly' ? 'yearly' : 'monthly';
     const promotionCodeInput = body.promotionCode?.trim() || '';
     const appReturnUrl =
       body.returnUrl?.trim() ||
       Deno.env.get('INVEQ_SUBSCRIPTION_RETURN_URL')?.trim() ||
-      'inveq://settings/premium';
+      'inveq://settings/subscription';
 
     const serviceClient = createClient(supabaseUrl, supabaseServiceRoleKey);
 
     const { data: plan, error: planError } = await serviceClient
       .from('subscription_plans')
-      .select('id, display_name, stripe_price_id, stripe_product_id')
+      .select(
+        'id, display_name, stripe_price_id, stripe_price_id_yearly, stripe_lookup_key_monthly, stripe_lookup_key_yearly, stripe_product_id, is_active',
+      )
       .eq('id', planId)
       .eq('is_active', true)
       .maybeSingle();
 
+    // Ligne exacte qui provoquait l’erreur : plan premium désactivé → maybeSingle() = null
     if (planError || !plan) {
-      return jsonResponse({ error: 'Offre Premium introuvable.' }, 404);
+      return jsonResponse(
+        {
+          error: `Formule introuvable pour l’offre « ${planId} ».`,
+          code: 'PLAN_ROW_MISSING',
+          planId,
+        },
+        404,
+      );
     }
 
-    const stripePriceId = resolveStripePriceId(plan.stripe_price_id);
+    const stripe = new Stripe(stripeSecret, { apiVersion: '2024-12-18.acacia' });
+    const stripePriceId = await resolveStripePriceIdForPlan(stripe, plan, interval);
 
     if (!stripePriceId) {
       return jsonResponse(
         {
           error:
-            'Prix Stripe non configuré. Définissez stripe_price_id sur subscription_plans ou STRIPE_PREMIUM_PRICE_ID dans les secrets Supabase.',
+            'Prix Stripe introuvable. Créez les Prices avec les lookup_keys (monthly_basic, yearly_basic, …) ou renseignez stripe_price_id / stripe_price_id_yearly.',
+          code: 'PRICE_NOT_CONFIGURED',
+          planId,
+          interval,
         },
         503,
       );
     }
 
-    const stripe = new Stripe(stripeSecret, { apiVersion: '2024-12-18.acacia' });
+    // Cache le price id résolu pour accélérer les prochains checkouts
+    const priceCachePatch =
+      interval === 'yearly'
+        ? { stripe_price_id_yearly: stripePriceId, updated_at: new Date().toISOString() }
+        : { stripe_price_id: stripePriceId, updated_at: new Date().toISOString() };
+    await serviceClient.from('subscription_plans').update(priceCachePatch).eq('id', planId);
 
     const { data: subscriptionRow } = await serviceClient
       .from('subscriptions')
@@ -89,11 +133,17 @@ Deno.serve(async (request) => {
       .eq('user_id', user.id)
       .maybeSingle();
 
-    if (
-      subscriptionRow?.stripe_subscription_id &&
-      (subscriptionRow.plan === 'premium' || subscriptionRow.status === 'active')
-    ) {
-      return jsonResponse({ error: 'Vous êtes déjà abonné à INVEQ Premium.' }, 400);
+    const alreadyPaid =
+      Boolean(subscriptionRow?.stripe_subscription_id) &&
+      (subscriptionRow?.status === 'active' || subscriptionRow?.status === 'trialing') &&
+      subscriptionRow?.plan !== 'free' &&
+      subscriptionRow?.plan !== 'micro';
+
+    if (alreadyPaid && subscriptionRow?.plan === planId) {
+      return jsonResponse(
+        { error: `Vous êtes déjà abonné à l’offre ${plan.display_name}.`, code: 'ALREADY_SUBSCRIBED' },
+        400,
+      );
     }
 
     let customerId = subscriptionRow?.stripe_customer_id ?? null;
@@ -133,7 +183,7 @@ Deno.serve(async (request) => {
       const match = promotionCodes.data[0];
 
       if (!match) {
-        return jsonResponse({ error: 'Code promotionnel invalide ou expiré.' }, 400);
+        return jsonResponse({ error: 'Code promotionnel invalide ou expiré.', code: 'PROMO_INVALID' }, 400);
       }
 
       resolvedPromotionCodeId = match.id;
@@ -148,12 +198,15 @@ Deno.serve(async (request) => {
           quantity: 1,
         },
       ],
+      // Toujours permettre la saisie d’un code promo sur Stripe Checkout
+      // sauf si un code est déjà appliqué via discounts.
       ...(resolvedPromotionCodeId
         ? { discounts: [{ promotion_code: resolvedPromotionCodeId }] }
         : { allow_promotion_codes: true }),
       metadata: {
         user_id: user.id,
         plan_id: plan.id,
+        billing_interval: interval,
         source: 'INVEQ_subscription_checkout',
         ...(promotionCodeInput ? { promotion_code: promotionCodeInput } : {}),
       },
@@ -161,6 +214,7 @@ Deno.serve(async (request) => {
         metadata: {
           user_id: user.id,
           plan_id: plan.id,
+          billing_interval: interval,
         },
       },
       success_url: successUrl,
@@ -176,6 +230,9 @@ Deno.serve(async (request) => {
       {
         checkoutUrl: session.url,
         sessionId: session.id,
+        planId: plan.id,
+        interval,
+        priceId: stripePriceId,
       },
       200,
     );

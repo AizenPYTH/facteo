@@ -32,32 +32,28 @@ export type PlanFeature = {
   comingSoon?: boolean;
 };
 
-export type SubscriptionPlanId = 'micro' | 'basique' | 'standard' | 'pro';
+export type SubscriptionPlanId = 'micro' | 'basique' | 'standard' | 'pro' | 'max';
 
 export type SubscriptionPlan = {
   id: SubscriptionPlanId;
   name: string;
   description: string;
-  /** Prix mensuel HT facturé au mois (€) */
-  priceMonthlyHt: number;
   /**
-   * Équivalent mensuel HT en cas de paiement annuel (€ / mois).
-   * `null` = gratuit (pas d’offre annuelle distincte).
+   * Montants de référence marketing uniquement.
+   * L’UI affiche en priorité les montants Stripe (list-subscription-prices).
    */
+  priceMonthlyHt: number;
   priceYearlyMonthlyHt: number | null;
   cta: string;
   highlighted?: boolean;
   badge?: string;
-  /** Inclus depuis l’offre précédente (ex. « Tout Micro ») */
   inheritsFrom?: SubscriptionPlanId;
   features: PlanFeature[];
   limits: {
     documentsPerMonth: number | null;
-    /** `null` = illimité */
     sirenSearchesPerMonth: number | null;
     users: number | null;
     departments: number | null;
-    /** `null` = illimité */
     companies: number | null;
   };
 };
@@ -202,6 +198,27 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
     features: [
       { id: 'siren-unlimited', label: 'Recherche SIREN / SIRET illimitée', icon: 'search' },
       { id: 'companies-unlimited', label: 'Entreprises illimitées', icon: 'building' },
+    ],
+  },
+  {
+    id: 'max',
+    name: 'Max',
+    description: 'Toutes les fonctionnalités avancées pour scaler sans friction.',
+    priceMonthlyHt: 63.98,
+    priceYearlyMonthlyHt: 51.18,
+    cta: 'Choisir Max',
+    inheritsFrom: 'pro',
+    limits: {
+      documentsPerMonth: null,
+      sirenSearchesPerMonth: null,
+      users: 1,
+      departments: null,
+      companies: null,
+    },
+    features: [
+      { id: 'stripe', label: 'Paiements Stripe sur factures', icon: 'check' },
+      { id: 'ai', label: 'Assistant IA', icon: 'ai' },
+      { id: 'stats', label: 'Statistiques avancées', icon: 'stats' },
     ],
   },
 ];

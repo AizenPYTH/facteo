@@ -3,15 +3,22 @@ import * as WebBrowser from 'expo-web-browser';
 
 import { supabase } from '@/lib/supabase';
 
+export type PaidPlanId = 'basique' | 'standard' | 'pro' | 'max';
+export type BillingInterval = 'monthly' | 'yearly';
+
 export type CreateSubscriptionCheckoutResult = {
   checkoutUrl: string;
   sessionId: string;
+  planId?: PaidPlanId;
+  interval?: BillingInterval;
+  priceId?: string;
 };
 
 export type ConfirmSubscriptionCheckoutResult = {
-  planId: 'free' | 'premium';
+  planId: string;
   status: string;
   isPremium: boolean;
+  isPaid?: boolean;
 };
 
 export class SubscriptionCheckoutCanceledError extends Error {
@@ -21,7 +28,10 @@ export class SubscriptionCheckoutCanceledError extends Error {
   }
 }
 
-export const PREMIUM_RETURN_PATH = 'settings/premium';
+export const SUBSCRIPTION_RETURN_PATH = 'settings/subscription';
+
+/** @deprecated Prefer SUBSCRIPTION_RETURN_PATH */
+export const PREMIUM_RETURN_PATH = SUBSCRIPTION_RETURN_PATH;
 
 function getSupabaseFunctionsBaseUrl(): string | null {
   const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL?.trim();
@@ -50,8 +60,13 @@ function getSubscriptionConfirmUrl(): string | null {
   return baseUrl ? `${baseUrl}/stripe-confirm-subscription-checkout` : null;
 }
 
+export function getSubscriptionReturnUrl(): string {
+  return Linking.createURL(SUBSCRIPTION_RETURN_PATH);
+}
+
+/** @deprecated Prefer getSubscriptionReturnUrl */
 export function getPremiumReturnUrl(): string {
-  return Linking.createURL(PREMIUM_RETURN_PATH);
+  return getSubscriptionReturnUrl();
 }
 
 export function isSubscriptionCheckoutConfigured(): boolean {
@@ -91,8 +106,8 @@ async function getAccessToken(): Promise<string> {
 }
 
 export async function createSubscriptionCheckout(
-  planId: 'premium' = 'premium',
-  options?: { promotionCode?: string },
+  planId: PaidPlanId,
+  options?: { promotionCode?: string; interval?: BillingInterval },
 ): Promise<CreateSubscriptionCheckoutResult> {
   const endpoint = getSubscriptionCheckoutUrl();
 
@@ -102,6 +117,7 @@ export async function createSubscriptionCheckout(
 
   const accessToken = await getAccessToken();
   const promotionCode = options?.promotionCode?.trim() || undefined;
+  const interval = options?.interval ?? 'monthly';
 
   const response = await fetch(endpoint, {
     method: 'POST',
@@ -111,14 +127,15 @@ export async function createSubscriptionCheckout(
     },
     body: JSON.stringify({
       planId,
-      returnUrl: getPremiumReturnUrl(),
+      interval,
+      returnUrl: getSubscriptionReturnUrl(),
       ...(promotionCode ? { promotionCode } : {}),
     }),
   });
 
   if (!response.ok) {
     const payload = (await response.json().catch(() => null)) as { error?: string } | null;
-    throw new Error(payload?.error ?? 'Impossible de démarrer l’abonnement Premium.');
+    throw new Error(payload?.error ?? 'Impossible de démarrer l’abonnement.');
   }
 
   const payload = (await response.json()) as CreateSubscriptionCheckoutResult;
@@ -152,17 +169,17 @@ export async function confirmSubscriptionCheckout(
 
   if (!response.ok) {
     const payload = (await response.json().catch(() => null)) as { error?: string } | null;
-    throw new Error(payload?.error ?? 'Impossible de confirmer l’abonnement Premium.');
+    throw new Error(payload?.error ?? 'Impossible de confirmer l’abonnement.');
   }
 
   return (await response.json()) as ConfirmSubscriptionCheckoutResult;
 }
 
-export async function startPremiumCheckoutFlow(
-  planId: 'premium' = 'premium',
-  options?: { promotionCode?: string },
+export async function startSubscriptionCheckoutFlow(
+  planId: PaidPlanId,
+  options?: { promotionCode?: string; interval?: BillingInterval },
 ): Promise<ConfirmSubscriptionCheckoutResult | null> {
-  const returnUrl = getPremiumReturnUrl();
+  const returnUrl = getSubscriptionReturnUrl();
   const checkout = await createSubscriptionCheckout(planId, options);
 
   WebBrowser.maybeCompleteAuthSession();
@@ -196,6 +213,16 @@ export async function startPremiumCheckoutFlow(
   }
 
   return confirmSubscriptionCheckout(resolvedSessionId);
+}
+
+/** @deprecated Prefer startSubscriptionCheckoutFlow with an explicit planId */
+export async function startPremiumCheckoutFlow(
+  _planId: 'premium' | PaidPlanId = 'pro',
+  options?: { promotionCode?: string; interval?: BillingInterval },
+): Promise<ConfirmSubscriptionCheckoutResult | null> {
+  const planId: PaidPlanId =
+    _planId === 'premium' ? 'pro' : (_planId as PaidPlanId);
+  return startSubscriptionCheckoutFlow(planId, options);
 }
 
 export function isSubscriptionCheckoutCanceledError(

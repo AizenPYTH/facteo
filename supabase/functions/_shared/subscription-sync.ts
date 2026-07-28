@@ -1,18 +1,96 @@
 import Stripe from 'https://esm.sh/stripe@17.7.0?target=deno';
 import { createClient, type SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
 
-export type SubscriptionPlanId = 'free' | 'premium';
+/** Plans payants stockés sur subscriptions.plan (enum Postgres). */
+export type PaidSubscriptionPlanId = 'basique' | 'standard' | 'pro' | 'max';
 
-export function resolveStripePriceId(
-  planStripePriceId: string | null | undefined,
-  fallbackEnvKey = 'STRIPE_PREMIUM_PRICE_ID',
-): string | null {
-  const fromPlan = planStripePriceId?.trim();
+export type SubscriptionPlanId = 'free' | 'micro' | PaidSubscriptionPlanId | 'premium';
+
+export type BillingInterval = 'monthly' | 'yearly';
+
+export const PAID_PLAN_IDS: PaidSubscriptionPlanId[] = ['basique', 'standard', 'pro', 'max'];
+
+const LOOKUP_KEYS: Record<PaidSubscriptionPlanId, Record<BillingInterval, string>> = {
+  basique: { monthly: 'monthly_basic', yearly: 'yearly_basic' },
+  standard: { monthly: 'monthly_standard', yearly: 'yearly_standard' },
+  pro: { monthly: 'monthly_pro', yearly: 'yearly_pro' },
+  max: { monthly: 'monthly_max', yearly: 'yearly_max' },
+};
+
+export function isPaidPlanId(value: string | null | undefined): value is PaidSubscriptionPlanId {
+  return PAID_PLAN_IDS.includes(value as PaidSubscriptionPlanId);
+}
+
+export function normalizePlanId(value: string | null | undefined): SubscriptionPlanId {
+  if (!value) return 'free';
+  if (value === 'premium') return 'max';
+  if (value === 'starter') return 'basique';
+  if (value === 'enterprise') return 'max';
+  if (value === 'micro' || value === 'free') return value === 'micro' ? 'micro' : 'free';
+  if (isPaidPlanId(value)) return value;
+  return 'free';
+}
+
+export function resolveLookupKey(
+  planId: PaidSubscriptionPlanId,
+  interval: BillingInterval,
+): string {
+  return LOOKUP_KEYS[planId][interval];
+}
+
+/** Résout un Price ID Stripe via lookup_key, puis cache DB, puis env legacy. */
+export async function resolveStripePriceIdForPlan(
+  stripe: Stripe,
+  plan: {
+    id: string;
+    stripe_price_id?: string | null;
+    stripe_price_id_yearly?: string | null;
+    stripe_lookup_key_monthly?: string | null;
+    stripe_lookup_key_yearly?: string | null;
+  },
+  interval: BillingInterval,
+): Promise<string | null> {
+  if (!isPaidPlanId(plan.id)) {
+    return null;
+  }
+
+  const lookupKey =
+    (interval === 'yearly'
+      ? plan.stripe_lookup_key_yearly?.trim()
+      : plan.stripe_lookup_key_monthly?.trim()) || resolveLookupKey(plan.id, interval);
+
+  const byLookup = await stripe.prices.list({
+    lookup_keys: [lookupKey],
+    active: true,
+    limit: 1,
+  });
+
+  const fromStripe = byLookup.data[0]?.id?.trim();
+  if (fromStripe) {
+    return fromStripe;
+  }
+
+  const fromPlan =
+    interval === 'yearly'
+      ? plan.stripe_price_id_yearly?.trim()
+      : plan.stripe_price_id?.trim();
 
   if (fromPlan) {
     return fromPlan;
   }
 
+  // Legacy single-price fallback (ancien Premium)
+  const fromEnv = Deno.env.get('STRIPE_PREMIUM_PRICE_ID')?.trim();
+  return fromEnv || null;
+}
+
+/** @deprecated Prefer resolveStripePriceIdForPlan */
+export function resolveStripePriceId(
+  planStripePriceId: string | null | undefined,
+  fallbackEnvKey = 'STRIPE_PREMIUM_PRICE_ID',
+): string | null {
+  const fromPlan = planStripePriceId?.trim();
+  if (fromPlan) return fromPlan;
   const fromEnv = Deno.env.get(fallbackEnvKey)?.trim();
   return fromEnv || null;
 }
@@ -46,7 +124,15 @@ export function toIso(unixSeconds: number | null | undefined): string | null {
 }
 
 export function resolvePlanId(metadataPlanId: string | undefined): SubscriptionPlanId {
-  return metadataPlanId === 'free' ? 'free' : 'premium';
+  return normalizePlanId(metadataPlanId);
+}
+
+/** Mappe un plan catalogue vers une valeur enum subscriptions.plan. */
+export function toSubscriptionsEnumPlan(planId: SubscriptionPlanId): string {
+  const normalized = normalizePlanId(planId);
+  if (normalized === 'free' || normalized === 'micro') return 'free';
+  if (normalized === 'premium') return 'max';
+  return normalized;
 }
 
 export function isPaidCheckoutSession(session: Stripe.Checkout.Session): boolean {
@@ -79,11 +165,11 @@ export async function findUserIdForSubscription(
   return data?.user_id ?? null;
 }
 
-export async function applyPremiumSubscription(
+export async function applyPaidSubscription(
   serviceClient: SupabaseClient,
   input: {
     userId: string;
-    planId?: SubscriptionPlanId;
+    planId: SubscriptionPlanId;
     status?: 'active' | 'trialing' | 'past_due' | 'canceled' | 'unpaid' | 'incomplete';
     stripeCustomerId?: string | null;
     stripeSubscriptionId?: string | null;
@@ -93,7 +179,7 @@ export async function applyPremiumSubscription(
   },
 ): Promise<void> {
   const now = new Date().toISOString();
-  const planId = input.planId ?? 'premium';
+  const planId = toSubscriptionsEnumPlan(input.planId);
 
   const { error } = await serviceClient
     .from('subscriptions')
@@ -114,7 +200,27 @@ export async function applyPremiumSubscription(
   }
 }
 
-export async function applyStandardSubscription(
+/** @deprecated Prefer applyPaidSubscription */
+export async function applyPremiumSubscription(
+  serviceClient: SupabaseClient,
+  input: {
+    userId: string;
+    planId?: SubscriptionPlanId;
+    status?: 'active' | 'trialing' | 'past_due' | 'canceled' | 'unpaid' | 'incomplete';
+    stripeCustomerId?: string | null;
+    stripeSubscriptionId?: string | null;
+    currentPeriodStart?: string | null;
+    currentPeriodEnd?: string | null;
+    cancelAtPeriodEnd?: boolean;
+  },
+): Promise<void> {
+  await applyPaidSubscription(serviceClient, {
+    ...input,
+    planId: input.planId ?? 'max',
+  });
+}
+
+export async function applyFreeSubscription(
   serviceClient: SupabaseClient,
   input: {
     userId: string;
@@ -145,6 +251,9 @@ export async function applyStandardSubscription(
   }
 }
 
+/** @deprecated Prefer applyFreeSubscription */
+export const applyStandardSubscription = applyFreeSubscription;
+
 export async function syncSubscriptionCheckoutSession(
   stripe: Stripe,
   serviceClient: SupabaseClient,
@@ -165,6 +274,10 @@ export async function syncSubscriptionCheckoutSession(
     throw new Error('Missing user reference on checkout session.');
   }
 
+  if (!isPaidPlanId(planId) && planId !== 'premium') {
+    throw new Error(`Formule introuvable pour le plan « ${session.metadata?.plan_id ?? ''} ».`);
+  }
+
   const customerId = typeof session.customer === 'string' ? session.customer : session.customer?.id ?? null;
   let stripeSubscriptionId =
     typeof session.subscription === 'string' ? session.subscription : session.subscription?.id ?? null;
@@ -183,9 +296,11 @@ export async function syncSubscriptionCheckoutSession(
     status = subscription.status === 'trialing' ? 'trialing' : 'active';
   }
 
-  await applyPremiumSubscription(serviceClient, {
+  const effectivePlan = normalizePlanId(planId);
+
+  await applyPaidSubscription(serviceClient, {
     userId,
-    planId,
+    planId: effectivePlan,
     status,
     stripeCustomerId: customerId,
     stripeSubscriptionId,
@@ -194,7 +309,7 @@ export async function syncSubscriptionCheckoutSession(
     cancelAtPeriodEnd,
   });
 
-  return { userId, planId };
+  return { userId, planId: effectivePlan };
 }
 
 export async function syncStripeSubscriptionObject(
@@ -208,11 +323,11 @@ export async function syncStripeSubscriptionObject(
   }
 
   const mappedStatus = mapStripeSubscriptionStatus(subscription.status);
-  const isPremium = subscription.status === 'active' || subscription.status === 'trialing';
-  const planId = isPremium ? resolvePlanId(subscription.metadata?.plan_id) : 'free';
+  const isActivePaid = subscription.status === 'active' || subscription.status === 'trialing';
+  const planId = isActivePaid ? resolvePlanId(subscription.metadata?.plan_id) : 'free';
 
-  if (isPremium) {
-    await applyPremiumSubscription(serviceClient, {
+  if (isActivePaid && (isPaidPlanId(planId) || planId === 'premium')) {
+    await applyPaidSubscription(serviceClient, {
       userId,
       planId,
       status: mappedStatus,
@@ -226,7 +341,7 @@ export async function syncStripeSubscriptionObject(
     return;
   }
 
-  await applyStandardSubscription(serviceClient, {
+  await applyFreeSubscription(serviceClient, {
     userId,
     status: mappedStatus,
     stripeSubscriptionId: subscription.id,
@@ -234,4 +349,13 @@ export async function syncStripeSubscriptionObject(
     currentPeriodEnd: toIso(subscription.current_period_end),
     cancelAtPeriodEnd: subscription.cancel_at_period_end,
   });
+}
+
+export function createServiceClient(): SupabaseClient {
+  const supabaseUrl = Deno.env.get('SUPABASE_URL');
+  const supabaseServiceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+  if (!supabaseUrl || !supabaseServiceRoleKey) {
+    throw new Error('Supabase service configuration missing.');
+  }
+  return createClient(supabaseUrl, supabaseServiceRoleKey);
 }

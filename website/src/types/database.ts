@@ -603,6 +603,9 @@ export type SubscriptionPlanRow = {
   max_companies: number | null;
   features: Record<string, unknown>;
   stripe_price_id: string | null;
+  stripe_price_id_yearly: string | null;
+  stripe_lookup_key_monthly: string | null;
+  stripe_lookup_key_yearly: string | null;
   stripe_product_id: string | null;
   app_store_product_id: string | null;
   play_store_product_id: string | null;
