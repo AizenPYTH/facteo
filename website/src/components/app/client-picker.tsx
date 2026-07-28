@@ -2,19 +2,22 @@
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
-import { Check, ChevronDown, Plus, UserPlus } from 'lucide-react';
+import { Check, ChevronDown, Plus, Sparkles, UserPlus } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { AppDialog } from '@/components/app/app-dialog';
+import { ClientAiImportPanel } from '@/components/app/client-ai-import-panel';
 import { ClientForm } from '@/components/app/client-form';
+import { parsedClientToFormValues } from '@/lib/domain/ai/parse-clients';
 import { getClientDisplayName } from '@/lib/domain/clients/name';
 import { createClient } from '@/lib/domain/supabase/clients';
 import { clientsQueryKeys } from '@/lib/domain/supabase/query-keys';
 import { requireScope } from '@/lib/domain/tenant/scope';
-import { useTenant } from '@/providers/company-provider';
-import type { Client } from '@/types/client';
-import type { ClientFormValues } from '@/types/client';
 import { cn } from '@/lib/utils';
+import { useTenant } from '@/providers/company-provider';
+import type { ParsedClientDraft } from '@/types/ai-client';
+import type { Client, ClientFormValues } from '@/types/client';
+import { createEmptyClientFormValues } from '@/types/client';
 
 function clientLabel(client: Client): string {
   return (
@@ -44,7 +47,11 @@ export function ClientPicker({
   const rootRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
+  const [aiOpen, setAiOpen] = useState(false);
+  const [aiDefaults, setAiDefaults] = useState<Partial<ClientFormValues> | undefined>();
+  const [formKey, setFormKey] = useState(0);
   const [search, setSearch] = useState('');
+  const [createError, setCreateError] = useState<string | null>(null);
 
   const selected = useMemo(
     () => clients.find((c) => c.id === value) ?? null,
@@ -54,7 +61,22 @@ export function ClientPicker({
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     if (!q) return clients;
-    return clients.filter((c) => clientLabel(c).toLowerCase().includes(q));
+    return clients.filter((c) => {
+      const haystack = [
+        clientLabel(c),
+        c.email,
+        c.phone,
+        c.siren,
+        c.siret,
+        c.vatNumber,
+        c.city,
+        c.country,
+      ]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
+      return haystack.includes(q);
+    });
   }, [clients, search]);
 
   useEffect(() => {
@@ -83,8 +105,22 @@ export function ClientPicker({
       void queryClient.invalidateQueries({ queryKey: clientsQueryKeys.all });
       onChange(client.id);
       setCreateOpen(false);
+      setAiDefaults(undefined);
+      setCreateError(null);
     },
   });
+
+  function handleAiParsed(parsed: ParsedClientDraft[]) {
+    const first = parsed[0];
+    if (!first) return;
+    setAiDefaults({
+      ...createEmptyClientFormValues(),
+      ...parsedClientToFormValues(first),
+    });
+    setFormKey((k) => k + 1);
+    setAiOpen(false);
+    setCreateOpen(true);
+  }
 
   return (
     <>
@@ -94,9 +130,7 @@ export function ClientPicker({
           aria-haspopup="listbox"
           className={cn(
             'flex w-full items-center gap-2 rounded-xl border bg-white px-3.5 py-2.5 text-left text-sm outline-none transition duration-150 hover:border-slate-300 focus:border-primary focus:ring-2 focus:ring-primary/20',
-            error
-              ? 'border-red-300 ring-2 ring-red-100'
-              : 'border-slate-200/90',
+            error ? 'border-red-300 ring-2 ring-red-100' : 'border-slate-200/90',
             !selected && 'text-slate-400',
           )}
           onClick={() => setOpen((v) => !v)}
@@ -105,10 +139,7 @@ export function ClientPicker({
             {selected ? clientLabel(selected) : '— Choisir un client —'}
           </span>
           <ChevronDown
-            className={cn(
-              'shrink-0 text-slate-400 transition duration-200',
-              open && 'rotate-180',
-            )}
+            className={cn('shrink-0 text-slate-400 transition duration-200', open && 'rotate-180')}
             size={16}
           />
         </button>
@@ -128,7 +159,7 @@ export function ClientPicker({
                     autoFocus
                     className="w-full rounded-lg border border-slate-200 px-2.5 py-1.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
                     onChange={(e) => setSearch(e.target.value)}
-                    placeholder="Rechercher…"
+                    placeholder="Nom, téléphone, e-mail, SIREN, TVA…"
                     type="search"
                     value={search}
                   />
@@ -144,9 +175,7 @@ export function ClientPicker({
                   <li className="px-3 py-4 text-center">
                     <UserPlus className="mx-auto text-slate-300" size={22} />
                     <p className="mt-2 text-sm font-medium text-slate-700">Aucun client</p>
-                    <p className="mt-0.5 text-xs text-slate-500">
-                      Créez-en un pour continuer.
-                    </p>
+                    <p className="mt-0.5 text-xs text-slate-500">Créez-en un pour continuer.</p>
                   </li>
                 ) : (
                   filtered.map((client) => {
@@ -177,7 +206,7 @@ export function ClientPicker({
 
               <div
                 className={cn(
-                  'border-t border-slate-100 p-1.5',
+                  'space-y-1 border-t border-slate-100 p-1.5',
                   clients.length === 0 && 'bg-blue-50/40 p-2',
                 )}>
                 <button
@@ -189,11 +218,22 @@ export function ClientPicker({
                   )}
                   onClick={() => {
                     setOpen(false);
+                    setAiDefaults(undefined);
                     setCreateOpen(true);
                   }}
                   type="button">
                   <Plus size={16} strokeWidth={2.25} />
                   Créer un client
+                </button>
+                <button
+                  className="flex w-full items-center justify-center gap-2 rounded-lg px-2.5 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
+                  onClick={() => {
+                    setOpen(false);
+                    setAiOpen(true);
+                  }}
+                  type="button">
+                  <Sparkles size={15} />
+                  Ajouter par IA
                 </button>
               </div>
             </motion.div>
@@ -204,19 +244,57 @@ export function ClientPicker({
       <AppDialog
         description="Le nouveau client sera sélectionné automatiquement."
         onClose={() => {
-          if (!createMutation.isPending) setCreateOpen(false);
+          if (!createMutation.isPending) {
+            setCreateOpen(false);
+            setCreateError(null);
+          }
         }}
         open={createOpen}
         size="lg"
         title="Nouveau client">
-        <div className="p-5">
+        <div className="space-y-3 p-5">
+          <button
+            className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline"
+            onClick={() => {
+              setCreateOpen(false);
+              setAiOpen(true);
+            }}
+            type="button">
+            <Sparkles size={14} />
+            Préremplir avec l’IA
+          </button>
+          {createError ? (
+            <div className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+              {createError}
+            </div>
+          ) : null}
           <ClientForm
+            key={formKey}
+            defaultValues={aiDefaults}
             onCancel={() => setCreateOpen(false)}
             onSubmit={async (values) => {
-              await createMutation.mutateAsync(values);
+              setCreateError(null);
+              try {
+                await createMutation.mutateAsync(values);
+              } catch (err) {
+                setCreateError(
+                  err instanceof Error ? err.message : 'Impossible de créer le client.',
+                );
+              }
             }}
             submitLabel="Créer le client"
           />
+        </div>
+      </AppDialog>
+
+      <AppDialog
+        description="Collez un texte, un email ou un CSV — l’IA préremplit la fiche."
+        onClose={() => setAiOpen(false)}
+        open={aiOpen}
+        size="lg"
+        title="Ajouter par IA">
+        <div className="p-5">
+          <ClientAiImportPanel onCancel={() => setAiOpen(false)} onParsed={handleAiParsed} />
         </div>
       </AppDialog>
     </>

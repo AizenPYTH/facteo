@@ -188,13 +188,26 @@ function DocumentListPanel({
           <div className="p-4">
             <EmptyState
               action={
-                <Link
-                  className="inline-flex rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white"
-                  href={newHref}>
-                  Créer
-                </Link>
+                <div className="flex flex-col gap-2">
+                  <Link
+                    className="inline-flex items-center justify-center rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white"
+                    href={newHref}>
+                    Créer
+                  </Link>
+                  {kind === 'invoice' ? (
+                    <Link
+                      className="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700"
+                      href="/app/clients/new?ai=1">
+                      Commencer par un client IA
+                    </Link>
+                  ) : null}
+                </div>
               }
-              description={`Commencez par créer votre premier ${kind === 'invoice' ? 'facture' : 'devis'}.`}
+              description={
+                kind === 'invoice'
+                  ? 'Ajoutez un client (manuel ou IA), puis émettez votre première facture.'
+                  : `Commencez par créer votre premier devis.`
+              }
               title="Aucun document"
             />
           </div>
@@ -349,8 +362,9 @@ function DocumentSidebar({
   ];
 
   return (
-    <div className="flex h-full min-h-0 flex-col overflow-y-auto">
-      <div className="border-b border-slate-100 bg-gradient-to-b from-white via-white to-slate-50/70 p-5">
+    <div className="flex h-full min-h-0 flex-col">
+      <div className="min-h-0 flex-1 overflow-y-auto">
+        <div className="border-b border-slate-100 bg-gradient-to-b from-white via-white to-slate-50/70 p-5">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400">
@@ -402,10 +416,16 @@ function DocumentSidebar({
         {templateId && onTemplateChange ? (
           <ComposerTemplateSidebar onChange={onTemplateChange} value={templateId} />
         ) : null}
-        <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
-          Actions rapides
+      </div>
+
+      <ActivityTimeline documentId={documentId} documentType={kind} />
+      </div>
+
+      <div className="sticky bottom-0 z-10 border-t border-slate-200/90 bg-white/95 p-3 backdrop-blur-sm">
+        <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
+          Actions
         </p>
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
           {actions.map((action) => (
             <button
               className="flex items-center gap-2 rounded-xl border border-slate-200/90 bg-white px-3 py-2.5 text-sm font-medium text-slate-700 shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition duration-150 hover:-translate-y-0.5 hover:border-primary/25 hover:bg-blue-50/50 hover:shadow-sm disabled:opacity-50 disabled:hover:translate-y-0"
@@ -419,8 +439,6 @@ function DocumentSidebar({
           ))}
         </div>
       </div>
-
-      <ActivityTimeline documentId={documentId} documentType={kind} />
     </div>
   );
 }

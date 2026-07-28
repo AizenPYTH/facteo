@@ -12,6 +12,8 @@ import {
   CancelInvoiceModal,
   InvoiceDetailView,
   InvoiceScreenHeader,
+  InvoiceStickyActionsBar,
+  useInvoiceStickyActionsInset,
   PaymentModal,
 } from '@/components/invoices';
 import { PdfPreviewModal } from '@/components/pdf/pdf-preview-modal';
@@ -456,6 +458,75 @@ export default function InvoiceDetailScreen() {
     invoice,
   ]);
 
+  const stickyInset = useInvoiceStickyActionsInset();
+  const editable = invoice ? canEditInvoice(invoice.status) : false;
+  const canCreditNote =
+    !!invoice &&
+    invoice.documentKind === 'invoice' &&
+    canConvertInvoiceToCreditNote(invoice.status);
+  const canCorrect =
+    !!invoice && invoice.documentKind === 'invoice' && canCorrectInvoice(invoice.status);
+
+  const stickyActions = useMemo(() => {
+    if (!invoice) {
+      return [];
+    }
+
+    return [
+      ...(editable
+        ? [
+            {
+              id: 'edit',
+              label: 'Modifier',
+              primary: true as const,
+              onPress: () => router.push(`/invoices/${invoice.id}/edit` as Href),
+            },
+          ]
+        : [
+            {
+              id: 'send',
+              label: 'Envoyer',
+              primary: true as const,
+              onPress: () => void documentActions.handleSendEmail(),
+            },
+          ]),
+      {
+        id: 'duplicate',
+        label: 'Dupliquer',
+        onPress: () => void handleDuplicate(),
+      },
+      ...(canCreditNote
+        ? [
+            {
+              id: 'credit-note',
+              label: 'Avoir',
+              onPress: () => void handleConvertToCreditNote(),
+            },
+          ]
+        : []),
+      ...(canCorrect
+        ? [
+            {
+              id: 'correct',
+              label: 'Corriger',
+              onPress: () => void handleCorrectInvoice(),
+            },
+          ]
+        : []),
+      {
+        id: 'history',
+        label: 'Historique',
+        onPress: () => setActionsVisible(true),
+      },
+    ];
+  }, [
+    canCorrect,
+    canCreditNote,
+    documentActions,
+    editable,
+    invoice,
+  ]);
+
   if (isWeb && (isDesktop || isTablet)) {
     return null;
   }
@@ -469,7 +540,7 @@ export default function InvoiceDetailScreen() {
   }
 
   return (
-    <SafeAreaView edges={['top', 'bottom']} style={styles.safeArea}>
+    <SafeAreaView edges={['top']} style={styles.safeArea}>
       <View style={styles.header}>
         <InvoiceScreenHeader
           title={invoice.number}
@@ -492,7 +563,7 @@ export default function InvoiceDetailScreen() {
       </View>
 
       <ScrollView
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[styles.content, { paddingBottom: stickyInset + spacing.xl }]}
         keyboardDismissMode="on-drag"
         showsVerticalScrollIndicator={false}>
         <InvoiceDetailView
@@ -513,6 +584,8 @@ export default function InvoiceDetailScreen() {
 
         <SentDocumentsSection documents={sentDocuments} loading={sentDocumentsLoading} />
       </ScrollView>
+
+      <InvoiceStickyActionsBar actions={stickyActions} />
 
       <DocumentActionsSheet
         onClose={() => setActionsVisible(false)}

@@ -18,6 +18,9 @@ export { ClientForm } from './client-form';
 export { ClientAiImportPanel } from './client-ai-import-panel';
 export type { ClientAiImportPanelProps } from './client-ai-import-panel';
 
+export { ClientDuplicateSuggestions } from './client-duplicate-suggestions';
+export type { ClientDuplicateSuggestionsProps } from './client-duplicate-suggestions';
+
 export { ClientScreenHeader } from './client-screen-header';
 
 export { ClientSearchBar } from './client-search-bar';

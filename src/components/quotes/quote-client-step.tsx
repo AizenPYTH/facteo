@@ -10,6 +10,7 @@ import {
   View,
 } from 'react-native';
 
+import { ClientAiImportPanel } from '@/components/clients/client-ai-import-panel';
 import { ClientSearchBar } from '@/components/clients/client-search-bar';
 import { Button } from '@/components/ui/button';
 import { useColors, useThemedStyles } from '@/hooks/use-colors';
@@ -18,7 +19,13 @@ import { spacing } from '@/constants/theme/spacing';
 import { typography } from '@/constants/theme/typography';
 import { useDebouncedValue } from '@/hooks/use-debounced-value';
 import { useInfiniteClients } from '@/hooks/use-clients';
+import { parsedClientToFormValues } from '@/lib/ai/parse-clients';
 import { getClientDisplayName, type Client } from '@/types/client';
+import type { ParsedClientDraft } from '@/types/ai-client';
+import { createEmptyClientFormValues } from '@/types/client';
+import { useClientMutations } from '@/hooks/use-client-mutations';
+import { useToast } from '@/providers/toast-provider';
+import { getClientErrorMessage } from '@/lib/clients/errors';
 
 type QuoteClientStepProps = {
   selectedClientId: string | null;
@@ -77,8 +84,11 @@ export function QuoteClientStep({
   const styles = useStyles();
   const colors = useColors();
   const [search, setSearch] = useState('');
+  const [showAiImport, setShowAiImport] = useState(false);
   const debouncedSearch = useDebouncedValue(search, 300);
-  const { clients, isLoading } = useInfiniteClients(debouncedSearch);
+  const { clients, isLoading, refetch } = useInfiniteClients(debouncedSearch);
+  const { createClient } = useClientMutations();
+  const { showError, showSuccess } = useToast();
 
   const isSearching = debouncedSearch.trim().length > 0;
 
@@ -126,11 +136,50 @@ export function QuoteClientStep({
     [listClients, selectedClientId],
   );
 
+  async function handleAiParsed(parsed: ParsedClientDraft[]) {
+    const first = parsed[0];
+    if (!first) {
+      return;
+    }
+
+    try {
+      const client = await createClient.mutateAsync({
+        ...createEmptyClientFormValues(),
+        ...parsedClientToFormValues(first),
+      });
+      onSelectClient(client);
+      setShowAiImport(false);
+      showSuccess(
+        parsed.length > 1
+          ? `Client créé (1/${parsed.length} détectés). Les autres restent à importer.`
+          : 'Client créé et sélectionné.',
+      );
+      void refetch?.();
+    } catch (error) {
+      const raw =
+        error && typeof error === 'object' && 'message' in error
+          ? String((error as { message: string }).message)
+          : '';
+      showError(getClientErrorMessage(raw));
+    }
+  }
+
   if (isLoading && clients.length === 0) {
     return (
       <View style={styles.loading}>
         <ActivityIndicator color={colors.primary} size="large" />
         <Text style={styles.loadingText}>Chargement des clients...</Text>
+      </View>
+    );
+  }
+
+  if (showAiImport) {
+    return (
+      <View style={styles.container}>
+        <ClientAiImportPanel
+          onCancel={() => setShowAiImport(false)}
+          onParsed={(clientsParsed) => void handleAiParsed(clientsParsed)}
+        />
       </View>
     );
   }
@@ -143,11 +192,14 @@ export function QuoteClientStep({
           : 'Choisissez le client pour ce document.'}
       </Text>
 
-      <Button
-        onPress={() => router.push('/clients/new' as Href)}
-        title="Nouveau client"
-        variant="ghost"
-      />
+      <View style={styles.actionsRow}>
+        <Button
+          onPress={() => router.push('/clients/new' as Href)}
+          title="Nouveau client"
+          variant="ghost"
+        />
+        <Button onPress={() => setShowAiImport(true)} title="Ajouter par IA" variant="ghost" />
+      </View>
 
       <ClientSearchBar onChangeText={setSearch} value={search} />
 
@@ -188,6 +240,9 @@ function useStyles() {
   description: {
     ...typography.subheadline,
     color: colors.textSecondary,
+  },
+  actionsRow: {
+    gap: spacing.xs,
   },
   sectionLabel: {
     ...typography.footnoteMedium,

@@ -150,8 +150,14 @@ function ClientsWorkspaceInner() {
 
                   <div className="mt-6 grid gap-4 sm:grid-cols-3">
                     {[
-                      { label: 'Devis', href: `/app/quotes?client=${client.id}` },
-                      { label: 'Factures', href: `/app/invoices?client=${client.id}` },
+                      {
+                        label: 'Nouveau devis',
+                        href: `/app/quotes?create=1&client=${client.id}`,
+                      },
+                      {
+                        label: 'Nouvelle facture',
+                        href: `/app/invoices?create=1&client=${client.id}`,
+                      },
                       { label: 'Modifier', href: `/app/clients/${client.id}/edit` },
                     ].map((action) => (
                       <Link

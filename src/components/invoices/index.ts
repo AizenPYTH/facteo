@@ -6,6 +6,12 @@ export { CancelInvoiceModal } from './cancel-invoice-modal';
 export { EmptyInvoices } from './empty-invoices';
 export type { EmptyInvoicesProps } from './empty-invoices';
 
+export { InvoiceStickyActionsBar, useInvoiceStickyActionsInset } from './invoice-sticky-actions-bar';
+export type {
+  InvoiceStickyAction,
+  InvoiceStickyActionsBarProps,
+} from './invoice-sticky-actions-bar';
+
 export { InvoiceCard } from './invoice-card';
 export type { InvoiceCardProps } from './invoice-card';
 

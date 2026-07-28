@@ -21,8 +21,8 @@ export function EmptyClients({ isSearching = false, style, testID }: EmptyClient
         actionLabel={isSearching ? undefined : 'Créer un client'}
         description={
           isSearching
-            ? 'Aucun client ne correspond. Essayez un autre nom ou e-mail.'
-            : 'Ajoutez un client — puis facturez. Ensuite, plus jamais la même saisie.'
+            ? 'Aucun client ne correspond. Essayez un autre nom, e-mail, SIREN ou TVA.'
+            : '1) Ajoutez un client (manuel ou IA)  2) Vérifiez e-mail / TVA  3) Facturez en un tap.'
         }
         icon={{
           ios: isSearching ? 'magnifyingglass' : 'person.2',
