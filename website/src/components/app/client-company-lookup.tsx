@@ -12,6 +12,7 @@ import {
 import { Loader2 } from 'lucide-react';
 
 import { FormField, FormSection, TextInput } from '@/components/app/form-fields';
+import { CLIENT_PLACEHOLDERS } from '@/constants/client-placeholders';
 import { useCompanyRegistrationLookup } from '@/hooks/use-company-registration-lookup';
 import { useSubscription } from '@/hooks/use-subscription';
 import {
@@ -146,7 +147,7 @@ export function ClientCompanyLookup({ control, errors, setValue }: ClientCompany
                   inputMode="numeric"
                   onBlur={onBlur}
                   onChange={(event) => onChange(formatRegistrationInput(event.target.value, 9))}
-                  placeholder="123456789"
+                  placeholder={CLIENT_PLACEHOLDERS.siren}
                   value={value}
                 />
               )}
@@ -170,7 +171,7 @@ export function ClientCompanyLookup({ control, errors, setValue }: ClientCompany
                   inputMode="numeric"
                   onBlur={onBlur}
                   onChange={(event) => onChange(formatRegistrationInput(event.target.value, 14))}
-                  placeholder="12345678900012"
+                  placeholder={CLIENT_PLACEHOLDERS.siret}
                   value={value}
                 />
               )}

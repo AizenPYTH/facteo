@@ -25,9 +25,12 @@ export const clientFormSchema = z.object({
   ),
   phone: optionalText.refine(isValidPhone, 'Numéro de téléphone invalide.'),
   address: optionalText,
+  addressLine2: optionalText,
   postalCode: optionalText.refine(isValidPostalCode, 'Code postal invalide.'),
   city: optionalText,
+  region: optionalText,
   country: optionalText,
+  website: optionalText,
   siren: optionalSiren,
   siret: optionalSiret,
   vatNumber: optionalText.refine(

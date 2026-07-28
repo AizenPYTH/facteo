@@ -4,6 +4,7 @@ import { type Control, Controller, type FieldErrors, type UseFormSetValue } from
 
 import { FormDivider, FormField, FormSection } from '@/components/company/form-section';
 import { TextField } from '@/components/ui/text-field';
+import { CLIENT_PLACEHOLDERS } from '@/constants/client-placeholders';
 import { spacing } from '@/constants/theme/spacing';
 import { typography } from '@/constants/theme/typography';
 import { useColors } from '@/hooks/use-colors';
@@ -48,7 +49,7 @@ export function ClientForm({
                 label="Nom"
                 onBlur={onBlur}
                 onChangeText={onChange}
-                placeholder="Dupont"
+                placeholder={CLIENT_PLACEHOLDERS.lastName}
                 returnKeyType="next"
                 textContentType="familyName"
                 value={value}
@@ -71,7 +72,7 @@ export function ClientForm({
                   label="E-mail (pour envoyer)"
                   onBlur={onBlur}
                   onChangeText={onChange}
-                  placeholder="client@email.fr"
+                  placeholder={CLIENT_PLACEHOLDERS.email}
                   textContentType="emailAddress"
                   value={value}
                 />
@@ -91,7 +92,7 @@ export function ClientForm({
                     label="Prénom"
                     onBlur={onBlur}
                     onChangeText={onChange}
-                    placeholder="Jean"
+                    placeholder={CLIENT_PLACEHOLDERS.firstName}
                     returnKeyType="next"
                     textContentType="givenName"
                     value={value}
@@ -111,7 +112,7 @@ export function ClientForm({
                     label="Entreprise"
                     onBlur={onBlur}
                     onChangeText={onChange}
-                    placeholder="Acme SARL"
+                    placeholder={CLIENT_PLACEHOLDERS.company}
                     textContentType="organizationName"
                     value={value}
                   />
@@ -150,7 +151,7 @@ export function ClientForm({
                         label="Prénom"
                         onBlur={onBlur}
                         onChangeText={onChange}
-                        placeholder="Jean"
+                        placeholder={CLIENT_PLACEHOLDERS.firstName}
                         returnKeyType="next"
                         textContentType="givenName"
                         value={value}
@@ -170,7 +171,7 @@ export function ClientForm({
                         label="Entreprise"
                         onBlur={onBlur}
                         onChangeText={onChange}
-                        placeholder="Acme SARL"
+                        placeholder={CLIENT_PLACEHOLDERS.company}
                         textContentType="organizationName"
                         value={value}
                       />
@@ -197,7 +198,7 @@ export function ClientForm({
                         label="Adresse e-mail"
                         onBlur={onBlur}
                         onChangeText={onChange}
-                        placeholder="contact@entreprise.fr"
+                        placeholder={CLIENT_PLACEHOLDERS.email}
                         textContentType="emailAddress"
                         value={value}
                       />
@@ -219,8 +220,29 @@ export function ClientForm({
                     label="Téléphone"
                     onBlur={onBlur}
                     onChangeText={(text) => onChange(formatFrenchPhoneInput(text))}
-                    placeholder="06 12 34 56 78"
+                    placeholder={CLIENT_PLACEHOLDERS.phone}
                     textContentType="telephoneNumber"
+                    value={value}
+                  />
+                )}
+              />
+            </FormField>
+            <FormDivider />
+            <FormField>
+              <Controller
+                control={control}
+                name="website"
+                render={({ field: { onChange, onBlur, value } }) => (
+                  <TextField
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    error={errors.website?.message}
+                    keyboardType="url"
+                    label="Site web"
+                    onBlur={onBlur}
+                    onChangeText={onChange}
+                    placeholder={CLIENT_PLACEHOLDERS.website}
+                    textContentType="URL"
                     value={value}
                   />
                 )}
@@ -240,7 +262,25 @@ export function ClientForm({
                     label="Adresse"
                     onBlur={onBlur}
                     onChangeText={onChange}
-                    placeholder="12 rue de la Paix"
+                    placeholder={CLIENT_PLACEHOLDERS.address}
+                    value={value}
+                  />
+                )}
+              />
+            </FormField>
+            <FormDivider />
+            <FormField>
+              <Controller
+                control={control}
+                name="addressLine2"
+                render={({ field: { onChange, onBlur, value } }) => (
+                  <TextField
+                    autoCapitalize="words"
+                    error={errors.addressLine2?.message}
+                    label="Complément d’adresse"
+                    onBlur={onBlur}
+                    onChangeText={onChange}
+                    placeholder={CLIENT_PLACEHOLDERS.addressLine2}
                     value={value}
                   />
                 )}
@@ -258,7 +298,7 @@ export function ClientForm({
                     label="Code postal"
                     onBlur={onBlur}
                     onChangeText={onChange}
-                    placeholder="75001"
+                    placeholder={CLIENT_PLACEHOLDERS.postalCode}
                     value={value}
                   />
                 )}
@@ -276,7 +316,43 @@ export function ClientForm({
                     label="Ville"
                     onBlur={onBlur}
                     onChangeText={onChange}
-                    placeholder="Paris"
+                    placeholder={CLIENT_PLACEHOLDERS.city}
+                    value={value}
+                  />
+                )}
+              />
+            </FormField>
+            <FormDivider />
+            <FormField>
+              <Controller
+                control={control}
+                name="region"
+                render={({ field: { onChange, onBlur, value } }) => (
+                  <TextField
+                    autoCapitalize="words"
+                    error={errors.region?.message}
+                    label="Région"
+                    onBlur={onBlur}
+                    onChangeText={onChange}
+                    placeholder={CLIENT_PLACEHOLDERS.region}
+                    value={value}
+                  />
+                )}
+              />
+            </FormField>
+            <FormDivider />
+            <FormField>
+              <Controller
+                control={control}
+                name="country"
+                render={({ field: { onChange, onBlur, value } }) => (
+                  <TextField
+                    autoCapitalize="words"
+                    error={errors.country?.message}
+                    label="Pays"
+                    onBlur={onBlur}
+                    onChangeText={onChange}
+                    placeholder={CLIENT_PLACEHOLDERS.country}
                     value={value}
                   />
                 )}
@@ -296,7 +372,7 @@ export function ClientForm({
                     label="Numéro de TVA"
                     onBlur={onBlur}
                     onChangeText={onChange}
-                    placeholder="FR12345678901"
+                    placeholder={CLIENT_PLACEHOLDERS.vatNumber}
                     value={value}
                   />
                 )}
@@ -315,7 +391,7 @@ export function ClientForm({
                     numberOfLines={4}
                     onBlur={onBlur}
                     onChangeText={onChange}
-                    placeholder="Informations complémentaires..."
+                    placeholder={CLIENT_PLACEHOLDERS.notes}
                     style={styles.notesInput}
                     textAlignVertical="top"
                     value={value}

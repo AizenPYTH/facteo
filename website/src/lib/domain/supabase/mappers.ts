@@ -1,12 +1,20 @@
 import { parseClientStoredName } from '@/lib/clients/name';
 import { mapInvoiceItemRowToLineValue, mapQuoteItemRowToLineValue } from '@/lib/documents/line-mappers';
 import type { Client } from '@/types/client';
-import type { Invoice, InvoiceDetail, InvoicePayment } from '@/types/invoice';
+import type {
+  Invoice,
+  InvoiceDetail,
+  InvoiceDocumentKind,
+  InvoicePayment,
+  InvoiceRevision,
+  VatRegime,
+} from '@/types/invoice';
 import type { Quote, QuoteDetail, QuoteStatus } from '@/types/quote';
 import type {
   ClientRow,
   InvoiceItemRow,
   InvoicePaymentRow,
+  InvoiceRevisionRow,
   InvoiceWithClient,
   QuoteItemRow,
   QuoteWithClient,
@@ -87,11 +95,28 @@ export function mapInvoiceRowToDashboardInvoice(row: InvoiceWithClient) {
   return {
     id: row.id,
     number: row.number,
+    clientId: row.client_id,
     clientName: resolveClientName(row.clients),
     amount: row.total_ttc ?? row.total ?? 0,
     status: isDashboardInvoiceStatus(row.status) ? row.status : 'draft',
     issuedAt: row.issued_at ?? row.created_at,
   };
+}
+
+const DOCUMENT_KINDS: InvoiceDocumentKind[] = ['invoice', 'credit_note'];
+const VAT_REGIMES: VatRegime[] = [
+  'standard',
+  'eu_reverse_charge',
+  'export_outside_eu',
+  'exempt',
+];
+
+function isDocumentKind(value: string | null | undefined): value is InvoiceDocumentKind {
+  return DOCUMENT_KINDS.includes(value as InvoiceDocumentKind);
+}
+
+function isVatRegime(value: string | null | undefined): value is VatRegime {
+  return VAT_REGIMES.includes(value as VatRegime);
 }
 
 export function mapInvoiceRowToInvoice(row: InvoiceWithClient): Invoice {
@@ -103,6 +128,10 @@ export function mapInvoiceRowToInvoice(row: InvoiceWithClient): Invoice {
     quoteId: row.quote_id,
     number: row.number,
     status: isInvoiceStatusValue(row.status) ? row.status : 'draft',
+    documentKind: isDocumentKind(row.document_kind) ? row.document_kind : 'invoice',
+    creditOfInvoiceId: row.credit_of_invoice_id ?? null,
+    vatRegime: isVatRegime(row.vat_regime) ? row.vat_regime : 'standard',
+    revision: typeof row.revision === 'number' && row.revision > 0 ? row.revision : 1,
     subtotalHt: row.subtotal_ht,
     totalVat: row.total_vat,
     totalTtc: row.total_ttc,
@@ -115,6 +144,20 @@ export function mapInvoiceRowToInvoice(row: InvoiceWithClient): Invoice {
     stripePaymentLink: row.stripe_payment_link ?? null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
+  };
+}
+
+export function mapInvoiceRevisionRow(row: InvoiceRevisionRow): InvoiceRevision {
+  return {
+    id: row.id,
+    invoiceId: row.invoice_id,
+    revision: row.revision,
+    reason: row.reason,
+    snapshot:
+      row.snapshot && typeof row.snapshot === 'object' && !Array.isArray(row.snapshot)
+        ? (row.snapshot as Record<string, unknown>)
+        : {},
+    createdAt: row.created_at,
   };
 }
 
@@ -159,9 +202,12 @@ export function mapClientRowToClient(row: ClientRow): Client {
     email: row.email,
     phone: row.phone,
     address: row.address,
+    addressLine2: row.address_line2 ?? null,
     postalCode: row.postal_code,
     city: row.city,
+    region: row.region ?? null,
     country: row.country,
+    website: row.website ?? null,
     siren: row.siren,
     siret: row.siret,
     vatNumber: row.vat_number,

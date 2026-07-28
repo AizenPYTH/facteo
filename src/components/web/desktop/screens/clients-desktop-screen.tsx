@@ -103,10 +103,17 @@ export function ClientsDesktopScreen() {
     <View style={styles.root}>
       <DesktopTopHeader
         actions={
-          <Button
-            onPress={() => router.push('/clients/new' as Href)}
-            title="Nouveau client"
-          />
+          <View style={styles.headerActions}>
+            <Button
+              onPress={() => router.push('/clients/new?ai=1' as Href)}
+              title="Ajouter par IA"
+              variant="ghost"
+            />
+            <Button
+              onPress={() => router.push('/clients/new' as Href)}
+              title="Nouveau client"
+            />
+          </View>
         }
         subtitle="CRM — gérez vos relations clients"
         title="Clients"
@@ -322,6 +329,11 @@ function ClientDocumentsTab({
 const useStyles = () =>
   useThemedStyles((colors) => ({
     root: { flex: 1, minHeight: 0 },
+    headerActions: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+    },
     listPanel: { flex: 0 },
     listToolbar: {
       padding: spacing.md,
