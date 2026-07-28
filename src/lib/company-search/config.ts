@@ -2,9 +2,14 @@ import type { CompanySearchProviderId } from '@/lib/company-search/types';
 
 const SUPPORTED_PROVIDERS: CompanySearchProviderId[] = ['recherche-entreprises'];
 
-export function getCompanySearchApiBaseUrl(): string | null {
+/** API publique data.gouv — aucune clé requise. */
+export const DEFAULT_COMPANY_SEARCH_API_URL = 'https://recherche-entreprises.api.gouv.fr';
+
+export function getCompanySearchApiBaseUrl(): string {
   const value = process.env.EXPO_PUBLIC_COMPANY_SEARCH_API_URL?.trim();
-  return value && value.length > 0 ? value.replace(/\/$/, '') : null;
+  return value && value.length > 0
+    ? value.replace(/\/$/, '')
+    : DEFAULT_COMPANY_SEARCH_API_URL;
 }
 
 export function getCompanySearchProviderId(): CompanySearchProviderId {
@@ -18,5 +23,5 @@ export function getCompanySearchProviderId(): CompanySearchProviderId {
 }
 
 export function isCompanySearchConfigured(): boolean {
-  return getCompanySearchApiBaseUrl() !== null;
+  return getCompanySearchApiBaseUrl().length > 0;
 }
