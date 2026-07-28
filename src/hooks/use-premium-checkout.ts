@@ -13,7 +13,8 @@ export function usePremiumCheckout() {
   const queryClient = useQueryClient();
 
   const subscribe = useMutation({
-    mutationFn: () => startPremiumCheckoutFlow('premium'),
+    mutationFn: (promotionCode?: string) =>
+      startPremiumCheckoutFlow('premium', { promotionCode }),
     onSuccess: async () => {
       if (!user?.id) {
         return;
@@ -28,9 +29,9 @@ export function usePremiumCheckout() {
     },
   });
 
-  async function startCheckout(): Promise<boolean> {
+  async function startCheckout(promotionCode?: string): Promise<boolean> {
     try {
-      await subscribe.mutateAsync();
+      await subscribe.mutateAsync(promotionCode);
       return true;
     } catch (error) {
       if (isSubscriptionCheckoutCanceledError(error)) {

@@ -13,6 +13,10 @@ function mapAuthErrorMessage(message: string): string {
       return 'Veuillez confirmer votre adresse e-mail avant de vous connecter.';
     case 'User already registered':
       return 'Un compte existe déjà avec cette adresse e-mail.';
+    case 'Impossible de démarrer la connexion Google.':
+    case 'La connexion Google a échoué.':
+    case 'Réponse Google invalide.':
+      return message;
     default:
       return GENERIC_ERROR_MESSAGE;
   }

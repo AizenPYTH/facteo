@@ -1,8 +1,8 @@
 import { useRouter } from 'expo-router';
-import { Image } from 'expo-image';
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { InveqMark } from '@/components/brand/inveq-mark';
 import { MarketingButton } from '@/components/marketing/marketing-button';
 import {
   marketingColors,
@@ -47,12 +47,7 @@ export function MarketingHeader({ isWide }: MarketingHeaderProps) {
     <View accessibilityRole="header" style={styles.header}>
       <View style={styles.inner}>
         <Pressable accessibilityRole="link" onPress={() => router.push('/')} style={styles.brand}>
-          <Image
-            accessibilityIgnoresInvertColors
-            contentFit="contain"
-            source={require('@/assets/images/INVEQ-logo.png')}
-            style={styles.logo}
-          />
+          <InveqMark size={28} />
           <Text style={styles.brandName}>INVEQ</Text>
         </Pressable>
 
@@ -123,10 +118,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: marketingSpacing.sm,
-  },
-  logo: {
-    width: 32,
-    height: 32,
   },
   brandName: marketingText({
     ...marketingTypography.h3,

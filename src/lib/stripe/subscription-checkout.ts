@@ -92,6 +92,7 @@ async function getAccessToken(): Promise<string> {
 
 export async function createSubscriptionCheckout(
   planId: 'premium' = 'premium',
+  options?: { promotionCode?: string },
 ): Promise<CreateSubscriptionCheckoutResult> {
   const endpoint = getSubscriptionCheckoutUrl();
 
@@ -100,6 +101,7 @@ export async function createSubscriptionCheckout(
   }
 
   const accessToken = await getAccessToken();
+  const promotionCode = options?.promotionCode?.trim() || undefined;
 
   const response = await fetch(endpoint, {
     method: 'POST',
@@ -110,6 +112,7 @@ export async function createSubscriptionCheckout(
     body: JSON.stringify({
       planId,
       returnUrl: getPremiumReturnUrl(),
+      ...(promotionCode ? { promotionCode } : {}),
     }),
   });
 
@@ -157,9 +160,10 @@ export async function confirmSubscriptionCheckout(
 
 export async function startPremiumCheckoutFlow(
   planId: 'premium' = 'premium',
+  options?: { promotionCode?: string },
 ): Promise<ConfirmSubscriptionCheckoutResult | null> {
   const returnUrl = getPremiumReturnUrl();
-  const checkout = await createSubscriptionCheckout(planId);
+  const checkout = await createSubscriptionCheckout(planId, options);
 
   WebBrowser.maybeCompleteAuthSession();
 

@@ -6,6 +6,7 @@ import { Text } from 'react-native';
 
 import { AuthScreen } from '@/components/auth/auth-screen';
 import { AuthTextField } from '@/components/auth/auth-text-field';
+import { AuthDivider, GoogleAuthButton } from '@/components/auth/google-auth-button';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/use-auth';
 import { useAuthScreenStyles } from '@/hooks/use-auth-screen-styles';
@@ -142,6 +143,8 @@ export default function RegisterScreen() {
       }
       subtitle="Commencez en quelques secondes."
       title="Créer un compte">
+      <GoogleAuthButton label="Continuer avec Google" />
+      <AuthDivider />
       {FIELDS.map((field, index) => (
         <Controller
           key={field.name}

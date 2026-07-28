@@ -46,3 +46,5 @@ example
 /ios
 /android
 .vercel
+
+.env.stripe-webhooks.tmp

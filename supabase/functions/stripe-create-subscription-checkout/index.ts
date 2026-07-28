@@ -11,6 +11,8 @@ const corsHeaders = {
 type CreateSubscriptionCheckoutBody = {
   planId?: string;
   returnUrl?: string;
+  /** Optional Stripe promotion code (e.g. WELCOME20). Applied if valid & active. */
+  promotionCode?: string;
 };
 
 Deno.serve(async (request) => {
@@ -48,6 +50,7 @@ Deno.serve(async (request) => {
 
     const body = (await request.json().catch(() => ({}))) as CreateSubscriptionCheckoutBody;
     const planId = body.planId ?? 'premium';
+    const promotionCodeInput = body.promotionCode?.trim() || '';
     const appReturnUrl =
       body.returnUrl?.trim() ||
       Deno.env.get('INVEQ_SUBSCRIPTION_RETURN_URL')?.trim() ||
@@ -118,6 +121,24 @@ Deno.serve(async (request) => {
     const successUrl = `${appReturnUrl}?subscription=success&session_id={CHECKOUT_SESSION_ID}`;
     const cancelUrl = `${appReturnUrl}?subscription=canceled`;
 
+    let resolvedPromotionCodeId: string | null = null;
+
+    if (promotionCodeInput) {
+      const promotionCodes = await stripe.promotionCodes.list({
+        code: promotionCodeInput,
+        active: true,
+        limit: 1,
+      });
+
+      const match = promotionCodes.data[0];
+
+      if (!match) {
+        return jsonResponse({ error: 'Code promotionnel invalide ou expiré.' }, 400);
+      }
+
+      resolvedPromotionCodeId = match.id;
+    }
+
     const session = await stripe.checkout.sessions.create({
       mode: 'subscription',
       customer: customerId,
@@ -127,11 +148,14 @@ Deno.serve(async (request) => {
           quantity: 1,
         },
       ],
-      allow_promotion_codes: true,
+      ...(resolvedPromotionCodeId
+        ? { discounts: [{ promotion_code: resolvedPromotionCodeId }] }
+        : { allow_promotion_codes: true }),
       metadata: {
         user_id: user.id,
         plan_id: plan.id,
         source: 'INVEQ_subscription_checkout',
+        ...(promotionCodeInput ? { promotion_code: promotionCodeInput } : {}),
       },
       subscription_data: {
         metadata: {
