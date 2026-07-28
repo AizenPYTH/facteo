@@ -4,6 +4,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { RevenueChart } from '@/components/dashboard/revenue-chart';
 import { DashboardAlerts } from '@/components/dashboard/dashboard-alerts';
+import { DashboardSubscriptionCard } from '@/components/dashboard/dashboard-subscription-card';
 import { ReplayLastSection } from '@/components/dashboard/replay-last-section';
 import { PremiumGatedSection } from '@/components/subscription/premium-gated-section';
 import { DesktopPanel } from '@/components/web/desktop/desktop-panel';
@@ -11,7 +12,6 @@ import { DesktopTopHeader } from '@/components/web/desktop/desktop-top-header';
 import { DesktopWorkspace } from '@/components/web/desktop/layout/desktop-workspace';
 import { DesktopShortcutButton } from '@/components/web/desktop/ui/desktop-shortcut-button';
 import { DesktopStatCard } from '@/components/web/desktop/ui/desktop-stat-card';
-import { Button } from '@/components/ui/button';
 import { LoadingView } from '@/components/ui/loading-view';
 import { DESKTOP_LAYOUT } from '@/constants/theme/desktop-tokens';
 import { radius } from '@/constants/theme/radius';
@@ -28,7 +28,7 @@ export function DashboardDesktopScreen() {
   const styles = useStyles();
   const colors = useColors();
   const { firstName, companyName, stats, extended, recentInvoices, loading } = useDashboard();
-  const { hasFeature, isPremium } = useSubscription();
+  const { hasFeature } = useSubscription();
   const advancedStatsLocked = !hasFeature('advanced_stats');
 
   return (
@@ -36,15 +36,6 @@ export function DashboardDesktopScreen() {
       <DesktopTopHeader
         actions={
           <View style={styles.headerActions}>
-            {!isPremium ? (
-              <Pressable
-                accessibilityLabel="Passer à Premium"
-                accessibilityRole="button"
-                onPress={() => router.push('/settings/premium' as Href)}
-                style={styles.premiumBadge}>
-                <Text style={styles.premiumBadgeText}>Premium</Text>
-              </Pressable>
-            ) : null}
             <Pressable
               accessibilityLabel="Rechercher"
               accessibilityRole="button"
@@ -69,15 +60,7 @@ export function DashboardDesktopScreen() {
           <LoadingView message="Chargement du tableau de bord…" size="small" />
         ) : (
           <>
-            {!isPremium ? (
-              <View style={styles.premiumCta}>
-                <Button
-                  elevated
-                  onPress={() => router.push('/settings/premium' as Href)}
-                  title="Passer à Premium"
-                />
-              </View>
-            ) : null}
+            <DashboardSubscriptionCard />
             <View style={styles.statsRow}>
               <DesktopStatCard
                 accentColor={colors.primary}
@@ -374,21 +357,6 @@ const useStyles = () =>
       flexDirection: 'row',
       alignItems: 'center',
       gap: spacing.sm,
-    },
-    premiumBadge: {
-      paddingHorizontal: spacing.md,
-      paddingVertical: spacing.xs,
-      borderRadius: radius.full,
-      backgroundColor: colors.primary,
-    },
-    premiumBadgeText: {
-      ...typography.caption1,
-      fontWeight: '700',
-      color: colors.onPrimary,
-    },
-    premiumCta: {
-      marginBottom: spacing.md,
-      maxWidth: 280,
     },
     searchBtn: {
       width: 36,

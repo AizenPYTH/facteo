@@ -19,6 +19,26 @@ import {
   isSubscriptionCheckoutConfigured,
   startBillingPortalRedirect,
 } from '@/lib/stripe/subscription-checkout';
+import type { SubscriptionStatus } from '@/types/subscription';
+
+function formatStatusLabel(status: SubscriptionStatus, cancelAtPeriodEnd: boolean): string {
+  if (cancelAtPeriodEnd) return 'Résiliation';
+  switch (status) {
+    case 'active':
+      return 'Actif';
+    case 'trialing':
+      return 'Essai';
+    case 'past_due':
+      return 'En retard';
+    case 'canceled':
+    case 'unpaid':
+      return 'Expiré';
+    case 'incomplete':
+      return 'Incomplet';
+    default:
+      return status;
+  }
+}
 
 export default function SubscriptionSettingsContent() {
   const { user } = useAuth();
@@ -106,6 +126,16 @@ export default function SubscriptionSettingsContent() {
 
   const { subscription, plan, usage } = query.data;
   const isPaid = subscription.effectivePlanId !== 'micro' && subscription.plan !== 'free';
+  const statusLabel = formatStatusLabel(subscription.status, subscription.cancelAtPeriodEnd);
+
+  function openPortal() {
+    setPortalLoading(true);
+    setCheckoutError(null);
+    void startBillingPortalRedirect().catch((error) => {
+      setCheckoutError(error instanceof Error ? error.message : 'Impossible d’ouvrir le portail.');
+      setPortalLoading(false);
+    });
+  }
 
   return (
     <>
@@ -114,8 +144,8 @@ export default function SubscriptionSettingsContent() {
           ← Paramètres
         </Link>
       </AppTopBar>
-      <div className="flex-1 overflow-y-auto p-6 xl:p-8">
-        <div className="mx-auto max-w-6xl space-y-6">
+      <div className="flex-1 overflow-y-auto p-4 sm:p-6 xl:p-8">
+        <div className="mx-auto max-w-7xl space-y-8">
           {confirmMessage ? (
             <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
               {confirmMessage}
@@ -127,13 +157,13 @@ export default function SubscriptionSettingsContent() {
             </div>
           ) : null}
 
-          <div className="grid gap-4 md:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <StatCard accent="primary" label="Plan" value={plan.displayName} />
             <StatCard
               accent="muted"
               label="Statut"
-              trend={subscription.cancelAtPeriodEnd ? 'Résiliation programmée' : undefined}
-              value={subscription.status}
+              trend={subscription.cancelAtPeriodEnd ? 'Fin de période programmée' : undefined}
+              value={statusLabel}
             />
             <StatCard
               accent="success"
@@ -147,67 +177,53 @@ export default function SubscriptionSettingsContent() {
           </div>
 
           <Panel title={isPaid ? `Offre ${plan.displayName} active` : 'Choisir une offre'}>
-            <p className="mb-4 text-sm text-slate-600">
-              {isPaid
-                ? 'Changez d’offre, passez en annuel/mensuel ou résiliez via le portail Stripe sécurisé.'
-                : isSubscriptionCheckoutConfigured()
-                  ? 'Sélectionnez Basique, Standard, Pro ou Max. Un champ code promo est disponible au-dessus des cartes.'
-                  : 'Le paiement n’est pas encore disponible.'}
-            </p>
-            {isPaid ? (
-              <div className="mb-6 flex flex-wrap gap-3">
-                <button
-                  className="inline-flex rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-dark disabled:opacity-60"
-                  disabled={portalLoading}
-                  onClick={() => {
-                    setPortalLoading(true);
-                    setCheckoutError(null);
-                    void startBillingPortalRedirect().catch((error) => {
-                      setCheckoutError(
-                        error instanceof Error ? error.message : 'Impossible d’ouvrir le portail.',
-                      );
-                      setPortalLoading(false);
-                    });
-                  }}
-                  type="button">
-                  {portalLoading ? 'Ouverture du portail…' : 'Changer d’offre'}
-                </button>
-                <button
-                  className="inline-flex rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-800 shadow-sm transition hover:border-primary/30 hover:bg-blue-50/40 disabled:opacity-60"
-                  disabled={portalLoading}
-                  onClick={() => {
-                    setPortalLoading(true);
-                    setCheckoutError(null);
-                    void startBillingPortalRedirect().catch((error) => {
-                      setCheckoutError(
-                        error instanceof Error ? error.message : 'Impossible d’ouvrir le portail.',
-                      );
-                      setPortalLoading(false);
-                    });
-                  }}
-                  type="button">
-                  Passer à l’annuel / Revenir au mensuel
-                </button>
-                <button
-                  className="inline-flex rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-800 shadow-sm transition hover:border-primary/30 hover:bg-blue-50/40 disabled:opacity-60"
-                  disabled={portalLoading}
-                  onClick={() => {
-                    setPortalLoading(true);
-                    setCheckoutError(null);
-                    void startBillingPortalRedirect().catch((error) => {
-                      setCheckoutError(
-                        error instanceof Error ? error.message : 'Impossible d’ouvrir le portail.',
-                      );
-                      setPortalLoading(false);
-                    });
-                  }}
-                  type="button">
-                  {portalLoading ? 'Ouverture du portail…' : 'Gérer mon abonnement'}
-                </button>
-              </div>
-            ) : null}
-            <PricingSection />
+            <div className="space-y-5">
+              <p className="max-w-3xl text-sm leading-relaxed text-slate-600">
+                {isPaid
+                  ? 'Changez d’offre, passez en annuel/mensuel ou résiliez via le portail Stripe sécurisé.'
+                  : isSubscriptionCheckoutConfigured()
+                    ? 'Sélectionnez Basique, Standard, Pro ou Max. Un champ code promo est disponible au-dessus des cartes.'
+                    : 'Le paiement n’est pas encore disponible.'}
+              </p>
+              {isPaid ? (
+                <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+                  <button
+                    className="inline-flex items-center justify-center rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-dark disabled:opacity-60"
+                    disabled={portalLoading}
+                    onClick={openPortal}
+                    type="button">
+                    {portalLoading ? 'Ouverture du portail…' : 'Changer d’offre'}
+                  </button>
+                  <button
+                    className="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-800 shadow-sm transition hover:border-primary/30 hover:bg-blue-50/40 disabled:opacity-60"
+                    disabled={portalLoading}
+                    onClick={openPortal}
+                    type="button">
+                    Passer à l’annuel / Revenir au mensuel
+                  </button>
+                  <button
+                    className="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-800 shadow-sm transition hover:border-primary/30 hover:bg-blue-50/40 disabled:opacity-60"
+                    disabled={portalLoading}
+                    onClick={openPortal}
+                    type="button">
+                    {portalLoading ? 'Ouverture du portail…' : 'Gérer mon abonnement'}
+                  </button>
+                </div>
+              ) : null}
+            </div>
           </Panel>
+
+          <section aria-label="Offres disponibles" className="space-y-4">
+            <div className="px-1">
+              <h2 className="text-lg font-semibold tracking-tight text-slate-900">
+                {isPaid ? 'Comparer les offres' : 'Nos formules'}
+              </h2>
+              <p className="mt-1 text-sm text-slate-600">
+                Prix HT. Choisissez mensuel ou annuel — les montants viennent de Stripe.
+              </p>
+            </div>
+            <PricingSection />
+          </section>
 
           <Panel title="Utilisation">
             <div className="grid gap-4 sm:grid-cols-3">

@@ -19,8 +19,8 @@ import {
   TopClientsSection,
   TopPrestationsSection,
 } from '@/components/dashboard';
+import { DashboardSubscriptionCard } from '@/components/dashboard/dashboard-subscription-card';
 import { PremiumGatedSection } from '@/components/subscription/premium-gated-section';
-import { Button } from '@/components/ui/button';
 import { DashboardDesktopScreen } from '@/components/web/desktop/screens/dashboard-desktop-screen';
 import { BottomTabInset } from '@/constants/theme';
 import { duration } from '@/constants/theme/motion';
@@ -45,7 +45,7 @@ function DashboardMobileScreen() {
   const styles = useStyles();
   const { firstName, companyName, stats, extended, recentInvoices, loading } = useDashboard();
   const { companies, activeCompany, switchCompany, createNewCompany } = useTenant();
-  const { hasFeature, isPremium } = useSubscription();
+  const { hasFeature } = useSubscription();
   const advancedStatsLocked = !hasFeature('advanced_stats');
   const insets = useSafeAreaInsets();
   const hasNoActivity = stats.totalClients === 0 && recentInvoices.length === 0;
@@ -70,25 +70,19 @@ function DashboardMobileScreen() {
               await createNewCompany({ name });
             }}
             onSwitchCompany={switchCompany}
-            showPremiumBadge={!isPremium}
           />
         </Animated.View>
 
         {loading ? (
           <DashboardSkeleton />
         ) : hasNoActivity ? (
-          <DashboardWelcome />
+          <>
+            <DashboardSubscriptionCard />
+            <DashboardWelcome />
+          </>
         ) : (
           <>
-            {!isPremium ? (
-              <View style={styles.premiumCta}>
-                <Button
-                  elevated
-                  onPress={() => router.push('/settings/premium' as Href)}
-                  title="Passer à Premium"
-                />
-              </View>
-            ) : null}
+            <DashboardSubscriptionCard />
             <DashboardAlerts stats={stats} />
             <ReplayLastSection invoices={recentInvoices} />
 
