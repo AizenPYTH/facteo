@@ -139,10 +139,29 @@ Deno.serve(async (request) => {
       subscriptionRow?.plan !== 'free' &&
       subscriptionRow?.plan !== 'micro';
 
-    if (alreadyPaid && subscriptionRow?.plan === planId) {
+    // Un abonné actif ne doit JAMAIS ouvrir un 2e Checkout (doublon Stripe).
+    // Changer d’offre / mensuel↔annuel / résiliation → Customer Portal uniquement.
+    if (alreadyPaid) {
+      if (subscriptionRow?.plan === planId) {
+        return jsonResponse(
+          {
+            error: `Vous êtes déjà abonné à l’offre ${plan.display_name}. Utilisez « Gérer mon abonnement » pour modifier l’intervalle ou résilier.`,
+            code: 'ALREADY_SUBSCRIBED',
+            useBillingPortal: true,
+          },
+          400,
+        );
+      }
       return jsonResponse(
-        { error: `Vous êtes déjà abonné à l’offre ${plan.display_name}.`, code: 'ALREADY_SUBSCRIBED' },
-        400,
+        {
+          error:
+            'Vous avez déjà un abonnement actif. Utilisez « Gérer mon abonnement » (ou « Changer d’offre ») pour passer à une autre formule sans créer un second paiement.',
+          code: 'USE_BILLING_PORTAL',
+          useBillingPortal: true,
+          currentPlanId: subscriptionRow?.plan ?? null,
+          requestedPlanId: planId,
+        },
+        409,
       );
     }
 

@@ -1,392 +1,539 @@
 #!/usr/bin/env node
 /**
- * Provisionne les Products + Prices Stripe INVEQ (8 abonnements) + sync Supabase
- * + configure le Customer Portal.
+ * Crée / met à jour les 4 Products + 8 Prices Stripe (Live ou Test selon la clé),
+ * configure le Customer Portal, et synchronise subscription_plans dans Supabase.
  *
- * Usage:
- *   STRIPE_SECRET_KEY=sk_... \
- *   SUPABASE_URL=https://xxx.supabase.co \
- *   SUPABASE_SERVICE_ROLE_KEY=... \
+ * Garanties :
+ * 1. Mode strict : sk_live_ → Live uniquement, sk_test_ → Test uniquement (aucun mélange).
+ * 2. Idempotence produit : jamais 2 Products avec le même nom (recherche par metadata.plan_id puis nom exact).
+ * 3. Rotation de prix : si le montant change, archive l’ancien Price, crée un nouveau Price
+ *    (transfer_lookup_key), met à jour Supabase — ne modifie jamais amount d’un Price existant.
+ *
+ * Usage :
+ *   STRIPE_SECRET_KEY=sk_test_... SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... \
  *     node scripts/provision-stripe-subscription-prices.mjs
  *
- * Idempotent :
- * - réutilise un Price existant par lookup_key (aucun doublon)
- * - réutilise / met à jour un Product par metadata.plan_id
- * - peut être relancé sans créer de doublons
- *
- * LOOKUP KEYS — DÉFINITIFS (ne pas renommer) :
- *   monthly_basic, yearly_basic,
- *   monthly_standard, yearly_standard,
- *   monthly_pro, yearly_pro,
- *   monthly_max, yearly_max
+ * Optionnel : STRIPE_PRODUCT_CURRENCY=eur
  */
 
-const STRIPE_SECRET = process.env.STRIPE_SECRET_KEY?.trim();
-const SUPABASE_URL = process.env.SUPABASE_URL?.trim() || process.env.EXPO_PUBLIC_SUPABASE_URL?.trim();
-const SERVICE_ROLE = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
+import Stripe from 'stripe';
+import { createClient } from '@supabase/supabase-js';
 
-if (!STRIPE_SECRET) {
-  console.error('Missing STRIPE_SECRET_KEY');
-  process.exit(1);
-}
+const currency = (process.env.STRIPE_PRODUCT_CURRENCY || 'eur').toLowerCase();
 
-/**
- * Catalogue définitif.
- * Montants HT en centimes EUR.
- * Annuel = équivalent mensuel × 12 (facturation annuelle).
- *   Basique  6,82 € → 682 ; annuel 4,27 × 12 = 51,24 € → 5124
- *   Standard 16,21 € → 1621 ; annuel 12,80 × 12 = 153,60 € → 15360
- *   Pro      27,30 € → 2730 ; annuel 21,33 × 12 = 255,96 € → 25596
- *   Max      63,98 € → 6398 ; annuel 51,18 × 12 = 614,16 € → 61416
- */
-const CATALOG = [
+/** @typedef {'basique' | 'standard' | 'pro' | 'max'} PaidPlanId */
+
+/** @type {Array<{
+ *   planId: PaidPlanId,
+ *   productName: string,
+ *   description: string,
+ *   monthlyCents: number,
+ *   yearlyCents: number,
+ *   monthlyLookup: string,
+ *   yearlyLookup: string,
+ * }>} */
+const PLANS = [
   {
     planId: 'basique',
-    sortOrder: 1,
     productName: 'INVEQ Basique',
-    productDescription:
-      'Offre Basique INVEQ — documents illimités, modèles PDF, personnalisation entreprise, recherche SIREN/SIRET (50/mois). Prix HT.',
-    monthly: {
-      lookup_key: 'monthly_basic',
-      nickname: 'Basique mensuel (HT)',
-      unit_amount: 682,
-    },
-    yearly: {
-      lookup_key: 'yearly_basic',
-      nickname: 'Basique annuel (HT)',
-      unit_amount: 5124,
-    },
+    description: 'Offre Basique — facturation et clients essentiels',
+    monthlyCents: 682,
+    yearlyCents: 5124,
+    monthlyLookup: 'monthly_basic',
+    yearlyLookup: 'yearly_basic',
   },
   {
     planId: 'standard',
-    sortOrder: 2,
     productName: 'INVEQ Standard',
-    productDescription:
-      'Offre Standard INVEQ — tout Basique, signature électronique, jusqu’à 3 entreprises, recherche SIREN/SIRET (200/mois). Prix HT.',
-    monthly: {
-      lookup_key: 'monthly_standard',
-      nickname: 'Standard mensuel (HT)',
-      unit_amount: 1621,
-    },
-    yearly: {
-      lookup_key: 'yearly_standard',
-      nickname: 'Standard annuel (HT)',
-      unit_amount: 15360,
-    },
+    description: 'Offre Standard — automatisations et outils avancés',
+    monthlyCents: 1621,
+    yearlyCents: 15360,
+    monthlyLookup: 'monthly_standard',
+    yearlyLookup: 'yearly_standard',
   },
   {
     planId: 'pro',
-    sortOrder: 3,
     productName: 'INVEQ Pro',
-    productDescription:
-      'Offre Pro INVEQ — tout Standard, entreprises illimitées, recherche SIREN/SIRET illimitée. Prix HT.',
-    monthly: {
-      lookup_key: 'monthly_pro',
-      nickname: 'Pro mensuel (HT)',
-      unit_amount: 2730,
-    },
-    yearly: {
-      lookup_key: 'yearly_pro',
-      nickname: 'Pro annuel (HT)',
-      unit_amount: 25596,
-    },
+    description: 'Offre Pro — volume et accompagnement prioritaire',
+    monthlyCents: 2730,
+    yearlyCents: 25596,
+    monthlyLookup: 'monthly_pro',
+    yearlyLookup: 'yearly_pro',
   },
   {
     planId: 'max',
-    sortOrder: 4,
     productName: 'INVEQ Max',
-    productDescription:
-      'Offre Max INVEQ — tout Pro, paiements Stripe sur factures, assistant IA, statistiques avancées. Prix HT.',
-    monthly: {
-      lookup_key: 'monthly_max',
-      nickname: 'Max mensuel (HT)',
-      unit_amount: 6398,
-    },
-    yearly: {
-      lookup_key: 'yearly_max',
-      nickname: 'Max annuel (HT)',
-      unit_amount: 61416,
-    },
+    description: 'Offre Max — usage intensif et priorités maximales',
+    monthlyCents: 6398,
+    yearlyCents: 61416,
+    monthlyLookup: 'monthly_max',
+    yearlyLookup: 'yearly_max',
   },
 ];
 
-async function stripe(path, method = 'GET', body) {
-  const response = await fetch(`https://api.stripe.com/v1${path}`, {
-    method,
-    headers: {
-      Authorization: `Bearer ${STRIPE_SECRET}`,
-      ...(body ? { 'Content-Type': 'application/x-www-form-urlencoded' } : {}),
-    },
-    body: body ? new URLSearchParams(flattenBody(body)).toString() : undefined,
+/**
+ * @param {string} key
+ * @returns {'test' | 'live'}
+ */
+function detectStripeMode(key) {
+  if (key.startsWith('sk_live_') || key.startsWith('rk_live_')) return 'live';
+  if (key.startsWith('sk_test_') || key.startsWith('rk_test_')) return 'test';
+  throw new Error(
+    'STRIPE_SECRET_KEY invalide : doit commencer par sk_test_ / sk_live_ (ou rk_test_ / rk_live_).'
+  );
+}
+
+/**
+ * @param {Stripe} stripe
+ * @param {string} lookupKey
+ */
+async function findPriceByLookupKey(stripe, lookupKey) {
+  const listed = await stripe.prices.list({
+    lookup_keys: [lookupKey],
+    active: true,
+    limit: 1,
   });
-  const json = await response.json();
-  if (!response.ok) {
-    throw new Error(`${method} ${path}: ${json.error?.message || JSON.stringify(json)}`);
-  }
-  return json;
+  return listed.data[0] ?? null;
 }
 
-/** Stripe form encoding for nested keys like metadata[plan_id]. */
-function flattenBody(body, prefix = '') {
-  const out = {};
-  for (const [key, value] of Object.entries(body)) {
-    const fullKey = prefix ? `${prefix}[${key}]` : key;
-    if (value === undefined || value === null) continue;
-    if (Array.isArray(value)) {
-      value.forEach((item, index) => {
-        if (item && typeof item === 'object') {
-          Object.assign(out, flattenBody(item, `${fullKey}[${index}]`));
-        } else {
-          out[`${fullKey}[${index}]`] = String(item);
-        }
-      });
-    } else if (typeof value === 'object') {
-      Object.assign(out, flattenBody(value, fullKey));
-    } else {
-      out[fullKey] = String(value);
-    }
-  }
-  return out;
+/**
+ * @param {Stripe} stripe
+ * @param {string} productId
+ * @param {'month' | 'year'} interval
+ * @param {number} unitAmount
+ */
+async function findActivePriceByAmount(stripe, productId, interval, unitAmount) {
+  const listed = await stripe.prices.list({
+    product: productId,
+    active: true,
+    type: 'recurring',
+    limit: 100,
+  });
+  return (
+    listed.data.find(
+      (p) =>
+        p.recurring?.interval === interval &&
+        p.unit_amount === unitAmount &&
+        p.currency === currency
+    ) ?? null
+  );
 }
 
-async function findPriceByLookupKey(lookupKey) {
-  const list = await stripe(`/prices?lookup_keys[]=${encodeURIComponent(lookupKey)}&active=true&limit=1`);
-  return list.data?.[0] ?? null;
-}
-
-async function findProductByPlanId(planId) {
-  try {
-    const search = await stripe(
-      `/products/search?query=${encodeURIComponent(`active:'true' AND metadata['plan_id']:'${planId}'`)}`,
-    );
-    if (search.data?.[0]) return search.data[0];
-  } catch {
-    // Search may be unavailable on some accounts — fall through.
-  }
-
-  // Fallback: list active products and match metadata.
-  let startingAfter = undefined;
-  for (let page = 0; page < 10; page += 1) {
-    const qs = new URLSearchParams({ active: 'true', limit: '100' });
-    if (startingAfter) qs.set('starting_after', startingAfter);
-    const list = await stripe(`/products?${qs.toString()}`);
-    const match = (list.data || []).find((p) => p.metadata?.plan_id === planId);
-    if (match) return match;
-    if (!list.has_more || !list.data?.length) break;
-    startingAfter = list.data[list.data.length - 1].id;
+/**
+ * @param {Stripe} stripe
+ * @param {PaidPlanId} planId
+ * @param {string} productName
+ */
+async function findExistingProduct(stripe, planId, productName) {
+  let startingAfter;
+  for (;;) {
+    /** @type {Stripe.ProductListParams} */
+    const params = { active: true, limit: 100 };
+    if (startingAfter) params.starting_after = startingAfter;
+    const page = await stripe.products.list(params);
+    const byMeta = page.data.find((p) => p.metadata?.plan_id === planId);
+    if (byMeta) return byMeta;
+    const byName = page.data.find((p) => p.name === productName);
+    if (byName) return byName;
+    if (!page.has_more) break;
+    startingAfter = page.data[page.data.length - 1]?.id;
+    if (!startingAfter) break;
   }
   return null;
 }
 
-async function findOrCreateProduct(entry) {
-  const existing = await findProductByPlanId(entry.planId);
-  const metadata = {
-    plan_id: entry.planId,
-    sort_order: String(entry.sortOrder),
-    source: 'INVEQ_provision',
-    app: 'INVEQ',
-  };
-
-  if (existing) {
-    const updated = await stripe(`/products/${existing.id}`, 'POST', {
-      name: entry.productName,
-      description: entry.productDescription,
-      metadata,
-    });
-    console.log(`✓ product ${entry.planId} → ${updated.id} (updated)`);
-    return updated;
+/**
+ * Refuse s’il existe déjà plusieurs produits actifs avec le même nom.
+ * @param {Stripe} stripe
+ */
+async function assertNoDuplicateProductNames(stripe) {
+  /** @type {Map<string, string[]>} */
+  const byName = new Map();
+  let startingAfter;
+  for (;;) {
+    /** @type {Stripe.ProductListParams} */
+    const params = { active: true, limit: 100 };
+    if (startingAfter) params.starting_after = startingAfter;
+    const page = await stripe.products.list(params);
+    for (const p of page.data) {
+      const list = byName.get(p.name) ?? [];
+      list.push(p.id);
+      byName.set(p.name, list);
+    }
+    if (!page.has_more) break;
+    startingAfter = page.data[page.data.length - 1]?.id;
+    if (!startingAfter) break;
   }
 
-  const created = await stripe('/products', 'POST', {
-    name: entry.productName,
-    description: entry.productDescription,
-    metadata,
-  });
-  console.log(`+ product ${entry.planId} → ${created.id}`);
-  return created;
-}
-
-async function ensurePrice(productId, planId, spec, interval) {
-  const existing = await findPriceByLookupKey(spec.lookup_key);
-  if (existing) {
-    if (existing.unit_amount !== spec.unit_amount) {
+  const expectedNames = new Set(PLANS.map((p) => p.productName));
+  for (const [name, ids] of byName) {
+    if (!expectedNames.has(name)) continue;
+    if (ids.length > 1) {
       throw new Error(
-        `Price ${spec.lookup_key} exists (${existing.id}) with unit_amount=${existing.unit_amount}, expected ${spec.unit_amount}. ` +
-          `Lookup keys are immutable — archive the old price in Stripe Dashboard then re-run, or keep the existing amount.`,
+        `Doublon détecté pour le produit "${name}" (${ids.join(', ')}). ` +
+          'Supprimez ou archivez les doublons dans le Dashboard Stripe avant de relancer.'
       );
     }
-    if (existing.currency !== 'eur') {
-      throw new Error(`Price ${spec.lookup_key} currency is ${existing.currency}, expected eur.`);
-    }
-    console.log(`✓ reuse ${spec.lookup_key} → ${existing.id}`);
-    return existing;
   }
-
-  const created = await stripe('/prices', 'POST', {
-    product: productId,
-    currency: 'eur',
-    unit_amount: String(spec.unit_amount),
-    nickname: spec.nickname,
-    lookup_key: spec.lookup_key,
-    tax_behavior: 'exclusive', // HT — TVA calculée par Stripe Tax si activée
-    recurring: { interval: interval === 'yearly' ? 'year' : 'month' },
-    metadata: {
-      plan_id: planId,
-      billing_interval: interval,
-      lookup_key: spec.lookup_key,
-      amount_ht_cents: String(spec.unit_amount),
-      currency: 'eur',
-      tax: 'exclusive_ht',
-      source: 'INVEQ_provision',
-    },
-  });
-  console.log(`+ create ${spec.lookup_key} → ${created.id} (${spec.unit_amount} centimes HT)`);
-  return created;
 }
 
-async function updateSupabasePlan(planId, monthlyPriceId, yearlyPriceId, productId, entry) {
-  if (!SUPABASE_URL || !SERVICE_ROLE) {
-    console.warn('Skip DB update (SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY missing)');
-    return;
-  }
-
-  const response = await fetch(`${SUPABASE_URL}/rest/v1/subscription_plans?id=eq.${planId}`, {
-    method: 'PATCH',
-    headers: {
-      apikey: SERVICE_ROLE,
-      Authorization: `Bearer ${SERVICE_ROLE}`,
-      'Content-Type': 'application/json',
-      Prefer: 'return=minimal',
-    },
-    body: JSON.stringify({
-      display_name: entry.productName.replace(/^INVEQ\s+/, ''),
-      description: entry.productDescription,
-      sort_order: entry.sortOrder,
-      stripe_product_id: productId,
-      stripe_price_id: monthlyPriceId,
-      stripe_price_id_yearly: yearlyPriceId,
-      stripe_lookup_key_monthly: entry.monthly.lookup_key,
-      stripe_lookup_key_yearly: entry.yearly.lookup_key,
-      is_active: true,
-      updated_at: new Date().toISOString(),
-    }),
-  });
-
-  if (!response.ok) {
-    const text = await response.text();
-    throw new Error(`Supabase update ${planId}: ${response.status} ${text}`);
-  }
-  console.log(`✓ DB ${planId} synced (sort_order=${entry.sortOrder})`);
-}
-
-async function ensureCustomerPortal(productsWithPrices) {
-  const features = {
-    customer_update: {
-      enabled: true,
-      allowed_updates: ['email', 'address', 'tax_id'],
-    },
-    invoice_history: { enabled: true },
-    payment_method_update: { enabled: true },
-    subscription_cancel: {
-      enabled: true,
-      mode: 'at_period_end',
-      proration_behavior: 'none',
-    },
-    subscription_update: {
-      enabled: true,
-      default_allowed_updates: ['price'],
-      proration_behavior: 'create_prorations',
-      products: productsWithPrices.map((entry) => ({
-        product: entry.productId,
-        prices: [entry.monthlyPriceId, entry.yearlyPriceId],
-      })),
-    },
+/**
+ * @param {Stripe} stripe
+ * @param {typeof PLANS[number]} plan
+ * @param {'test' | 'live'} mode
+ */
+async function ensureProduct(stripe, plan, mode) {
+  const existing = await findExistingProduct(stripe, plan.planId, plan.productName);
+  const metadata = {
+    plan_id: plan.planId,
+    app: 'inveq',
+    stripe_mode: mode,
   };
 
-  const list = await stripe('/billing_portal/configurations?limit=10&active=true');
-  const existing = (list.data || []).find(
-    (config) => config.metadata?.source === 'INVEQ_provision',
+  if (existing) {
+    if (existing.metadata?.stripe_mode && existing.metadata.stripe_mode !== mode) {
+      throw new Error(
+        `Produit ${existing.id} (${existing.name}) a metadata.stripe_mode=${existing.metadata.stripe_mode} ` +
+          `mais la clé utilisée est en mode ${mode}. Aucun mélange Live/Test.`
+      );
+    }
+    return stripe.products.update(existing.id, {
+      name: plan.productName,
+      description: plan.description,
+      metadata,
+    });
+  }
+
+  await assertNoDuplicateProductNames(stripe);
+
+  return stripe.products.create({
+    name: plan.productName,
+    description: plan.description,
+    metadata,
+  });
+}
+
+/**
+ * Crée un Price ou réutilise l’existant. Si le montant a changé :
+ * archive l’ancien, crée un nouveau Price avec transfer_lookup_key, ne mute jamais unit_amount.
+ *
+ * @param {Stripe} stripe
+ * @param {string} productId
+ * @param {{
+ *   lookupKey: string,
+ *   unitAmount: number,
+ *   interval: 'month' | 'year',
+ *   planId: PaidPlanId,
+ *   mode: 'test' | 'live',
+ * }} opts
+ */
+async function createOrRotatePrice(stripe, productId, opts) {
+  const { lookupKey, unitAmount, interval, planId, mode } = opts;
+  const existing = await findPriceByLookupKey(stripe, lookupKey);
+
+  if (existing) {
+    if (existing.metadata?.stripe_mode && existing.metadata.stripe_mode !== mode) {
+      throw new Error(
+        `Price ${existing.id} (${lookupKey}) est tagué mode=${existing.metadata.stripe_mode} ` +
+          `mais la clé est ${mode}. Aucun mélange.`
+      );
+    }
+    if (existing.product !== productId) {
+      throw new Error(
+        `Price ${existing.id} (${lookupKey}) est lié au produit ${existing.product}, attendu ${productId}.`
+      );
+    }
+    if (
+      existing.unit_amount === unitAmount &&
+      existing.currency === currency &&
+      existing.recurring?.interval === interval
+    ) {
+      return { price: existing, rotated: false };
+    }
+
+    // Montant / devise / intervalle différents → nouveau Price (Stripe interdit de muter unit_amount)
+    console.log(
+      `  ↻ Rotation ${lookupKey}: ${existing.unit_amount} → ${unitAmount} ${currency}/${interval}`
+    );
+    const created = await stripe.prices.create({
+      product: productId,
+      currency,
+      unit_amount: unitAmount,
+      tax_behavior: 'exclusive',
+      recurring: { interval },
+      lookup_key: lookupKey,
+      transfer_lookup_key: true,
+      metadata: {
+        plan_id: planId,
+        interval,
+        app: 'inveq',
+        stripe_mode: mode,
+        replaces_price: existing.id,
+      },
+    });
+    if (existing.active) {
+      await stripe.prices.update(existing.id, { active: false });
+    }
+    return { price: created, rotated: true, previousPriceId: existing.id };
+  }
+
+  const byAmount = await findActivePriceByAmount(stripe, productId, interval, unitAmount);
+  if (byAmount) {
+    if (byAmount.lookup_key !== lookupKey) {
+      return {
+        price: await stripe.prices.update(byAmount.id, {
+          lookup_key: lookupKey,
+          metadata: {
+            plan_id: planId,
+            interval,
+            app: 'inveq',
+            stripe_mode: mode,
+          },
+        }),
+        rotated: false,
+      };
+    }
+    return { price: byAmount, rotated: false };
+  }
+
+  const created = await stripe.prices.create({
+    product: productId,
+    currency,
+    unit_amount: unitAmount,
+    tax_behavior: 'exclusive',
+    recurring: { interval },
+    lookup_key: lookupKey,
+    metadata: {
+      plan_id: planId,
+      interval,
+      app: 'inveq',
+      stripe_mode: mode,
+    },
+  });
+  return { price: created, rotated: false };
+}
+
+/**
+ * @param {Stripe} stripe
+ * @param {string[]} priceIds
+ */
+async function ensureCustomerPortal(stripe, priceIds) {
+  const unique = [...new Set(priceIds.filter(Boolean))];
+  if (unique.length < 8) {
+    throw new Error(`Portal: 8 price ids requis, reçu ${unique.length}`);
+  }
+
+  const priceObjects = await Promise.all(unique.map((id) => stripe.prices.retrieve(id)));
+  const productByPrice = new Map(
+    priceObjects.map((p) => [p.id, typeof p.product === 'string' ? p.product : p.product.id])
   );
+
+  const products = PLANS.map((plan, index) => {
+    const monthlyId = unique[index * 2];
+    const yearlyId = unique[index * 2 + 1];
+    const productId = productByPrice.get(monthlyId);
+    if (!productId) throw new Error(`Produit introuvable pour ${plan.planId}`);
+    return {
+      product: productId,
+      prices: [monthlyId, yearlyId],
+    };
+  });
 
   const payload = {
     business_profile: {
       headline: 'Gérer votre abonnement INVEQ',
     },
-    features,
     metadata: {
       source: 'INVEQ_provision',
-      app: 'INVEQ',
+      app: 'inveq',
     },
-    default_return_url:
-      process.env.INVEQ_PORTAL_RETURN_URL?.trim() ||
-      'https://inveq.app/app/settings/subscription',
+    features: {
+      customer_update: {
+        enabled: true,
+        allowed_updates: ['email', 'address', 'tax_id'],
+      },
+      invoice_history: { enabled: true },
+      payment_method_update: { enabled: true },
+      subscription_cancel: {
+        enabled: true,
+        mode: 'at_period_end',
+        proration_behavior: 'none',
+      },
+      subscription_update: {
+        enabled: true,
+        default_allowed_updates: ['price', 'promotion_code'],
+        proration_behavior: 'create_prorations',
+        products,
+      },
+    },
   };
 
-  if (existing) {
-    const updated = await stripe(`/billing_portal/configurations/${existing.id}`, 'POST', payload);
-    console.log(`✓ Customer Portal config updated → ${updated.id}`);
-    return updated;
-  }
+  const configs = await stripe.billingPortal.configurations.list({ limit: 20, active: true });
+  const existing =
+    configs.data.find((c) => c.metadata?.source === 'INVEQ_provision') ?? configs.data[0] ?? null;
 
-  const created = await stripe('/billing_portal/configurations', 'POST', payload);
-  console.log(`+ Customer Portal config created → ${created.id}`);
-  return created;
+  if (existing) {
+    return stripe.billingPortal.configurations.update(existing.id, payload);
+  }
+  return stripe.billingPortal.configurations.create(payload);
 }
 
-async function ensureMicroSortOrder() {
-  if (!SUPABASE_URL || !SERVICE_ROLE) return;
-  const response = await fetch(`${SUPABASE_URL}/rest/v1/subscription_plans?id=eq.micro`, {
-    method: 'PATCH',
-    headers: {
-      apikey: SERVICE_ROLE,
-      Authorization: `Bearer ${SERVICE_ROLE}`,
-      'Content-Type': 'application/json',
-      Prefer: 'return=minimal',
-    },
-    body: JSON.stringify({
-      sort_order: 0,
-      display_name: 'Micro',
+/**
+ * @param {import('@supabase/supabase-js').SupabaseClient} supabase
+ * @param {PaidPlanId} planId
+ * @param {string} monthlyPriceId
+ * @param {string} yearlyPriceId
+ * @param {number} monthlyCents
+ * @param {number} yearlyCents
+ */
+async function syncSupabasePlan(supabase, planId, monthlyPriceId, yearlyPriceId, monthlyCents, yearlyCents) {
+  const { error } = await supabase
+    .from('subscription_plans')
+    .update({
+      stripe_price_id_monthly: monthlyPriceId,
+      stripe_price_id_yearly: yearlyPriceId,
+      price_monthly_cents: monthlyCents,
+      price_yearly_cents: yearlyCents,
+      currency,
       is_active: true,
       updated_at: new Date().toISOString(),
-    }),
-  });
-  if (!response.ok) {
-    console.warn(`Warn: could not ensure Micro sort_order: ${response.status}`);
-    return;
+    })
+    .eq('id', planId);
+
+  if (error) {
+    throw new Error(`Supabase update ${planId}: ${error.message}`);
   }
-  console.log('✓ DB micro sort_order=0');
 }
 
 async function main() {
-  console.log('Lookup keys (FINAL):');
-  for (const entry of CATALOG) {
-    console.log(`  ${entry.monthly.lookup_key}, ${entry.yearly.lookup_key}`);
+  const stripeKey = process.env.STRIPE_SECRET_KEY?.trim();
+  const supabaseUrl = (process.env.SUPABASE_URL || process.env.EXPO_PUBLIC_SUPABASE_URL || '').trim();
+  const serviceRole = (
+    process.env.SUPABASE_SERVICE_ROLE_KEY ||
+    process.env.SUPABASE_SECRET_KEY ||
+    ''
+  ).trim();
+
+  if (!stripeKey) {
+    console.error('Missing STRIPE_SECRET_KEY');
+    process.exit(1);
   }
-  console.log('');
+  if (!supabaseUrl || !serviceRole) {
+    console.error('Missing SUPABASE_URL (or EXPO_PUBLIC_SUPABASE_URL) and SUPABASE_SERVICE_ROLE_KEY');
+    process.exit(1);
+  }
 
-  const provisioned = [];
+  const mode = detectStripeMode(stripeKey);
+  console.log(`\n🔐 Mode Stripe détecté : ${mode.toUpperCase()} (clé ${stripeKey.slice(0, 8)}…)`);
+  if (mode === 'live') {
+    console.log('⚠️  Vous provisionnez l’environnement LIVE. Vérifiez les montants avant production.\n');
+  } else {
+    console.log('✅ Environnement TEST — aucun objet Live ne sera touché.\n');
+  }
 
-  for (const entry of CATALOG) {
-    const product = await findOrCreateProduct(entry);
-    const monthly = await ensurePrice(product.id, entry.planId, entry.monthly, 'monthly');
-    const yearly = await ensurePrice(product.id, entry.planId, entry.yearly, 'yearly');
-    await updateSupabasePlan(entry.planId, monthly.id, yearly.id, product.id, entry);
-    provisioned.push({
-      planId: entry.planId,
-      productId: product.id,
-      monthlyPriceId: monthly.id,
-      yearlyPriceId: yearly.id,
+  const stripe = new Stripe(stripeKey, {
+    apiVersion: '2024-12-18.acacia',
+  });
+
+  // Sanity: la clé doit pouvoir lister — et on stamp le mode sur les objets créés
+  const account = await stripe.accounts.retrieve();
+  console.log(`Compte Stripe : ${account.id} (${account.settings?.dashboard?.display_name || 'n/a'})`);
+
+  await assertNoDuplicateProductNames(stripe);
+
+  const supabase = createClient(supabaseUrl, serviceRole, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+
+  /** @type {string[]} */
+  const orderedPriceIds = [];
+  /** @type {Record<string, { monthly: string, yearly: string, rotated: string[] }>} */
+  const summary = {};
+
+  for (const plan of PLANS) {
+    console.log(`→ ${plan.productName}`);
+    const product = await ensureProduct(stripe, plan, mode);
+    console.log(`  Product ${product.id}`);
+
+    const monthly = await createOrRotatePrice(stripe, product.id, {
+      lookupKey: plan.monthlyLookup,
+      unitAmount: plan.monthlyCents,
+      interval: 'month',
+      planId: plan.planId,
+      mode,
     });
+    const yearly = await createOrRotatePrice(stripe, product.id, {
+      lookupKey: plan.yearlyLookup,
+      unitAmount: plan.yearlyCents,
+      interval: 'year',
+      planId: plan.planId,
+      mode,
+    });
+
+    console.log(`  Monthly ${monthly.price.id}${monthly.rotated ? ' (nouveau)' : ''}`);
+    console.log(`  Yearly  ${yearly.price.id}${yearly.rotated ? ' (nouveau)' : ''}`);
+
+    await syncSupabasePlan(
+      supabase,
+      plan.planId,
+      monthly.price.id,
+      yearly.price.id,
+      plan.monthlyCents,
+      plan.yearlyCents
+    );
+    console.log(`  ✓ Supabase subscription_plans.${plan.planId} à jour`);
+
+    orderedPriceIds.push(monthly.price.id, yearly.price.id);
+    summary[plan.planId] = {
+      monthly: monthly.price.id,
+      yearly: yearly.price.id,
+      rotated: [
+        ...(monthly.rotated ? [plan.monthlyLookup] : []),
+        ...(yearly.rotated ? [plan.yearlyLookup] : []),
+      ],
+    };
   }
 
-  await ensureMicroSortOrder();
-  await ensureCustomerPortal(provisioned);
+  // Micro gratuit — pas de Price Stripe
+  await supabase
+    .from('subscription_plans')
+    .update({
+      stripe_price_id_monthly: null,
+      stripe_price_id_yearly: null,
+      price_monthly_cents: 0,
+      price_yearly_cents: 0,
+      is_active: true,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', 'micro');
 
-  console.log('\nDone. 4 products + 8 prices + Customer Portal ready (idempotent).');
-  console.log('Tax: prices are tax_behavior=exclusive (HT). Enable Stripe Tax + registrations in Dashboard, then set STRIPE_AUTOMATIC_TAX=true on the checkout edge function.');
+  console.log('\n→ Customer Portal (changement d’offre / mensuel↔annuel / résiliation)');
+  const portal = await ensureCustomerPortal(stripe, orderedPriceIds);
+  console.log(`  Configuration ${portal.id}`);
+
+  // Vérification finale anti-mélange + anti-doublons
+  await assertNoDuplicateProductNames(stripe);
+  for (const plan of PLANS) {
+    for (const key of [plan.monthlyLookup, plan.yearlyLookup]) {
+      const p = await findPriceByLookupKey(stripe, key);
+      if (!p) throw new Error(`Lookup manquant après provision: ${key}`);
+      if (p.metadata?.stripe_mode && p.metadata.stripe_mode !== mode) {
+        throw new Error(`Mélange mode sur ${key}`);
+      }
+    }
+  }
+
+  console.log('\n=== Récapitulatif ===');
+  console.log(JSON.stringify({ mode, account: account.id, plans: summary, portal: portal.id }, null, 2));
+  console.log('\nProchaines étapes :');
+  console.log('1. Dashboard Stripe → Webhooks → endpoint …/functions/v1/stripe-subscription-webhook');
+  console.log('   Events : checkout.session.completed, customer.subscription.*, invoice.paid');
+  console.log('2. Secrets Supabase : STRIPE_SECRET_KEY (même mode), STRIPE_WEBHOOK_SECRET');
+  console.log('3. Relancer ce script après un changement de tarif (rotation auto + update Supabase)');
+  console.log('4. Tester le parcours avec sk_test_ via : node scripts/e2e-stripe-subscription-journey.mjs');
 }
 
-main().catch((error) => {
-  console.error(error);
+main().catch((err) => {
+  console.error(err);
   process.exit(1);
 });

@@ -142,7 +142,7 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
     description: 'Pour les indépendants qui facturent sans limite.',
     priceMonthlyHt: 6.82,
     priceYearlyMonthlyHt: 4.27,
-    cta: 'Choisir Basique',
+    cta: 'Acheter Basique',
     inheritsFrom: 'micro',
     limits: {
       documentsPerMonth: null,
@@ -164,7 +164,7 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
     description: 'Pour signer vos documents et gérer plusieurs activités.',
     priceMonthlyHt: 16.21,
     priceYearlyMonthlyHt: 12.8,
-    cta: 'Choisir Standard',
+    cta: 'Acheter Standard',
     inheritsFrom: 'basique',
     limits: {
       documentsPerMonth: null,
@@ -185,7 +185,7 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
     description: 'Pour les pros multi-activités sans plafond de recherche.',
     priceMonthlyHt: 27.3,
     priceYearlyMonthlyHt: 21.33,
-    cta: 'Choisir Pro',
+    cta: 'Acheter Pro',
     highlighted: true,
     badge: 'Le plus populaire',
     inheritsFrom: 'standard',
@@ -207,7 +207,7 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
     description: 'Toutes les fonctionnalités avancées pour scaler sans friction.',
     priceMonthlyHt: 63.98,
     priceYearlyMonthlyHt: 51.18,
-    cta: 'Choisir Max',
+    cta: 'Acheter Max',
     inheritsFrom: 'pro',
     limits: {
       documentsPerMonth: null,

@@ -149,28 +149,62 @@ export default function SubscriptionSettingsContent() {
           <Panel title={isPaid ? `Offre ${plan.displayName} active` : 'Choisir une offre'}>
             <p className="mb-4 text-sm text-slate-600">
               {isPaid
-                ? 'Changez d’offre, résiliez ou mettez à jour votre carte via le portail Stripe, ou choisissez une formule ci-dessous.'
+                ? 'Changez d’offre, passez en annuel/mensuel ou résiliez via le portail Stripe sécurisé.'
                 : isSubscriptionCheckoutConfigured()
                   ? 'Sélectionnez Basique, Standard, Pro ou Max. Un champ code promo est disponible au-dessus des cartes.'
                   : 'Le paiement n’est pas encore disponible.'}
             </p>
             {isPaid ? (
-              <button
-                className="mb-6 inline-flex rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-800 shadow-sm transition hover:border-primary/30 hover:bg-blue-50/40 disabled:opacity-60"
-                disabled={portalLoading}
-                onClick={() => {
-                  setPortalLoading(true);
-                  setCheckoutError(null);
-                  void startBillingPortalRedirect().catch((error) => {
-                    setCheckoutError(
-                      error instanceof Error ? error.message : 'Impossible d’ouvrir le portail.',
-                    );
-                    setPortalLoading(false);
-                  });
-                }}
-                type="button">
-                {portalLoading ? 'Ouverture du portail…' : 'Gérer mon abonnement (Stripe)'}
-              </button>
+              <div className="mb-6 flex flex-wrap gap-3">
+                <button
+                  className="inline-flex rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-dark disabled:opacity-60"
+                  disabled={portalLoading}
+                  onClick={() => {
+                    setPortalLoading(true);
+                    setCheckoutError(null);
+                    void startBillingPortalRedirect().catch((error) => {
+                      setCheckoutError(
+                        error instanceof Error ? error.message : 'Impossible d’ouvrir le portail.',
+                      );
+                      setPortalLoading(false);
+                    });
+                  }}
+                  type="button">
+                  {portalLoading ? 'Ouverture du portail…' : 'Changer d’offre'}
+                </button>
+                <button
+                  className="inline-flex rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-800 shadow-sm transition hover:border-primary/30 hover:bg-blue-50/40 disabled:opacity-60"
+                  disabled={portalLoading}
+                  onClick={() => {
+                    setPortalLoading(true);
+                    setCheckoutError(null);
+                    void startBillingPortalRedirect().catch((error) => {
+                      setCheckoutError(
+                        error instanceof Error ? error.message : 'Impossible d’ouvrir le portail.',
+                      );
+                      setPortalLoading(false);
+                    });
+                  }}
+                  type="button">
+                  Passer à l’annuel / Revenir au mensuel
+                </button>
+                <button
+                  className="inline-flex rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-800 shadow-sm transition hover:border-primary/30 hover:bg-blue-50/40 disabled:opacity-60"
+                  disabled={portalLoading}
+                  onClick={() => {
+                    setPortalLoading(true);
+                    setCheckoutError(null);
+                    void startBillingPortalRedirect().catch((error) => {
+                      setCheckoutError(
+                        error instanceof Error ? error.message : 'Impossible d’ouvrir le portail.',
+                      );
+                      setPortalLoading(false);
+                    });
+                  }}
+                  type="button">
+                  {portalLoading ? 'Ouverture du portail…' : 'Gérer mon abonnement'}
+                </button>
+              </div>
             ) : null}
             <PricingSection />
           </Panel>

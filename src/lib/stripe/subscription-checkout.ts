@@ -134,7 +134,20 @@ export async function createSubscriptionCheckout(
   });
 
   if (!response.ok) {
-    const payload = (await response.json().catch(() => null)) as { error?: string } | null;
+    const payload = (await response.json().catch(() => null)) as {
+      error?: string;
+      code?: string;
+      useBillingPortal?: boolean;
+    } | null;
+    if (payload?.useBillingPortal || payload?.code === 'USE_BILLING_PORTAL') {
+      const err = new Error(
+        payload.error ??
+          'Abonnement déjà actif — utilisez « Gérer mon abonnement » pour changer d’offre.',
+      ) as Error & { useBillingPortal?: boolean; code?: string };
+      err.useBillingPortal = true;
+      err.code = payload.code ?? 'USE_BILLING_PORTAL';
+      throw err;
+    }
     throw new Error(payload?.error ?? 'Impossible de démarrer l’abonnement.');
   }
 
@@ -180,7 +193,22 @@ export async function startSubscriptionCheckoutFlow(
   options?: { promotionCode?: string; interval?: BillingInterval },
 ): Promise<ConfirmSubscriptionCheckoutResult | null> {
   const returnUrl = getSubscriptionReturnUrl();
-  const checkout = await createSubscriptionCheckout(planId, options);
+
+  let checkout: CreateSubscriptionCheckoutResult;
+  try {
+    checkout = await createSubscriptionCheckout(planId, options);
+  } catch (error) {
+    const portalError = error as Error & { useBillingPortal?: boolean };
+    if (portalError.useBillingPortal) {
+      const portalUrl = await openBillingPortal({ returnUrl });
+      WebBrowser.maybeCompleteAuthSession();
+      await WebBrowser.openAuthSessionAsync(portalUrl, returnUrl, {
+        preferEphemeralSession: true,
+      });
+      return null;
+    }
+    throw error;
+  }
 
   WebBrowser.maybeCompleteAuthSession();
 

@@ -168,7 +168,9 @@ export default function PremiumScreen() {
                 title={
                   isPremium && subscription?.effectivePlanId === entry.id
                     ? 'Offre actuelle'
-                    : `Choisir ${entry.name} (${interval === 'monthly' ? entry.monthlyHint : entry.yearlyHint})`
+                    : isPremium
+                      ? `Changer d’offre → ${entry.name}`
+                      : `Acheter ${entry.name} (${interval === 'monthly' ? entry.monthlyHint : entry.yearlyHint})`
                 }
                 variant={entry.id === 'pro' ? 'primary' : 'ghost'}
               />
@@ -177,20 +179,36 @@ export default function PremiumScreen() {
         </View>
 
         {isPremium ? (
-          <Button
-            onPress={() => {
-              void (async () => {
-                try {
-                  const url = await openBillingPortal();
-                  await WebBrowser.openBrowserAsync(url);
-                } catch (error) {
-                  showError(error instanceof Error ? error.message : 'Portail indisponible.');
-                }
-              })();
-            }}
-            title="Gérer mon abonnement (Stripe)"
-            variant="ghost"
-          />
+          <>
+            <Button
+              onPress={() => {
+                void (async () => {
+                  try {
+                    const url = await openBillingPortal();
+                    await WebBrowser.openBrowserAsync(url);
+                  } catch (error) {
+                    showError(error instanceof Error ? error.message : 'Portail indisponible.');
+                  }
+                })();
+              }}
+              title="Passer à l’annuel / Revenir au mensuel"
+              variant="ghost"
+            />
+            <Button
+              onPress={() => {
+                void (async () => {
+                  try {
+                    const url = await openBillingPortal();
+                    await WebBrowser.openBrowserAsync(url);
+                  } catch (error) {
+                    showError(error instanceof Error ? error.message : 'Portail indisponible.');
+                  }
+                })();
+              }}
+              title="Gérer mon abonnement"
+              variant="ghost"
+            />
+          </>
         ) : null}
 
         <Button onPress={() => router.back()} title="Retour" variant="ghost" />
