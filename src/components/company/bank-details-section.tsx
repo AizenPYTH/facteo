@@ -7,7 +7,7 @@ import { spacing } from '@/constants/theme/spacing';
 import { textHierarchy } from '@/constants/theme/typography';
 import type { CompanyProfileFormValues } from '@/types/company-profile';
 
-import { FormDivider, FormField } from './form-section';
+import { FormDivider, FormField } from '@/components/ui/form-section';
 
 type BankDetailsSectionProps = {
   control: Control<CompanyProfileFormValues>;

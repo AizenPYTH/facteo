@@ -9,7 +9,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { DocumentActionsSheet } from '@/components/documents/document-actions-sheet';
 import { SentDocumentsSection } from '@/components/documents/sent-documents-section';
 import {
-  CancelInvoiceModal,
   InvoiceDetailView,
   InvoiceScreenHeader,
   PaymentModal,
@@ -17,6 +16,7 @@ import {
 import { PdfPreviewModal } from '@/components/pdf/pdf-preview-modal';
 import { TemplateGalleryModal } from '@/components/pdf/template-gallery-modal';
 import { DocumentClientSignatureBlock } from '@/components/signatures/document-client-signature-block';
+import { ConfirmationModal } from '@/components/ui/confirmation-modal';
 import { LoadingView } from '@/components/ui/loading-view';
 import { useDocumentActions } from '@/hooks/use-document-actions';
 import { useThemedStyles, useColors } from '@/hooks/use-colors';
@@ -456,11 +456,13 @@ export default function InvoiceDetailScreen() {
         visible={documentActions.previewVisible}
       />
 
-      <CancelInvoiceModal
-        invoiceNumber={invoice.number}
+      <ConfirmationModal
+        confirmLabel="Annuler la facture"
         loading={cancelInvoice.isPending}
+        message={`La facture ${invoice.number} sera marquée comme annulée. Cette action est irréversible.`}
         onCancel={() => setCancelVisible(false)}
         onConfirm={handleCancel}
+        title="Annuler la facture ?"
         visible={cancelVisible}
       />
 

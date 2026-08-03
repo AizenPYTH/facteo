@@ -1,7 +1,6 @@
 export { AddQuoteFab } from './add-quote-fab';
 export type { AddQuoteFabProps } from './add-quote-fab';
 
-export { DeleteQuoteModal } from './delete-quote-modal';
 export { QuoteDetailView } from './quote-detail-view';
 
 export { EmptyQuotes } from './empty-quotes';
@@ -17,9 +16,6 @@ export { QuoteLine } from './quote-line';
 export type { QuoteLineProps } from './quote-line';
 
 export { QuoteScreenHeader } from './quote-screen-header';
-
-export { QuoteSearchBar } from './quote-search-bar';
-export type { QuoteSearchBarProps } from './quote-search-bar';
 
 export { QuoteStatusBadge } from './quote-status-badge';
 

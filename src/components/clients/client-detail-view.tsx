@@ -1,10 +1,13 @@
-import { StyleSheet, Text, View, type ViewStyle } from 'react-native';
+import { Text, View, type ViewStyle } from 'react-native';
+import Animated from 'react-native-reanimated';
 
 import { useColors, useThemedStyles } from '@/hooks/use-colors';
 import { radius } from '@/constants/theme/radius';
+import { shadows } from '@/constants/theme/theme';
 import { spacing } from '@/constants/theme/spacing';
 import { typography } from '@/constants/theme/typography';
 import { formatFrenchPhoneDisplay } from '@/lib/format/phone';
+import { fadeInUp } from '@/lib/motion/presets';
 import type { Client } from '@/types/client';
 
 import { ClientField } from './client-field';
@@ -31,24 +34,24 @@ export function ClientDetailView({ client, style }: ClientDetailViewProps) {
 
   return (
     <View style={[styles.container, style]}>
-      <View style={styles.section}>
+      <Animated.View entering={fadeInUp({ index: 0 })} style={styles.section}>
         <Text style={styles.sectionTitle}>Identité</Text>
         <View style={styles.card}>
           <ClientField label="Nom" value={client.lastName} />
           <ClientField label="Prénom" value={client.firstName} />
           <ClientField label="Entreprise" value={client.company} />
         </View>
-      </View>
+      </Animated.View>
 
-      <View style={styles.section}>
+      <Animated.View entering={fadeInUp({ index: 1 })} style={styles.section}>
         <Text style={styles.sectionTitle}>Coordonnées</Text>
         <View style={styles.card}>
           <ClientField label="Adresse e-mail" value={client.email} />
           <ClientField label="Téléphone" value={formatFrenchPhoneDisplay(client.phone)} />
         </View>
-      </View>
+      </Animated.View>
 
-      <View style={styles.section}>
+      <Animated.View entering={fadeInUp({ index: 2 })} style={styles.section}>
         <Text style={styles.sectionTitle}>Adresse</Text>
         <View style={styles.card}>
           {address ? (
@@ -57,24 +60,24 @@ export function ClientDetailView({ client, style }: ClientDetailViewProps) {
             <ClientField label="Adresse" value={null} />
           )}
         </View>
-      </View>
+      </Animated.View>
 
-      <View style={styles.section}>
+      <Animated.View entering={fadeInUp({ index: 3 })} style={styles.section}>
         <Text style={styles.sectionTitle}>Facturation</Text>
         <View style={styles.card}>
           <ClientField label="SIREN" value={client.siren} />
           <ClientField label="SIRET" value={client.siret} />
           <ClientField label="Numéro de TVA" value={client.vatNumber} />
         </View>
-      </View>
+      </Animated.View>
 
       {client.notes?.trim() ? (
-        <View style={styles.section}>
+        <Animated.View entering={fadeInUp({ index: 4 })} style={styles.section}>
           <Text style={styles.sectionTitle}>Notes</Text>
           <View style={styles.card}>
             <Text style={styles.notesText}>{client.notes.trim()}</Text>
           </View>
-        </View>
+        </Animated.View>
       ) : null}
     </View>
   );
@@ -103,6 +106,7 @@ function useStyles() {
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.md,
     gap: spacing.sm,
+    ...shadows.sm,
   },
   addressText: {
     ...typography.body,

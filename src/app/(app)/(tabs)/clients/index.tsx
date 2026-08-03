@@ -5,10 +5,10 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import {
   AddClientFab,
-  ClientSearchBar,
   ClientsList,
   ClientsScreenHeader,
 } from '@/components/clients';
+import { SearchBar } from '@/components/ui/search-bar';
 import { ClientsDesktopScreen } from '@/components/web/desktop/screens/clients-desktop-screen';
 import { BottomTabInset } from '@/constants/theme';
 import { useBreakpoint } from '@/hooks/use-breakpoint';
@@ -72,7 +72,11 @@ function ClientsMobileScreen() {
     <SafeAreaView edges={['top']} style={styles.safeArea}>
       <View style={styles.headerSection}>
         <ClientsScreenHeader />
-        <ClientSearchBar onChangeText={setSearch} value={search} />
+        <SearchBar
+          onChangeText={setSearch}
+          placeholder="Rechercher par société, contact, téléphone ou e-mail"
+          value={search}
+        />
       </View>
 
       <View style={styles.listContainer}>

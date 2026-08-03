@@ -5,11 +5,11 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import {
   AddInvoiceFab,
-  InvoiceSearchBar,
   InvoiceStatusFilterBar,
   InvoicesList,
   InvoicesScreenHeader,
 } from '@/components/invoices';
+import { SearchBar } from '@/components/ui/search-bar';
 import { InvoicesDesktopScreen } from '@/components/web/desktop/screens/invoices-desktop-screen';
 import { BottomTabInset } from '@/constants/theme';
 import { useBreakpoint } from '@/hooks/use-breakpoint';
@@ -70,7 +70,11 @@ function InvoicesMobileScreen() {
     <SafeAreaView edges={['top']} style={styles.safeArea}>
       <View style={styles.headerSection}>
         <InvoicesScreenHeader />
-        <InvoiceSearchBar onChangeText={setSearch} value={search} />
+        <SearchBar
+          onChangeText={setSearch}
+          placeholder="Rechercher par numéro de facture"
+          value={search}
+        />
         <InvoiceStatusFilterBar onChange={setStatusFilter} value={statusFilter} />
       </View>
 

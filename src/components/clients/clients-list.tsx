@@ -2,17 +2,16 @@ import {
   ActivityIndicator,
   FlatList,
   RefreshControl,
-  StyleSheet,
-  Text,
   View,
   type ListRenderItem,
   type ViewStyle,
 } from 'react-native';
+import Animated from 'react-native-reanimated';
 
+import { ListSkeleton } from '@/components/ui/list-skeleton';
 import { useColors, useThemedStyles } from '@/hooks/use-colors';
-import { radius } from '@/constants/theme/radius';
 import { spacing } from '@/constants/theme/spacing';
-import { typography } from '@/constants/theme/typography';
+import { fadeInUp } from '@/lib/motion/presets';
 import type { Client } from '@/types/client';
 
 import { ClientCard } from './client-card';
@@ -46,10 +45,9 @@ export function ClientsList({
   const styles = useStyles();
   const colors = useColors();
   const renderItem: ListRenderItem<Client> = ({ item, index }) => (
-    <View>
+    <Animated.View entering={fadeInUp({ index, step: 40 })}>
       <ClientCard client={item} onPress={onClientPress} />
-      {index < clients.length - 1 ? <View style={styles.separator} /> : null}
-    </View>
+    </Animated.View>
   );
 
   const renderFooter = () => {
@@ -66,9 +64,8 @@ export function ClientsList({
 
   if (isInitialLoading) {
     return (
-      <View style={styles.loading}>
-        <ActivityIndicator color={colors.primary} size="large" />
-        <Text style={styles.loadingText}>Chargement des clients...</Text>
+      <View style={[styles.listContent, contentContainerStyle]}>
+        <ListSkeleton />
       </View>
     );
   }
@@ -106,41 +103,21 @@ export function ClientsList({
 }
 
 function useStyles() {
-  return useThemedStyles((colors) => ({
+  return useThemedStyles(() => ({
   list: {
     flex: 1,
   },
   listContent: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.card,
-    borderWidth: 1,
-    borderColor: colors.border,
-    overflow: 'hidden',
+    gap: spacing.sm,
   },
   emptyContent: {
     flexGrow: 1,
     justifyContent: 'center',
   },
-  loading: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: spacing['3xl'],
-    gap: spacing.md,
-  },
-  loadingText: {
-    ...typography.subheadline,
-    color: colors.textSecondary,
-  },
   footer: {
     paddingVertical: spacing.lg,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  separator: {
-    height: StyleSheet.hairlineWidth,
-    backgroundColor: colors.separator,
-    marginLeft: spacing.md,
   },
 }));
 }

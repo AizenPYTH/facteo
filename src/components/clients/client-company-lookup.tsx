@@ -8,7 +8,7 @@ import {
   useWatch,
 } from 'react-hook-form';
 
-import { FormDivider, FormField, FormSection } from '@/components/company/form-section';
+import { FormDivider, FormField, FormSection } from '@/components/ui/form-section';
 import { PremiumUpgradeBanner } from '@/components/subscription/premium-upgrade-banner';
 import { TextField } from '@/components/ui/text-field';
 import { useColors, useThemedStyles } from '@/hooks/use-colors';

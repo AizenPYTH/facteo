@@ -10,8 +10,8 @@ import {
   View,
 } from 'react-native';
 
-import { ClientSearchBar } from '@/components/clients/client-search-bar';
 import { Button } from '@/components/ui/button';
+import { SearchBar } from '@/components/ui/search-bar';
 import { useColors, useThemedStyles } from '@/hooks/use-colors';
 import { radius } from '@/constants/theme/radius';
 import { spacing } from '@/constants/theme/spacing';
@@ -140,7 +140,11 @@ export function QuoteClientStep({ selectedClientId, onSelectClient }: QuoteClien
         variant="ghost"
       />
 
-      <ClientSearchBar onChangeText={setSearch} value={search} />
+      <SearchBar
+        onChangeText={setSearch}
+        placeholder="Rechercher un client"
+        value={search}
+      />
 
       {!isSearching && recentClients.length > 0 ? (
         <Text style={styles.sectionLabel}>Clients récents</Text>

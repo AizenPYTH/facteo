@@ -4,8 +4,9 @@ import { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { ClientDetailView, ClientScreenHeader, DeleteClientModal } from '@/components/clients';
+import { ClientDetailView, ClientScreenHeader } from '@/components/clients';
 import { Button } from '@/components/ui/button';
+import { ConfirmationModal } from '@/components/ui/confirmation-modal';
 import { LoadingView } from '@/components/ui/loading-view';
 import { useColors, useThemedStyles } from '@/hooks/use-colors';
 import { spacing } from '@/constants/theme/spacing';
@@ -95,11 +96,17 @@ export default function ClientDetailScreen() {
         />
       </View>
 
-      <DeleteClientModal
-        clientName={title}
+      <ConfirmationModal
+        confirmLabel="Supprimer"
         loading={deleteClient.isPending}
+        message={
+          title
+            ? `Voulez-vous vraiment supprimer ${title} ? Cette action est irréversible.`
+            : 'Cette action est irréversible.'
+        }
         onCancel={() => setDeleteVisible(false)}
         onConfirm={handleDelete}
+        title="Supprimer le client ?"
         visible={deleteVisible}
       />
     </SafeAreaView>

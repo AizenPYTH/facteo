@@ -1,13 +1,16 @@
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import Animated from 'react-native-reanimated';
 
 import { QuoteTotals } from '@/components/quotes/quote-totals';
 import { CollapsibleSection } from '@/components/ui/collapsible-section';
 import { TextField } from '@/components/ui/text-field';
 import { useColors, useThemedStyles } from '@/hooks/use-colors';
 import { radius } from '@/constants/theme/radius';
+import { shadows } from '@/constants/theme/theme';
 import { spacing } from '@/constants/theme/spacing';
 import { typography } from '@/constants/theme/typography';
 import { formatPriceHT } from '@/lib/format/currency';
+import { fadeInUp } from '@/lib/motion/presets';
 import { mapLineValueToTotals } from '@/lib/quotes/mappers';
 import type { DocumentTotals } from '@/lib/calculations/totals';
 import type { QuoteInfoValues, QuoteLineValue } from '@/types/quote';
@@ -57,7 +60,7 @@ export function DocumentFinalizeStep({
         Vérifiez les informations essentielles avant d’enregistrer.
       </Text>
 
-      <View style={styles.card}>
+      <Animated.View entering={fadeInUp({ index: 0 })} style={styles.card}>
         {companyName ? (
           <>
             <Text style={styles.label}>Entreprise</Text>
@@ -67,9 +70,9 @@ export function DocumentFinalizeStep({
         ) : null}
         <Text style={styles.label}>Client</Text>
         <Text style={styles.value}>{clientName}</Text>
-      </View>
+      </Animated.View>
 
-      <View style={styles.card}>
+      <Animated.View entering={fadeInUp({ index: 1 })} style={styles.card}>
         <TextField
           label="Date d'émission"
           onChangeText={(text) => updateField('issuedAt', text)}
@@ -89,9 +92,9 @@ export function DocumentFinalizeStep({
           placeholder="JJ/MM/AAAA"
           value={secondaryDate}
         />
-      </View>
+      </Animated.View>
 
-      <View style={styles.card}>
+      <Animated.View entering={fadeInUp({ index: 2 })} style={styles.card}>
         <Text style={styles.sectionTitle}>Prestations ({lines.length})</Text>
         {lines.map((line, index) => {
           const lineTotals = mapLineValueToTotals(line);
@@ -111,7 +114,7 @@ export function DocumentFinalizeStep({
           );
         })}
         <QuoteTotals totals={totals} />
-      </View>
+      </Animated.View>
 
       <CollapsibleSection title="Options avancées">
         <View style={styles.card}>
@@ -169,6 +172,7 @@ function useStyles() {
     borderColor: colors.border,
     padding: spacing.md,
     gap: spacing.md,
+    ...shadows.sm,
   },
   label: {
     ...typography.caption2,

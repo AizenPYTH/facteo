@@ -1,9 +1,13 @@
-import { Pressable, StyleSheet, View, type ViewStyle } from 'react-native';
+import { Pressable, View, type ViewStyle } from 'react-native';
+import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 
-import { useColors, useThemedStyles } from '@/hooks/use-colors';
+import { radius } from '@/constants/theme/radius';
+import { shadows } from '@/constants/theme/theme';
 import { spacing } from '@/constants/theme/spacing';
+import { useThemedStyles } from '@/hooks/use-colors';
 import { formatDate } from '@/lib/format/date';
 import { formatPriceHT } from '@/lib/format/currency';
+import { springs } from '@/lib/motion/springs';
 import type { Quote } from '@/types/quote';
 
 import { QuoteField } from './quote-field';
@@ -18,7 +22,8 @@ export type QuoteCardProps = {
 
 export function QuoteCard({ quote, onPress, style, testID }: QuoteCardProps) {
   const styles = useStyles();
-  const colors = useColors();
+  const scale = useSharedValue(1);
+  const pressStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
   const displayDate = formatDate(quote.issuedAt ?? quote.createdAt);
 
   const content = (
@@ -40,37 +45,41 @@ export function QuoteCard({ quote, onPress, style, testID }: QuoteCardProps) {
   );
 
   if (!onPress) {
-    return (
-      <View style={styles.wrapper} testID={testID}>
-        {content}
-      </View>
-    );
+    return <View testID={testID}>{content}</View>;
   }
 
   return (
-    <Pressable
-      accessibilityLabel={`Devis ${quote.number}`}
-      accessibilityRole="button"
-      onPress={() => onPress(quote)}
-      style={({ pressed }) => [styles.wrapper, pressed && styles.pressed]}
-      testID={testID}>
-      {content}
-    </Pressable>
+    <Animated.View style={pressStyle}>
+      <Pressable
+        accessibilityLabel={`Devis ${quote.number}`}
+        accessibilityRole="button"
+        onPress={() => onPress(quote)}
+        onPressIn={() => {
+          // eslint-disable-next-line react-hooks/immutability -- Reanimated SharedValue mutation is safe here.
+          scale.value = withSpring(0.98, springs.snappy);
+        }}
+        onPressOut={() => {
+          // eslint-disable-next-line react-hooks/immutability
+          scale.value = withSpring(1, springs.snappy);
+        }}
+        testID={testID}>
+        {content}
+      </Pressable>
+    </Animated.View>
   );
 }
 
 function useStyles() {
   return useThemedStyles((colors) => ({
-  wrapper: {
-    backgroundColor: colors.surface,
-  },
-  pressed: {
-    backgroundColor: colors.backgroundSecondary,
-  },
   card: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.card,
+    borderWidth: 1,
+    borderColor: colors.border,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.md,
     gap: spacing.md,
+    ...shadows.sm,
   },
   header: {
     flexDirection: 'row',

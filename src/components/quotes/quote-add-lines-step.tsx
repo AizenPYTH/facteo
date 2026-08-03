@@ -16,6 +16,7 @@ import {
   Text,
   View,
 } from 'react-native';
+import Animated from 'react-native-reanimated';
 
 import {
   ProductAnalysisConfirmationModal,
@@ -30,6 +31,7 @@ import { useSubscription } from '@/hooks/use-subscription';
 import { spacing } from '@/constants/theme/spacing';
 import { typography } from '@/constants/theme/typography';
 import { analyzeProductImage } from '@/lib/ai/product-image-analysis';
+import { fadeInUp } from '@/lib/motion/presets';
 import { createProduct } from '@/lib/supabase/products';
 import { useToast } from '@/providers/toast-provider';
 import type { ProductImageAnalysis } from '@/types/ai-product';
@@ -263,12 +265,14 @@ export function QuoteAddLinesStep({
         nestedScrollEnabled
         ListHeaderComponent={listHeader}
         renderItem={({ item, index }) => (
-          <QuoteLine
-            index={index}
-            onChange={(updatedLine) => onChangeLine(index, updatedLine)}
-            onRemove={() => onRemoveLine(index)}
-            value={item}
-          />
+          <Animated.View entering={fadeInUp({ index, step: 40 })}>
+            <QuoteLine
+              index={index}
+              onChange={(updatedLine) => onChangeLine(index, updatedLine)}
+              onRemove={() => onRemoveLine(index)}
+              value={item}
+            />
+          </Animated.View>
         )}
         showsVerticalScrollIndicator={false}
       />

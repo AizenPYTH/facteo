@@ -1,12 +1,15 @@
 import { SymbolView } from 'expo-symbols';
 import type { ComponentProps } from 'react';
-import { StyleSheet, Text, View, type ViewStyle } from 'react-native';
+import { Text, View, type ViewStyle } from 'react-native';
+import Animated, { ZoomIn } from 'react-native-reanimated';
 
 import { Button } from '@/components/ui/button';
+import { motion } from '@/constants/theme/design-system';
 import { useColors, useThemedStyles } from '@/hooks/use-colors';
 import { radius } from '@/constants/theme/radius';
 import { spacing } from '@/constants/theme/spacing';
 import { typography } from '@/constants/theme/typography';
+import { fadeInUp } from '@/lib/motion/presets';
 
 type SymbolName = ComponentProps<typeof SymbolView>['name'];
 
@@ -39,13 +42,17 @@ export function EmptyState({
   const colors = useColors();
   return (
     <View style={[styles.container, style]} testID={testID}>
-      <View style={styles.iconWrap}>
+      <Animated.View entering={ZoomIn.duration(motion.normal).springify().damping(15).stiffness(180)} style={styles.iconWrap}>
         <SymbolView name={icon} size={28} tintColor={colors.iconTertiary} type="hierarchical" />
-      </View>
-      <Text style={styles.title}>{title}</Text>
-      <Text style={styles.description}>{description}</Text>
+      </Animated.View>
+      <Animated.View entering={fadeInUp({ index: 1 })} style={styles.textBlock}>
+        <Text style={styles.title}>{title}</Text>
+        <Text style={styles.description}>{description}</Text>
+      </Animated.View>
       {actionLabel && onAction ? (
-        <Button accessibilityLabel={actionLabel} onPress={onAction} title={actionLabel} />
+        <Animated.View entering={fadeInUp({ index: 2 })}>
+          <Button accessibilityLabel={actionLabel} onPress={onAction} title={actionLabel} />
+        </Animated.View>
       ) : null}
     </View>
   );
@@ -66,6 +73,10 @@ function useStyles() {
     backgroundColor: colors.backgroundSecondary,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  textBlock: {
+    alignItems: 'center',
+    gap: spacing.xs,
   },
   title: {
     ...typography.headline,

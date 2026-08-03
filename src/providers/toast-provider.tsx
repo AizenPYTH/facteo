@@ -1,3 +1,4 @@
+import { SymbolView } from 'expo-symbols';
 import {
   createContext,
   useCallback,
@@ -7,15 +8,18 @@ import {
   useState,
   type PropsWithChildren,
 } from 'react';
-import { StyleSheet } from 'react-native';
-import Animated, { FadeInUp, FadeOutUp } from 'react-native-reanimated';
+import { Pressable } from 'react-native';
+import Animated, { FadeOutUp } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { iconSize } from '@/constants/theme/design-system';
 import { useColors, useThemedStyles } from '@/hooks/use-colors';
 import { radius } from '@/constants/theme/radius';
+import { shadows } from '@/constants/theme/theme';
 import { spacing } from '@/constants/theme/spacing';
 import { typography } from '@/constants/theme/typography';
 import { GENERIC_ERROR_MESSAGE } from '@/lib/errors/messages';
+import { fadeInUp } from '@/lib/motion/presets';
 
 type ToastType = 'success' | 'error';
 
@@ -36,11 +40,9 @@ const TOAST_DURATION_MS = 3200;
 
 function formatSuccessMessage(message: string): string {
   const trimmed = message.trim();
-  if (!trimmed) {
-    return '✓ Action réussie';
-  }
-
-  return trimmed.startsWith('✓') ? trimmed : `✓ ${trimmed}`;
+  // Strip a manually-included checkmark from call sites written before the
+  // toast grew its own status icon, to avoid a doubled "✓ ✓ Saved" message.
+  return trimmed.replace(/^✓\s*/, '') || 'Action réussie';
 }
 
 export function ToastProvider({ children }: PropsWithChildren) {
@@ -86,21 +88,36 @@ export function ToastProvider({ children }: PropsWithChildren) {
       {children}
       {toast ? (
         <Animated.View
-          entering={FadeInUp.duration(220)}
+          entering={fadeInUp()}
           exiting={FadeOutUp.duration(180)}
           style={[
             styles.container,
             { top: insets.top + spacing.sm },
             toast.type === 'success' ? styles.success : styles.error,
           ]}>
-          <Animated.Text
+          <Pressable
+            accessibilityHint="Appuyer pour masquer"
             accessibilityLiveRegion="polite"
-            style={[
-              styles.message,
-              toast.type === 'success' ? styles.successMessage : styles.errorMessage,
-            ]}>
-            {toast.message}
-          </Animated.Text>
+            accessibilityRole="alert"
+            onPress={clearToast}
+            style={styles.row}>
+            <SymbolView
+              name={
+                toast.type === 'success'
+                  ? { ios: 'checkmark.circle.fill', android: 'check_circle', web: 'check_circle' }
+                  : { ios: 'exclamationmark.circle.fill', android: 'error', web: 'error' }
+              }
+              size={iconSize.md}
+              tintColor={toast.type === 'success' ? colors.success : colors.error}
+            />
+            <Animated.Text
+              style={[
+                styles.message,
+                toast.type === 'success' ? styles.successMessage : styles.errorMessage,
+              ]}>
+              {toast.message}
+            </Animated.Text>
+          </Pressable>
         </Animated.View>
       ) : null}
     </ToastContext.Provider>
@@ -125,10 +142,16 @@ function useStyles() {
     left: spacing.screenPaddingHorizontal,
     right: spacing.screenPaddingHorizontal,
     zIndex: 9999,
-    borderRadius: radius.md,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    ...shadows.floating,
+  },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.md,
-    borderWidth: 1,
   },
   success: {
     backgroundColor: colors.successSubtle,
@@ -140,7 +163,7 @@ function useStyles() {
   },
   message: {
     ...typography.subheadlineMedium,
-    textAlign: 'center',
+    flex: 1,
   },
   successMessage: {
     color: colors.success,

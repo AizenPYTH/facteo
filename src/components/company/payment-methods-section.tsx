@@ -12,7 +12,7 @@ import {
   type PaymentMethodId,
 } from '@/types/payment-methods';
 
-import { FormDivider } from './form-section';
+import { FormDivider } from '@/components/ui/form-section';
 
 type PaymentMethodsSectionProps = {
   control: Control<CompanyProfileFormValues>;

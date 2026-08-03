@@ -1,7 +1,7 @@
 import { StyleSheet, View } from 'react-native';
 import { type Control, Controller, type FieldErrors, type UseFormSetValue } from 'react-hook-form';
 
-import { FormDivider, FormField, FormSection } from '@/components/company/form-section';
+import { FormDivider, FormField, FormSection } from '@/components/ui/form-section';
 import { TextField } from '@/components/ui/text-field';
 import { spacing } from '@/constants/theme/spacing';
 import { formatFrenchPhoneInput } from '@/lib/format/phone';

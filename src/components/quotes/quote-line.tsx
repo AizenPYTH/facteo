@@ -5,6 +5,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { TextField } from '@/components/ui/text-field';
 import { useColors, useThemedStyles } from '@/hooks/use-colors';
 import { radius } from '@/constants/theme/radius';
+import { shadows } from '@/constants/theme/theme';
 import { spacing } from '@/constants/theme/spacing';
 import { typography } from '@/constants/theme/typography';
 import { formatPriceHT } from '@/lib/format/currency';
@@ -98,6 +99,7 @@ function useStyles() {
     borderColor: colors.border,
     padding: spacing.lg,
     gap: spacing.lg,
+    ...shadows.sm,
   },
   header: {
     flexDirection: 'row',

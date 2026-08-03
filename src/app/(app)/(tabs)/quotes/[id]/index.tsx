@@ -8,11 +8,11 @@ import { DocumentFinalizePanel } from '@/components/pdf/document-finalize-panel'
 import { DocumentClientSignatureBlock } from '@/components/signatures/document-client-signature-block';
 import { SentDocumentsSection } from '@/components/documents/sent-documents-section';
 import {
-  DeleteQuoteModal,
   QuoteDetailView,
   QuoteScreenHeader,
 } from '@/components/quotes';
 import { Button } from '@/components/ui/button';
+import { ConfirmationModal } from '@/components/ui/confirmation-modal';
 import { LoadingView } from '@/components/ui/loading-view';
 import { useColors, useThemedStyles } from '@/hooks/use-colors';
 import { spacing } from '@/constants/theme/spacing';
@@ -243,11 +243,13 @@ export default function QuoteDetailScreen() {
         ) : null}
       </View>
 
-      <DeleteQuoteModal
+      <ConfirmationModal
+        confirmLabel="Supprimer"
         loading={deleteQuote.isPending}
+        message={`Le devis ${quote.number} sera définitivement supprimé. Cette action est irréversible.`}
         onCancel={() => setDeleteVisible(false)}
         onConfirm={handleDelete}
-        quoteNumber={quote.number}
+        title="Supprimer le devis ?"
         visible={deleteVisible}
       />
     </SafeAreaView>

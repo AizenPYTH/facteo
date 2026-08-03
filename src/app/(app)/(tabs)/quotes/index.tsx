@@ -5,11 +5,11 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import {
   AddQuoteFab,
-  QuoteSearchBar,
   QuoteStatusFilterBar,
   QuotesList,
   QuotesScreenHeader,
 } from '@/components/quotes';
+import { SearchBar } from '@/components/ui/search-bar';
 import { QuotesDesktopScreen } from '@/components/web/desktop/screens/quotes-desktop-screen';
 import { BottomTabInset } from '@/constants/theme';
 import { useBreakpoint } from '@/hooks/use-breakpoint';
@@ -70,7 +70,7 @@ function QuotesMobileScreen() {
     <SafeAreaView edges={['top']} style={styles.safeArea}>
       <View style={styles.headerSection}>
         <QuotesScreenHeader />
-        <QuoteSearchBar onChangeText={setSearch} value={search} />
+        <SearchBar onChangeText={setSearch} placeholder="Rechercher par numéro de devis" value={search} />
         <QuoteStatusFilterBar onChange={setStatusFilter} value={statusFilter} />
       </View>
 
