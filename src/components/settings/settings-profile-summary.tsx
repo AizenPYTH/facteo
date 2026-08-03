@@ -1,8 +1,10 @@
+import { LinearGradient } from 'expo-linear-gradient';
 import { router, type Href } from 'expo-router';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 
-import { useThemedStyles } from '@/hooks/use-colors';
+import { useGradients, useThemedStyles } from '@/hooks/use-colors';
 import { radius } from '@/constants/theme/radius';
+import { shadows } from '@/constants/theme/theme';
 import { spacing } from '@/constants/theme/spacing';
 import { typography } from '@/constants/theme/typography';
 
@@ -10,6 +12,7 @@ type SettingsProfileSummaryProps = {
   companyName?: string | null;
   email?: string | null;
   planLabel: string;
+  isPremium?: boolean;
   onPressPlan?: () => void;
 };
 
@@ -17,10 +20,26 @@ export function SettingsProfileSummary({
   companyName,
   email,
   planLabel,
+  isPremium = false,
   onPressPlan,
 }: SettingsProfileSummaryProps) {
   const styles = useStyles();
+  const gradients = useGradients();
   const displayName = companyName?.trim() || 'Entreprise';
+
+  const badgeContent = isPremium ? (
+    <LinearGradient
+      colors={gradients.primary}
+      end={{ x: 1, y: 0 }}
+      start={{ x: 0, y: 0 }}
+      style={styles.planBadge}>
+      <Text style={styles.planLabelOnGradient}>{planLabel}</Text>
+    </LinearGradient>
+  ) : (
+    <View style={[styles.planBadge, styles.planBadgeNeutral]}>
+      <Text style={styles.planLabel}>{planLabel}</Text>
+    </View>
+  );
 
   return (
     <View style={styles.card}>
@@ -34,13 +53,11 @@ export function SettingsProfileSummary({
         <Pressable
           accessibilityRole="button"
           onPress={onPressPlan}
-          style={({ pressed }) => [styles.planBadge, pressed && styles.planBadgePressed]}>
-          <Text style={styles.planLabel}>{planLabel}</Text>
+          style={({ pressed }) => [styles.pressWrap, pressed && styles.pressed]}>
+          {badgeContent}
         </Pressable>
       ) : (
-        <View style={styles.planBadge}>
-          <Text style={styles.planLabel}>{planLabel}</Text>
-        </View>
+        badgeContent
       )}
     </View>
   );
@@ -53,8 +70,9 @@ function useStyles() {
       padding: spacing.md,
       borderRadius: radius.lg,
       backgroundColor: colors.surface,
-      borderWidth: StyleSheet.hairlineWidth,
+      borderWidth: 1,
       borderColor: colors.border,
+      ...shadows.sm,
     },
     companyName: {
       ...typography.title3,
@@ -64,18 +82,28 @@ function useStyles() {
       ...typography.subheadline,
       color: colors.textSecondary,
     },
-    planBadge: {
+    pressWrap: {
       alignSelf: 'flex-start',
       marginTop: spacing.xs,
+    },
+    pressed: {
+      opacity: 0.88,
+    },
+    planBadge: {
+      alignSelf: 'flex-start',
       paddingHorizontal: spacing.sm,
       paddingVertical: spacing.xs,
       borderRadius: radius.chip,
+    },
+    planBadgeNeutral: {
+      marginTop: spacing.xs,
       backgroundColor: colors.backgroundGrouped,
-      borderWidth: StyleSheet.hairlineWidth,
+      borderWidth: 1,
       borderColor: colors.border,
     },
-    planBadgePressed: {
-      opacity: 0.88,
+    planLabelOnGradient: {
+      ...typography.footnoteMedium,
+      color: colors.onPrimary,
     },
     planLabel: {
       ...typography.footnoteMedium,

@@ -3,6 +3,7 @@ import { Text, View } from 'react-native';
 
 import { useThemedStyles } from '@/hooks/use-colors';
 import { radius } from '@/constants/theme/radius';
+import { shadows } from '@/constants/theme/theme';
 import { spacing } from '@/constants/theme/spacing';
 import { textHierarchy } from '@/constants/theme/typography';
 
@@ -39,7 +40,10 @@ function useStyles() {
     group: {
       backgroundColor: colors.surface,
       borderRadius: radius.card,
+      borderWidth: 1,
+      borderColor: colors.border,
       overflow: 'hidden',
+      ...shadows.sm,
     },
     footer: {
       ...textHierarchy.caption,

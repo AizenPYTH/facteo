@@ -1,13 +1,17 @@
+import { LinearGradient } from 'expo-linear-gradient';
 import { SymbolView } from 'expo-symbols';
 import { StyleSheet, Text, View } from 'react-native';
+import Animated from 'react-native-reanimated';
 
-import { useColors, useThemedStyles } from '@/hooks/use-colors';
+import { useColors, useGradients, useThemedStyles } from '@/hooks/use-colors';
 import { formatPlanLimit } from '@/lib/subscription/plans';
+import { fadeInUp } from '@/lib/motion/presets';
 import {
   PREMIUM_PRICE_LABEL,
   PREMIUM_PRICE_PERIOD_LABEL,
 } from '@/constants/subscription-pricing';
 import { radius } from '@/constants/theme/radius';
+import { shadows } from '@/constants/theme/theme';
 import { spacing } from '@/constants/theme/spacing';
 import { typography } from '@/constants/theme/typography';
 import type { SubscriptionPlan } from '@/types/subscription';
@@ -38,6 +42,7 @@ const PREMIUM_ONLY_FEATURES = [
 export function PlanComparison({ standardPlan, premiumPlan, currentPlanId }: PlanComparisonProps) {
   const styles = useStyles();
   const colors = useColors();
+  const gradients = useGradients();
 
   const limitRows: ComparisonRow[] = [
     {
@@ -72,7 +77,10 @@ export function PlanComparison({ standardPlan, premiumPlan, currentPlanId }: Pla
         <Text style={styles.planSubtitle}>Gratuit · l’essentiel pour démarrer</Text>
       </View>
 
-      <View
+      <LinearGradient
+        colors={gradients.primarySubtle}
+        end={{ x: 1, y: 1 }}
+        start={{ x: 0, y: 0 }}
         style={[
           styles.planCard,
           styles.planCardPremium,
@@ -90,7 +98,7 @@ export function PlanComparison({ standardPlan, premiumPlan, currentPlanId }: Pla
           {PREMIUM_PRICE_LABEL}
           {PREMIUM_PRICE_PERIOD_LABEL} · illimité et outils avancés
         </Text>
-      </View>
+      </LinearGradient>
 
       <View style={styles.table}>
         <View style={styles.tableHeader}>
@@ -99,12 +107,17 @@ export function PlanComparison({ standardPlan, premiumPlan, currentPlanId }: Pla
           <Text style={[styles.tableHeaderCell, styles.tablePremiumCol]}>Premium</Text>
         </View>
 
-        {limitRows.map((row) => (
-          <ComparisonTableRow key={row.label} row={row} />
+        {limitRows.map((row, index) => (
+          <Animated.View entering={fadeInUp({ index, step: 30 })} key={row.label}>
+            <ComparisonTableRow row={row} />
+          </Animated.View>
         ))}
 
-        {PREMIUM_ONLY_FEATURES.map((feature) => (
-          <View key={feature} style={styles.tableRow}>
+        {PREMIUM_ONLY_FEATURES.map((feature, index) => (
+          <Animated.View
+            entering={fadeInUp({ index: limitRows.length + index, step: 30 })}
+            key={feature}
+            style={styles.tableRow}>
             <Text style={[styles.featureLabel, styles.tableFeatureCol]}>{feature}</Text>
             <View style={styles.iconCell}>
               <SymbolView name="lock.fill" size={15} tintColor={colors.textTertiary} />
@@ -112,7 +125,7 @@ export function PlanComparison({ standardPlan, premiumPlan, currentPlanId }: Pla
             <View style={styles.iconCell}>
               <SymbolView name="checkmark" size={15} tintColor={colors.primary} weight="semibold" />
             </View>
-          </View>
+          </Animated.View>
         ))}
       </View>
     </View>
@@ -170,8 +183,9 @@ function useStyles() {
       gap: spacing.xs,
     },
     planCardPremium: {
+      backgroundColor: 'transparent',
       borderColor: colors.primary,
-      backgroundColor: colors.surface,
+      ...shadows.sm,
     },
     planCardCurrent: {
       borderWidth: 1.5,
@@ -213,6 +227,7 @@ function useStyles() {
       borderWidth: StyleSheet.hairlineWidth,
       borderColor: colors.border,
       overflow: 'hidden',
+      ...shadows.sm,
     },
     tableHeader: {
       flexDirection: 'row',

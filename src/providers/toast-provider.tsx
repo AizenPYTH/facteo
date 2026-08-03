@@ -125,7 +125,6 @@ export function ToastProvider({ children }: PropsWithChildren) {
 }
 
 export function useToast() {
-  const styles = useStyles();
   const context = useContext(ToastContext);
 
   if (!context) {
