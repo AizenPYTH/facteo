@@ -1,5 +1,6 @@
 import { fetchClientById } from '@/lib/supabase/clients';
 import { fetchCompanyById, mapCompanyToFormValues } from '@/lib/supabase/companies';
+import { fetchInvoiceById } from '@/lib/supabase/invoices';
 import { fetchDocumentSignature } from '@/lib/supabase/subscriptions';
 import { fetchUserProfile } from '@/lib/supabase/profiles';
 import { fetchSettings } from '@/lib/supabase/settings';
@@ -40,6 +41,10 @@ export async function resolvePdfCompanyInfo(
     postalCode: companyForm.postalCode,
     city: companyForm.city,
     country: companyForm.country,
+    legalForm: companyForm.legalForm,
+    shareCapital: companyForm.shareCapital,
+    rcsCity: companyForm.rcsCity,
+    siren: companyForm.siren,
     siret: companyForm.siret,
     vatNumber: companyForm.vatNumber,
     iban: companyForm.iban,
@@ -112,11 +117,19 @@ export async function buildInvoicePdfInput(
     fetchDocumentSignature('invoice', invoice.id),
   ]);
 
+  let creditOfInvoiceNumber: string | null = null;
+  if (invoice.documentKind === 'credit_note' && invoice.creditOfInvoiceId) {
+    const source = await fetchInvoiceById(scope, invoice.creditOfInvoiceId);
+    creditOfInvoiceNumber = source?.number ?? null;
+  }
+
   return {
-    kind: 'invoice',
+    kind: invoice.documentKind === 'credit_note' ? 'credit_note' : 'invoice',
     number: invoice.number,
     issuedAt: invoice.issuedAt ?? invoice.createdAt,
     dueOrValidUntil: invoice.dueAt,
+    serviceDate: invoice.serviceDate ?? null,
+    creditOfInvoiceNumber,
     notes: invoice.notes,
     lines: invoice.lines,
     totals: {
@@ -128,11 +141,12 @@ export async function buildInvoicePdfInput(
     company,
     client: client ?? fallbackClient(invoice.clientName),
     settings,
-    showPaymentQr: true,
+    showPaymentQr: invoice.documentKind !== 'credit_note',
     clientSignature: documentSignature
       ? { url: documentSignature.signatureUrl, signedAt: documentSignature.signedAt }
       : null,
     templateId: settings?.invoiceTemplateId ?? 'classic-blue',
+    vatRegime: invoice.vatRegime,
   };
 }
 

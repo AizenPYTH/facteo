@@ -10,6 +10,7 @@ import {
   DashboardActivityFeed,
   DashboardTips,
 } from '@/components/app/dashboard-activity';
+import { DashboardSubscriptionCard } from '@/components/app/dashboard-subscription-card';
 import { Panel, StatCard } from '@/components/app/ui';
 import { Skeleton } from '@/components/app/skeleton';
 import { useDashboard } from '@/hooks/use-dashboard';
@@ -70,6 +71,8 @@ export default function DashboardPage() {
             topClient={topClient}
             totalClients={stats.totalClients}
           />
+
+          <DashboardSubscriptionCard />
 
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 lg:gap-4">
             <StatCard

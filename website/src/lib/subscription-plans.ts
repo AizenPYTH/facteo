@@ -32,32 +32,28 @@ export type PlanFeature = {
   comingSoon?: boolean;
 };
 
-export type SubscriptionPlanId = 'micro' | 'basique' | 'standard' | 'pro';
+export type SubscriptionPlanId = 'micro' | 'basique' | 'standard' | 'pro' | 'max';
 
 export type SubscriptionPlan = {
   id: SubscriptionPlanId;
   name: string;
   description: string;
-  /** Prix mensuel HT facturé au mois (€) */
-  priceMonthlyHt: number;
   /**
-   * Équivalent mensuel HT en cas de paiement annuel (€ / mois).
-   * `null` = gratuit (pas d’offre annuelle distincte).
+   * Montants de référence marketing uniquement.
+   * L’UI affiche en priorité les montants Stripe (list-subscription-prices).
    */
+  priceMonthlyHt: number;
   priceYearlyMonthlyHt: number | null;
   cta: string;
   highlighted?: boolean;
   badge?: string;
-  /** Inclus depuis l’offre précédente (ex. « Tout Micro ») */
   inheritsFrom?: SubscriptionPlanId;
   features: PlanFeature[];
   limits: {
     documentsPerMonth: number | null;
-    /** `null` = illimité */
     sirenSearchesPerMonth: number | null;
     users: number | null;
     departments: number | null;
-    /** `null` = illimité */
     companies: number | null;
   };
 };
@@ -114,6 +110,7 @@ export const SUBSCRIPTION_PRICING_COPY = {
  * Matrice produits réelle INVEQ (uniquement ce qui est disponible aujourd’hui).
  * Différenciation : volume documents, SIREN/SIRET, signature, nombre d’entreprises.
  */
+/** Toujours Micro → Basique → Standard → Pro → Max (sort_order 0..4). */
 export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
   {
     id: 'micro',
@@ -145,7 +142,7 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
     description: 'Pour les indépendants qui facturent sans limite.',
     priceMonthlyHt: 6.82,
     priceYearlyMonthlyHt: 4.27,
-    cta: 'Choisir Basique',
+    cta: 'Acheter Basique',
     inheritsFrom: 'micro',
     limits: {
       documentsPerMonth: null,
@@ -167,7 +164,7 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
     description: 'Pour signer vos documents et gérer plusieurs activités.',
     priceMonthlyHt: 16.21,
     priceYearlyMonthlyHt: 12.8,
-    cta: 'Choisir Standard',
+    cta: 'Acheter Standard',
     inheritsFrom: 'basique',
     limits: {
       documentsPerMonth: null,
@@ -188,7 +185,7 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
     description: 'Pour les pros multi-activités sans plafond de recherche.',
     priceMonthlyHt: 27.3,
     priceYearlyMonthlyHt: 21.33,
-    cta: 'Choisir Pro',
+    cta: 'Acheter Pro',
     highlighted: true,
     badge: 'Le plus populaire',
     inheritsFrom: 'standard',
@@ -202,6 +199,27 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
     features: [
       { id: 'siren-unlimited', label: 'Recherche SIREN / SIRET illimitée', icon: 'search' },
       { id: 'companies-unlimited', label: 'Entreprises illimitées', icon: 'building' },
+    ],
+  },
+  {
+    id: 'max',
+    name: 'Max',
+    description: 'Toutes les fonctionnalités avancées pour scaler sans friction.',
+    priceMonthlyHt: 63.98,
+    priceYearlyMonthlyHt: 51.18,
+    cta: 'Acheter Max',
+    inheritsFrom: 'pro',
+    limits: {
+      documentsPerMonth: null,
+      sirenSearchesPerMonth: null,
+      users: 1,
+      departments: null,
+      companies: null,
+    },
+    features: [
+      { id: 'stripe', label: 'Paiements Stripe sur factures', icon: 'check' },
+      { id: 'ai', label: 'Assistant IA', icon: 'ai' },
+      { id: 'stats', label: 'Statistiques avancées', icon: 'stats' },
     ],
   },
 ];

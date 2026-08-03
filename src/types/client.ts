@@ -14,9 +14,12 @@ export type Client = {
   email: string | null;
   phone: string | null;
   address: string | null;
+  addressLine2: string | null;
   postalCode: string | null;
   city: string | null;
+  region: string | null;
   country: string | null;
+  website: string | null;
   siren: string | null;
   siret: string | null;
   vatNumber: string | null;
@@ -32,9 +35,12 @@ export type ClientFormValues = {
   email: string;
   phone: string;
   address: string;
+  addressLine2: string;
   postalCode: string;
   city: string;
+  region: string;
   country: string;
+  website: string;
   siren: string;
   siret: string;
   vatNumber: string;
@@ -52,9 +58,12 @@ export function createEmptyClientFormValues(): ClientFormValues {
     email: '',
     phone: '',
     address: '',
+    addressLine2: '',
     postalCode: '',
     city: '',
+    region: '',
     country: 'France',
+    website: '',
     siren: '',
     siret: '',
     vatNumber: '',
@@ -70,9 +79,12 @@ export function mapClientToFormValues(client: Client): ClientFormValues {
     email: client.email ?? '',
     phone: formatFrenchPhoneDisplay(client.phone) ?? '',
     address: client.address ?? '',
+    addressLine2: client.addressLine2 ?? '',
     postalCode: client.postalCode ?? '',
     city: client.city ?? '',
+    region: client.region ?? '',
     country: client.country ?? 'France',
+    website: client.website ?? '',
     siren: client.siren ?? '',
     siret: client.siret ?? '',
     vatNumber: client.vatNumber ?? '',

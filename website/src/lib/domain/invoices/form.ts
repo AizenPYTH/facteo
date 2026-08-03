@@ -5,6 +5,7 @@ import {
   type InvoiceDetail,
   type InvoiceInfoValues,
   type InvoiceLineValue,
+  type VatRegime,
 } from '@/types/invoice';
 
 export type InvoiceWizardState = {
@@ -12,6 +13,8 @@ export type InvoiceWizardState = {
   clientName: string;
   lines: InvoiceLineValue[];
   info: InvoiceInfoValues;
+  vatRegime: VatRegime;
+  revision: number;
 };
 
 export function createEmptyInvoiceWizardState(): InvoiceWizardState {
@@ -20,6 +23,8 @@ export function createEmptyInvoiceWizardState(): InvoiceWizardState {
     clientName: '',
     lines: [],
     info: createEmptyInvoiceInfoValues(),
+    vatRegime: 'standard',
+    revision: 1,
   };
 }
 
@@ -34,8 +39,11 @@ export function mapInvoiceDetailToWizardState(invoice: InvoiceDetail): InvoiceWi
     info: createEmptyInvoiceInfoValues({
       issuedAt: isoToFrenchDateInput(invoice.issuedAt ?? invoice.createdAt),
       dueAt: isoToFrenchDateInput(invoice.dueAt),
+      serviceDate: isoToFrenchDateInput(invoice.serviceDate),
       paymentTermsDays: '30',
       notes: invoice.notes ?? '',
     }),
+    vatRegime: invoice.vatRegime,
+    revision: invoice.revision,
   };
 }

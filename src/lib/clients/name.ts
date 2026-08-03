@@ -1,19 +1,29 @@
 /**
  * Stores "Nom, Prénom" in the single `name` column for alphabetical sort by family name.
+ * Company-only clients store the company name in `name` (column is NOT NULL).
  */
-export function formatClientStoredName(lastName: string, firstName: string): string {
+export function formatClientStoredName(
+  lastName: string,
+  firstName: string,
+  company?: string | null,
+): string {
   const last = lastName.trim();
   const first = firstName.trim();
+  const companyName = (company ?? '').trim();
 
-  if (!last) {
-    return first;
+  if (last && first) {
+    return `${last}, ${first}`;
   }
 
-  if (!first) {
+  if (last) {
     return last;
   }
 
-  return `${last}, ${first}`;
+  if (first) {
+    return first;
+  }
+
+  return companyName;
 }
 
 export function parseClientStoredName(name: string): { lastName: string; firstName: string } {
@@ -28,6 +38,23 @@ export function parseClientStoredName(name: string): { lastName: string; firstNa
     lastName: trimmed.slice(0, commaIndex).trim(),
     firstName: trimmed.slice(commaIndex + 2).trim(),
   };
+}
+
+/**
+ * Resolves person fields from DB row. When `name` equals `company`, the client is company-only.
+ */
+export function resolveClientPersonName(row: {
+  name: string;
+  company?: string | null;
+}): { lastName: string; firstName: string } {
+  const company = (row.company ?? '').trim();
+  const name = row.name.trim();
+
+  if (company && name === company) {
+    return { lastName: '', firstName: '' };
+  }
+
+  return parseClientStoredName(row.name);
 }
 
 export function formatClientFullName(lastName: string, firstName: string): string {

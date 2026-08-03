@@ -46,6 +46,10 @@ Le message « Accéder à l’application eogyopufctnqasjhsthp.supabase.co » vi
 - Redirect URLs :
   - `https://www.inveq.fr/auth/callback`
   - `http://localhost:3000/auth/callback`
+  - `inveq://auth/callback`
+  - `inveq://**`
+  - `inveq://auth/callback`
+  - `inveq://**`
 
 **Authentication** → **Providers** → **Google** :
 - Client ID / Secret = ceux du client Web Google Cloud

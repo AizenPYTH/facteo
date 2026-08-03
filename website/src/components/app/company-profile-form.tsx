@@ -79,8 +79,20 @@ export function CompanyProfileForm({
           <FormField className="sm:col-span-2" error={errors.companyName?.message} label="Raison sociale *">
             <TextInput {...register('companyName')} />
           </FormField>
+          <FormField error={errors.legalForm?.message} label="Forme juridique">
+            <TextInput {...register('legalForm')} placeholder="SAS, SARL, EI…" />
+          </FormField>
+          <FormField error={errors.shareCapital?.message} label="Capital social">
+            <TextInput {...register('shareCapital')} placeholder="10 000 €" />
+          </FormField>
+          <FormField error={errors.rcsCity?.message} label="RCS / RM">
+            <TextInput {...register('rcsCity')} placeholder="Paris" />
+          </FormField>
           <FormField error={errors.phone?.message} label="Téléphone">
             <TextInput {...register('phone')} />
+          </FormField>
+          <FormField error={errors.siren?.message} label="SIREN">
+            <TextInput {...register('siren')} placeholder="123 456 789" />
           </FormField>
           <FormField error={errors.siret?.message} label="SIRET">
             <TextInput {...register('siret')} />

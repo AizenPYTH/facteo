@@ -74,8 +74,8 @@ Deno.serve(async (request) => {
     const amountInCents = Math.round(body.amount * 100);
     const clientName = 'Client INVEQ';
 
-    const successUrl = `INVEQ://invoices/${invoice.id}?payment=success&session_id={CHECKOUT_SESSION_ID}`;
-    const cancelUrl = `INVEQ://invoices/${invoice.id}?payment=canceled`;
+    const successUrl = `inveq://invoices/${invoice.id}?payment=success&session_id={CHECKOUT_SESSION_ID}`;
+    const cancelUrl = `inveq://invoices/${invoice.id}?payment=canceled`;
 
     const session = await stripe.checkout.sessions.create({
       mode: 'payment',

@@ -9,9 +9,9 @@ export const LEGAL_LAST_UPDATED = '15 juillet 2026';
 
 export const LEGAL_CONTACT = {
   company: 'INVEQ',
-  email: process.env.NEXT_PUBLIC_CONTACT_EMAIL?.trim() || 'farouqdib@gmail.com',
-  support: process.env.NEXT_PUBLIC_SUPPORT_EMAIL?.trim() || 'farouqdib@gmail.com',
-  dpo: process.env.NEXT_PUBLIC_SUPPORT_EMAIL?.trim() || 'farouqdib@gmail.com',
+  email: process.env.NEXT_PUBLIC_CONTACT_EMAIL?.trim() || 'contact@inveq.fr',
+  support: process.env.NEXT_PUBLIC_SUPPORT_EMAIL?.trim() || 'support@inveq.fr',
+  dpo: process.env.NEXT_PUBLIC_SUPPORT_EMAIL?.trim() || 'support@inveq.fr',
   website: process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, '') || 'https://www.inveq.fr',
   address: 'France',
 } as const;

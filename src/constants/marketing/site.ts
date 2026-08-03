@@ -31,18 +31,19 @@ export const MARKETING_HELP_URLS = {
 } as const;
 
 /**
- * Contacts — sans domaine mail custom, utilise ton Gmail (ou autre)
- * via EXPO_PUBLIC_CONTACT_EMAIL / EXPO_PUBLIC_SUPPORT_EMAIL.
+ * Contacts publics INVEQ (jamais d’email personnel).
+ * Override : EXPO_PUBLIC_CONTACT_EMAIL / EXPO_PUBLIC_SUPPORT_EMAIL
+ * ou NEXT_PUBLIC_* côté site.
  */
 export const MARKETING_CONTACT = {
   email:
     process.env.EXPO_PUBLIC_CONTACT_EMAIL?.trim() ||
     process.env.NEXT_PUBLIC_CONTACT_EMAIL?.trim() ||
-    'farouqdib@gmail.com',
+    'contact@inveq.fr',
   support:
     process.env.EXPO_PUBLIC_SUPPORT_EMAIL?.trim() ||
     process.env.NEXT_PUBLIC_SUPPORT_EMAIL?.trim() ||
-    'farouqdib@gmail.com',
+    'support@inveq.fr',
 } as const;
 
 /** Liste plate pour audits App Store / tests de non-régression. */

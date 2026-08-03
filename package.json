@@ -55,6 +55,7 @@
     "@types/react": "~19.2.2",
     "eslint": "^9.39.4",
     "eslint-config-expo": "~57.0.0",
+    "stripe": "^17.7.0",
     "supabase": "^2.109.1",
     "typescript": "~6.0.3"
   },
@@ -74,7 +75,10 @@
     "typecheck": "tsc --noEmit",
     "eas:build:ios": "eas build --platform ios --profile production --auto-submit",
     "eas:build:android": "eas build --platform android --profile production --auto-submit",
-    "eas:build:all": "eas build --platform all --profile production --auto-submit"
+    "eas:build:all": "eas build --platform all --profile production --auto-submit",
+    "stripe:provision": "node scripts/provision-stripe-subscription-prices.mjs",
+    "stripe:verify": "node scripts/verify-stripe-subscription-guards.mjs",
+    "stripe:e2e": "node scripts/e2e-stripe-subscription-journey.mjs"
   },
   "private": true
 }

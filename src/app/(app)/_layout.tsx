@@ -31,6 +31,13 @@ export default function AppLayout() {
           }}
         />
         <Stack.Screen
+          name="search"
+          options={{
+            animation: 'slide_from_right',
+            presentation: 'card',
+          }}
+        />
+        <Stack.Screen
           name="company"
           options={{
             animation: 'slide_from_right',

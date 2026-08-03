@@ -14,13 +14,42 @@ export * from './theme/spacing';
 export * from './theme/radius';
 export * from './theme/typography';
 export {
+  duration,
+  easing,
+  spring,
+  overlay,
+  entrance,
+  navigation,
+  motion,
+  motionLanguage,
+} from './theme/motion';
+export {
+  elevation,
+  surface,
+  material,
+  surfaceLanguage,
   shadows,
-  lightTheme,
-  darkTheme,
-  theme,
-  type Theme,
+  type ElevationLevel,
+  type SurfaceRole,
   type ShadowToken,
-} from './theme/theme';
+} from './theme/surfaces';
+export { type, typographyLanguage, type TypeRole } from './theme/type-roles';
+export {
+  press,
+  feedback,
+  hapticIntent,
+  interactionLanguage,
+  type PressRecipe,
+  type FeedbackRecipe,
+} from './theme/interaction';
+export { componentLanguage, type ComponentToken } from './theme/components';
+export {
+  designSystem,
+  layout,
+  components,
+  type DesignSystem,
+} from './theme/design-system';
+export { lightTheme, darkTheme, theme, type Theme } from './theme/theme';
 
 /** @deprecated Use `legacyColors` or `colors` from the design system. */
 export const Colors = legacyColors;

@@ -34,6 +34,10 @@ export type DashboardStats = {
   outstandingAmount: number;
   lateInvoices: number;
   pendingQuotes: number;
+  draftInvoices: number;
+  draftQuotes: number;
+  dueThisWeek: number;
+  staleQuotes: number;
   averagePaymentDelayDays: number;
   averageInvoiceAmount: number;
 };
@@ -56,6 +60,7 @@ export type InvoiceStatus =
 export type Invoice = {
   id: string;
   number: string;
+  clientId: string | null;
   clientName: string;
   amount: number;
   status: InvoiceStatus;
@@ -75,6 +80,10 @@ export function createEmptyDashboardStats(): DashboardStats {
     outstandingAmount: 0,
     lateInvoices: 0,
     pendingQuotes: 0,
+    draftInvoices: 0,
+    draftQuotes: 0,
+    dueThisWeek: 0,
+    staleQuotes: 0,
     averagePaymentDelayDays: 0,
     averageInvoiceAmount: 0,
   };

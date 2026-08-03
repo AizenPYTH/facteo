@@ -33,6 +33,7 @@ import {
 import { APP_REGISTER_URL } from '@/lib/constants';
 
 export { PricingSection } from '@/components/sections/pricing-section';
+export { PremiumPricingSection } from '@/components/sections/premium-pricing-section';
 
 const ICONS: Record<string, ElementType> = {
   sparkles: Sparkles,

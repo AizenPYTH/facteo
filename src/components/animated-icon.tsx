@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Image, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -9,6 +9,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
 
+import { InveqWordmark } from '@/components/brand/inveq-wordmark';
 import { useColors } from '@/hooks/use-colors';
 
 /** Short, premium entrance: fade + subtle zoom (~1s total). */
@@ -59,12 +60,7 @@ export function PremiumSplashOverlay({ onComplete }: PremiumSplashOverlayProps) 
       pointerEvents="none"
       style={[styles.overlay, { backgroundColor: colors.background }, overlayStyle]}>
       <Animated.View style={logoStyle}>
-        <Image
-          accessibilityIgnoresInvertColors
-          accessibilityLabel="INVEQ"
-          source={require('@/assets/images/INVEQ-logo.png')}
-          style={styles.logo}
-        />
+        <InveqWordmark height={44} />
       </Animated.View>
     </Animated.View>
   );
@@ -83,16 +79,11 @@ export function AnimatedSplashOverlay() {
 export function AnimatedIcon() {
   return (
     <View style={styles.iconWrap}>
-      <Image
-        accessibilityIgnoresInvertColors
-        source={require('@/assets/images/INVEQ-logo.png')}
-        style={styles.logo}
-      />
+      <InveqWordmark height={44} />
     </View>
   );
 }
 
-// Keep TOTAL_MS referenced for documentation / future tuning.
 void TOTAL_MS;
 
 const styles = StyleSheet.create({
@@ -105,10 +96,5 @@ const styles = StyleSheet.create({
   iconWrap: {
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  logo: {
-    width: 180,
-    height: 50,
-    resizeMode: 'contain',
   },
 });

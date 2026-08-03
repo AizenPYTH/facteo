@@ -20,6 +20,8 @@ export const INVOICE_STATUS_FILTER_OPTIONS: {
 export type InvoicesPageParams = {
   search?: string;
   status?: InvoiceStatusFilter;
+  /** Filter unpaid invoices whose due date falls in the current week. */
+  due?: 'week' | 'all';
   page?: number;
   pageSize?: number;
 };

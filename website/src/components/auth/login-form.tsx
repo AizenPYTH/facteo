@@ -46,9 +46,15 @@ export function LoginForm() {
 
       await new Promise((resolve) => setTimeout(resolve, 100));
       const path = await getPostAuthPath(session.user.id);
-      const dest =
-        path === '/app' && requestedRedirect?.startsWith('/app')
+      const safeRedirect =
+        requestedRedirect &&
+        requestedRedirect.startsWith('/') &&
+        !requestedRedirect.startsWith('//')
           ? requestedRedirect
+          : null;
+      const dest =
+        path === '/app' && safeRedirect
+          ? safeRedirect
           : path;
       window.location.href = dest;
     } catch {

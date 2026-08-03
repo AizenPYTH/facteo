@@ -65,9 +65,12 @@ export type ClientRow = {
   phone: string | null;
   company: string | null;
   address: string | null;
+  address_line2: string | null;
   postal_code: string | null;
   city: string | null;
+  region: string | null;
   country: string | null;
+  website: string | null;
   siren: string | null;
   siret: string | null;
   vat_number: string | null;
@@ -86,9 +89,12 @@ export type ClientInsert = {
   phone?: string | null;
   company?: string | null;
   address?: string | null;
+  address_line2?: string | null;
   postal_code?: string | null;
   city?: string | null;
+  region?: string | null;
   country?: string | null;
+  website?: string | null;
   siren?: string | null;
   siret?: string | null;
   vat_number?: string | null;
@@ -103,9 +109,12 @@ export type ClientUpdate = {
   phone?: string | null;
   company?: string | null;
   address?: string | null;
+  address_line2?: string | null;
   postal_code?: string | null;
   city?: string | null;
+  region?: string | null;
   country?: string | null;
+  website?: string | null;
   siren?: string | null;
   siret?: string | null;
   vat_number?: string | null;
@@ -122,12 +131,17 @@ export type InvoiceRow = {
   quote_id: string | null;
   number: string;
   status: string;
+  document_kind: 'invoice' | 'credit_note';
+  credit_of_invoice_id: string | null;
+  vat_regime: 'standard' | 'eu_reverse_charge' | 'export_outside_eu' | 'exempt';
+  revision: number;
   subtotal_ht: number;
   total_vat: number;
   total_ttc: number;
   total: number | null;
   issued_at: string | null;
   due_at: string | null;
+  service_date: string | null;
   paid_at: string | null;
   payment_method: string | null;
   payment_reference: string | null;
@@ -189,11 +203,16 @@ export type InvoiceInsert = {
   quote_id?: string | null;
   number: string;
   status?: string;
+  document_kind?: 'invoice' | 'credit_note';
+  credit_of_invoice_id?: string | null;
+  vat_regime?: 'standard' | 'eu_reverse_charge' | 'export_outside_eu' | 'exempt';
+  revision?: number;
   subtotal_ht: number;
   total_vat: number;
   total_ttc: number;
   issued_at?: string | null;
   due_at?: string | null;
+  service_date?: string | null;
   paid_at?: string | null;
   payment_method?: string | null;
   payment_reference?: string | null;
@@ -202,6 +221,28 @@ export type InvoiceInsert = {
   stripe_checkout_session_id?: string | null;
   created_at?: string;
   updated_at?: string;
+};
+
+export type InvoiceRevisionRow = {
+  id: string;
+  invoice_id: string;
+  user_id: string;
+  company_id: string | null;
+  revision: number;
+  reason: string | null;
+  snapshot: Record<string, unknown>;
+  created_at: string;
+};
+
+export type InvoiceRevisionInsert = {
+  id?: string;
+  invoice_id: string;
+  user_id: string;
+  company_id?: string | null;
+  revision: number;
+  reason?: string | null;
+  snapshot: Record<string, unknown>;
+  created_at?: string;
 };
 
 export type InvoicePaymentRow = {
@@ -564,6 +605,9 @@ export type SubscriptionPlanRow = {
   max_companies: number | null;
   features: Record<string, unknown>;
   stripe_price_id: string | null;
+  stripe_price_id_yearly: string | null;
+  stripe_lookup_key_monthly: string | null;
+  stripe_lookup_key_yearly: string | null;
   stripe_product_id: string | null;
   app_store_product_id: string | null;
   play_store_product_id: string | null;
@@ -601,6 +645,10 @@ export type CompanyRow = {
   postal_code: string | null;
   city: string | null;
   country: string | null;
+  legal_form: string | null;
+  share_capital: string | null;
+  rcs_city: string | null;
+  siren: string | null;
   siret: string | null;
   vat_number: string | null;
   iban: string | null;
@@ -710,6 +758,20 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: 'invoice_payments_invoice_id_fkey';
+            columns: ['invoice_id'];
+            isOneToOne: false;
+            referencedRelation: 'invoices';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      invoice_revisions: {
+        Row: InvoiceRevisionRow;
+        Insert: InvoiceRevisionInsert;
+        Update: Partial<InvoiceRevisionInsert>;
+        Relationships: [
+          {
+            foreignKeyName: 'invoice_revisions_invoice_id_fkey';
             columns: ['invoice_id'];
             isOneToOne: false;
             referencedRelation: 'invoices';
@@ -832,6 +894,10 @@ export type Database = {
         Returns: string;
       };
       reserve_next_invoice_number: {
+        Args: { p_company_id: string };
+        Returns: string;
+      };
+      reserve_next_credit_note_number: {
         Args: { p_company_id: string };
         Returns: string;
       };

@@ -21,6 +21,7 @@ import { useInfiniteQuotes } from '@/hooks/use-quotes';
 import { useTenant } from '@/hooks/use-tenant';
 import { formatDate } from '@/lib/format/date';
 import { formatPriceHT } from '@/lib/format/currency';
+import { newInvoiceHref, newQuoteHref } from '@/lib/navigation/new-document';
 import { getClientDisplayName, getClientSecondaryLabel, type Client } from '@/types/client';
 
 const CLIENT_TABS: DesktopTab[] = [
@@ -102,10 +103,17 @@ export function ClientsDesktopScreen() {
     <View style={styles.root}>
       <DesktopTopHeader
         actions={
-          <Button
-            onPress={() => router.push('/clients/new' as Href)}
-            title="Nouveau client"
-          />
+          <View style={styles.headerActions}>
+            <Button
+              onPress={() => router.push('/clients/new?ai=1' as Href)}
+              title="Ajouter par IA"
+              variant="ghost"
+            />
+            <Button
+              onPress={() => router.push('/clients/new' as Href)}
+              title="Nouveau client"
+            />
+          </View>
         }
         subtitle="CRM — gérez vos relations clients"
         title="Clients"
@@ -136,18 +144,28 @@ export function ClientsDesktopScreen() {
                       <View style={styles.detailActions}>
                         <Button
                           onPress={() =>
-                            router.push(`/clients/${selectedClient.id}/edit` as Href)
+                            router.push(
+                              newInvoiceHref(selectedClient.id, {
+                                replay: clientInvoices.length > 0,
+                              }),
+                            )
                           }
-                          title="Modifier"
+                          title={
+                            clientInvoices.length > 0
+                              ? 'Comme la dernière fois'
+                              : 'Nouvelle facture'
+                          }
+                        />
+                        <Button
+                          onPress={() => router.push(newQuoteHref(selectedClient.id))}
+                          title="Nouveau devis"
                           variant="ghost"
                         />
                         <Button
-                          onPress={() => router.push('/invoices/new' as Href)}
-                          title="Nouvelle facture"
-                        />
-                        <Button
-                          onPress={() => router.push('/quotes/new' as Href)}
-                          title="Nouveau devis"
+                          onPress={() =>
+                            router.push(`/clients/${selectedClient.id}/edit` as Href)
+                          }
+                          title="Modifier"
                           variant="ghost"
                         />
                       </View>
@@ -311,6 +329,11 @@ function ClientDocumentsTab({
 const useStyles = () =>
   useThemedStyles((colors) => ({
     root: { flex: 1, minHeight: 0 },
+    headerActions: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+    },
     listPanel: { flex: 0 },
     listToolbar: {
       padding: spacing.md,

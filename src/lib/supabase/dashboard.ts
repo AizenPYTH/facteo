@@ -32,7 +32,8 @@ export type DashboardData = {
 
 type UserMetadata = Record<string, unknown>;
 
-const RECENT_INVOICE_COLUMNS = 'id, number, status, total_ttc, total, issued_at, created_at, clients(name)';
+const RECENT_INVOICE_COLUMNS =
+  'id, number, status, total_ttc, total, issued_at, created_at, client_id, clients(name)';
 const RECENT_INVOICES_LIMIT = 5;
 const RECENT_ACTIVITY_LIMIT = 8;
 const TOP_ITEMS_LIMIT = 5;
@@ -103,6 +104,19 @@ function getWeekStartIso(): string {
   weekStart.setDate(weekStart.getDate() - diff);
   weekStart.setHours(0, 0, 0, 0);
   return weekStart.toISOString();
+}
+
+function getWeekEndIso(): string {
+  const weekStart = new Date(getWeekStartIso());
+  weekStart.setDate(weekStart.getDate() + 7);
+  return weekStart.toISOString();
+}
+
+function getDaysAgoIso(days: number): string {
+  const date = new Date();
+  date.setDate(date.getDate() - days);
+  date.setHours(0, 0, 0, 0);
+  return date.toISOString();
 }
 
 function getYearStartIso(): string {
@@ -278,9 +292,11 @@ export function createEmptyDashboardData(metadata: UserMetadata = {}): Dashboard
 export async function fetchDashboardStats(scope: DataScope): Promise<DashboardStats> {
   const monthStart = getMonthStartIso();
   const weekStart = getWeekStartIso();
+  const weekEnd = getWeekEndIso();
   const yearStart = getYearStartIso();
   const todayStart = getTodayStartIso();
   const nowIso = new Date().toISOString();
+  const sevenDaysAgo = getDaysAgoIso(7);
 
   const [
     monthlyRevenueResult,
@@ -294,6 +310,10 @@ export async function fetchDashboardStats(scope: DataScope): Promise<DashboardSt
     paidResult,
     clientsResult,
     pendingQuotesResult,
+    draftInvoicesResult,
+    draftQuotesResult,
+    dueThisWeekResult,
+    staleQuotesResult,
     paymentDelayResult,
     averageInvoiceResult,
   ] = await Promise.all([
@@ -356,6 +376,29 @@ export async function fetchDashboardStats(scope: DataScope): Promise<DashboardSt
       .select('id', { count: 'exact', head: true })
       .eq('company_id', scope.companyId)
       .eq('status', 'sent'),
+    supabase
+      .from('invoices')
+      .select('id', { count: 'exact', head: true })
+      .eq('company_id', scope.companyId)
+      .eq('status', 'draft'),
+    supabase
+      .from('quotes')
+      .select('id', { count: 'exact', head: true })
+      .eq('company_id', scope.companyId)
+      .eq('status', 'draft'),
+    supabase
+      .from('invoices')
+      .select('id', { count: 'exact', head: true })
+      .eq('company_id', scope.companyId)
+      .in('status', [...UNPAID_INVOICE_STATUSES])
+      .gte('due_at', weekStart)
+      .lt('due_at', weekEnd),
+    supabase
+      .from('quotes')
+      .select('id', { count: 'exact', head: true })
+      .eq('company_id', scope.companyId)
+      .eq('status', 'sent')
+      .lt('issued_at', sevenDaysAgo),
     supabase
       .from('invoices')
       .select('issued_at, paid_at')
@@ -423,6 +466,26 @@ export async function fetchDashboardStats(scope: DataScope): Promise<DashboardSt
       pendingQuotesResult.count,
       pendingQuotesResult.error,
       'fetchDashboardStats.pendingQuotes',
+    ),
+    draftInvoices: getCountFromQuery(
+      draftInvoicesResult.count,
+      draftInvoicesResult.error,
+      'fetchDashboardStats.draftInvoices',
+    ),
+    draftQuotes: getCountFromQuery(
+      draftQuotesResult.count,
+      draftQuotesResult.error,
+      'fetchDashboardStats.draftQuotes',
+    ),
+    dueThisWeek: getCountFromQuery(
+      dueThisWeekResult.count,
+      dueThisWeekResult.error,
+      'fetchDashboardStats.dueThisWeek',
+    ),
+    staleQuotes: getCountFromQuery(
+      staleQuotesResult.count,
+      staleQuotesResult.error,
+      'fetchDashboardStats.staleQuotes',
     ),
     averagePaymentDelayDays: computeAveragePaymentDelayDays(
       (paymentDelayResult.data as PaidInvoiceDelayRow[] | null) ?? [],

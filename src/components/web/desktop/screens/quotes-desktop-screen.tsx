@@ -40,7 +40,10 @@ export function QuotesDesktopScreen() {
   const { user } = useAuth();
   const { scope, isSwitching } = useTenant();
   const { showSuccess, showError } = useToast();
-  const { selected } = useLocalSearchParams<{ selected?: string | string[] }>();
+  const { selected, status: statusParam } = useLocalSearchParams<{
+    selected?: string | string[];
+    status?: string | string[];
+  }>();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<QuoteStatusFilter>('all');
   const [sortKey, setSortKey] = useState<SortKey>('date');
@@ -52,6 +55,12 @@ export function QuotesDesktopScreen() {
     const id = Array.isArray(raw) ? raw[0] : raw;
     if (id) setSelectedId(id);
   }, [selected]);
+
+  useEffect(() => {
+    const raw = statusParam;
+    const value = Array.isArray(raw) ? raw[0] : raw;
+    if (value && value !== 'all') setStatusFilter(value as QuoteStatusFilter);
+  }, [statusParam]);
 
   const {
     quotes: rawQuotes,

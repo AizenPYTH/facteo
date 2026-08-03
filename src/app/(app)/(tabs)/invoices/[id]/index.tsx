@@ -12,6 +12,8 @@ import {
   CancelInvoiceModal,
   InvoiceDetailView,
   InvoiceScreenHeader,
+  InvoiceStickyActionsBar,
+  useInvoiceStickyActionsInset,
   PaymentModal,
 } from '@/components/invoices';
 import { PdfPreviewModal } from '@/components/pdf/pdf-preview-modal';
@@ -24,10 +26,11 @@ import { spacing } from '@/constants/theme/spacing';
 import { typography } from '@/constants/theme/typography';
 import { useDesktopListRedirect } from '@/hooks/use-desktop-list-redirect';
 import { useBreakpoint } from '@/hooks/use-breakpoint';
-import { useInvoice } from '@/hooks/use-invoices';
+import { useInvoice, useInvoiceRevisions } from '@/hooks/use-invoices';
 import { useInvoiceMutations } from '@/hooks/use-invoice-mutations';
 import { getInvoiceErrorMessage } from '@/lib/invoices/errors';
 import { buildInvoicePdfHtml } from '@/lib/pdf/document-pdf';
+import { newInvoiceHref } from '@/lib/navigation/new-document';
 import { useAuth } from '@/hooks/use-auth';
 import { useTenant } from '@/hooks/use-tenant';
 import { requireScope } from '@/lib/tenant/scope';
@@ -37,6 +40,8 @@ import { useSubscription } from '@/hooks/use-subscription';
 import {
   canAddInvoicePayment,
   canCancelInvoice,
+  canConvertInvoiceToCreditNote,
+  canCorrectInvoice,
   canEditInvoice,
   canMarkInvoiceAsPaid,
   type InvoiceStatus,
@@ -56,10 +61,13 @@ export default function InvoiceDetailScreen() {
   const {
     cancelInvoice,
     duplicateInvoice,
+    createCreditNote,
+    correctInvoice,
     markAsPaid,
     addPayment,
     updateInvoiceStatus,
   } = useInvoiceMutations();
+  const { data: revisions = [] } = useInvoiceRevisions(invoiceId ?? '');
   const { hasFeature } = useSubscription();
   const { isConfigured, createLink, openPaymentLink } = useStripePayment(invoiceId ?? '');
   const { showError, showSuccess } = useToast();
@@ -93,6 +101,8 @@ export default function InvoiceDetailScreen() {
     documentId: invoice?.id ?? '',
     documentNumber: invoice?.number ?? '',
     documentType: 'invoice',
+    amountDue: invoice?.amountDue,
+    dueAt: invoice?.dueAt,
   });
 
   useEffect(() => {
@@ -189,6 +199,34 @@ export default function InvoiceDetailScreen() {
     }
   }
 
+  async function handleConvertToCreditNote() {
+    if (!invoiceId) {
+      return;
+    }
+
+    try {
+      const creditNote = await createCreditNote.mutateAsync(invoiceId);
+      showSuccess('Avoir créé.');
+      router.push(`/invoices/${creditNote.id}` as Href);
+    } catch (error) {
+      showError(getInvoiceErrorMessage(readErrorMessage(error)));
+    }
+  }
+
+  async function handleCorrectInvoice() {
+    if (!invoiceId) {
+      return;
+    }
+
+    try {
+      const { correctedInvoice } = await correctInvoice.mutateAsync(invoiceId);
+      showSuccess('Avoir créé et nouvelle facture en brouillon.');
+      router.push(`/invoices/${correctedInvoice.id}/edit` as Href);
+    } catch (error) {
+      showError(getInvoiceErrorMessage(readErrorMessage(error)));
+    }
+  }
+
   async function handleCancel() {
     if (!invoiceId) {
       return;
@@ -241,9 +279,24 @@ export default function InvoiceDetailScreen() {
     const cancelable = canCancelInvoice(invoice.status);
     const markableAsPaid = canMarkInvoiceAsPaid(invoice.status);
     const canPayPartially = canAddInvoicePayment(invoice);
+    const canCreditNote =
+      invoice.documentKind === 'invoice' && canConvertInvoiceToCreditNote(invoice.status);
+    const canCorrect =
+      invoice.documentKind === 'invoice' && canCorrectInvoice(invoice.status);
     const signatureLocked = !hasFeature('client_signature');
 
     const primary = [
+      ...(markableAsPaid
+        ? [
+            {
+              id: 'remind',
+              label: 'Relancer le client',
+              icon: { ios: 'bell.badge.fill', android: 'notifications_active', web: 'notifications_active' } as const,
+              onPress: () => void documentActions.handleRemindEmail(),
+              loading: documentActions.remindLoading,
+            },
+          ]
+        : []),
       {
         id: 'send',
         label: 'Envoyer par e-mail',
@@ -330,6 +383,17 @@ export default function InvoiceDetailScreen() {
     ];
 
     const manage = [
+      ...(invoice.clientId
+        ? [
+            {
+              id: 'replay',
+              label: 'Comme la dernière fois',
+              icon: { ios: 'arrow.clockwise', android: 'replay', web: 'replay' } as const,
+              onPress: () =>
+                router.push(newInvoiceHref(invoice.clientId, { replay: true })),
+            },
+          ]
+        : []),
       ...(editable
         ? [
             {
@@ -346,6 +410,34 @@ export default function InvoiceDetailScreen() {
         icon: { ios: 'doc.on.doc', android: 'content_copy', web: 'content_copy' } as const,
         onPress: () => void handleDuplicate(),
       },
+      ...(canCreditNote
+        ? [
+            {
+              id: 'credit-note',
+              label: 'Convertir en avoir',
+              icon: {
+                ios: 'arrow.uturn.backward.circle.fill',
+                android: 'undo',
+                web: 'undo',
+              } as const,
+              onPress: () => void handleConvertToCreditNote(),
+            },
+          ]
+        : []),
+      ...(canCorrect
+        ? [
+            {
+              id: 'correct',
+              label: 'Corriger (avoir + nouvelle facture)',
+              icon: {
+                ios: 'arrow.triangle.2.circlepath',
+                android: 'sync',
+                web: 'sync',
+              } as const,
+              onPress: () => void handleCorrectInvoice(),
+            },
+          ]
+        : []),
       ...(cancelable
         ? [
             {
@@ -366,6 +458,75 @@ export default function InvoiceDetailScreen() {
     invoice,
   ]);
 
+  const stickyInset = useInvoiceStickyActionsInset();
+  const editable = invoice ? canEditInvoice(invoice.status) : false;
+  const canCreditNote =
+    !!invoice &&
+    invoice.documentKind === 'invoice' &&
+    canConvertInvoiceToCreditNote(invoice.status);
+  const canCorrect =
+    !!invoice && invoice.documentKind === 'invoice' && canCorrectInvoice(invoice.status);
+
+  const stickyActions = useMemo(() => {
+    if (!invoice) {
+      return [];
+    }
+
+    return [
+      ...(editable
+        ? [
+            {
+              id: 'edit',
+              label: 'Modifier',
+              primary: true as const,
+              onPress: () => router.push(`/invoices/${invoice.id}/edit` as Href),
+            },
+          ]
+        : [
+            {
+              id: 'send',
+              label: 'Envoyer',
+              primary: true as const,
+              onPress: () => void documentActions.handleSendEmail(),
+            },
+          ]),
+      {
+        id: 'duplicate',
+        label: 'Dupliquer',
+        onPress: () => void handleDuplicate(),
+      },
+      ...(canCreditNote
+        ? [
+            {
+              id: 'credit-note',
+              label: 'Avoir',
+              onPress: () => void handleConvertToCreditNote(),
+            },
+          ]
+        : []),
+      ...(canCorrect
+        ? [
+            {
+              id: 'correct',
+              label: 'Corriger',
+              onPress: () => void handleCorrectInvoice(),
+            },
+          ]
+        : []),
+      {
+        id: 'history',
+        label: 'Historique',
+        onPress: () => setActionsVisible(true),
+      },
+    ];
+  }, [
+    canCorrect,
+    canCreditNote,
+    documentActions,
+    editable,
+    invoice,
+  ]);
+
   if (isWeb && (isDesktop || isTablet)) {
     return null;
   }
@@ -379,7 +540,7 @@ export default function InvoiceDetailScreen() {
   }
 
   return (
-    <SafeAreaView edges={['top', 'bottom']} style={styles.safeArea}>
+    <SafeAreaView edges={['top']} style={styles.safeArea}>
       <View style={styles.header}>
         <InvoiceScreenHeader
           title={invoice.number}
@@ -402,13 +563,14 @@ export default function InvoiceDetailScreen() {
       </View>
 
       <ScrollView
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[styles.content, { paddingBottom: stickyInset + spacing.xl }]}
         keyboardDismissMode="on-drag"
         showsVerticalScrollIndicator={false}>
         <InvoiceDetailView
           canAddPayment={false}
           invoice={invoice}
           onAddPayment={() => setPaymentVisible(true)}
+          revisions={revisions}
         />
 
         <DocumentClientSignatureBlock
@@ -422,6 +584,8 @@ export default function InvoiceDetailScreen() {
 
         <SentDocumentsSection documents={sentDocuments} loading={sentDocumentsLoading} />
       </ScrollView>
+
+      <InvoiceStickyActionsBar actions={stickyActions} />
 
       <DocumentActionsSheet
         onClose={() => setActionsVisible(false)}

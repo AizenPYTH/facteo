@@ -1,5 +1,6 @@
 import { z } from 'zod';
 
+import { isValidPostalCode } from '@/lib/format/phone';
 import { ACTIVITY_TYPES, type ActivityType } from '@/lib/domain/validations/register';
 
 const activityTypeValues = ACTIVITY_TYPES.map((type) => type.value) as [
@@ -36,10 +37,7 @@ export const onboardingStep2Schema = z.object({
   phone: optionalText,
   address: optionalText,
   city: optionalText,
-  postalCode: optionalText.refine(
-    (value) => !value || /^\d{5}$/.test(value),
-    'Le code postal doit contenir 5 chiffres',
-  ),
+  postalCode: optionalText.refine(isValidPostalCode, 'Code postal invalide'),
   country: optionalText,
 });
 

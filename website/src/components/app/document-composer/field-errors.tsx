@@ -9,11 +9,11 @@ export function InlineFieldError({ message }: { message?: string }) {
       {message ? (
         <motion.p
           animate={{ opacity: 1, y: 0 }}
-          className="mt-1.5 flex items-center gap-1.5 text-xs font-medium text-red-600"
+          className="mt-1.5 flex items-start gap-1.5 whitespace-pre-line text-xs font-medium text-red-600"
           exit={{ opacity: 0, y: -4 }}
           initial={{ opacity: 0, y: -4 }}
           role="alert">
-          <AlertCircle className="shrink-0" size={14} />
+          <AlertCircle className="mt-0.5 shrink-0" size={14} />
           {message}
         </motion.p>
       ) : null}

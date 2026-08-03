@@ -11,6 +11,7 @@ import {
 import { FormDivider, FormField, FormSection } from '@/components/company/form-section';
 import { PremiumUpgradeBanner } from '@/components/subscription/premium-upgrade-banner';
 import { TextField } from '@/components/ui/text-field';
+import { CLIENT_PLACEHOLDERS } from '@/constants/client-placeholders';
 import { useColors, useThemedStyles } from '@/hooks/use-colors';
 import { spacing } from '@/constants/theme/spacing';
 import { typography } from '@/constants/theme/typography';
@@ -141,7 +142,7 @@ export function ClientCompanyLookup({ control, errors, setValue }: ClientCompany
                   label="SIREN"
                   onBlur={onBlur}
                   onChangeText={(text) => onChange(formatRegistrationInput(text, 9))}
-                  placeholder="123456789"
+                  placeholder={CLIENT_PLACEHOLDERS.siren}
                   value={value}
                 />
               </View>
@@ -166,7 +167,7 @@ export function ClientCompanyLookup({ control, errors, setValue }: ClientCompany
                   label="SIRET"
                   onBlur={onBlur}
                   onChangeText={(text) => onChange(formatRegistrationInput(text, 14))}
-                  placeholder="12345678900012"
+                  placeholder={CLIENT_PLACEHOLDERS.siret}
                   value={value}
                 />
               </View>

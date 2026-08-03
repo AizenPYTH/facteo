@@ -1,73 +1,45 @@
+import { router, type Href } from 'expo-router';
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Button } from '@/components/ui/button';
-import { usePremiumCheckout } from '@/hooks/use-premium-checkout';
+import { PREMIUM_MARKETING } from '@/constants/premium-marketing';
 import { useThemedStyles } from '@/hooks/use-colors';
 import { radius } from '@/constants/theme/radius';
 import { spacing } from '@/constants/theme/spacing';
 import { typography } from '@/constants/theme/typography';
-import { useToast } from '@/providers/toast-provider';
 
 export type PlanLimitModalProps = {
   visible: boolean;
   onClose: () => void;
 };
 
+/** Paywall limite / feature : bouton Débloquer Premium vers la page d’achat. */
 export function PlanLimitModal({ visible, onClose }: PlanLimitModalProps) {
   const styles = useStyles();
-  const { startCheckout, subscribe, isConfigured } = usePremiumCheckout();
-  const { showError, showSuccess } = useToast();
 
-  async function handleUpgrade() {
-    if (!isConfigured) {
-      showError('Stripe n’est pas encore configuré. Contactez le support.');
-      return;
-    }
-
-    try {
-      onClose();
-      const completed = await startCheckout();
-
-      if (completed) {
-        showSuccess('INVEQ Premium est activé.');
-      }
-    } catch (error) {
-      showError(readErrorMessage(error));
-    }
+  function handleUnlock() {
+    onClose();
+    router.push('/settings/premium' as Href);
   }
 
   return (
     <Modal animationType="fade" onRequestClose={onClose} transparent visible={visible}>
       <Pressable onPress={onClose} style={styles.overlay}>
         <Pressable onPress={(event) => event.stopPropagation()} style={styles.dialog}>
-          <Text style={styles.title}>Limite atteinte</Text>
+          <Text style={styles.title}>Fonctionnalité Premium</Text>
           <Text style={styles.description}>
-            Vous avez atteint la limite de votre offre actuelle. Passez à une offre supérieure pour
-            continuer.
+            Cette action nécessite INVEQ Premium ({PREMIUM_MARKETING.priceDisplay}). Débloquez toutes
+            les fonctionnalités sans limite.
           </Text>
 
           <View style={styles.actions}>
-            <Button
-              loading={subscribe.isPending}
-              onPress={() => {
-                void handleUpgrade();
-              }}
-              title="Voir les offres"
-            />
-            <Button onPress={onClose} title="Fermer" variant="ghost" />
+            <Button elevated onPress={handleUnlock} title={PREMIUM_MARKETING.unlockCta} />
+            <Button onPress={onClose} title="Plus tard" variant="ghost" />
           </View>
         </Pressable>
       </Pressable>
     </Modal>
   );
-}
-
-function readErrorMessage(error: unknown): string {
-  if (error instanceof Error) {
-    return error.message;
-  }
-
-  return 'Impossible d’ouvrir le paiement Stripe.';
 }
 
 function useStyles() {
@@ -93,6 +65,7 @@ function useStyles() {
     description: {
       ...typography.subheadline,
       color: colors.textSecondary,
+      lineHeight: 21,
     },
     actions: {
       gap: spacing.sm,
