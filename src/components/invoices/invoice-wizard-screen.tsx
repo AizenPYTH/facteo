@@ -28,6 +28,7 @@ import { mapInvoiceLinesToDocumentTotals } from '@/lib/invoices/mappers';
 import { suggestVatRegime } from '@/lib/invoices/legal-mentions';
 import {
   hasBlockingPreflightIssues,
+  formatPreflightErrors,
   validateInvoicePreflight,
 } from '@/lib/invoices/preflight-validation';
 import {
@@ -450,6 +451,9 @@ export function InvoiceWizardScreen({
   function runPreflight(): boolean {
     const issues = validateInvoicePreflight({
       clientId: state.clientId,
+      clientCompany: selectedClient?.company,
+      clientLastName: selectedClient?.lastName,
+      clientFirstName: selectedClient?.firstName,
       clientEmail: selectedClient?.email,
       clientPhone: selectedClient?.phone,
       clientVatNumber: selectedClient?.vatNumber,
@@ -457,17 +461,24 @@ export function InvoiceWizardScreen({
       clientSiret: selectedClient?.siret,
       clientCountry: selectedClient?.country,
       clientPostalCode: selectedClient?.postalCode,
+      clientAddress: selectedClient?.address,
+      clientCity: selectedClient?.city,
+      companyName: companyProfile?.companyName,
+      companyAddress: companyProfile?.address,
+      companyPostalCode: companyProfile?.postalCode,
+      companyCity: companyProfile?.city,
+      companySiret: companyProfile?.siret,
       companyIban: companyProfile?.iban,
       companyVatNumber: companyProfile?.vatNumber,
-      currency: settings?.currency,
+      companyLegalForm: companyProfile?.legalForm,
+      currency: settings?.currency ?? 'EUR',
       vatRegime: state.vatRegime,
       linesCount: state.lines.filter((line) => line.description.trim()).length,
       hasPositiveTotals: totals.totalTtc > 0,
     });
 
     if (hasBlockingPreflightIssues(issues)) {
-      const firstError = issues.find((issue) => issue.level === 'error');
-      showError(firstError?.message ?? 'La facture ne peut pas être enregistrée.');
+      showError(formatPreflightErrors(issues) || 'La facture ne peut pas être enregistrée.');
       return false;
     }
 

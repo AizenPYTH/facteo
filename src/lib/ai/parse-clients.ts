@@ -51,10 +51,15 @@ function normalizeParsedClient(raw: Partial<ParsedClientDraft>): ParsedClientDra
 }
 
 export function parsedClientToFormValues(client: ParsedClientDraft) {
+  const company = client.company?.trim() ?? '';
+  const lastName = client.lastName?.trim() ?? '';
+  const firstName = client.firstName?.trim() ?? '';
+
   return {
-    lastName: client.lastName || client.company || 'Client',
-    firstName: client.firstName,
-    company: client.company,
+    // Keep company-only drafts valid: do not invent a fake lastName.
+    lastName: lastName || (company ? '' : 'Client'),
+    firstName,
+    company,
     email: client.email,
     phone: client.phone,
     address: client.address,

@@ -39,6 +39,7 @@ export function mapInvoiceDetailToWizardState(invoice: InvoiceDetail): InvoiceWi
     info: createEmptyInvoiceInfoValues({
       issuedAt: isoToFrenchDateInput(invoice.issuedAt ?? invoice.createdAt),
       dueAt: isoToFrenchDateInput(invoice.dueAt),
+      serviceDate: isoToFrenchDateInput(invoice.serviceDate),
       paymentTermsDays: '30',
       notes: invoice.notes ?? '',
     }),

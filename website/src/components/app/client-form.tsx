@@ -15,6 +15,7 @@ import {
   TextInput,
 } from '@/components/app/form-fields';
 import { CLIENT_PLACEHOLDERS } from '@/constants/client-placeholders';
+import { CLIENT_IDENTITY_HINT } from '@/lib/clients/identity';
 import { clientFormSchema } from '@/lib/validations/client';
 import { cn } from '@/lib/utils';
 import type { ClientFormValues } from '@/types/client';
@@ -108,16 +109,18 @@ export function ClientForm({
       {tab === 'identity' ? (
         <>
           <ClientCompanyLookup control={control} errors={errors} setValue={setValue} />
-          <FormSection description="Informations principales du contact" title="Identité">
+          <FormSection
+            description={CLIENT_IDENTITY_HINT}
+            title="Identité">
             <div className="grid gap-5 sm:grid-cols-2">
-              <FormField error={errors.lastName?.message} label="Nom *">
+              <FormField className="sm:col-span-2" error={errors.company?.message} label="Entreprise">
+                <TextInput {...register('company')} placeholder={CLIENT_PLACEHOLDERS.company} />
+              </FormField>
+              <FormField error={errors.lastName?.message} label="Nom">
                 <TextInput {...register('lastName')} placeholder={CLIENT_PLACEHOLDERS.lastName} />
               </FormField>
               <FormField error={errors.firstName?.message} label="Prénom">
                 <TextInput {...register('firstName')} placeholder={CLIENT_PLACEHOLDERS.firstName} />
-              </FormField>
-              <FormField className="sm:col-span-2" error={errors.company?.message} label="Entreprise">
-                <TextInput {...register('company')} placeholder={CLIENT_PLACEHOLDERS.company} />
               </FormField>
               <FormField error={errors.email?.message} label="E-mail">
                 <TextInput

@@ -49,6 +49,7 @@ function mapInvoiceMetadata(
   return {
     issued_at: input.issuedAt ?? fallbackIssuedAt,
     due_at: input.dueAt ?? fallbackDueAt,
+    service_date: input.serviceDate ?? null,
     notes: input.notes?.trim() || null,
   };
 }

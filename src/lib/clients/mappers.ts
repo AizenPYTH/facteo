@@ -21,7 +21,7 @@ export function mapFormValuesToClientInsert(
   return {
     user_id: scope.userId,
     company_id: scope.companyId,
-    name: formatClientStoredName(input.lastName, input.firstName),
+    name: formatClientStoredName(input.lastName, input.firstName, input.company),
     company: toNullableString(input.company),
     email: toNullableString(input.email),
     phone: toNullablePhone(input.phone),
@@ -42,7 +42,7 @@ export function mapFormValuesToClientInsert(
 
 export function mapFormValuesToClientUpdate(input: ClientFormValues): ClientUpdate {
   return {
-    name: formatClientStoredName(input.lastName, input.firstName),
+    name: formatClientStoredName(input.lastName, input.firstName, input.company),
     company: toNullableString(input.company),
     email: toNullableString(input.email),
     phone: toNullablePhone(input.phone),

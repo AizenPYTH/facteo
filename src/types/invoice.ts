@@ -67,6 +67,7 @@ export function createEmptyInvoiceLine(): InvoiceLineValue {
 export type InvoiceInfoValues = {
   issuedAt: string;
   dueAt: string;
+  serviceDate: string;
   paymentTermsDays: string;
   notes: string;
 };
@@ -77,6 +78,7 @@ export function createEmptyInvoiceInfoValues(
   return {
     issuedAt: defaults?.issuedAt ?? '',
     dueAt: defaults?.dueAt ?? '',
+    serviceDate: defaults?.serviceDate ?? '',
     paymentTermsDays: defaults?.paymentTermsDays ?? '30',
     notes: defaults?.notes ?? '',
   };
@@ -99,6 +101,7 @@ export type Invoice = {
   totalTtc: number;
   issuedAt: string | null;
   dueAt: string | null;
+  serviceDate: string | null;
   paidAt: string | null;
   paymentMethod: string | null;
   paymentReference: string | null;
@@ -141,6 +144,7 @@ export type CreateInvoiceInput = {
   lines: InvoiceLineValue[];
   issuedAt?: string | null;
   dueAt?: string | null;
+  serviceDate?: string | null;
   paymentTermsDays?: number | null;
   notes?: string;
   vatRegime?: VatRegime;

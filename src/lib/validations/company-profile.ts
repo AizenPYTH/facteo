@@ -22,6 +22,13 @@ export const companyProfileSchema = z.object({
   postalCode: optionalText.refine(isValidPostalCode, 'Code postal invalide'),
   city: optionalText,
   country: optionalText,
+  legalForm: optionalText,
+  shareCapital: optionalText,
+  rcsCity: optionalText,
+  siren: optionalText.refine(
+    (value) => !value || /^\d{9}$/.test(normalizeDigits(value)),
+    'Le SIREN doit contenir 9 chiffres',
+  ),
   siret: optionalText.refine(
     (value) => !value || /^\d{14}$/.test(normalizeDigits(value)),
     'Le SIRET doit contenir 14 chiffres',

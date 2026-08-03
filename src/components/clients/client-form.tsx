@@ -9,6 +9,7 @@ import { radius } from '@/constants/theme/radius';
 import { spacing } from '@/constants/theme/spacing';
 import { typography } from '@/constants/theme/typography';
 import { useColors, useThemedStyles } from '@/hooks/use-colors';
+import { CLIENT_IDENTITY_HINT } from '@/lib/clients/identity';
 import { formatFrenchPhoneInput } from '@/lib/format/phone';
 import type { ClientFormValues } from '@/types/client';
 
@@ -45,7 +46,28 @@ export function ClientForm({
   if (compact) {
     return (
       <View style={styles.form}>
+        <Text style={[styles.hint, { color: colors.textSecondary }]}>{CLIENT_IDENTITY_HINT}</Text>
         <FormSection title="Identité">
+          <FormField>
+            <Controller
+              control={control}
+              name="company"
+              render={({ field: { onChange, onBlur, value } }) => (
+                <TextField
+                  autoCapitalize="words"
+                  autoFocus
+                  error={errors.company?.message}
+                  label="Entreprise"
+                  onBlur={onBlur}
+                  onChangeText={onChange}
+                  placeholder={CLIENT_PLACEHOLDERS.company}
+                  textContentType="organizationName"
+                  value={value}
+                />
+              )}
+            />
+          </FormField>
+          <FormDivider />
           <FormField>
             <Controller
               control={control}
@@ -53,7 +75,6 @@ export function ClientForm({
               render={({ field: { onChange, onBlur, value } }) => (
                 <TextField
                   autoCapitalize="words"
-                  autoFocus
                   error={errors.lastName?.message}
                   label="Nom"
                   onBlur={onBlur}
@@ -61,6 +82,26 @@ export function ClientForm({
                   placeholder={CLIENT_PLACEHOLDERS.lastName}
                   returnKeyType="next"
                   textContentType="familyName"
+                  value={value}
+                />
+              )}
+            />
+          </FormField>
+          <FormDivider />
+          <FormField>
+            <Controller
+              control={control}
+              name="firstName"
+              render={({ field: { onChange, onBlur, value } }) => (
+                <TextField
+                  autoCapitalize="words"
+                  error={errors.firstName?.message}
+                  label="Prénom"
+                  onBlur={onBlur}
+                  onChangeText={onChange}
+                  placeholder={CLIENT_PLACEHOLDERS.firstName}
+                  returnKeyType="next"
+                  textContentType="givenName"
                   value={value}
                 />
               )}
@@ -101,46 +142,6 @@ export function ClientForm({
         ) : (
           <>
             <ClientCompanyLookup control={control} errors={errors} setValue={setValue} />
-            <FormSection title="Compléments">
-              <FormField>
-                <Controller
-                  control={control}
-                  name="firstName"
-                  render={({ field: { onChange, onBlur, value } }) => (
-                    <TextField
-                      autoCapitalize="words"
-                      error={errors.firstName?.message}
-                      label="Prénom"
-                      onBlur={onBlur}
-                      onChangeText={onChange}
-                      placeholder={CLIENT_PLACEHOLDERS.firstName}
-                      returnKeyType="next"
-                      textContentType="givenName"
-                      value={value}
-                    />
-                  )}
-                />
-              </FormField>
-              <FormDivider />
-              <FormField>
-                <Controller
-                  control={control}
-                  name="company"
-                  render={({ field: { onChange, onBlur, value } }) => (
-                    <TextField
-                      autoCapitalize="words"
-                      error={errors.company?.message}
-                      label="Entreprise"
-                      onBlur={onBlur}
-                      onChangeText={onChange}
-                      placeholder={CLIENT_PLACEHOLDERS.company}
-                      textContentType="organizationName"
-                      value={value}
-                    />
-                  )}
-                />
-              </FormField>
-            </FormSection>
             <AddressFields control={control} errors={errors} />
             <LegalFields control={control} errors={errors} />
             <NotesField control={control} errors={errors} />
@@ -170,8 +171,28 @@ export function ClientForm({
 
       {tab === 'identity' ? (
         <>
+          <Text style={[styles.hint, { color: colors.textSecondary }]}>{CLIENT_IDENTITY_HINT}</Text>
           <ClientCompanyLookup control={control} errors={errors} setValue={setValue} />
           <FormSection title="Identité">
+            <FormField>
+              <Controller
+                control={control}
+                name="company"
+                render={({ field: { onChange, onBlur, value } }) => (
+                  <TextField
+                    autoCapitalize="words"
+                    error={errors.company?.message}
+                    label="Entreprise"
+                    onBlur={onBlur}
+                    onChangeText={onChange}
+                    placeholder={CLIENT_PLACEHOLDERS.company}
+                    textContentType="organizationName"
+                    value={value}
+                  />
+                )}
+              />
+            </FormField>
+            <FormDivider />
             <FormField>
               <Controller
                 control={control}
@@ -206,25 +227,6 @@ export function ClientForm({
                     placeholder={CLIENT_PLACEHOLDERS.firstName}
                     returnKeyType="next"
                     textContentType="givenName"
-                    value={value}
-                  />
-                )}
-              />
-            </FormField>
-            <FormDivider />
-            <FormField>
-              <Controller
-                control={control}
-                name="company"
-                render={({ field: { onChange, onBlur, value } }) => (
-                  <TextField
-                    autoCapitalize="words"
-                    error={errors.company?.message}
-                    label="Entreprise"
-                    onBlur={onBlur}
-                    onChangeText={onChange}
-                    placeholder={CLIENT_PLACEHOLDERS.company}
-                    textContentType="organizationName"
                     value={value}
                   />
                 )}
@@ -528,6 +530,11 @@ function useStyles() {
   return useThemedStyles((colors) => ({
     form: {
       gap: spacing.lg,
+    },
+    hint: {
+      ...typography.footnote,
+      lineHeight: 18,
+      marginBottom: spacing.xs,
     },
     notesInput: {
       minHeight: 120,

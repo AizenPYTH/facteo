@@ -141,6 +141,7 @@ export type InvoiceRow = {
   total: number | null;
   issued_at: string | null;
   due_at: string | null;
+  service_date: string | null;
   paid_at: string | null;
   payment_method: string | null;
   payment_reference: string | null;
@@ -211,6 +212,7 @@ export type InvoiceInsert = {
   total_ttc: number;
   issued_at?: string | null;
   due_at?: string | null;
+  service_date?: string | null;
   paid_at?: string | null;
   payment_method?: string | null;
   payment_reference?: string | null;

@@ -1,4 +1,4 @@
-import { parseClientStoredName } from '@/lib/clients/name';
+import { resolveClientPersonName } from '@/lib/clients/name';
 import { mapInvoiceItemRowToLineValue, mapQuoteItemRowToLineValue } from '@/lib/documents/line-mappers';
 import type { Client } from '@/types/client';
 import type {
@@ -54,7 +54,10 @@ function formatClientFullNameFromRow(client: { name?: string | null; company?: s
     return '';
   }
 
-  const { lastName, firstName } = parseClientStoredName(client.name);
+  const { lastName, firstName } = resolveClientPersonName({
+    name: client.name,
+    company: client.company,
+  });
   return [firstName, lastName].filter(Boolean).join(' ');
 }
 
@@ -137,6 +140,7 @@ export function mapInvoiceRowToInvoice(row: InvoiceWithClient): Invoice {
     totalTtc: row.total_ttc,
     issuedAt: row.issued_at,
     dueAt: row.due_at,
+    serviceDate: row.service_date ?? null,
     paidAt: row.paid_at,
     paymentMethod: row.payment_method,
     paymentReference: row.payment_reference,
@@ -192,7 +196,7 @@ export function mapInvoiceDetail(
 }
 
 export function mapClientRowToClient(row: ClientRow): Client {
-  const { lastName, firstName } = parseClientStoredName(row.name);
+  const { lastName, firstName } = resolveClientPersonName(row);
 
   return {
     id: row.id,

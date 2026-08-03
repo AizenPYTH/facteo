@@ -220,6 +220,77 @@ export function CompanyProfileForm({ control, errors, assets }: CompanyProfileFo
           <FormField>
             <Controller
               control={control}
+              name="legalForm"
+              render={({ field: { onChange, onBlur, value } }) => (
+                <TextField
+                  autoCapitalize="characters"
+                  error={errors.legalForm?.message}
+                  label="Forme juridique"
+                  onBlur={onBlur}
+                  onChangeText={onChange}
+                  placeholder="SAS, SARL, EI…"
+                  value={value}
+                />
+              )}
+            />
+          </FormField>
+          <FormDivider />
+          <FormField>
+            <Controller
+              control={control}
+              name="shareCapital"
+              render={({ field: { onChange, onBlur, value } }) => (
+                <TextField
+                  error={errors.shareCapital?.message}
+                  label="Capital social"
+                  onBlur={onBlur}
+                  onChangeText={onChange}
+                  placeholder="10 000 €"
+                  value={value}
+                />
+              )}
+            />
+          </FormField>
+          <FormDivider />
+          <FormField>
+            <Controller
+              control={control}
+              name="rcsCity"
+              render={({ field: { onChange, onBlur, value } }) => (
+                <TextField
+                  autoCapitalize="words"
+                  error={errors.rcsCity?.message}
+                  label="RCS / RM (ville)"
+                  onBlur={onBlur}
+                  onChangeText={onChange}
+                  placeholder="Paris"
+                  value={value}
+                />
+              )}
+            />
+          </FormField>
+          <FormDivider />
+          <FormField>
+            <Controller
+              control={control}
+              name="siren"
+              render={({ field: { onChange, onBlur, value } }) => (
+                <TextField
+                  error={errors.siren?.message}
+                  keyboardType="number-pad"
+                  label="SIREN"
+                  onBlur={onBlur}
+                  onChangeText={onChange}
+                  placeholder="123 456 789"
+                  value={value}
+                />
+              )}
+            />
+          </FormField>
+          <FormDivider />
+          <FormField>
+            <Controller
+              control={control}
               name="siret"
               render={({ field: { onChange, onBlur, value } }) => (
                 <TextField

@@ -25,9 +25,8 @@ export const VAT_REGIME_OPTIONS: Array<{ value: VatRegime; label: string; hint: 
   },
 ];
 
-const MENTIONS: Record<VatRegime, string> = {
-  standard:
-    'TVA acquittée sur les débits. En cas de retard de paiement, des pénalités seront exigibles.',
+const VAT_MENTIONS: Record<VatRegime, string> = {
+  standard: 'TVA acquittée sur les débits.',
   eu_reverse_charge:
     'Autoliquidation — Article 196 de la Directive 2006/112/CE. TVA due par le preneur.',
   export_outside_eu:
@@ -36,11 +35,33 @@ const MENTIONS: Record<VatRegime, string> = {
     'TVA non applicable — article 293 B du CGI (franchise en base) ou exonération applicable.',
 };
 
+/** Mentions Code de commerce L441-10 — obligatoires sur toute facture. */
+export const MANDATORY_PAYMENT_LEGAL_MENTIONS = [
+  'Pas d’escompte pour paiement anticipé.',
+  'En cas de retard de paiement, application d’un taux d’intérêt égal à trois fois le taux d’intérêt légal.',
+  'Indemnité forfaitaire pour frais de recouvrement due au créancier : 40 €.',
+] as const;
+
+export function getMandatoryPaymentLegalBlock(): string {
+  return MANDATORY_PAYMENT_LEGAL_MENTIONS.join(' ');
+}
+
 export function getLegalMentionForRegime(regime: VatRegime | string | null | undefined): string {
-  if (!regime || !(regime in MENTIONS)) {
-    return MENTIONS.standard;
+  if (!regime || !(regime in VAT_MENTIONS)) {
+    return VAT_MENTIONS.standard;
   }
-  return MENTIONS[regime as VatRegime];
+  return VAT_MENTIONS[regime as VatRegime];
+}
+
+export function buildInvoiceLegalFooter(input: {
+  vatRegime?: VatRegime | string | null;
+  customFooter?: string | null;
+  includePaymentMentions?: boolean;
+}): string {
+  const custom = input.customFooter?.trim();
+  const vat = getLegalMentionForRegime(input.vatRegime);
+  const payment = input.includePaymentMentions ? getMandatoryPaymentLegalBlock() : '';
+  return [custom, vat, payment].filter(Boolean).join(' ');
 }
 
 export function suggestVatRegime(input: {

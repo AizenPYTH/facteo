@@ -16,6 +16,10 @@ export type TenantCompany = {
   postalCode: string | null;
   city: string | null;
   country: string | null;
+  legalForm: string | null;
+  shareCapital: string | null;
+  rcsCity: string | null;
+  siren: string | null;
   siret: string | null;
   vatNumber: string | null;
   iban: string | null;

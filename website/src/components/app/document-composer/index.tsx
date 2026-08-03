@@ -41,6 +41,7 @@ import { analyzeProductImage, type ProductImageAnalysis } from '@/lib/domain/ai/
 import { calculateLineTotals } from '@/lib/calculations/totals';
 import {
   hasBlockingPreflightIssues,
+  formatPreflightErrors,
   validateInvoicePreflight,
 } from '@/lib/domain/invoices/preflight-validation';
 import { VAT_REGIME_OPTIONS, suggestVatRegime } from '@/lib/domain/invoices/legal-mentions';
@@ -249,7 +250,7 @@ export function DocumentComposer({
   const preselectedClient = searchParams.get('client') ?? '';
   const fromProductsParam = searchParams.get('fromProducts') ?? '';
   const { user, loading: authLoading } = useAuth();
-  const { scope, loading: tenantLoading } = useTenant();
+  const { scope, activeCompany, loading: tenantLoading } = useTenant();
   const { settings, loading: settingsLoading } = useSettings();
   const queryClient = useQueryClient();
   const isEditingInvoice = kind === 'invoice' && Boolean(editInvoiceId);
@@ -388,6 +389,9 @@ export function DocumentComposer({
       if (kind === 'invoice') {
         const preflight = validateInvoicePreflight({
           clientId,
+          clientCompany: client?.company,
+          clientLastName: client?.lastName,
+          clientFirstName: client?.firstName,
           clientEmail: client?.email,
           clientPhone: client?.phone,
           clientVatNumber: client?.vatNumber,
@@ -395,16 +399,26 @@ export function DocumentComposer({
           clientSiret: client?.siret,
           clientCountry: client?.country,
           clientPostalCode: client?.postalCode,
-          currency: settings?.currency,
+          clientAddress: client?.address,
+          clientCity: client?.city,
+          companyName: activeCompany?.name,
+          companyAddress: activeCompany?.address,
+          companyPostalCode: activeCompany?.postalCode,
+          companyCity: activeCompany?.city,
+          companySiret: activeCompany?.siret,
+          companyIban: activeCompany?.iban,
+          companyVatNumber: activeCompany?.vatNumber,
+          companyLegalForm: activeCompany?.legalForm,
+          currency: settings?.currency ?? 'EUR',
           vatRegime,
           linesCount: validLines.length,
           hasPositiveTotals: totals.total > 0,
         });
 
         if (hasBlockingPreflightIssues(preflight)) {
-          const firstError = preflight.find((issue) => issue.level === 'error');
           setFieldErrors({
-            linesGlobal: firstError?.message ?? 'La facture ne peut pas être enregistrée.',
+            linesGlobal:
+              formatPreflightErrors(preflight) || 'La facture ne peut pas être enregistrée.',
           });
           setSubmitAttempted(true);
           throw new Error('VALIDATION');
@@ -649,7 +663,7 @@ export function DocumentComposer({
 
   const bannerMessages = [
     fieldErrors.clientId,
-    fieldErrors.linesGlobal,
+    ...(fieldErrors.linesGlobal ? fieldErrors.linesGlobal.split('\n') : []),
   ].filter((m): m is string => Boolean(m));
 
   return (
