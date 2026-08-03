@@ -637,6 +637,10 @@ export type CompanyRow = {
   postal_code: string | null;
   city: string | null;
   country: string | null;
+  legal_form: string | null;
+  share_capital: string | null;
+  rcs_city: string | null;
+  siren: string | null;
   siret: string | null;
   vat_number: string | null;
   iban: string | null;
