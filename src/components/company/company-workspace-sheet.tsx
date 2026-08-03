@@ -3,15 +3,14 @@ import { SymbolView } from 'expo-symbols';
 import { useState } from 'react';
 import {
   Alert,
-  Modal,
   Pressable,
-  ScrollView,
   StyleSheet,
   TextInput,
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { AppBottomSheet, BottomSheetScrollView } from '@/components/ui/bottom-sheet';
 import { AppText } from '@/components/ui/app-text';
 import { Button } from '@/components/ui/button';
 import { useCompanyAsset } from '@/hooks/use-company-asset';
@@ -128,23 +127,24 @@ export function CompanyWorkspaceSheet({
   }
 
   return (
-    <Modal animationType="slide" onRequestClose={onClose} transparent visible={visible}>
-      <View style={styles.overlay}>
-        <Pressable accessibilityLabel="Fermer" onPress={onClose} style={StyleSheet.absoluteFill} />
-        <View style={[styles.sheet, { paddingBottom: Math.max(insets.bottom, spacing.lg) }]}>
-          <View style={styles.handle} />
+    <AppBottomSheet onClose={onClose} snapPoints={['70%', '92%']} visible={visible}>
+      <View style={styles.sheet}>
+        <View style={styles.header}>
           <AppText variant="title">Espaces de travail</AppText>
           <AppText color="secondary" variant="subtitle">
             Gérez vos entreprises et changez d’espace en un clic.
           </AppText>
+        </View>
 
-          <ScrollView contentContainerStyle={styles.list} showsVerticalScrollIndicator={false}>
-            {companies.map((company) => {
-              const isActive = company.id === activeCompany?.id;
-              const isEditing = editingId === company.id;
-              const siren = formatSiren(company.siret);
+        <BottomSheetScrollView
+          contentContainerStyle={[styles.list, { paddingBottom: Math.max(insets.bottom, spacing.lg) }]}
+          showsVerticalScrollIndicator={false}>
+          {companies.map((company) => {
+            const isActive = company.id === activeCompany?.id;
+            const isEditing = editingId === company.id;
+            const siren = formatSiren(company.siret);
 
-              return (
+            return (
                 <View key={company.id} style={[styles.card, isActive && styles.cardActive]}>
                   <Pressable
                     onPress={() => {
@@ -231,22 +231,21 @@ export function CompanyWorkspaceSheet({
                 </View>
               );
             })}
-          </ScrollView>
+          </BottomSheetScrollView>
 
-          <View style={styles.createBlock}>
-            <AppText medium variant="body">Nouvelle entreprise</AppText>
-            <TextInput
-              onChangeText={setCreateName}
-              placeholder="Nom de l’entreprise"
-              placeholderTextColor={colors.textTertiary}
-              style={styles.input}
-              value={createName}
-            />
-            <Button loading={createCompany.isPending} onPress={() => void handleCreate()} title="Créer" />
-          </View>
+        <View style={[styles.createBlock, { paddingBottom: Math.max(insets.bottom, spacing.md) }]}>
+          <AppText medium variant="body">Nouvelle entreprise</AppText>
+          <TextInput
+            onChangeText={setCreateName}
+            placeholder="Nom de l’entreprise"
+            placeholderTextColor={colors.textTertiary}
+            style={styles.input}
+            value={createName}
+          />
+          <Button loading={createCompany.isPending} onPress={() => void handleCreate()} title="Créer" />
         </View>
       </View>
-    </Modal>
+    </AppBottomSheet>
   );
 }
 
@@ -260,28 +259,13 @@ function readErrorMessage(error: unknown): string {
 
 const useStyles = () =>
   useThemedStyles((colors) => ({
-    overlay: {
-      flex: 1,
-      backgroundColor: colors.overlay,
-      justifyContent: 'flex-end',
-    },
     sheet: {
-      maxHeight: '90%',
-      backgroundColor: colors.surface,
-      borderTopLeftRadius: radius.sheet,
-      borderTopRightRadius: radius.sheet,
+      flex: 1,
       paddingHorizontal: spacing.lg,
-      paddingTop: spacing.md,
-      gap: spacing.md,
-      borderWidth: StyleSheet.hairlineWidth,
-      borderColor: colors.border,
     },
-    handle: {
-      alignSelf: 'center',
-      width: 36,
-      height: 4,
-      borderRadius: 2,
-      backgroundColor: colors.borderStrong,
+    header: {
+      gap: 2,
+      paddingBottom: spacing.md,
     },
     list: {
       gap: spacing.sm,

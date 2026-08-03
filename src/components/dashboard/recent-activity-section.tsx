@@ -1,6 +1,7 @@
 import { SymbolView } from 'expo-symbols';
 import { StyleSheet, Text, View } from 'react-native';
 
+import { BlurredTeaser } from '@/components/ui/blurred-teaser';
 import { useColors, useThemedStyles } from '@/hooks/use-colors';
 import { radius } from '@/constants/theme/radius';
 import { spacing } from '@/constants/theme/spacing';
@@ -27,33 +28,35 @@ export function RecentActivitySection({ activity, premiumLocked = false }: Recen
   return (
     <View style={styles.section}>
       <SectionHeader premiumLocked={premiumLocked} title="Activité récente" />
-      <View style={[styles.card, premiumLocked ? styles.cardLocked : null]}>
-        {activity.length === 0 ? (
-          <Text style={styles.empty}>Aucune activité récente.</Text>
-        ) : (
-          activity.map((item, index) => (
-            <View key={`${item.type}-${item.id}`}>
-              <View style={styles.row}>
-                <View style={styles.iconWrap}>
-                  <SymbolView
-                    name={getActivityIcon(item.type)}
-                    size={18}
-                    tintColor={item.type === 'invoice' ? colors.primary : colors.warning}
-                    type="hierarchical"
-                  />
+      <BlurredTeaser active={premiumLocked}>
+        <View style={styles.card}>
+          {activity.length === 0 ? (
+            <Text style={styles.empty}>Aucune activité récente.</Text>
+          ) : (
+            activity.map((item, index) => (
+              <View key={`${item.type}-${item.id}`}>
+                <View style={styles.row}>
+                  <View style={styles.iconWrap}>
+                    <SymbolView
+                      name={getActivityIcon(item.type)}
+                      size={18}
+                      tintColor={item.type === 'invoice' ? colors.primary : colors.warning}
+                      type="hierarchical"
+                    />
+                  </View>
+                  <View style={styles.content}>
+                    <Text numberOfLines={2} style={styles.label}>
+                      {item.label}
+                    </Text>
+                    <Text style={styles.date}>{formatDate(item.date)}</Text>
+                  </View>
                 </View>
-                <View style={styles.content}>
-                  <Text numberOfLines={2} style={styles.label}>
-                    {item.label}
-                  </Text>
-                  <Text style={styles.date}>{formatDate(item.date)}</Text>
-                </View>
+                {index < activity.length - 1 ? <View style={styles.separator} /> : null}
               </View>
-              {index < activity.length - 1 ? <View style={styles.separator} /> : null}
-            </View>
-          ))
-        )}
-      </View>
+            ))
+          )}
+        </View>
+      </BlurredTeaser>
     </View>
   );
 }
@@ -69,9 +72,6 @@ function useStyles() {
     borderWidth: 1,
     borderColor: colors.border,
     overflow: 'hidden',
-  },
-  cardLocked: {
-    opacity: 0.88,
   },
   empty: {
     ...typography.subheadline,

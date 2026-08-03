@@ -1,8 +1,10 @@
 import { StyleSheet, View } from 'react-native';
+import Animated from 'react-native-reanimated';
 
 import { useColors } from '@/hooks/use-colors';
 import { spacing } from '@/constants/theme/spacing';
 import { formatCurrency } from '@/lib/format/currency';
+import { fadeInUp } from '@/lib/motion/presets';
 import type { DashboardStats } from '@/types/dashboard';
 
 import { StatCard } from './stat-card';
@@ -16,30 +18,39 @@ export function StatsGrid({ stats }: StatsGridProps) {
 
   return (
     <View style={styles.grid}>
-      <StatCard
-        accentColor={colors.primary}
-        label="Chiffre d'affaires"
-        style={styles.card}
-        value={formatCurrency(stats.monthlyRevenue)}
-      />
-      <StatCard
-        accentColor={colors.warning}
-        label="Factures impayées"
-        style={styles.card}
-        value={String(stats.unpaidInvoices)}
-      />
-      <StatCard
-        accentColor={colors.success}
-        label="Factures payées"
-        style={styles.card}
-        value={String(stats.paidInvoices)}
-      />
-      <StatCard
-        accentColor={colors.iconSecondary}
-        label="Clients"
-        style={styles.card}
-        value={String(stats.totalClients)}
-      />
+      <Animated.View entering={fadeInUp({ index: 0 })} style={styles.card}>
+        <StatCard
+          accentColor={colors.primary}
+          formatValue={formatCurrency}
+          label="Chiffre d'affaires"
+          numericValue={stats.monthlyRevenue}
+          value={formatCurrency(stats.monthlyRevenue)}
+        />
+      </Animated.View>
+      <Animated.View entering={fadeInUp({ index: 1 })} style={styles.card}>
+        <StatCard
+          accentColor={colors.warning}
+          label="Factures impayées"
+          numericValue={stats.unpaidInvoices}
+          value={String(stats.unpaidInvoices)}
+        />
+      </Animated.View>
+      <Animated.View entering={fadeInUp({ index: 2 })} style={styles.card}>
+        <StatCard
+          accentColor={colors.success}
+          label="Factures payées"
+          numericValue={stats.paidInvoices}
+          value={String(stats.paidInvoices)}
+        />
+      </Animated.View>
+      <Animated.View entering={fadeInUp({ index: 3 })} style={styles.card}>
+        <StatCard
+          accentColor={colors.iconSecondary}
+          label="Clients"
+          numericValue={stats.totalClients}
+          value={String(stats.totalClients)}
+        />
+      </Animated.View>
     </View>
   );
 }

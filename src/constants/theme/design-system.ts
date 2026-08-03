@@ -33,10 +33,22 @@ export const components = {
   templatePreviewHeight: 120,
 } as const;
 
+/**
+ * Canonical SF Symbols / Material icon sizes. Reach for these instead of a
+ * one-off number so weight and visual rhythm stay consistent across the app.
+ */
+export const iconSize = {
+  sm: 16,
+  md: 20,
+  lg: 24,
+  xl: 28,
+} as const;
+
 export const designSystem = {
   layout,
   motion,
   components,
+  iconSize,
   spacing,
   radius,
   shadows,

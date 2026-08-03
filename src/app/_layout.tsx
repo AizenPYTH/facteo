@@ -1,6 +1,8 @@
+import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
@@ -40,23 +42,27 @@ function RootNavigation() {
 
 export default function RootLayout() {
   return (
-    <SafeAreaProvider>
-      <KeyboardProvider>
-        <QueryProvider>
-          <AuthProvider>
-            <CompanyProvider>
-              <ThemePreferenceProvider>
-                  <SplashScreenController />
-                  <ToastProvider>
-                    <SubscriptionProvider>
-                      <RootNavigation />
-                    </SubscriptionProvider>
-                  </ToastProvider>
-              </ThemePreferenceProvider>
-            </CompanyProvider>
-          </AuthProvider>
-        </QueryProvider>
-      </KeyboardProvider>
-    </SafeAreaProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaProvider>
+        <KeyboardProvider>
+          <QueryProvider>
+            <AuthProvider>
+              <CompanyProvider>
+                <ThemePreferenceProvider>
+                    <SplashScreenController />
+                    <ToastProvider>
+                      <SubscriptionProvider>
+                        <BottomSheetModalProvider>
+                          <RootNavigation />
+                        </BottomSheetModalProvider>
+                      </SubscriptionProvider>
+                    </ToastProvider>
+                </ThemePreferenceProvider>
+              </CompanyProvider>
+            </AuthProvider>
+          </QueryProvider>
+        </KeyboardProvider>
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 }

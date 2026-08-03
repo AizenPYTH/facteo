@@ -1,12 +1,15 @@
 import { SymbolView } from 'expo-symbols';
 import { router, type Href } from 'expo-router';
 import { StyleSheet, Text, View, type ViewStyle } from 'react-native';
+import Animated, { ZoomIn } from 'react-native-reanimated';
 
 import { Button } from '@/components/ui/button';
 import { useColors, useThemedStyles } from '@/hooks/use-colors';
 import { radius } from '@/constants/theme/radius';
 import { spacing } from '@/constants/theme/spacing';
 import { typography } from '@/constants/theme/typography';
+import { motion } from '@/constants/theme/design-system';
+import { fadeInUp } from '@/lib/motion/presets';
 
 export type DashboardWelcomeProps = {
   style?: ViewStyle;
@@ -17,23 +20,29 @@ export function DashboardWelcome({ style }: DashboardWelcomeProps) {
   const colors = useColors();
   return (
     <View style={[styles.container, style]}>
-      <View style={styles.iconWrap}>
+      <Animated.View
+        entering={ZoomIn.duration(motion.normal).springify().damping(14).stiffness(160)}
+        style={styles.iconWrap}>
         <SymbolView
           name={{ ios: 'sparkles', android: 'auto_awesome', web: 'auto_awesome' }}
           size={28}
           tintColor={colors.primary}
           type="hierarchical"
         />
-      </View>
-      <Text accessibilityRole="header" style={styles.title}>
-        Bienvenue sur INVEQ.
-      </Text>
-      <Text style={styles.description}>Commencez par créer un client.</Text>
-      <Button
-        accessibilityLabel="Créer un client"
-        onPress={() => router.push('/clients/new' as Href)}
-        title="Créer un client"
-      />
+      </Animated.View>
+      <Animated.View entering={fadeInUp({ index: 1 })}>
+        <Text accessibilityRole="header" style={styles.title}>
+          Bienvenue sur INVEQ.
+        </Text>
+        <Text style={styles.description}>Commencez par créer un client.</Text>
+      </Animated.View>
+      <Animated.View entering={fadeInUp({ index: 2 })} style={styles.buttonWrap}>
+        <Button
+          accessibilityLabel="Créer un client"
+          onPress={() => router.push('/clients/new' as Href)}
+          title="Créer un client"
+        />
+      </Animated.View>
     </View>
   );
 }
@@ -67,6 +76,9 @@ function useStyles() {
     ...typography.subheadline,
     color: colors.textSecondary,
     textAlign: 'center',
+  },
+  buttonWrap: {
+    alignSelf: 'stretch',
   },
 }));
 }

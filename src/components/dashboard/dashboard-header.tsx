@@ -1,11 +1,14 @@
 import { router, type Href } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { Pressable, View, type ViewStyle } from 'react-native';
+import Animated from 'react-native-reanimated';
 
 import { CompanySwitcher } from '@/components/company/company-switcher';
 import { AppText } from '@/components/ui/app-text';
 import { useColors, useThemedStyles } from '@/hooks/use-colors';
+import { iconSize } from '@/constants/theme/design-system';
 import { spacing } from '@/constants/theme/spacing';
+import { fadeInUp } from '@/lib/motion/presets';
 import type { TenantCompany } from '@/types/tenant';
 
 export type DashboardHeaderProps = {
@@ -38,35 +41,41 @@ export function DashboardHeader({
     <View style={[styles.container, style]}>
       <View style={styles.topRow}>
         <View style={styles.textBlock}>
-          <AppText accessibilityRole="header" numberOfLines={2} variant="display">
-            {greeting}
-          </AppText>
-          {showSwitcher ? (
-            <CompanySwitcher
-              activeCompany={activeCompany ?? null}
-              companies={companies}
-              onCreate={onCreateCompany}
-              onSelect={onSwitchCompany}
-            />
-          ) : companyName ? (
-            <AppText color="secondary" numberOfLines={2} variant="subtitle">
-              {companyName}
+          <Animated.View entering={fadeInUp({ index: 0 })}>
+            <AppText accessibilityRole="header" numberOfLines={2} variant="display">
+              {greeting}
             </AppText>
-          ) : null}
+          </Animated.View>
+          <Animated.View entering={fadeInUp({ index: 1 })}>
+            {showSwitcher ? (
+              <CompanySwitcher
+                activeCompany={activeCompany ?? null}
+                companies={companies}
+                onCreate={onCreateCompany}
+                onSelect={onSwitchCompany}
+              />
+            ) : companyName ? (
+              <AppText color="secondary" numberOfLines={2} variant="subtitle">
+                {companyName}
+              </AppText>
+            ) : null}
+          </Animated.View>
         </View>
-        <Pressable
-          accessibilityLabel="Paramètres"
-          accessibilityRole="button"
-          hitSlop={8}
-          onPress={() => router.push('/settings' as Href)}
-          style={({ pressed }) => [styles.settingsButton, pressed && styles.pressed]}>
-          <SymbolView
-            name={{ ios: 'gearshape.fill', android: 'settings', web: 'settings' }}
-            size={22}
-            tintColor={colors.iconSecondary}
-            type="hierarchical"
-          />
-        </Pressable>
+        <Animated.View entering={fadeInUp({ index: 1 })}>
+          <Pressable
+            accessibilityLabel="Paramètres"
+            accessibilityRole="button"
+            hitSlop={8}
+            onPress={() => router.push('/settings' as Href)}
+            style={({ pressed }) => [styles.settingsButton, pressed && styles.pressed]}>
+            <SymbolView
+              name={{ ios: 'gearshape.fill', android: 'settings', web: 'settings' }}
+              size={iconSize.lg}
+              tintColor={colors.iconSecondary}
+              type="hierarchical"
+            />
+          </Pressable>
+        </Animated.View>
       </View>
     </View>
   );

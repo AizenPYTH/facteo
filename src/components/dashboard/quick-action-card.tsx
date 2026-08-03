@@ -1,12 +1,15 @@
 import { SymbolView } from 'expo-symbols';
 import type { ComponentProps } from 'react';
-import { Platform, Pressable, StyleSheet, Text, type ViewStyle } from 'react-native';
+import { Pressable, Text, type ViewStyle } from 'react-native';
+import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 
 import { useColors, useThemedStyles } from '@/hooks/use-colors';
 import { radius } from '@/constants/theme/radius';
 import { shadows } from '@/constants/theme/theme';
 import { spacing } from '@/constants/theme/spacing';
 import { typography } from '@/constants/theme/typography';
+import { triggerImpactHaptic } from '@/lib/haptics';
+import { springs } from '@/lib/motion/springs';
 
 type SymbolName = ComponentProps<typeof SymbolView>['name'];
 
@@ -29,35 +32,51 @@ export function QuickActionCard({
 }: QuickActionCardProps) {
   const styles = useStyles();
   const colors = useColors();
+  const scale = useSharedValue(1);
+  const pressStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
+
   return (
-    <Pressable
-      accessibilityLabel={label}
-      accessibilityRole="button"
-      accessibilityState={{ disabled }}
-      disabled={disabled}
-      onPress={onPress}
-      style={({ pressed }) => [
-        styles.card,
-        pressed && !disabled && styles.pressed,
-        disabled && styles.disabled,
-        style,
-      ]}
-      testID={testID}>
-      <SymbolView
-        name={icon}
-        size={22}
-        tintColor={disabled ? colors.iconTertiary : colors.primary}
-        type="hierarchical"
-      />
-      <Text style={[styles.label, disabled && styles.labelDisabled]}>{label}</Text>
-    </Pressable>
+    <Animated.View style={[pressStyle, styles.flex]}>
+      <Pressable
+        accessibilityLabel={label}
+        accessibilityRole="button"
+        accessibilityState={{ disabled }}
+        disabled={disabled}
+        onPress={onPress}
+        onPressIn={() => {
+          if (disabled) {
+            return;
+          }
+          // Reanimated SharedValue mutation is safe outside render; the
+          // compiler's immutability check doesn't yet recognize it.
+          // eslint-disable-next-line react-hooks/immutability
+          scale.value = withSpring(0.94, springs.snappy);
+          void triggerImpactHaptic();
+        }}
+        onPressOut={() => {
+          // eslint-disable-next-line react-hooks/immutability
+          scale.value = withSpring(1, springs.snappy);
+        }}
+        style={[styles.card, disabled && styles.disabled, style]}
+        testID={testID}>
+        <SymbolView
+          name={icon}
+          size={22}
+          tintColor={disabled ? colors.iconTertiary : colors.primary}
+          type="hierarchical"
+        />
+        <Text style={[styles.label, disabled && styles.labelDisabled]}>{label}</Text>
+      </Pressable>
+    </Animated.View>
   );
 }
 
 function useStyles() {
   return useThemedStyles((colors) => ({
-  card: {
+  flex: {
     flex: 1,
+  },
+  card: {
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.sm,
@@ -69,10 +88,6 @@ function useStyles() {
     borderColor: colors.border,
     minHeight: 88,
     ...shadows.sm,
-  },
-  pressed: {
-    backgroundColor: colors.backgroundSecondary,
-    opacity: Platform.OS === 'ios' ? 0.92 : 1,
   },
   disabled: {
     opacity: 0.5,

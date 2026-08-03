@@ -1,6 +1,7 @@
 import { StyleSheet, Text, View } from 'react-native';
 
-import { useColors, useThemedStyles } from '@/hooks/use-colors';
+import { BlurredTeaser } from '@/components/ui/blurred-teaser';
+import { useThemedStyles } from '@/hooks/use-colors';
 import { radius } from '@/constants/theme/radius';
 import { spacing } from '@/constants/theme/spacing';
 import { typography } from '@/constants/theme/typography';
@@ -16,30 +17,31 @@ type TopClientsSectionProps = {
 
 export function TopClientsSection({ clients, premiumLocked = false }: TopClientsSectionProps) {
   const styles = useStyles();
-  const colors = useColors();
   return (
     <View style={styles.section}>
       <SectionHeader premiumLocked={premiumLocked} title="Meilleurs clients" />
-      <View style={[styles.card, premiumLocked ? styles.cardLocked : null]}>
-        {clients.length === 0 ? (
-          <Text style={styles.empty}>Aucun client pour le moment.</Text>
-        ) : (
-          clients.map((client, index) => (
-            <View key={`${client.name}-${index}`}>
-              <View style={styles.row}>
-                <View style={styles.leading}>
-                  <Text style={styles.rank}>{index + 1}</Text>
-                  <Text numberOfLines={2} style={styles.name}>
-                    {client.name}
-                  </Text>
+      <BlurredTeaser active={premiumLocked}>
+        <View style={styles.card}>
+          {clients.length === 0 ? (
+            <Text style={styles.empty}>Aucun client pour le moment.</Text>
+          ) : (
+            clients.map((client, index) => (
+              <View key={`${client.name}-${index}`}>
+                <View style={styles.row}>
+                  <View style={styles.leading}>
+                    <Text style={styles.rank}>{index + 1}</Text>
+                    <Text numberOfLines={2} style={styles.name}>
+                      {client.name}
+                    </Text>
+                  </View>
+                  <Text style={styles.amount}>{formatCurrency(client.revenue)}</Text>
                 </View>
-                <Text style={styles.amount}>{formatCurrency(client.revenue)}</Text>
+                {index < clients.length - 1 ? <View style={styles.separator} /> : null}
               </View>
-              {index < clients.length - 1 ? <View style={styles.separator} /> : null}
-            </View>
-          ))
-        )}
-      </View>
+            ))
+          )}
+        </View>
+      </BlurredTeaser>
     </View>
   );
 }
@@ -53,9 +55,6 @@ function useStyles() {
     backgroundColor: colors.surface,
     borderRadius: radius.card,
     overflow: 'hidden',
-  },
-  cardLocked: {
-    opacity: 0.88,
   },
   empty: {
     ...typography.subheadline,

@@ -1,7 +1,14 @@
 import { createContext, useContext, useMemo, type PropsWithChildren } from 'react';
 import { StyleSheet, type ImageStyle, type TextStyle, type ViewStyle } from 'react-native';
 
-import { colors as lightColors, colorsDark, type ColorToken } from '@/constants/theme/colors';
+import {
+  colors as lightColors,
+  colorsDark,
+  gradients,
+  gradientsDark,
+  type ColorToken,
+  type GradientTokens,
+} from '@/constants/theme/colors';
 import { useThemePreference } from '@/providers/theme-preference-provider';
 
 export type AppColors = {
@@ -21,6 +28,12 @@ export function ColorsProvider({ children }: PropsWithChildren) {
 
 export function useColors(): AppColors {
   return useContext(ColorsContext);
+}
+
+/** Theme-aware brand gradients — mirrors `useColors()` but for gradient stops. */
+export function useGradients(): GradientTokens {
+  const { colorScheme } = useThemePreference();
+  return colorScheme === 'dark' ? gradientsDark : gradients;
 }
 
 type NamedStyles<T> = {

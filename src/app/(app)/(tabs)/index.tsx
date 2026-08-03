@@ -1,9 +1,10 @@
 import { router, type Href } from 'expo-router';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
   DashboardHeader,
+  DashboardSkeleton,
   DashboardWelcome,
   ExtendedStatsGrid,
   QuickActions,
@@ -17,10 +18,9 @@ import {
 } from '@/components/dashboard';
 import { PremiumGatedSection } from '@/components/subscription/premium-gated-section';
 import { DashboardDesktopScreen } from '@/components/web/desktop/screens/dashboard-desktop-screen';
-import { LoadingView } from '@/components/ui/loading-view';
 import { BottomTabInset } from '@/constants/theme';
 import { useBreakpoint } from '@/hooks/use-breakpoint';
-import { useThemedStyles } from '@/hooks/use-colors';
+import { useColors, useThemedStyles } from '@/hooks/use-colors';
 import { spacing } from '@/constants/theme/spacing';
 import { useDashboard } from '@/hooks/use-dashboard';
 import { useSubscription } from '@/hooks/use-subscription';
@@ -38,7 +38,9 @@ export default function DashboardScreen() {
 
 function DashboardMobileScreen() {
   const styles = useStyles();
-  const { firstName, companyName, stats, extended, recentInvoices, loading } = useDashboard();
+  const colors = useColors();
+  const { firstName, companyName, stats, extended, recentInvoices, loading, isRefetching, refetch } =
+    useDashboard();
   const { companies, activeCompany, switchCompany, createNewCompany } = useTenant();
   const { hasFeature } = useSubscription();
   const advancedStatsLocked = !hasFeature('advanced_stats');
@@ -53,6 +55,14 @@ function DashboardMobileScreen() {
           { paddingBottom: insets.bottom + BottomTabInset + spacing.lg },
         ]}
         keyboardDismissMode="on-drag"
+        refreshControl={
+          <RefreshControl
+            colors={[colors.primary]}
+            onRefresh={() => void refetch()}
+            refreshing={isRefetching}
+            tintColor={colors.primary}
+          />
+        }
         showsVerticalScrollIndicator={false}>
         <DashboardHeader
           activeCompany={activeCompany}
@@ -66,7 +76,7 @@ function DashboardMobileScreen() {
         />
 
         {loading ? (
-          <LoadingView message="Chargement..." size="small" />
+          <DashboardSkeleton />
         ) : (
           <>
             {hasNoActivity ? <DashboardWelcome /> : null}
