@@ -161,6 +161,28 @@ export const colorsDark = {
   tabBarBorder: '#38383A',
 } as const;
 
+export type GradientStops = readonly [string, string];
+
+export type GradientTokens = {
+  primary: GradientStops;
+  primarySubtle: GradientStops;
+};
+
+/**
+ * Brand gradients — same primary/blue identity, expressed as depth instead of
+ * flat fills. Used for hero surfaces, accent bars, and premium affordances.
+ * Additive only: never replaces a flat color token, only supplements it.
+ */
+export const gradients: GradientTokens = {
+  primary: [palette.blue[600], palette.blue[500]],
+  primarySubtle: [palette.blue[50], palette.white],
+};
+
+export const gradientsDark: GradientTokens = {
+  primary: [palette.blue[500], palette.blue[400]],
+  primarySubtle: ['#1A2A4A', palette.black],
+};
+
 /** Backward-compatible shape used by existing components. */
 export const legacyColors = {
   light: {
