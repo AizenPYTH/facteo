@@ -104,7 +104,7 @@ export default function PremiumScreen() {
 
         <Animated.View entering={fadeInUp({ index: 2 })}>
           <PlanComparison
-            currentPlanId={subscription?.effectivePlanId}
+            currentPlanId={isPremium ? 'premium' : 'free'}
             premiumPlan={premiumPlan}
             standardPlan={standardPlan}
           />
