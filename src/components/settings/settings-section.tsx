@@ -1,11 +1,11 @@
 import { type ReactNode } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
 import { useThemedStyles } from '@/hooks/use-colors';
 import { radius } from '@/constants/theme/radius';
+import { shadows } from '@/constants/theme/theme';
 import { spacing } from '@/constants/theme/spacing';
-import { elevation } from '@/constants/theme/surfaces';
-import { type } from '@/constants/theme/type-roles';
+import { textHierarchy } from '@/constants/theme/typography';
 
 type SettingsSectionProps = {
   title?: string;
@@ -31,23 +31,22 @@ function useStyles() {
       gap: spacing.xs,
     },
     title: {
-      ...type.caption,
+      ...textHierarchy.caption,
       color: colors.textSecondary,
       textTransform: 'uppercase',
-      letterSpacing: 0.4,
       paddingHorizontal: spacing.xs,
-      fontWeight: '600',
+      fontWeight: '500',
     },
     group: {
       backgroundColor: colors.surface,
       borderRadius: radius.card,
-      overflow: 'hidden',
-      borderWidth: StyleSheet.hairlineWidth,
+      borderWidth: 1,
       borderColor: colors.border,
-      ...elevation[1],
+      overflow: 'hidden',
+      ...shadows.sm,
     },
     footer: {
-      ...type.caption,
+      ...textHierarchy.caption,
       color: colors.textSecondary,
       paddingHorizontal: spacing.xs,
     },

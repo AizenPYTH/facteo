@@ -1,5 +1,7 @@
 import { router, type Href } from 'expo-router';
+import { useState } from 'react';
 import { Alert, Linking, Platform, StyleSheet, Switch, Text, View } from 'react-native';
+import Animated from 'react-native-reanimated';
 
 import {
   SettingsProfileSummary,
@@ -7,12 +9,14 @@ import {
   SettingsSection,
 } from '@/components/settings';
 import { NotificationPreferencesSection } from '@/components/settings/notification-preferences-section';
+import { ConfirmationModal } from '@/components/ui/confirmation-modal';
 import { SettingsScreenFrame } from '@/components/web/desktop/settings-screen-frame';
 import { SettingsDesktopContent } from '@/components/web/desktop/screens/settings-desktop-content';
 import { useBreakpoint } from '@/hooks/use-breakpoint';
 import { useColors, useThemedStyles } from '@/hooks/use-colors';
 import { spacing } from '@/constants/theme/spacing';
 import { typography } from '@/constants/theme/typography';
+import { fadeInUp } from '@/lib/motion/presets';
 import { MARKETING_CONTACT } from '@/constants/marketing/site';
 import { openHelpPage, openLegalPage, openMarketingSite } from '@/lib/legal/open-legal-page';
 import { useAuth } from '@/hooks/use-auth';
@@ -33,6 +37,8 @@ export default function SettingsScreen() {
   const { preference, setPreference } = useThemePreference();
   const { showSuccess } = useToast();
   const versionInfo = getAppVersionInfo();
+  const [logoutConfirmVisible, setLogoutConfirmVisible] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const isDarkMode = preference === 'dark';
   const darkModeSupported = Platform.OS !== 'web';
@@ -48,9 +54,12 @@ export default function SettingsScreen() {
   }
 
   async function handleLogout() {
+    setIsLoggingOut(true);
     const { error } = await signOut();
+    setIsLoggingOut(false);
 
     if (error) {
+      setLogoutConfirmVisible(false);
       Alert.alert('Erreur', 'Impossible de vous déconnecter. Réessayez.');
       return;
     }
@@ -96,115 +105,146 @@ export default function SettingsScreen() {
         <SettingsDesktopContent />
       ) : (
         <>
-          <SettingsProfileSummary
-            companyName={companyProfile.data?.companyName}
-            email={user?.email}
-            onPressPlan={() => router.push('/settings/premium' as Href)}
-            planLabel={planLabel}
-          />
-
-          <SettingsSection title="Entreprise">
-            <SettingsRow
-              label="Mes entreprises"
-              onPress={() => router.push('/settings/companies' as Href)}
+          <Animated.View entering={fadeInUp({ index: 0 })}>
+            <SettingsProfileSummary
+              companyName={companyProfile.data?.companyName}
+              email={user?.email}
+              isPremium={isPremium}
+              onPressPlan={() => router.push('/settings/premium' as Href)}
+              planLabel={planLabel}
             />
-            <View style={styles.separator} />
-            <SettingsRow
-              label="Profil entreprise"
-              onPress={() => router.push('/company' as Href)}
-            />
-          </SettingsSection>
+          </Animated.View>
 
-          <SettingsSection title="Numérotation & documents">
-            <SettingsRow
-              label="Préfixes et numéros"
-              onPress={() => router.push('/settings/numbering' as Href)}
-            />
-            <View style={styles.separator} />
-            <SettingsRow
-              label="Modèles de factures et devis"
-              onPress={() => router.push('/settings/templates' as Href)}
-            />
-          </SettingsSection>
+          <Animated.View entering={fadeInUp({ index: 1 })}>
+            <SettingsSection title="Entreprise">
+              <SettingsRow
+                label="Mes entreprises"
+                onPress={() => router.push('/settings/companies' as Href)}
+              />
+              <View style={styles.separator} />
+              <SettingsRow
+                label="Profil entreprise"
+                onPress={() => router.push('/company' as Href)}
+              />
+            </SettingsSection>
+          </Animated.View>
 
-          <NotificationPreferencesSection />
+          <Animated.View entering={fadeInUp({ index: 2 })}>
+            <SettingsSection title="Numérotation & documents">
+              <SettingsRow
+                label="Préfixes et numéros"
+                onPress={() => router.push('/settings/numbering' as Href)}
+              />
+              <View style={styles.separator} />
+              <SettingsRow
+                label="Modèles de factures et devis"
+                onPress={() => router.push('/settings/templates' as Href)}
+              />
+            </SettingsSection>
+          </Animated.View>
 
-          <SettingsSection
-            footer={
-              darkModeSupported
-                ? 'Le thème s’applique immédiatement sur l’appareil.'
-                : 'Bientôt disponible sur le web.'
-            }
-            title="Apparence">
-            <SettingsRow
-              label="Mode sombre"
-              onPress={
-                darkModeSupported ? undefined : () => showSuccess('Bientôt disponible sur le web.')
+          <Animated.View entering={fadeInUp({ index: 3 })}>
+            <NotificationPreferencesSection />
+          </Animated.View>
+
+          <Animated.View entering={fadeInUp({ index: 4 })}>
+            <SettingsSection
+              footer={
+                darkModeSupported
+                  ? 'Le thème s’applique immédiatement sur l’appareil.'
+                  : 'Bientôt disponible sur le web.'
               }
-              trailing={
-                <Switch
-                  disabled={!darkModeSupported}
-                  onValueChange={(value) => {
-                    void handleToggleDarkMode(value);
-                  }}
-                  thumbColor={colors.surface}
-                  trackColor={{ false: colors.borderStrong, true: colors.primary }}
-                  value={isDarkMode}
-                />
-              }
-            />
-          </SettingsSection>
+              title="Apparence">
+              <SettingsRow
+                label="Mode sombre"
+                onPress={
+                  darkModeSupported ? undefined : () => showSuccess('Bientôt disponible sur le web.')
+                }
+                trailing={
+                  <Switch
+                    disabled={!darkModeSupported}
+                    onValueChange={(value) => {
+                      void handleToggleDarkMode(value);
+                    }}
+                    thumbColor={colors.surface}
+                    trackColor={{ false: colors.borderStrong, true: colors.primary }}
+                    value={isDarkMode}
+                  />
+                }
+              />
+            </SettingsSection>
+          </Animated.View>
 
-          <SettingsSection title="Compte">
-            <SettingsRow label="Se déconnecter" onPress={() => void handleLogout()} />
-            <View style={styles.separator} />
-            <SettingsRow destructive label="Supprimer le compte" onPress={handleDeleteAccount} />
-          </SettingsSection>
+          <Animated.View entering={fadeInUp({ index: 5 })}>
+            <SettingsSection title="Compte">
+              <SettingsRow
+                label="Se déconnecter"
+                onPress={() => setLogoutConfirmVisible(true)}
+              />
+              <View style={styles.separator} />
+              <SettingsRow destructive label="Supprimer le compte" onPress={handleDeleteAccount} />
+            </SettingsSection>
+          </Animated.View>
 
-          <SettingsSection title="Aide">
-            <SettingsRow
-              label="Centre d’aide"
-              onPress={() => void openHelpPage('support')}
-            />
-            <View style={styles.separator} />
-            <SettingsRow
-              label="Guide d’utilisation"
-              onPress={() => void openHelpPage('guide')}
-            />
-            <View style={styles.separator} />
-            <SettingsRow
-              label="Contact"
-              onPress={() => void openHelpPage('contact')}
-            />
-            <View style={styles.separator} />
-            <SettingsRow
-              label="Site web INVEQ"
-              onPress={() => void openMarketingSite()}
-            />
-          </SettingsSection>
+          <Animated.View entering={fadeInUp({ index: 6 })}>
+            <SettingsSection title="Aide">
+              <SettingsRow
+                label="Centre d’aide"
+                onPress={() => void openHelpPage('support')}
+              />
+              <View style={styles.separator} />
+              <SettingsRow
+                label="Guide d’utilisation"
+                onPress={() => void openHelpPage('guide')}
+              />
+              <View style={styles.separator} />
+              <SettingsRow
+                label="Contact"
+                onPress={() => void openHelpPage('contact')}
+              />
+              <View style={styles.separator} />
+              <SettingsRow
+                label="Site web INVEQ"
+                onPress={() => void openMarketingSite()}
+              />
+            </SettingsSection>
+          </Animated.View>
 
-          <SettingsSection title="Confidentialité & conditions">
-            <SettingsRow
-              label="Politique de confidentialité"
-              onPress={() => void openLegalPage('privacy')}
-            />
-            <View style={styles.separator} />
-            <SettingsRow
-              label="Conditions d’utilisation"
-              onPress={() => void openLegalPage('terms')}
-            />
-            <View style={styles.separator} />
-            <SettingsRow label="Mentions légales" onPress={() => void openLegalPage('legal')} />
-            <View style={styles.separator} />
-            <SettingsRow
-              label="Politique des cookies"
-              onPress={() => void openLegalPage('cookies')}
-            />
-          </SettingsSection>
+          <Animated.View entering={fadeInUp({ index: 7 })}>
+            <SettingsSection title="Confidentialité & conditions">
+              <SettingsRow
+                label="Politique de confidentialité"
+                onPress={() => void openLegalPage('privacy')}
+              />
+              <View style={styles.separator} />
+              <SettingsRow
+                label="Conditions d’utilisation"
+                onPress={() => void openLegalPage('terms')}
+              />
+              <View style={styles.separator} />
+              <SettingsRow label="Mentions légales" onPress={() => void openLegalPage('legal')} />
+              <View style={styles.separator} />
+              <SettingsRow
+                label="Politique des cookies"
+                onPress={() => void openLegalPage('cookies')}
+              />
+            </SettingsSection>
+          </Animated.View>
 
           <Text style={styles.version}>
             INVEQ v{versionInfo.version} · build {versionInfo.buildNumber}
           </Text>
+
+          <ConfirmationModal
+            confirmLabel="Se déconnecter"
+            destructive={false}
+            loading={isLoggingOut}
+            message="Vous devrez vous reconnecter pour accéder à votre compte."
+            onCancel={() => setLogoutConfirmVisible(false)}
+            onConfirm={() => void handleLogout()}
+            title="Se déconnecter ?"
+            visible={logoutConfirmVisible}
+          />
         </>
       )}
     </SettingsScreenFrame>
