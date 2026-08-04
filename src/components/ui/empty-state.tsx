@@ -1,13 +1,15 @@
 import { SymbolView } from 'expo-symbols';
 import type { ComponentProps } from 'react';
 import { Text, View, type ViewStyle } from 'react-native';
+import Animated, { ZoomIn } from 'react-native-reanimated';
 
 import { Button } from '@/components/ui/button';
+import { motion } from '@/constants/theme/design-system';
+import { useColors, useThemedStyles } from '@/hooks/use-colors';
 import { radius } from '@/constants/theme/radius';
 import { spacing } from '@/constants/theme/spacing';
-import { elevation } from '@/constants/theme/surfaces';
-import { type } from '@/constants/theme/type-roles';
-import { useColors, useThemedStyles } from '@/hooks/use-colors';
+import { typography } from '@/constants/theme/typography';
+import { fadeInUp } from '@/lib/motion/presets';
 
 type SymbolName = ComponentProps<typeof SymbolView>['name'];
 
@@ -40,15 +42,17 @@ export function EmptyState({
   const colors = useColors();
   return (
     <View style={[styles.container, style]} testID={testID}>
-      <View style={styles.iconWrap}>
-        <SymbolView name={icon} size={28} tintColor={colors.primary} type="hierarchical" />
-      </View>
-      <Text style={styles.title}>{title}</Text>
-      <Text style={styles.description}>{description}</Text>
+      <Animated.View entering={ZoomIn.duration(motion.normal).springify().damping(15).stiffness(180)} style={styles.iconWrap}>
+        <SymbolView name={icon} size={28} tintColor={colors.iconTertiary} type="hierarchical" />
+      </Animated.View>
+      <Animated.View entering={fadeInUp({ index: 1 })} style={styles.textBlock}>
+        <Text style={styles.title}>{title}</Text>
+        <Text style={styles.description}>{description}</Text>
+      </Animated.View>
       {actionLabel && onAction ? (
-        <View style={styles.cta}>
-          <Button accessibilityLabel={actionLabel} elevated onPress={onAction} title={actionLabel} />
-        </View>
+        <Animated.View entering={fadeInUp({ index: 2 })}>
+          <Button accessibilityLabel={actionLabel} onPress={onAction} title={actionLabel} />
+        </Animated.View>
       ) : null}
     </View>
   );
@@ -56,39 +60,33 @@ export function EmptyState({
 
 function useStyles() {
   return useThemedStyles((colors) => ({
-    container: {
-      alignItems: 'center',
-      paddingVertical: spacing['3xl'],
-      paddingHorizontal: spacing.lg,
-      gap: spacing.md,
-    },
-    iconWrap: {
-      width: 64,
-      height: 64,
-      borderRadius: radius.full,
-      backgroundColor: colors.primarySubtle,
-      alignItems: 'center',
-      justifyContent: 'center',
-      marginBottom: spacing.xs,
-      ...elevation[1],
-    },
-    title: {
-      ...type.section,
-      fontSize: 20,
-      lineHeight: 25,
-      color: colors.text,
-      textAlign: 'center',
-    },
-    description: {
-      ...type.secondary,
-      color: colors.textSecondary,
-      textAlign: 'center',
-      maxWidth: 300,
-    },
-    cta: {
-      marginTop: spacing.sm,
-      alignSelf: 'stretch',
-      maxWidth: 280,
-    },
-  }));
+  container: {
+    alignItems: 'center',
+    paddingVertical: spacing['3xl'],
+    paddingHorizontal: spacing.lg,
+    gap: spacing.md,
+  },
+  iconWrap: {
+    width: 56,
+    height: 56,
+    borderRadius: radius.full,
+    backgroundColor: colors.backgroundSecondary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  textBlock: {
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  title: {
+    ...typography.headline,
+    color: colors.text,
+    textAlign: 'center',
+  },
+  description: {
+    ...typography.subheadline,
+    color: colors.textSecondary,
+    textAlign: 'center',
+  },
+}));
 }

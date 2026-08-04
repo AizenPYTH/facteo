@@ -16,25 +16,22 @@ import {
   Text,
   View,
 } from 'react-native';
+import Animated from 'react-native-reanimated';
 
 import {
   ProductAnalysisConfirmationModal,
   type ProductAnalysisDraft,
 } from '@/components/ai/product-analysis-confirmation-modal';
 import { ProductAnalysisLoadingModal } from '@/components/ai/product-analysis-loading-modal';
-import { SmartCatalogPicker } from '@/components/quotes/smart-catalog-picker';
-import { SmartLineSuggestions } from '@/components/quotes/smart-line-suggestions';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/use-auth';
-import { useClientDocumentMemory } from '@/hooks/use-client-document-memory';
 import { useThemedStyles } from '@/hooks/use-colors';
+import { usePlatformActionSheet } from '@/hooks/use-platform-action-sheet';
 import { useSubscription } from '@/hooks/use-subscription';
 import { spacing } from '@/constants/theme/spacing';
 import { typography } from '@/constants/theme/typography';
 import { analyzeProductImage } from '@/lib/ai/product-image-analysis';
-import {
-  memoryLinesToQuoteLines,
-} from '@/lib/supabase/client-document-memory';
+import { fadeInUp } from '@/lib/motion/presets';
 import { createProduct } from '@/lib/supabase/products';
 import { useToast } from '@/providers/toast-provider';
 import type { ProductImageAnalysis } from '@/types/ai-product';
@@ -46,39 +43,22 @@ import { QuoteLine } from './quote-line';
 
 type QuoteAddLinesStepProps = {
   lines: QuoteLineValue[];
-  clientId?: string | null;
-  clientName?: string;
-  defaultVatRate?: number;
   onAddLine: (line: QuoteLineValue) => void;
   onChangeLine: (index: number, line: QuoteLineValue) => void;
   onRemoveLine: (index: number) => void;
-  /** Replace all lines (e.g. replay last document). */
-  onReplaceLines?: (lines: QuoteLineValue[]) => void;
 };
-
-function isBlankLine(line: QuoteLineValue): boolean {
-  return (
-    !line.description.trim() &&
-    (line.unitPrice === '0' || line.unitPrice === '0,00' || line.unitPrice === '')
-  );
-}
 
 export function QuoteAddLinesStep({
   lines,
-  clientId,
-  clientName,
-  defaultVatRate = 20,
   onAddLine,
   onChangeLine,
   onRemoveLine,
-  onReplaceLines,
 }: QuoteAddLinesStepProps) {
   const styles = useStyles();
+  const { openActionSheet, actionSheetNode } = usePlatformActionSheet();
   const { user } = useAuth();
   const { hasFeature } = useSubscription();
   const { showError, showSuccess } = useToast();
-  const { data: memory } = useClientDocumentMemory(clientId);
-  const [catalogVisible, setCatalogVisible] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisProgress, setAnalysisProgress] = useState(0.08);
   const [analysisImageUri, setAnalysisImageUri] = useState<string | null>(null);
@@ -92,22 +72,8 @@ export function QuoteAddLinesStep({
     };
   }, []);
 
-  function addSmartLine(line: QuoteLineValue) {
-    const blankIndex = lines.findIndex(isBlankLine);
-    if (blankIndex >= 0 && lines.filter(isBlankLine).length === 1 && lines.length === 1) {
-      onChangeLine(blankIndex, line);
-      return;
-    }
-    onAddLine(line);
-  }
-
   function handleAddManualPrestation() {
-    onAddLine(
-      createEmptyQuoteLine({
-        vatRate: memory?.defaults.vatRate ?? defaultVatRate,
-        discountPercent: memory?.defaults.discountPercent ?? 0,
-      }),
-    );
+    onAddLine(createEmptyQuoteLine());
   }
 
   function handleScanProductWithAi() {
@@ -115,20 +81,19 @@ export function QuoteAddLinesStep({
   }
 
   function handleAddPrestation() {
-    handleAddManualPrestation();
-  }
-
-  function handleAddFromCatalog() {
-    setCatalogVisible(true);
-  }
-
-  function handleReplayLastDocument() {
-    if (!memory?.lastDocument || !onReplaceLines) {
-      return;
-    }
-
-    onReplaceLines(memoryLinesToQuoteLines(memory.lastDocument.lines));
-    showSuccess('Comme la dernière fois — prestations reprises.');
+    openActionSheet({
+      title: 'Ajouter une prestation',
+      options: [
+        {
+          label: 'Ajouter manuellement',
+          onPress: handleAddManualPrestation,
+        },
+        {
+          label: "Scanner un produit avec l'IA",
+          onPress: handleScanProductWithAi,
+        },
+      ],
+    });
   }
 
   async function handleSourceSelection(source: 'camera' | 'gallery') {
@@ -238,24 +203,10 @@ export function QuoteAddLinesStep({
   const listHeader = (
     <View style={styles.headerSection}>
       <Text style={styles.description}>
-        {clientName
-          ? `Prestations pour ${clientName}. Remplissez la ligne ou reprenez la dernière fois.`
-          : 'Ajoutez une description et un prix HT, puis appuyez sur Suivant.'}
+        Ajoutez vos prestations : description, quantité, prix HT et TVA.
       </Text>
 
-      {clientId ? (
-        <SmartLineSuggestions
-          lastDocumentLabel={memory?.lastDocument?.label}
-          onAddLine={addSmartLine}
-          onReplayLastDocument={
-            memory?.lastDocument && onReplaceLines ? handleReplayLastDocument : undefined
-          }
-          suggestions={memory?.suggestions ?? []}
-        />
-      ) : null}
-
       <Button onPress={handleAddPrestation} title="Ajouter une prestation" />
-      <Button onPress={handleAddFromCatalog} title="Depuis le catalogue" variant="ghost" />
       {Platform.OS === 'web' ? (
         <Button
           onPress={handleScanProductWithAi}
@@ -279,18 +230,11 @@ export function QuoteAddLinesStep({
           {listHeader}
           <View style={styles.emptyPrestations}>
             <Text style={styles.emptyPrestationsText}>
-              {memory?.suggestions?.length
-                ? 'Choisissez une suggestion ci-dessus, ou ajoutez une prestation.'
-                : 'Appuyez sur « Ajouter une prestation » pour commencer.'}
+              Appuyez sur « Ajouter une prestation » pour commencer.
             </Text>
           </View>
         </View>
-        <SmartCatalogPicker
-          defaultVatRate={memory?.defaults.vatRate ?? defaultVatRate}
-          onClose={() => setCatalogVisible(false)}
-          onSelect={addSmartLine}
-          visible={catalogVisible}
-        />
+        {actionSheetNode}
         <ProductAnalysisLoadingModal progress={analysisProgress} visible={isAnalyzing} />
         {analysisDraft && analysisImageUri ? (
           <ProductAnalysisConfirmationModal
@@ -321,21 +265,18 @@ export function QuoteAddLinesStep({
         nestedScrollEnabled
         ListHeaderComponent={listHeader}
         renderItem={({ item, index }) => (
-          <QuoteLine
-            index={index}
-            onChange={(updatedLine) => onChangeLine(index, updatedLine)}
-            onRemove={() => onRemoveLine(index)}
-            value={item}
-          />
+          <Animated.View entering={fadeInUp({ index, step: 40 })}>
+            <QuoteLine
+              index={index}
+              onChange={(updatedLine) => onChangeLine(index, updatedLine)}
+              onRemove={() => onRemoveLine(index)}
+              value={item}
+            />
+          </Animated.View>
         )}
         showsVerticalScrollIndicator={false}
       />
-      <SmartCatalogPicker
-        defaultVatRate={memory?.defaults.vatRate ?? defaultVatRate}
-        onClose={() => setCatalogVisible(false)}
-        onSelect={addSmartLine}
-        visible={catalogVisible}
-      />
+      {actionSheetNode}
       <ProductAnalysisLoadingModal progress={analysisProgress} visible={isAnalyzing} />
       {analysisDraft && analysisImageUri ? (
         <ProductAnalysisConfirmationModal

@@ -2,17 +2,16 @@ import {
   ActivityIndicator,
   FlatList,
   RefreshControl,
-  StyleSheet,
   View,
   type ListRenderItem,
   type ViewStyle,
 } from 'react-native';
+import Animated from 'react-native-reanimated';
 
-import { DocumentListSkeleton } from '@/components/ui/document-list-skeleton';
+import { ListSkeleton } from '@/components/ui/list-skeleton';
 import { useColors, useThemedStyles } from '@/hooks/use-colors';
-import { radius } from '@/constants/theme/radius';
 import { spacing } from '@/constants/theme/spacing';
-import { elevation } from '@/constants/theme/surfaces';
+import { fadeInUp } from '@/lib/motion/presets';
 import type { Quote } from '@/types/quote';
 
 import { EmptyQuotes } from './empty-quotes';
@@ -46,10 +45,9 @@ export function QuotesList({
   const styles = useStyles();
   const colors = useColors();
   const renderItem: ListRenderItem<Quote> = ({ item, index }) => (
-    <View>
-      <QuoteCard index={index} onPress={onQuotePress} quote={item} />
-      {index < quotes.length - 1 ? <View style={styles.separator} /> : null}
-    </View>
+    <Animated.View entering={fadeInUp({ index, step: 40 })}>
+      <QuoteCard onPress={onQuotePress} quote={item} />
+    </Animated.View>
   );
 
   const renderFooter = () => {
@@ -65,7 +63,11 @@ export function QuotesList({
   };
 
   if (isInitialLoading) {
-    return <DocumentListSkeleton />;
+    return (
+      <View style={[styles.listContent, contentContainerStyle]}>
+        <ListSkeleton />
+      </View>
+    );
   }
 
   return (
@@ -101,31 +103,21 @@ export function QuotesList({
 }
 
 function useStyles() {
-  return useThemedStyles((colors) => ({
-    list: {
-      flex: 1,
-    },
-    listContent: {
-      backgroundColor: colors.surface,
-      borderRadius: radius.card,
-      borderWidth: StyleSheet.hairlineWidth,
-      borderColor: colors.border,
-      overflow: 'hidden',
-      ...elevation[1],
-    },
-    emptyContent: {
-      flexGrow: 1,
-      justifyContent: 'center',
-    },
-    footer: {
-      paddingVertical: spacing.lg,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    separator: {
-      height: StyleSheet.hairlineWidth,
-      backgroundColor: colors.separator,
-      marginLeft: spacing.md,
-    },
-  }));
+  return useThemedStyles(() => ({
+  list: {
+    flex: 1,
+  },
+  listContent: {
+    gap: spacing.sm,
+  },
+  emptyContent: {
+    flexGrow: 1,
+    justifyContent: 'center',
+  },
+  footer: {
+    paddingVertical: spacing.lg,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+}));
 }

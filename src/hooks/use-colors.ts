@@ -1,1 +1,1 @@
-export { useColors, useThemedStyles, type AppColors } from '@/providers/colors-provider';
+export { useColors, useThemedStyles, useGradients, type AppColors } from '@/providers/colors-provider';

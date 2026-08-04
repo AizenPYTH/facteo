@@ -1,12 +1,16 @@
 import { router, type Href } from 'expo-router';
 import { Pressable, StyleSheet, Text, View, type ViewStyle } from 'react-native';
 
+import Animated from 'react-native-reanimated';
+
 import { QuoteField } from '@/components/quotes/quote-field';
 import { QuoteTotals } from '@/components/quotes/quote-totals';
 import { Button } from '@/components/ui/button';
 import { useColors, useThemedStyles } from '@/hooks/use-colors';
 import { radius } from '@/constants/theme/radius';
+import { shadows } from '@/constants/theme/theme';
 import { spacing } from '@/constants/theme/spacing';
+import { fadeInUp } from '@/lib/motion/presets';
 import { typography } from '@/constants/theme/typography';
 import { formatDate } from '@/lib/format/date';
 import { formatPriceHT } from '@/lib/format/currency';
@@ -34,7 +38,7 @@ export function InvoiceDetailView({
 
   return (
     <View style={[styles.container, style]}>
-      <View style={styles.section}>
+      <Animated.View entering={fadeInUp({ index: 0 })} style={styles.section}>
         <View style={styles.headerRow}>
           <Text style={styles.sectionTitle}>Informations</Text>
           <InvoiceStatusBadge status={invoice.status} />
@@ -60,9 +64,9 @@ export function InvoiceDetailView({
             <QuoteField label="Date de paiement" value={formatDate(invoice.paidAt)} />
           ) : null}
         </View>
-      </View>
+      </Animated.View>
 
-      <View style={styles.section}>
+      <Animated.View entering={fadeInUp({ index: 1 })} style={styles.section}>
         <Text style={styles.sectionTitle}>Prestations</Text>
         <View style={styles.card}>
           {invoice.lines.map((line, index) => {
@@ -87,14 +91,14 @@ export function InvoiceDetailView({
             );
           })}
         </View>
-      </View>
+      </Animated.View>
 
-      <View style={styles.section}>
+      <Animated.View entering={fadeInUp({ index: 2 })} style={styles.section}>
         <Text style={styles.sectionTitle}>Totaux</Text>
         <QuoteTotals totals={totals} />
-      </View>
+      </Animated.View>
 
-      <View style={styles.section}>
+      <Animated.View entering={fadeInUp({ index: 3 })} style={styles.section}>
         <Text style={styles.sectionTitle}>Historique des paiements</Text>
         <View style={styles.card}>
           <View style={styles.paymentRow}>
@@ -145,15 +149,15 @@ export function InvoiceDetailView({
             </View>
           )}
         </View>
-      </View>
+      </Animated.View>
 
       {invoice.notes?.trim() ? (
-        <View style={styles.section}>
+        <Animated.View entering={fadeInUp({ index: 4 })} style={styles.section}>
           <Text style={styles.sectionTitle}>Notes</Text>
           <View style={styles.card}>
             <Text style={styles.notes}>{invoice.notes.trim()}</Text>
           </View>
-        </View>
+        </Animated.View>
       ) : null}
     </View>
   );
@@ -183,6 +187,7 @@ function useStyles() {
     borderColor: colors.border,
     padding: spacing.md,
     gap: spacing.md,
+    ...shadows.sm,
   },
   lineSeparator: {
     paddingTop: spacing.md,

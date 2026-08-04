@@ -10,8 +10,8 @@ import {
   View,
 } from 'react-native';
 
-import { ClientSearchBar } from '@/components/clients/client-search-bar';
 import { Button } from '@/components/ui/button';
+import { SearchBar } from '@/components/ui/search-bar';
 import { useColors, useThemedStyles } from '@/hooks/use-colors';
 import { radius } from '@/constants/theme/radius';
 import { spacing } from '@/constants/theme/spacing';
@@ -22,7 +22,6 @@ import { getClientDisplayName, type Client } from '@/types/client';
 
 type QuoteClientStepProps = {
   selectedClientId: string | null;
-  selectedClientName?: string;
   onSelectClient: (client: Client) => void;
 };
 
@@ -69,11 +68,7 @@ function ClientRow({
   );
 }
 
-export function QuoteClientStep({
-  selectedClientId,
-  selectedClientName,
-  onSelectClient,
-}: QuoteClientStepProps) {
+export function QuoteClientStep({ selectedClientId, onSelectClient }: QuoteClientStepProps) {
   const styles = useStyles();
   const colors = useColors();
   const [search, setSearch] = useState('');
@@ -137,11 +132,7 @@ export function QuoteClientStep({
 
   return (
     <View style={styles.container}>
-      <Text style={styles.description}>
-        {selectedClientId && selectedClientName
-          ? `Client sélectionné : ${selectedClientName}. Vous pouvez en choisir un autre si besoin.`
-          : 'Choisissez le client pour ce document.'}
-      </Text>
+      <Text style={styles.description}>Choisissez le client pour ce devis.</Text>
 
       <Button
         onPress={() => router.push('/clients/new' as Href)}
@@ -149,7 +140,11 @@ export function QuoteClientStep({
         variant="ghost"
       />
 
-      <ClientSearchBar onChangeText={setSearch} value={search} />
+      <SearchBar
+        onChangeText={setSearch}
+        placeholder="Rechercher un client"
+        value={search}
+      />
 
       {!isSearching && recentClients.length > 0 ? (
         <Text style={styles.sectionLabel}>Clients récents</Text>

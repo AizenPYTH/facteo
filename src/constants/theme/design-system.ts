@@ -1,19 +1,11 @@
 /**
- * INVEQ Design System — Design Language hub.
- *
- * Import from here (or @/constants/theme) when building UI.
- * Do not invent ad-hoc motion, shadows, or type sizes.
+ * INVEQ Design System — single source for layout, motion, and component tokens.
  */
-
 import { Platform } from 'react-native';
 
-import { componentLanguage } from './components';
-import { interactionLanguage } from './interaction';
-import { duration, motion, motionLanguage, spring } from './motion';
 import { radius } from './radius';
 import { spacing } from './spacing';
-import { elevation, material, shadows, surface, surfaceLanguage } from './surfaces';
-import { type, typographyLanguage } from './type-roles';
+import { shadows } from './theme';
 import { typography } from './typography';
 
 export const layout = {
@@ -24,51 +16,44 @@ export const layout = {
   maxContentWidth: 560,
 } as const;
 
-/** @deprecated Prefer `componentLanguage` */
+export const motion = {
+  fast: 180,
+  normal: 300,
+  slow: 460,
+  splash: 1000,
+  spring: { damping: 20, stiffness: 200 },
+} as const;
+
 export const components = {
-  buttonHeight: componentLanguage.button.height,
-  inputHeight: componentLanguage.input.height,
+  buttonHeight: 48,
+  inputHeight: 48,
   stickyFooterMinHeight: 56,
   actionTileIconSize: 44,
   workspaceAvatarSize: 48,
   templatePreviewHeight: 120,
 } as const;
 
+/**
+ * Canonical SF Symbols / Material icon sizes. Reach for these instead of a
+ * one-off number so weight and visual rhythm stay consistent across the app.
+ */
+export const iconSize = {
+  sm: 16,
+  md: 20,
+  lg: 24,
+  xl: 28,
+} as const;
+
 export const designSystem = {
   layout,
   motion,
-  motionLanguage,
-  duration,
-  spring,
-  surfaceLanguage,
-  surface,
-  elevation,
-  material,
-  shadows,
-  typographyLanguage,
-  type,
-  interactionLanguage,
-  componentLanguage,
   components,
+  iconSize,
   spacing,
   radius,
+  shadows,
   typography,
   platform: Platform.OS,
 } as const;
 
 export type DesignSystem = typeof designSystem;
-
-export {
-  componentLanguage,
-  duration,
-  elevation,
-  interactionLanguage,
-  material,
-  motion,
-  motionLanguage,
-  spring,
-  surface,
-  surfaceLanguage,
-  type,
-  typographyLanguage,
-};

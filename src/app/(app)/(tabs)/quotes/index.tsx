@@ -1,36 +1,27 @@
-import { router, type Href, useLocalSearchParams } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
-import { View } from 'react-native';
+import { router, type Href } from 'expo-router';
+import { useCallback, useState } from 'react';
+import { StyleSheet, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
   AddQuoteFab,
-  QuoteSearchBar,
   QuoteStatusFilterBar,
   QuotesList,
   QuotesScreenHeader,
 } from '@/components/quotes';
+import { SearchBar } from '@/components/ui/search-bar';
 import { QuotesDesktopScreen } from '@/components/web/desktop/screens/quotes-desktop-screen';
 import { BottomTabInset } from '@/constants/theme';
 import { useBreakpoint } from '@/hooks/use-breakpoint';
-import { useThemedStyles } from '@/hooks/use-colors';
+import { useColors, useThemedStyles } from '@/hooks/use-colors';
 import { spacing } from '@/constants/theme/spacing';
 import { useDebouncedValue } from '@/hooks/use-debounced-value';
 import { useInfiniteQuotes } from '@/hooks/use-quotes';
 import { useTenant } from '@/hooks/use-tenant';
-import { QUOTE_STATUSES } from '@/types/quote';
 import type { QuoteStatusFilter } from '@/types/quotes-list';
 
 const FAB_CLEARANCE = 104;
 const SEARCH_DEBOUNCE_MS = 300;
-
-function parseQuoteStatusParam(value: string | string[] | undefined): QuoteStatusFilter | null {
-  const raw = Array.isArray(value) ? value[0] : value;
-  if (raw && (QUOTE_STATUSES as readonly string[]).includes(raw)) {
-    return raw as QuoteStatusFilter;
-  }
-  return null;
-}
 
 export default function QuotesScreen() {
   const { isDesktop, isTablet, isWeb } = useBreakpoint();
@@ -44,17 +35,12 @@ export default function QuotesScreen() {
 
 function QuotesMobileScreen() {
   const styles = useStyles();
-  const params = useLocalSearchParams<{ status?: string | string[] }>();
+  const colors = useColors();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<QuoteStatusFilter>('all');
   const debouncedSearch = useDebouncedValue(search, SEARCH_DEBOUNCE_MS);
   const insets = useSafeAreaInsets();
   const { isSwitching } = useTenant();
-
-  useEffect(() => {
-    const next = parseQuoteStatusParam(params.status);
-    if (next) setStatusFilter(next);
-  }, [params.status]);
 
   const {
     quotes,
@@ -84,7 +70,7 @@ function QuotesMobileScreen() {
     <SafeAreaView edges={['top']} style={styles.safeArea}>
       <View style={styles.headerSection}>
         <QuotesScreenHeader />
-        <QuoteSearchBar onChangeText={setSearch} value={search} />
+        <SearchBar onChangeText={setSearch} placeholder="Rechercher par numéro de devis" value={search} />
         <QuoteStatusFilterBar onChange={setStatusFilter} value={statusFilter} />
       </View>
 

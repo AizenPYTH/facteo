@@ -9,7 +9,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { DocumentActionsSheet } from '@/components/documents/document-actions-sheet';
 import { SentDocumentsSection } from '@/components/documents/sent-documents-section';
 import {
-  CancelInvoiceModal,
   InvoiceDetailView,
   InvoiceScreenHeader,
   PaymentModal,
@@ -17,6 +16,7 @@ import {
 import { PdfPreviewModal } from '@/components/pdf/pdf-preview-modal';
 import { TemplateGalleryModal } from '@/components/pdf/template-gallery-modal';
 import { DocumentClientSignatureBlock } from '@/components/signatures/document-client-signature-block';
+import { ConfirmationModal } from '@/components/ui/confirmation-modal';
 import { LoadingView } from '@/components/ui/loading-view';
 import { useDocumentActions } from '@/hooks/use-document-actions';
 import { useThemedStyles, useColors } from '@/hooks/use-colors';
@@ -28,7 +28,6 @@ import { useInvoice } from '@/hooks/use-invoices';
 import { useInvoiceMutations } from '@/hooks/use-invoice-mutations';
 import { getInvoiceErrorMessage } from '@/lib/invoices/errors';
 import { buildInvoicePdfHtml } from '@/lib/pdf/document-pdf';
-import { newInvoiceHref } from '@/lib/navigation/new-document';
 import { useAuth } from '@/hooks/use-auth';
 import { useTenant } from '@/hooks/use-tenant';
 import { requireScope } from '@/lib/tenant/scope';
@@ -94,8 +93,6 @@ export default function InvoiceDetailScreen() {
     documentId: invoice?.id ?? '',
     documentNumber: invoice?.number ?? '',
     documentType: 'invoice',
-    amountDue: invoice?.amountDue,
-    dueAt: invoice?.dueAt,
   });
 
   useEffect(() => {
@@ -247,17 +244,6 @@ export default function InvoiceDetailScreen() {
     const signatureLocked = !hasFeature('client_signature');
 
     const primary = [
-      ...(markableAsPaid
-        ? [
-            {
-              id: 'remind',
-              label: 'Relancer le client',
-              icon: { ios: 'bell.badge.fill', android: 'notifications_active', web: 'notifications_active' } as const,
-              onPress: () => void documentActions.handleRemindEmail(),
-              loading: documentActions.remindLoading,
-            },
-          ]
-        : []),
       {
         id: 'send',
         label: 'Envoyer par e-mail',
@@ -344,17 +330,6 @@ export default function InvoiceDetailScreen() {
     ];
 
     const manage = [
-      ...(invoice.clientId
-        ? [
-            {
-              id: 'replay',
-              label: 'Comme la dernière fois',
-              icon: { ios: 'arrow.clockwise', android: 'replay', web: 'replay' } as const,
-              onPress: () =>
-                router.push(newInvoiceHref(invoice.clientId, { replay: true })),
-            },
-          ]
-        : []),
       ...(editable
         ? [
             {
@@ -481,11 +456,13 @@ export default function InvoiceDetailScreen() {
         visible={documentActions.previewVisible}
       />
 
-      <CancelInvoiceModal
-        invoiceNumber={invoice.number}
+      <ConfirmationModal
+        confirmLabel="Annuler la facture"
         loading={cancelInvoice.isPending}
+        message={`La facture ${invoice.number} sera marquée comme annulée. Cette action est irréversible.`}
         onCancel={() => setCancelVisible(false)}
         onConfirm={handleCancel}
+        title="Annuler la facture ?"
         visible={cancelVisible}
       />
 

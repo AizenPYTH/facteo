@@ -1,7 +1,7 @@
 import { StyleSheet, View } from 'react-native';
 
 import { CompanyAssetField } from '@/components/company/company-asset-field';
-import { FormDivider, FormSection } from '@/components/company/form-section';
+import { FormDivider, FormSection } from '@/components/ui/form-section';
 import type { CompanyProfileAssets } from '@/hooks/use-company-profile-assets';
 
 type CompanyAssetsSectionProps = {

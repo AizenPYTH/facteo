@@ -8,7 +8,7 @@ import type { CompanyProfileFormValues } from '@/types/company-profile';
 
 import { BankDetailsSection } from './bank-details-section';
 import { CompanyAssetsSection } from './company-assets-section';
-import { FormDivider, FormField, FormSection } from './form-section';
+import { FormDivider, FormField, FormSection } from '@/components/ui/form-section';
 import { PaymentMethodsSection } from './payment-methods-section';
 
 type CompanyProfileFormProps = {

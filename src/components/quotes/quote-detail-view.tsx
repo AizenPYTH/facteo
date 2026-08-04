@@ -1,11 +1,14 @@
 import { StyleSheet, Text, View, type ViewStyle } from 'react-native';
+import Animated from 'react-native-reanimated';
 
 import { useColors, useThemedStyles } from '@/hooks/use-colors';
 import { radius } from '@/constants/theme/radius';
+import { shadows } from '@/constants/theme/theme';
 import { spacing } from '@/constants/theme/spacing';
 import { typography } from '@/constants/theme/typography';
 import { formatDate } from '@/lib/format/date';
 import { formatPriceHT } from '@/lib/format/currency';
+import { fadeInUp } from '@/lib/motion/presets';
 import { mapLinesToDocumentTotals, mapLineValueToTotals } from '@/lib/quotes/mappers';
 import type { QuoteDetail } from '@/types/quote';
 
@@ -25,7 +28,7 @@ export function QuoteDetailView({ quote, style }: QuoteDetailViewProps) {
 
   return (
     <View style={[styles.container, style]}>
-      <View style={styles.section}>
+      <Animated.View entering={fadeInUp({ index: 0 })} style={styles.section}>
         <View style={styles.headerRow}>
           <Text style={styles.sectionTitle}>Informations</Text>
           <QuoteStatusBadge status={quote.status} />
@@ -47,9 +50,9 @@ export function QuoteDetailView({ quote, style }: QuoteDetailViewProps) {
             />
           ) : null}
         </View>
-      </View>
+      </Animated.View>
 
-      <View style={styles.section}>
+      <Animated.View entering={fadeInUp({ index: 1 })} style={styles.section}>
         <Text style={styles.sectionTitle}>Prestations</Text>
         <View style={styles.card}>
           {quote.lines.map((line, index) => {
@@ -73,29 +76,29 @@ export function QuoteDetailView({ quote, style }: QuoteDetailViewProps) {
             );
           })}
         </View>
-      </View>
+      </Animated.View>
 
-      <View style={styles.section}>
+      <Animated.View entering={fadeInUp({ index: 2 })} style={styles.section}>
         <Text style={styles.sectionTitle}>Totaux</Text>
         <QuoteTotals totals={totals} />
-      </View>
+      </Animated.View>
 
       {quote.notes?.trim() ? (
-        <View style={styles.section}>
+        <Animated.View entering={fadeInUp({ index: 3 })} style={styles.section}>
           <Text style={styles.sectionTitle}>Notes</Text>
           <View style={styles.card}>
             <Text style={styles.notes}>{quote.notes.trim()}</Text>
           </View>
-        </View>
+        </Animated.View>
       ) : null}
 
       {quote.internalNotes?.trim() ? (
-        <View style={styles.section}>
+        <Animated.View entering={fadeInUp({ index: 4 })} style={styles.section}>
           <Text style={styles.sectionTitle}>Notes internes</Text>
           <View style={styles.card}>
             <Text style={styles.notesMuted}>{quote.internalNotes.trim()}</Text>
           </View>
-        </View>
+        </Animated.View>
       ) : null}
     </View>
   );
@@ -125,6 +128,7 @@ function useStyles() {
     borderColor: colors.border,
     padding: spacing.md,
     gap: spacing.md,
+    ...shadows.sm,
   },
   lineSeparator: {
     paddingTop: spacing.md,
