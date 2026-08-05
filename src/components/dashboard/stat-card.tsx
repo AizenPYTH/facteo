@@ -1,6 +1,7 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { SymbolView } from 'expo-symbols';
 import { Pressable, Text, View, type ViewStyle } from 'react-native';
+import Animated from 'react-native-reanimated';
 
 import { BlurredTeaser } from '@/components/ui/blurred-teaser';
 import { useColors, useThemedStyles } from '@/hooks/use-colors';
@@ -8,14 +9,15 @@ import { radius } from '@/constants/theme/radius';
 import { shadows } from '@/constants/theme/theme';
 import { spacing } from '@/constants/theme/spacing';
 import { typography } from '@/constants/theme/typography';
+import { useCountUp } from '@/lib/motion/use-count-up';
 
 export type StatCardProps = {
   label: string;
   /** Static display value. Ignored once `numericValue` is provided. */
   value: string;
-  /** Kept for API compat with StatsGrid — rendered statically in lot 03a. */
+  /** When set, the value counts up from 0 on mount instead of appearing static. */
   numericValue?: number;
-  /** Formats `numericValue` when present — static, not animated. */
+  /** Formats `numericValue` at each animation frame — defaults to a plain integer. */
   formatValue?: (value: number) => string;
   accentColor?: string;
   onPress?: () => void;
@@ -24,6 +26,9 @@ export type StatCardProps = {
   premiumLocked?: boolean;
 };
 
+/**
+ * Lot 03b: reintroduce useCountUp only (no press springs / fadeIn / BlurView).
+ */
 export function StatCard({
   label,
   value,
@@ -39,12 +44,20 @@ export function StatCard({
   const colors = useColors();
   const resolvedAccent = accentColor ?? colors.primary;
 
-  const displayValue =
-    numericValue !== undefined
-      ? formatValue
-        ? formatValue(numericValue)
-        : String(Math.round(numericValue))
-      : value;
+  const countUpProps = useCountUp(numericValue ?? 0, {
+    formatter: formatValue ?? ((v) => String(Math.round(v))),
+  });
+
+  const valueNode =
+    numericValue !== undefined ? (
+      <Animated.Text
+        animatedProps={countUpProps}
+        style={[styles.value, premiumLocked ? styles.valueLocked : null]}>
+        {formatValue ? formatValue(numericValue) : String(Math.round(numericValue))}
+      </Animated.Text>
+    ) : (
+      <Text style={[styles.value, premiumLocked ? styles.valueLocked : null]}>{value}</Text>
+    );
 
   const content = (
     <>
@@ -61,7 +74,7 @@ export function StatCard({
       ) : null}
       <Text style={styles.label}>{label}</Text>
       <BlurredTeaser active={premiumLocked} cornerRadius={radius.sm} intensity={16}>
-        <Text style={[styles.value, premiumLocked ? styles.valueLocked : null]}>{displayValue}</Text>
+        {valueNode}
       </BlurredTeaser>
     </>
   );
