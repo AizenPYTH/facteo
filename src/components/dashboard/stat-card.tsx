@@ -44,20 +44,15 @@ export function StatCard({
   const scale = useSharedValue(1);
   const pressStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
 
-  const countUpProps = useCountUp(numericValue ?? 0, {
+  const counted = useCountUp(numericValue ?? 0, {
+    enabled: numericValue !== undefined,
     formatter: formatValue ?? ((v) => String(Math.round(v))),
   });
+  const displayValue = numericValue !== undefined ? counted : value;
 
-  const valueNode =
-    numericValue !== undefined ? (
-      <Animated.Text
-        animatedProps={countUpProps}
-        style={[styles.value, premiumLocked ? styles.valueLocked : null]}>
-        {formatValue ? formatValue(numericValue) : String(Math.round(numericValue))}
-      </Animated.Text>
-    ) : (
-      <Text style={[styles.value, premiumLocked ? styles.valueLocked : null]}>{value}</Text>
-    );
+  const valueNode = (
+    <Text style={[styles.value, premiumLocked ? styles.valueLocked : null]}>{displayValue}</Text>
+  );
 
   const content = (
     <>

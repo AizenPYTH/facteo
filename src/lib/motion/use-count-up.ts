@@ -1,41 +1,77 @@
-import { useEffect } from 'react';
-import { Easing, useAnimatedProps, useSharedValue, withTiming } from 'react-native-reanimated';
+import { useEffect, useRef, useState } from 'react';
 
 type UseCountUpOptions = {
   /** Total animation duration in ms. */
   duration?: number;
   /** Formats the in-progress numeric value into display text. */
   formatter?: (value: number) => string;
+  /**
+   * When false, returns a formatted `value` without animating.
+   * Keeps hook order stable when the caller sometimes has no numeric target.
+   */
+  enabled?: boolean;
 };
 
+function easeOutCubic(t: number): number {
+  return 1 - (1 - t) ** 3;
+}
+
 /**
- * Animates a numeric value from its previous value to `value` on the UI
- * thread and patches the result straight onto a native Text node's `text`
- * prop — no React re-render per frame. Pair with `<Animated.Text />`:
+ * Animates a numeric value to `value` on the **JS thread** and returns the
+ * current display string for a normal `<Text>`.
  *
- *   const animatedProps = useCountUp(stats.monthlyRevenue, { formatter: formatCurrency });
- *   <Animated.Text animatedProps={animatedProps}>{formatCurrency(stats.monthlyRevenue)}</Animated.Text>
- *
- * The static children act as the pre-mount/SSR fallback; animatedProps takes
- * over once the UI thread starts committing frames.
+ * Do NOT drive this via Reanimated `useAnimatedProps({ text })` on
+ * `Animated.Text`: that path crashes in iOS release (TF builds 23 & 25) when
+ * a non-worklet formatter (e.g. `Intl.NumberFormat` / `formatCurrency`) runs
+ * on the UI thread.
  */
 export function useCountUp(
   value: number,
-  { duration = 900, formatter = (v) => String(Math.round(v)) }: UseCountUpOptions = {},
-) {
-  const progress = useSharedValue(0);
+  {
+    duration = 900,
+    formatter = (v) => String(Math.round(v)),
+    enabled = true,
+  }: UseCountUpOptions = {},
+): string {
+  const formatterRef = useRef(formatter);
+  formatterRef.current = formatter;
+
+  const [display, setDisplay] = useState(() => formatter(value));
+  const fromRef = useRef(0);
 
   useEffect(() => {
-    progress.value = withTiming(value, {
-      duration,
-      easing: Easing.out(Easing.cubic),
-    });
-    // Intentionally omit `progress` from deps: reassigning a shared value's
-    // `.value` must not restart the effect, only `value`/`duration` should.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [value, duration]);
+    const format = formatterRef.current;
 
-  return useAnimatedProps(() => {
-    return { text: formatter(progress.value) } as Record<string, unknown>;
-  });
+    if (!enabled) {
+      fromRef.current = value;
+      setDisplay(format(value));
+      return;
+    }
+
+    const from = fromRef.current;
+    const to = value;
+    let frameId = 0;
+    let startMs: number | null = null;
+
+    const tick = (now: number) => {
+      if (startMs === null) {
+        startMs = now;
+      }
+      const progress = Math.min(1, (now - startMs) / duration);
+      const current = from + (to - from) * easeOutCubic(progress);
+      setDisplay(format(current));
+      if (progress < 1) {
+        frameId = requestAnimationFrame(tick);
+      } else {
+        fromRef.current = to;
+      }
+    };
+
+    frameId = requestAnimationFrame(tick);
+    return () => {
+      cancelAnimationFrame(frameId);
+    };
+  }, [value, duration, enabled]);
+
+  return display;
 }
