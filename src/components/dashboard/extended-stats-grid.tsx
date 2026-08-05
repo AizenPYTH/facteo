@@ -1,10 +1,8 @@
 import { StyleSheet, View } from 'react-native';
-import Animated from 'react-native-reanimated';
 
 import { useColors } from '@/hooks/use-colors';
 import { spacing } from '@/constants/theme/spacing';
 import { formatCurrency } from '@/lib/format/currency';
-import { fadeInUp } from '@/lib/motion/presets';
 import type { DashboardStats } from '@/types/dashboard';
 
 import { SectionHeader } from './section-header';
@@ -79,15 +77,15 @@ export function ExtendedStatsGrid({ stats, premiumLocked = false }: ExtendedStat
     <View style={styles.section}>
       <SectionHeader premiumLocked={premiumLocked} title="Vue d’ensemble" />
       <View style={styles.grid}>
-        {cards.map((card, index) => (
-          <Animated.View entering={fadeInUp({ index, step: 40 })} key={card.label} style={card.style}>
+        {cards.map((card) => (
+          <View key={card.label} style={card.style}>
             <StatCard
               accentColor={card.accentColor}
               label={card.label}
               premiumLocked={premiumLocked}
               value={card.value}
             />
-          </Animated.View>
+          </View>
         ))}
       </View>
     </View>
