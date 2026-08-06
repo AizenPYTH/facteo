@@ -1,4 +1,7 @@
-import { demoCompany, isScreenshotDemo } from '@/lib/screenshot-demo';
+import {
+  demoCompany,
+} from '@/lib/screenshot-demo';
+import { isOfflineDemoData } from '@/lib/demo-data-mode';
 import { supabase } from '@/lib/supabase';
 import { logSupabaseError } from '@/lib/supabase/errors';
 import type { CompanyProfileFormValues, UpdateCompanyProfileInput } from '@/types/company-profile';
@@ -98,7 +101,7 @@ export function mapCompanyToFormValues(
 }
 
 export async function fetchUserCompanies(userId: string): Promise<TenantCompany[]> {
-  if (isScreenshotDemo()) {
+  if (isOfflineDemoData()) {
     void userId;
     return [demoCompany];
   }

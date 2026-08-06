@@ -2,8 +2,8 @@ import {
   demoPlans,
   demoSubscription,
   getDemoSubscriptionSnapshot,
-  isScreenshotDemo,
 } from '@/lib/screenshot-demo';
+import { isOfflineDemoData } from '@/lib/demo-data-mode';
 import { resolveEffectivePlanId } from '@/lib/subscription/plans';
 import { supabase } from '@/lib/supabase';
 import { logSupabaseError } from '@/lib/supabase/errors';
@@ -120,7 +120,7 @@ export function isPlanLimitError(error: unknown): error is PlanLimitError {
 }
 
 export async function ensureUserSubscription(): Promise<void> {
-  if (isScreenshotDemo()) {
+  if (isOfflineDemoData()) {
     return;
   }
 
@@ -133,7 +133,7 @@ export async function ensureUserSubscription(): Promise<void> {
 }
 
 export async function fetchSubscriptionPlans(): Promise<SubscriptionPlan[]> {
-  if (isScreenshotDemo()) {
+  if (isOfflineDemoData()) {
     return demoPlans;
   }
 
@@ -152,7 +152,7 @@ export async function fetchSubscriptionPlans(): Promise<SubscriptionPlan[]> {
 }
 
 export async function fetchUserSubscription(userId: string): Promise<UserSubscription | null> {
-  if (isScreenshotDemo()) {
+  if (isOfflineDemoData()) {
     void userId;
     return demoSubscription;
   }
@@ -174,7 +174,7 @@ export async function fetchUserSubscription(userId: string): Promise<UserSubscri
 }
 
 export async function fetchSubscriptionUsage(): Promise<SubscriptionUsage> {
-  if (isScreenshotDemo()) {
+  if (isOfflineDemoData()) {
     return getDemoSubscriptionSnapshot().usage;
   }
 
@@ -229,7 +229,7 @@ export async function consumeSirenSearch(): Promise<PlanLimitCheck> {
 }
 
 export async function fetchSubscriptionSnapshot(userId: string): Promise<SubscriptionSnapshot> {
-  if (isScreenshotDemo()) {
+  if (isOfflineDemoData()) {
     void userId;
     return getDemoSubscriptionSnapshot();
   }
@@ -289,7 +289,7 @@ export async function fetchDocumentSignature(
   documentType: 'quote' | 'invoice',
   documentId: string,
 ): Promise<DocumentSignature | null> {
-  if (isScreenshotDemo()) {
+  if (isOfflineDemoData()) {
     void documentType;
     void documentId;
     return null;

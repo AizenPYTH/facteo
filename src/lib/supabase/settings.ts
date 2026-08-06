@@ -1,5 +1,8 @@
 import { DEFAULT_PDF_TEMPLATE_ID } from '@/lib/pdf/engine/templates';
-import { demoSettings, isScreenshotDemo } from '@/lib/screenshot-demo';
+import {
+  demoSettings,
+} from '@/lib/screenshot-demo';
+import { isOfflineDemoData } from '@/lib/demo-data-mode';
 import { supabase } from '@/lib/supabase';
 import { logSupabaseError } from '@/lib/supabase/errors';
 import type { DataScope } from '@/types/tenant';
@@ -37,7 +40,7 @@ export function mapSettingsRow(row: SettingsRow & {
 }
 
 export async function fetchSettings(scope: DataScope): Promise<Settings | null> {
-  if (isScreenshotDemo()) {
+  if (isOfflineDemoData()) {
     void scope;
     return demoSettings;
   }

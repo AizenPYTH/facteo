@@ -3,8 +3,8 @@ import {
   demoExtendedDashboard,
   demoProfile,
   demoRecentInvoices,
-  isScreenshotDemo,
 } from '@/lib/screenshot-demo';
+import { isOfflineDemoData } from '@/lib/demo-data-mode';
 import { supabase } from '@/lib/supabase';
 import { getCountFromQuery, getSumFromRows, logSupabaseError } from '@/lib/supabase/errors';
 import { mapInvoiceRowToDashboardInvoice } from '@/lib/supabase/mappers';
@@ -283,7 +283,7 @@ export function createEmptyDashboardData(metadata: UserMetadata = {}): Dashboard
 }
 
 export async function fetchDashboardStats(scope: DataScope): Promise<DashboardStats> {
-  if (isScreenshotDemo()) {
+  if (isOfflineDemoData()) {
     void scope;
     return demoDashboardStats;
   }
@@ -446,7 +446,7 @@ export async function fetchDashboardStats(scope: DataScope): Promise<DashboardSt
 }
 
 export async function fetchExtendedDashboardData(scope: DataScope): Promise<ExtendedDashboardData> {
-  if (isScreenshotDemo()) {
+  if (isOfflineDemoData()) {
     void scope;
     return demoExtendedDashboard;
   }
@@ -553,7 +553,7 @@ export async function fetchExtendedDashboardData(scope: DataScope): Promise<Exte
 }
 
 export async function fetchRecentInvoices(scope: DataScope): Promise<Invoice[]> {
-  if (isScreenshotDemo()) {
+  if (isOfflineDemoData()) {
     void scope;
     return demoRecentInvoices;
   }
@@ -577,7 +577,7 @@ export async function fetchDashboardData(
   scope: DataScope,
   metadata: UserMetadata,
 ): Promise<DashboardData> {
-  if (isScreenshotDemo()) {
+  if (isOfflineDemoData()) {
     void scope;
     return {
       profile: demoProfile,

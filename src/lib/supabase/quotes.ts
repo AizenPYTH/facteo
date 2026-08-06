@@ -2,7 +2,10 @@ import {
   mapCreateQuoteInputToInsert,
   mapUpdateQuoteInputToInsert,
 } from '@/lib/quotes/mappers';
-import { demoQuotes, isScreenshotDemo } from '@/lib/screenshot-demo';
+import {
+  demoQuotes,
+} from '@/lib/screenshot-demo';
+import { isOfflineDemoData } from '@/lib/demo-data-mode';
 import { supabase } from '@/lib/supabase';
 import { logSupabaseError } from '@/lib/supabase/errors';
 import { mapQuoteDetail, mapQuoteRowToQuote } from '@/lib/supabase/mappers';
@@ -91,7 +94,7 @@ export async function fetchQuotesPage(
   scope: DataScope,
   { search = '', status = 'all', page = 0, pageSize = QUOTES_PAGE_SIZE }: QuotesPageParams = {},
 ): Promise<QuotesPage> {
-  if (isScreenshotDemo()) {
+  if (isOfflineDemoData()) {
     void scope;
     const needle = search.trim().toLowerCase();
     let filtered = status === 'all' ? demoQuotes : demoQuotes.filter((row) => row.status === status);
@@ -152,7 +155,7 @@ export async function fetchQuoteById(
   scope: DataScope,
   quoteId: string,
 ): Promise<QuoteDetail | null> {
-  if (isScreenshotDemo()) {
+  if (isOfflineDemoData()) {
     void scope;
     const quote = demoQuotes.find((row) => row.id === quoteId);
     if (!quote) {

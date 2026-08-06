@@ -7,8 +7,8 @@ import { resolveInvoiceStatusFromPayments } from '@/lib/invoices/status';
 import {
   demoInvoiceDetails,
   demoInvoices,
-  isScreenshotDemo,
 } from '@/lib/screenshot-demo';
+import { isOfflineDemoData } from '@/lib/demo-data-mode';
 import { supabase } from '@/lib/supabase';
 import { logSupabaseError } from '@/lib/supabase/errors';
 import { mapInvoiceDetail, mapInvoiceRowToInvoice } from '@/lib/supabase/mappers';
@@ -175,7 +175,7 @@ export async function fetchInvoicesPage(
   scope: DataScope,
   { search = '', status = 'all', page = 0, pageSize = INVOICES_PAGE_SIZE }: InvoicesPageParams = {},
 ): Promise<InvoicesPage> {
-  if (isScreenshotDemo()) {
+  if (isOfflineDemoData()) {
     void scope;
     const needle = search.trim().toLowerCase();
     let filtered = status === 'all' ? demoInvoices : demoInvoices.filter((row) => row.status === status);
@@ -236,7 +236,7 @@ export async function fetchInvoiceById(
   scope: DataScope,
   invoiceId: string,
 ): Promise<InvoiceDetail | null> {
-  if (isScreenshotDemo()) {
+  if (isOfflineDemoData()) {
     void scope;
     return demoInvoiceDetails[invoiceId] ?? null;
   }

@@ -78,7 +78,8 @@
     "eas:build:all": "eas build --platform all --profile production --auto-submit",
     "screenshots:seed": "node ./scripts/seed-app-store-demo.mjs",
     "screenshots:app-store": "node ./scripts/app-store-screenshots.mjs",
-    "screenshots:all": "npm run screenshots:seed && APP_STORE_START_WEB=1 node ./scripts/app-store-screenshots.mjs"
+    "screenshots:all": "npm run screenshots:seed && APP_STORE_START_WEB=1 node ./scripts/app-store-screenshots.mjs",
+    "seed:app-store-reviewer": "node ./scripts/seed-app-store-reviewer.mjs"
   },
   "private": true
 }

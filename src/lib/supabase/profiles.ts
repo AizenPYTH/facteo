@@ -1,4 +1,7 @@
-import { demoProfile, isScreenshotDemo } from '@/lib/screenshot-demo';
+import {
+  demoProfile,
+} from '@/lib/screenshot-demo';
+import { isOfflineDemoData } from '@/lib/demo-data-mode';
 import { supabase } from '@/lib/supabase';
 import { logSupabaseError } from '@/lib/supabase/errors';
 import { debugProfileTrace } from '@/lib/supabase/profile-debug';
@@ -169,7 +172,7 @@ export async function upsertCompanyProfile(
 }
 
 export async function fetchUserProfile(userId: string): Promise<Profile | null> {
-  if (isScreenshotDemo()) {
+  if (isOfflineDemoData()) {
     void userId;
     return demoProfile;
   }

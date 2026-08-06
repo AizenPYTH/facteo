@@ -37,7 +37,7 @@ const NOW = '2026-08-01T10:00:00.000Z';
 export const demoCompany: TenantCompany = {
   id: DEMO_COMPANY_ID,
   name: 'Atelier Martin',
-  email: 'appstore-demo@inveq.fr',
+  email: 'review@inveq.fr',
   phone: '0472123456',
   address: '12 rue de la République',
   postalCode: '69002',
@@ -57,10 +57,10 @@ export const demoCompany: TenantCompany = {
 
 export const demoProfile: Profile = {
   id: DEMO_USER_ID,
-  first_name: 'Camille',
-  last_name: 'Martin',
+  first_name: 'Apple',
+  last_name: 'Review',
   company_name: 'Atelier Martin',
-  email: 'appstore-demo@inveq.fr',
+  email: 'review@inveq.fr',
   phone: '0472123456',
   address: '12 rue de la République',
   postal_code: '69002',
@@ -400,13 +400,13 @@ export const demoRecentInvoices: DashboardInvoice[] = demoInvoices.map((invoice)
   issuedAt: invoice.issuedAt ?? NOW,
 }));
 
-const DEMO_PLAN_FEATURES_ALL_ON = {
+const DEMO_PLAN_FEATURES_MAX = {
   custom_logo: true,
   company_signature: true,
   client_signature: true,
   pdf_templates: true,
-  stripe_payments: false,
-  ai_assistant: false,
+  stripe_payments: true,
+  ai_assistant: true,
   advanced_stats: true,
   siren_search: true,
 };
@@ -440,17 +440,17 @@ export const demoPlans: SubscriptionPlan[] = [
     isActive: true,
   },
   {
-    id: 'pro',
-    displayName: 'Pro',
-    description: 'Pour les indépendants actifs',
-    sortOrder: 2,
+    id: 'max',
+    displayName: 'Max',
+    description: 'Toutes les fonctionnalités INVEQ',
+    sortOrder: 5,
     maxClients: null,
     maxQuotes: null,
     maxInvoices: null,
     maxDocumentsPerMonth: null,
     maxSirenSearchesPerMonth: null,
-    maxCompanies: 3,
-    features: DEMO_PLAN_FEATURES_ALL_ON,
+    maxCompanies: null,
+    features: DEMO_PLAN_FEATURES_MAX,
     stripePriceId: null,
     stripeProductId: null,
     appStoreProductId: null,
@@ -461,13 +461,13 @@ export const demoPlans: SubscriptionPlan[] = [
 
 export const demoSubscription: UserSubscription = {
   userId: DEMO_USER_ID,
-  plan: 'pro',
-  effectivePlanId: 'pro',
+  plan: 'max',
+  effectivePlanId: 'max',
   status: 'active',
   stripeCustomerId: null,
   stripeSubscriptionId: null,
   currentPeriodStart: '2026-07-01T00:00:00.000Z',
-  currentPeriodEnd: '2026-08-01T00:00:00.000Z',
+  currentPeriodEnd: '2027-07-01T00:00:00.000Z',
   cancelAtPeriodEnd: false,
   trialEndsAt: null,
   createdAt: NOW,
@@ -489,13 +489,13 @@ export function getDemoSubscriptionSnapshot(): SubscriptionSnapshot {
   };
 }
 
-export function createDemoAuthUser(email: string) {
+export function createDemoAuthUser(email: string, userId: string = DEMO_USER_ID) {
   return {
-    id: DEMO_USER_ID,
+    id: userId,
     app_metadata: { provider: 'email', providers: ['email'] },
     user_metadata: {
-      first_name: 'Camille',
-      last_name: 'Martin',
+      first_name: 'Apple',
+      last_name: 'Review',
       company_name: 'Atelier Martin',
     },
     aud: 'authenticated',
@@ -513,8 +513,8 @@ export function createDemoAuthUser(email: string) {
   };
 }
 
-export function createDemoSession(email: string) {
-  const user = createDemoAuthUser(email);
+export function createDemoSession(email: string, userId: string = DEMO_USER_ID) {
+  const user = createDemoAuthUser(email, userId);
   return {
     access_token: 'screenshot-demo-access-token',
     refresh_token: 'screenshot-demo-refresh-token',

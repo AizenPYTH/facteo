@@ -1,5 +1,8 @@
 import { mapFormValuesToClientInsert, mapFormValuesToClientUpdate } from '@/lib/clients/mappers';
-import { demoClients, isScreenshotDemo } from '@/lib/screenshot-demo';
+import {
+  demoClients,
+} from '@/lib/screenshot-demo';
+import { isOfflineDemoData } from '@/lib/demo-data-mode';
 import { supabase } from '@/lib/supabase';
 import { logSupabaseError } from '@/lib/supabase/errors';
 import { mapClientRowToClient } from '@/lib/supabase/mappers';
@@ -38,7 +41,7 @@ export async function fetchClientsPage(
   scope: DataScope,
   { search = '', page = 0, pageSize = CLIENTS_PAGE_SIZE }: ClientsPageParams = {},
 ): Promise<ClientsPage> {
-  if (isScreenshotDemo()) {
+  if (isOfflineDemoData()) {
     void scope;
     const needle = search.trim().toLowerCase();
     const filtered = needle
@@ -90,7 +93,7 @@ export async function fetchClientsPage(
 }
 
 export async function fetchClientById(scope: DataScope, clientId: string): Promise<Client | null> {
-  if (isScreenshotDemo()) {
+  if (isOfflineDemoData()) {
     void scope;
     return demoClients.find((client) => client.id === clientId) ?? null;
   }
