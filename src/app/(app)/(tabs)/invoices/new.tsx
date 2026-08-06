@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { KeyboardAvoidingView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { InvoiceWizardScreen } from '@/components/invoices/invoice-wizard-screen';
@@ -35,13 +36,15 @@ export default function NewInvoiceScreen() {
   }
 
   return (
-    <InvoiceWizardScreen
-      autoReplay={autoReplay}
-      initialState={initialState}
-      initialStep={initialStep}
-      mode="create"
-      title="Nouvelle facture"
-    />
+    <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
+      <InvoiceWizardScreen
+        autoReplay={autoReplay}
+        initialState={initialState}
+        initialStep={initialStep}
+        mode="create"
+        title="Nouvelle facture"
+      />
+    </KeyboardAvoidingView>
   );
 }
 

@@ -6,10 +6,6 @@ import Animated from 'react-native-reanimated';
 import { useColors, useGradients, useThemedStyles } from '@/hooks/use-colors';
 import { formatPlanLimit } from '@/lib/subscription/plans';
 import { fadeInUp } from '@/lib/motion/presets';
-import {
-  PREMIUM_PRICE_LABEL,
-  PREMIUM_PRICE_PERIOD_LABEL,
-} from '@/constants/subscription-pricing';
 import { radius } from '@/constants/theme/radius';
 import { shadows } from '@/constants/theme/theme';
 import { spacing } from '@/constants/theme/spacing';
@@ -94,10 +90,7 @@ export function PlanComparison({ standardPlan, premiumPlan, currentPlanId }: Pla
             <SymbolView name="star.fill" size={14} tintColor={colors.primary} />
           )}
         </View>
-        <Text style={styles.planSubtitle}>
-          {PREMIUM_PRICE_LABEL}
-          {PREMIUM_PRICE_PERIOD_LABEL} · illimité et outils avancés
-        </Text>
+        <Text style={styles.planSubtitle}>Fonctionnalités avancées de votre compte INVEQ</Text>
       </LinearGradient>
 
       <View style={styles.table}>

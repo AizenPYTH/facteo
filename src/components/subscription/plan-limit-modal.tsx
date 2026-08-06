@@ -11,9 +11,9 @@ export function PlanLimitModal({ visible, onClose }: PlanLimitModalProps) {
   return (
     <ConfirmationModal
       cancelLabel="Fermer"
-      confirmLabel="Voir les offres"
+      confirmLabel="Voir mon abonnement"
       destructive={false}
-      message="Vous avez atteint la limite de votre offre actuelle. Passez à une offre supérieure pour continuer."
+      message="Vous avez atteint la limite de votre offre actuelle. Consultez le statut de votre abonnement INVEQ."
       onCancel={onClose}
       onConfirm={() => {
         onClose();

@@ -1,6 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { router, useLocalSearchParams, type Href } from 'expo-router';
 import { useForm } from 'react-hook-form';
+import { KeyboardAvoidingView } from 'react-native';
 
 import { ClientForm, ClientScreenHeader } from '@/components/clients';
 import { Button } from '@/components/ui/button';
@@ -51,23 +52,25 @@ export default function NewClientScreen() {
   }
 
   return (
-    <FormScreen
-      footer={
-        <Button
-          elevated={goToInvoice}
-          loading={isSubmitting || createClient.isPending}
-          onPress={handleSubmit(onSubmit)}
-          testID="add-client-submit"
-          title={goToInvoice ? 'Enregistrer et facturer' : 'Enregistrer'}
-        />
-      }
-      header={
-        <ClientScreenHeader
-          title={goToInvoice ? 'Premier client' : 'Nouveau client'}
-        />
-      }
-      testID="add-client-screen">
-      <ClientForm compact={goToInvoice} control={control} errors={errors} setValue={setValue} />
-    </FormScreen>
+    <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
+      <FormScreen
+        footer={
+          <Button
+            elevated={goToInvoice}
+            loading={isSubmitting || createClient.isPending}
+            onPress={handleSubmit(onSubmit)}
+            testID="add-client-submit"
+            title={goToInvoice ? 'Enregistrer et facturer' : 'Enregistrer'}
+          />
+        }
+        header={
+          <ClientScreenHeader
+            title={goToInvoice ? 'Premier client' : 'Nouveau client'}
+          />
+        }
+        testID="add-client-screen">
+        <ClientForm compact={goToInvoice} control={control} errors={errors} setValue={setValue} />
+      </FormScreen>
+    </KeyboardAvoidingView>
   );
 }

@@ -1,68 +1,32 @@
-import { LinearGradient } from 'expo-linear-gradient';
 import { SymbolView } from 'expo-symbols';
-import { Linking, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import Animated from 'react-native-reanimated';
-
-import { MARKETING_CONTACT } from '@/constants/marketing/site';
 
 import { PlanComparison } from '@/components/subscription/plan-comparison';
 import { SettingsScreenFrame } from '@/components/web/desktop/settings-screen-frame';
-import { Button } from '@/components/ui/button';
 import { LoadingView } from '@/components/ui/loading-view';
-import {
-  PREMIUM_PRICE_LABEL,
-  PREMIUM_PRICE_PERIOD_LABEL,
-} from '@/constants/subscription-pricing';
 import { iconSize } from '@/constants/theme/design-system';
 import { radius } from '@/constants/theme/radius';
 import { spacing } from '@/constants/theme/spacing';
 import { typography } from '@/constants/theme/typography';
-import { useColors, useGradients, useThemedStyles } from '@/hooks/use-colors';
+import { useColors, useThemedStyles } from '@/hooks/use-colors';
 import { fadeInUp } from '@/lib/motion/presets';
-import { usePremiumCheckout } from '@/hooks/use-premium-checkout';
-import { usePremiumCheckoutReturn } from '@/hooks/use-premium-checkout-return';
+import { getEffectivePlanDisplayName } from '@/lib/subscription/plans';
 import { useSubscription, useSubscriptionPlans } from '@/hooks/use-subscription';
-import { useToast } from '@/providers/toast-provider';
 
 export default function PremiumScreen() {
   const styles = useStyles();
   const colors = useColors();
-  const gradients = useGradients();
-  const { showError, showSuccess } = useToast();
   const { subscription, isPremium, usage, isLoading } = useSubscription();
   const plansQuery = useSubscriptionPlans();
-  const { isConfigured, startCheckout, subscribe } = usePremiumCheckout();
 
-  usePremiumCheckoutReturn();
+  const standardPlan = plansQuery.data?.find((plan) => plan.id === 'free' || plan.id === 'micro');
+  const premiumPlan =
+    plansQuery.data?.find((plan) => plan.id === subscription?.effectivePlanId) ??
+    plansQuery.data?.find((plan) => plan.id === 'premium' || plan.id === 'pro' || plan.id === 'max');
 
-  const standardPlan = plansQuery.data?.find((plan) => plan.id === 'free');
-  const premiumPlan = plansQuery.data?.find((plan) => plan.id === 'premium');
-
-  async function handleSubscribe() {
-    if (isPremium) {
-      showSuccess('Vous êtes déjà abonné à INVEQ Premium.');
-      return;
-    }
-
-    if (!isConfigured) {
-      const subject = encodeURIComponent('Demande INVEQ Premium');
-      const body = encodeURIComponent(
-        'Bonjour,\n\nJe souhaite activer INVEQ Premium.\n\nCordialement,',
-      );
-      await Linking.openURL(`mailto:${MARKETING_CONTACT.support}?subject=${subject}&body=${body}`);
-      return;
-    }
-
-    try {
-      const completed = await startCheckout();
-
-      if (completed) {
-        showSuccess('INVEQ Premium est activé.');
-      }
-    } catch (error) {
-      showError(readErrorMessage(error));
-    }
-  }
+  const planName = getEffectivePlanDisplayName(subscription?.effectivePlanId ?? 'micro');
+  const statusLabel = isPremium ? `Offre active · ${planName}` : `Offre actuelle · ${planName}`;
 
   if (isLoading || plansQuery.isLoading || !standardPlan || !premiumPlan) {
     return (
@@ -75,28 +39,28 @@ export default function PremiumScreen() {
   return (
     <SettingsScreenFrame title="Abonnement">
       <View style={styles.content}>
-        <Animated.View entering={fadeInUp({ index: 0 })}>
-          <LinearGradient
-            colors={gradients.primary}
-            end={{ x: 1, y: 1 }}
-            start={{ x: 0, y: 0 }}
-            style={styles.hero}>
-            <View style={styles.heroIconWrap}>
-              <SymbolView
-                name={{ ios: 'sparkles', android: 'auto_awesome', web: 'auto_awesome' }}
-                size={iconSize.lg}
-                tintColor={colors.onPrimary}
-              />
+        <Animated.View entering={fadeInUp({ index: 0 })} style={styles.statusCard}>
+          <View style={styles.statusHeader}>
+            <SymbolView
+              name={
+                isPremium
+                  ? { ios: 'checkmark.seal.fill', android: 'verified', web: 'verified' }
+                  : { ios: 'person.crop.circle', android: 'account_circle', web: 'account_circle' }
+              }
+              size={iconSize.lg}
+              tintColor={isPremium ? colors.success : colors.primary}
+            />
+            <View style={styles.statusText}>
+              <Text style={styles.statusTitle}>Statut de l’abonnement</Text>
+              <Text style={styles.statusValue}>{statusLabel}</Text>
             </View>
-            <Text style={styles.heroTitle}>INVEQ Premium</Text>
-            <Text style={styles.heroPrice}>
-              {PREMIUM_PRICE_LABEL}
-              <Text style={styles.heroPeriod}>{PREMIUM_PRICE_PERIOD_LABEL}</Text>
+          </View>
+          {subscription?.currentPeriodEnd && isPremium ? (
+            <Text style={styles.statusMeta}>
+              Période en cours jusqu’au{' '}
+              {new Date(subscription.currentPeriodEnd).toLocaleDateString('fr-FR')}
             </Text>
-            <Text style={styles.heroSubtitle}>
-              Débloquez toutes les fonctionnalités et supprimez les limites de votre activité.
-            </Text>
-          </LinearGradient>
+          ) : null}
         </Animated.View>
 
         {usage ? (
@@ -115,34 +79,13 @@ export default function PremiumScreen() {
           />
         </Animated.View>
 
-        <Animated.View entering={fadeInUp({ index: 3 })} style={styles.actions}>
-          {isPremium ? (
-            <View style={styles.premiumConfirmed}>
-              <SymbolView
-                name={{ ios: 'checkmark.seal.fill', android: 'verified', web: 'verified' }}
-                size={iconSize.md}
-                tintColor={colors.success}
-              />
-              <Text style={styles.premiumConfirmedText}>Vous êtes abonné à INVEQ Premium</Text>
-            </View>
-          ) : (
-            <Button
-              elevated
-              loading={subscribe.isPending}
-              onPress={() => {
-                void handleSubscribe();
-              }}
-              title={
-                isConfigured
-                  ? `Passer à Premium — ${PREMIUM_PRICE_LABEL}/mois`
-                  : 'Contacter le support pour Premium'
-              }
-            />
-          )}
-          <Text style={styles.footnote}>
-            {isConfigured
-              ? 'Paiement sécurisé par Stripe. Un code promo peut être saisi lors du paiement.'
-              : `Écrivez à ${MARKETING_CONTACT.support} pour activer Premium.`}
+        <Animated.View entering={fadeInUp({ index: 3 })} style={styles.manageCard}>
+          <Text style={styles.manageTitle}>Gestion de l’abonnement</Text>
+          <Text style={styles.manageMessage}>
+            Votre abonnement est géré via votre compte INVEQ.
+          </Text>
+          <Text style={styles.manageHint}>
+            Les fonctionnalités de votre offre sont synchronisées automatiquement dans l’application.
           </Text>
         </Animated.View>
       </View>
@@ -161,82 +104,65 @@ function UsageChip({ label, value }: { label: string; value: number }) {
   );
 }
 
-function readErrorMessage(error: unknown): string {
-  if (error instanceof Error) {
-    return error.message;
-  }
-
-  return 'Une erreur est survenue.';
-}
-
 function useStyles() {
   return useThemedStyles((colors) => ({
     content: {
       gap: spacing.lg,
     },
-    hero: {
-      gap: spacing.xs,
+    statusCard: {
+      gap: spacing.sm,
       padding: spacing.lg,
       borderRadius: radius.modal,
-      shadowColor: colors.primary,
-      shadowOffset: { width: 0, height: 8 },
-      shadowOpacity: 0.32,
-      shadowRadius: 24,
-      elevation: 10,
+      backgroundColor: colors.surface,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: colors.border,
     },
-    heroIconWrap: {
-      width: 44,
-      height: 44,
-      borderRadius: radius.full,
-      backgroundColor: 'rgba(255,255,255,0.2)',
+    statusHeader: {
+      flexDirection: 'row',
       alignItems: 'center',
-      justifyContent: 'center',
-      marginBottom: spacing.xs,
+      gap: spacing.md,
     },
-    heroTitle: {
-      ...typography.title1,
-      color: colors.onPrimary,
+    statusText: {
+      flex: 1,
+      gap: 2,
     },
-    heroPrice: {
-      ...typography.title2,
-      color: colors.onPrimary,
-      marginTop: spacing.xs,
+    statusTitle: {
+      ...typography.subheadline,
+      color: colors.textSecondary,
     },
-    heroPeriod: {
-      ...typography.body,
-      color: 'rgba(255,255,255,0.8)',
-      fontWeight: '400',
+    statusValue: {
+      ...typography.title3,
+      color: colors.text,
     },
-    heroSubtitle: {
-      ...typography.body,
-      color: 'rgba(255,255,255,0.88)',
-      lineHeight: 22,
+    statusMeta: {
+      ...typography.footnote,
+      color: colors.textTertiary,
     },
     usageRow: {
       flexDirection: 'row',
       gap: spacing.sm,
     },
-    actions: {
-      gap: spacing.sm,
-      paddingTop: spacing.xs,
-    },
-    premiumConfirmed: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'center',
+    manageCard: {
       gap: spacing.xs,
-      paddingVertical: spacing.md,
-      borderRadius: radius.buttonLarge,
-      backgroundColor: colors.successSubtle,
+      padding: spacing.lg,
+      borderRadius: radius.modal,
+      backgroundColor: colors.backgroundGrouped,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: colors.border,
     },
-    premiumConfirmedText: {
+    manageTitle: {
       ...typography.headline,
-      color: colors.success,
+      color: colors.text,
     },
-    footnote: {
-      ...typography.caption1,
-      color: colors.textTertiary,
-      textAlign: 'center',
+    manageMessage: {
+      ...typography.body,
+      color: colors.text,
+      marginTop: spacing.xs,
+    },
+    manageHint: {
+      ...typography.footnote,
+      color: colors.textSecondary,
+      lineHeight: 20,
     },
   }));
 }

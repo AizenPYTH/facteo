@@ -218,7 +218,9 @@ export async function fetchSubscriptionSnapshot(userId: string): Promise<Subscri
 
   const plan =
     plans.find((entry) => entry.id === subscription.effectivePlanId) ??
-    plans.find((entry) => entry.id === 'micro');
+    plans.find((entry) => entry.id === subscription.plan) ??
+    plans.find((entry) => entry.id === 'micro') ??
+    plans[0];
 
   if (!plan) {
     throw new Error('Subscription plan configuration not found.');
