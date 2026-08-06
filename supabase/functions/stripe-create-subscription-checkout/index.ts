@@ -1,7 +1,11 @@
 import Stripe from 'https://esm.sh/stripe@17.7.0?target=deno';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
 
-import { resolveStripePriceId } from '../_shared/subscription-sync.ts';
+import {
+  isPaidCheckoutPlanId,
+  isPaidPlanId,
+  resolveStripePriceId,
+} from '../_shared/subscription-sync.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -47,7 +51,19 @@ Deno.serve(async (request) => {
     }
 
     const body = (await request.json().catch(() => ({}))) as CreateSubscriptionCheckoutBody;
-    const planId = body.planId ?? 'premium';
+    const requestedPlanId = (body.planId ?? '').trim().toLowerCase();
+
+    if (!requestedPlanId || requestedPlanId === 'micro' || requestedPlanId === 'free') {
+      return jsonResponse({ error: 'Choisissez une offre payante (Basique, Standard ou Pro).' }, 400);
+    }
+
+    // Legacy Premium checkout → Pro catalog price
+    const planId = requestedPlanId === 'premium' ? 'pro' : requestedPlanId;
+
+    if (!isPaidCheckoutPlanId(planId)) {
+      return jsonResponse({ error: 'Offre introuvable.' }, 404);
+    }
+
     const appReturnUrl =
       body.returnUrl?.trim() ||
       Deno.env.get('INVEQ_SUBSCRIPTION_RETURN_URL')?.trim() ||
@@ -63,7 +79,7 @@ Deno.serve(async (request) => {
       .maybeSingle();
 
     if (planError || !plan) {
-      return jsonResponse({ error: 'Offre Premium introuvable.' }, 404);
+      return jsonResponse({ error: 'Offre introuvable.' }, 404);
     }
 
     const stripePriceId = resolveStripePriceId(plan.stripe_price_id);
@@ -86,11 +102,23 @@ Deno.serve(async (request) => {
       .eq('user_id', user.id)
       .maybeSingle();
 
-    if (
-      subscriptionRow?.stripe_subscription_id &&
-      (subscriptionRow.plan === 'premium' || subscriptionRow.status === 'active')
-    ) {
-      return jsonResponse({ error: 'Vous êtes déjà abonné à INVEQ Premium.' }, 400);
+    const hasActivePaid =
+      Boolean(subscriptionRow?.stripe_subscription_id) &&
+      (subscriptionRow?.status === 'active' || subscriptionRow?.status === 'trialing') &&
+      isPaidPlanId(subscriptionRow?.plan);
+
+    if (hasActivePaid) {
+      if (subscriptionRow?.plan === planId) {
+        return jsonResponse({ error: `Vous êtes déjà abonné à l’offre ${plan.display_name}.` }, 400);
+      }
+
+      return jsonResponse(
+        {
+          error:
+            'Vous avez déjà un abonnement actif. Utilisez « Gérer l’abonnement » pour changer d’offre ou annuler.',
+        },
+        400,
+      );
     }
 
     let customerId = subscriptionRow?.stripe_customer_id ?? null;

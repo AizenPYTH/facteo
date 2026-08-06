@@ -1,37 +1,41 @@
-import { router } from 'expo-router';
+import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
-import { PlanComparison } from '@/components/subscription/plan-comparison';
+import { PlanCatalog } from '@/components/subscription/plan-catalog';
 import { SettingsScreenFrame } from '@/components/web/desktop/settings-screen-frame';
-import { Button } from '@/components/ui/button';
 import { LoadingView } from '@/components/ui/loading-view';
 import {
-  PREMIUM_PRICE_LABEL,
-  PREMIUM_PRICE_PERIOD_LABEL,
-} from '@/constants/subscription-pricing';
+  getCatalogPlanById,
+  type PaidCatalogPlanId,
+} from '@/constants/subscription-plans';
 import { spacing } from '@/constants/theme/spacing';
 import { typography } from '@/constants/theme/typography';
 import { useThemedStyles } from '@/hooks/use-colors';
 import { usePremiumCheckout } from '@/hooks/use-premium-checkout';
 import { usePremiumCheckoutReturn } from '@/hooks/use-premium-checkout-return';
-import { useSubscription, useSubscriptionPlans } from '@/hooks/use-subscription';
+import { useSubscription } from '@/hooks/use-subscription';
+import { getEffectivePlanDisplayName } from '@/lib/subscription/plans';
 import { useToast } from '@/providers/toast-provider';
 
 export default function PremiumScreen() {
   const styles = useStyles();
   const { showError, showSuccess } = useToast();
-  const { subscription, isPremium, usage, isLoading } = useSubscription();
-  const plansQuery = useSubscriptionPlans();
-  const { isConfigured, startCheckout, subscribe } = usePremiumCheckout();
+  const { subscription, plan, usage, isPremium, isLoading } = useSubscription();
+  const {
+    isConfigured,
+    isPortalConfigured,
+    startCheckout,
+    manageSubscription,
+    subscribe,
+    portal,
+  } = usePremiumCheckout();
+  const [loadingPlanId, setLoadingPlanId] = useState<PaidCatalogPlanId | null>(null);
 
   usePremiumCheckoutReturn();
 
-  const standardPlan = plansQuery.data?.find((plan) => plan.id === 'free');
-  const premiumPlan = plansQuery.data?.find((plan) => plan.id === 'premium');
-
-  async function handleSubscribe() {
+  async function handleSelectPlan(planId: PaidCatalogPlanId) {
     if (isPremium) {
-      showSuccess('Vous êtes déjà abonné à INVEQ Premium.');
+      showError('Vous avez déjà un abonnement actif. Utilisez « Gérer l’abonnement ».');
       return;
     }
 
@@ -40,18 +44,36 @@ export default function PremiumScreen() {
       return;
     }
 
+    setLoadingPlanId(planId);
+
     try {
-      const completed = await startCheckout();
+      const completed = await startCheckout(planId);
+      const catalog = getCatalogPlanById(planId);
 
       if (completed) {
-        showSuccess('INVEQ Premium est activé.');
+        showSuccess(`Offre ${catalog?.name ?? planId} activée.`);
       }
+    } catch (error) {
+      showError(readErrorMessage(error));
+    } finally {
+      setLoadingPlanId(null);
+    }
+  }
+
+  async function handleManage() {
+    if (!isPortalConfigured) {
+      showError('Portail de facturation non configuré. Contactez le support.');
+      return;
+    }
+
+    try {
+      await manageSubscription();
     } catch (error) {
       showError(readErrorMessage(error));
     }
   }
 
-  if (isLoading || plansQuery.isLoading || !standardPlan || !premiumPlan) {
+  if (isLoading) {
     return (
       <SettingsScreenFrame title="Abonnement">
         <LoadingView message="Chargement de votre offre..." />
@@ -59,17 +81,16 @@ export default function PremiumScreen() {
     );
   }
 
+  const currentName = plan?.displayName ?? getEffectivePlanDisplayName(subscription?.effectivePlanId ?? 'micro');
+
   return (
     <SettingsScreenFrame title="Abonnement">
       <View style={styles.content}>
         <View style={styles.hero}>
-          <Text style={styles.heroTitle}>INVEQ Premium</Text>
-          <Text style={styles.heroPrice}>
-            {PREMIUM_PRICE_LABEL}
-            <Text style={styles.heroPeriod}>{PREMIUM_PRICE_PERIOD_LABEL}</Text>
-          </Text>
+          <Text style={styles.heroTitle}>Votre offre</Text>
+          <Text style={styles.heroPlan}>{currentName}</Text>
           <Text style={styles.heroSubtitle}>
-            Débloquez toutes les fonctionnalités et supprimez les limites de votre activité.
+            Choisissez l’offre adaptée à votre activité. Paiement sécurisé par Stripe.
           </Text>
         </View>
 
@@ -81,28 +102,26 @@ export default function PremiumScreen() {
           </View>
         ) : null}
 
-        <PlanComparison
+        <PlanCatalog
+          checkoutEnabled={isConfigured}
+          checkoutLoadingPlanId={subscribe.isPending ? loadingPlanId : null}
           currentPlanId={subscription?.effectivePlanId}
-          premiumPlan={premiumPlan}
-          standardPlan={standardPlan}
+          manageLoading={portal.isPending}
+          onManageSubscription={
+            isPremium
+              ? () => {
+                  void handleManage();
+                }
+              : undefined
+          }
+          onSelectPaidPlan={(planId) => {
+            void handleSelectPlan(planId);
+          }}
         />
 
-        <View style={styles.actions}>
-          {isPremium ? (
-            <Button onPress={() => router.back()} title="Vous êtes Premium" variant="ghost" />
-          ) : (
-            <Button
-              loading={subscribe.isPending}
-              onPress={() => {
-                void handleSubscribe();
-              }}
-              title={`Passer à Premium — ${PREMIUM_PRICE_LABEL}/mois`}
-            />
-          )}
-          <Text style={styles.footnote}>
-            Paiement sécurisé par Stripe. Un code promo peut être saisi lors du paiement.
-          </Text>
-        </View>
+        <Text style={styles.footnote}>
+          Un code promo peut être saisi lors du paiement Stripe. Facturation mensuelle.
+        </Text>
       </View>
     </SettingsScreenFrame>
   );
@@ -139,15 +158,10 @@ function useStyles() {
       ...typography.title1,
       color: colors.text,
     },
-    heroPrice: {
+    heroPlan: {
       ...typography.title2,
       color: colors.primary,
       marginTop: spacing.xs,
-    },
-    heroPeriod: {
-      ...typography.body,
-      color: colors.textSecondary,
-      fontWeight: '400',
     },
     heroSubtitle: {
       ...typography.body,
@@ -158,14 +172,11 @@ function useStyles() {
       flexDirection: 'row',
       gap: spacing.sm,
     },
-    actions: {
-      gap: spacing.sm,
-      paddingTop: spacing.xs,
-    },
     footnote: {
       ...typography.caption1,
       color: colors.textTertiary,
       textAlign: 'center',
+      paddingBottom: spacing.lg,
     },
   }));
 }

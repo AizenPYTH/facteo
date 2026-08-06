@@ -1,7 +1,10 @@
 import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
 
+import type { PaidCatalogPlanId } from '@/constants/subscription-plans';
 import { supabase } from '@/lib/supabase';
+
+export type CheckoutPlanId = PaidCatalogPlanId | 'max' | 'premium';
 
 export type CreateSubscriptionCheckoutResult = {
   checkoutUrl: string;
@@ -9,9 +12,15 @@ export type CreateSubscriptionCheckoutResult = {
 };
 
 export type ConfirmSubscriptionCheckoutResult = {
-  planId: 'free' | 'premium';
+  planId: string;
   status: string;
+  isPaid: boolean;
+  /** @deprecated Prefer isPaid */
   isPremium: boolean;
+};
+
+export type CreateBillingPortalResult = {
+  portalUrl: string;
 };
 
 export class SubscriptionCheckoutCanceledError extends Error {
@@ -50,12 +59,27 @@ function getSubscriptionConfirmUrl(): string | null {
   return baseUrl ? `${baseUrl}/stripe-confirm-subscription-checkout` : null;
 }
 
+function getBillingPortalUrl(): string | null {
+  const explicit = process.env.EXPO_PUBLIC_STRIPE_BILLING_PORTAL_URL?.trim();
+
+  if (explicit) {
+    return explicit;
+  }
+
+  const baseUrl = getSupabaseFunctionsBaseUrl();
+  return baseUrl ? `${baseUrl}/stripe-create-billing-portal` : null;
+}
+
 export function getPremiumReturnUrl(): string {
   return Linking.createURL(PREMIUM_RETURN_PATH);
 }
 
 export function isSubscriptionCheckoutConfigured(): boolean {
   return Boolean(getSubscriptionCheckoutUrl() && getSubscriptionConfirmUrl());
+}
+
+export function isBillingPortalConfigured(): boolean {
+  return Boolean(getBillingPortalUrl());
 }
 
 export function parseSubscriptionReturnUrl(url: string): {
@@ -91,7 +115,7 @@ async function getAccessToken(): Promise<string> {
 }
 
 export async function createSubscriptionCheckout(
-  planId: 'premium' = 'premium',
+  planId: CheckoutPlanId,
 ): Promise<CreateSubscriptionCheckoutResult> {
   const endpoint = getSubscriptionCheckoutUrl();
 
@@ -115,7 +139,7 @@ export async function createSubscriptionCheckout(
 
   if (!response.ok) {
     const payload = (await response.json().catch(() => null)) as { error?: string } | null;
-    throw new Error(payload?.error ?? 'Impossible de démarrer l’abonnement Premium.');
+    throw new Error(payload?.error ?? 'Impossible de démarrer l’abonnement.');
   }
 
   const payload = (await response.json()) as CreateSubscriptionCheckoutResult;
@@ -149,14 +173,20 @@ export async function confirmSubscriptionCheckout(
 
   if (!response.ok) {
     const payload = (await response.json().catch(() => null)) as { error?: string } | null;
-    throw new Error(payload?.error ?? 'Impossible de confirmer l’abonnement Premium.');
+    throw new Error(payload?.error ?? 'Impossible de confirmer l’abonnement.');
   }
 
-  return (await response.json()) as ConfirmSubscriptionCheckoutResult;
+  const payload = (await response.json()) as ConfirmSubscriptionCheckoutResult;
+
+  return {
+    ...payload,
+    isPaid: Boolean(payload.isPaid ?? payload.isPremium),
+    isPremium: Boolean(payload.isPaid ?? payload.isPremium),
+  };
 }
 
 export async function startPremiumCheckoutFlow(
-  planId: 'premium' = 'premium',
+  planId: CheckoutPlanId,
 ): Promise<ConfirmSubscriptionCheckoutResult | null> {
   const returnUrl = getPremiumReturnUrl();
   const checkout = await createSubscriptionCheckout(planId);
@@ -192,6 +222,42 @@ export async function startPremiumCheckoutFlow(
   }
 
   return confirmSubscriptionCheckout(resolvedSessionId);
+}
+
+export async function openBillingPortal(): Promise<void> {
+  const endpoint = getBillingPortalUrl();
+
+  if (!endpoint) {
+    throw new Error('Portail de facturation non configuré.');
+  }
+
+  const accessToken = await getAccessToken();
+  const returnUrl = getPremiumReturnUrl();
+
+  const response = await fetch(endpoint, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ returnUrl }),
+  });
+
+  if (!response.ok) {
+    const payload = (await response.json().catch(() => null)) as { error?: string } | null;
+    throw new Error(payload?.error ?? 'Impossible d’ouvrir le portail de facturation.');
+  }
+
+  const payload = (await response.json()) as CreateBillingPortalResult;
+
+  if (!payload.portalUrl) {
+    throw new Error('Réponse portail Stripe invalide.');
+  }
+
+  WebBrowser.maybeCompleteAuthSession();
+  await WebBrowser.openAuthSessionAsync(payload.portalUrl, returnUrl, {
+    preferEphemeralSession: true,
+  });
 }
 
 export function isSubscriptionCheckoutCanceledError(

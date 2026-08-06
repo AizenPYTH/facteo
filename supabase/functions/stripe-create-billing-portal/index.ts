@@ -1,18 +1,13 @@
 import Stripe from 'https://esm.sh/stripe@17.7.0?target=deno';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
 
-import {
-  isPaidPlanId,
-  syncSubscriptionCheckoutSession,
-} from '../_shared/subscription-sync.ts';
-
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-type ConfirmSubscriptionCheckoutBody = {
-  sessionId: string;
+type CreateBillingPortalBody = {
+  returnUrl?: string;
 };
 
 Deno.serve(async (request) => {
@@ -49,38 +44,42 @@ Deno.serve(async (request) => {
       return jsonResponse({ error: 'Non autorisé.' }, 401);
     }
 
-    const body = (await request.json()) as ConfirmSubscriptionCheckoutBody;
+    const body = (await request.json().catch(() => ({}))) as CreateBillingPortalBody;
+    const returnUrl =
+      body.returnUrl?.trim() ||
+      Deno.env.get('INVEQ_SUBSCRIPTION_RETURN_URL')?.trim() ||
+      'INVEQ://settings/premium';
 
-    if (!body.sessionId?.trim()) {
-      return jsonResponse({ error: 'Session Stripe manquante.' }, 400);
+    const serviceClient = createClient(supabaseUrl, supabaseServiceRoleKey);
+    const { data: subscriptionRow } = await serviceClient
+      .from('subscriptions')
+      .select('stripe_customer_id')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    const customerId = subscriptionRow?.stripe_customer_id?.trim();
+
+    if (!customerId) {
+      return jsonResponse(
+        { error: 'Aucun client Stripe associé. Souscrivez d’abord à une offre.' },
+        400,
+      );
     }
 
     const stripe = new Stripe(stripeSecret, { apiVersion: '2024-12-18.acacia' });
-    const serviceClient = createClient(supabaseUrl, supabaseServiceRoleKey);
-    const session = await stripe.checkout.sessions.retrieve(body.sessionId.trim());
+    const session = await stripe.billingPortal.sessions.create({
+      customer: customerId,
+      return_url: returnUrl,
+    });
 
-    const sessionUserId = session.metadata?.user_id ?? session.client_reference_id ?? null;
-
-    if (sessionUserId !== user.id) {
-      return jsonResponse({ error: 'Cette session de paiement ne vous appartient pas.' }, 403);
+    if (!session.url) {
+      return jsonResponse({ error: 'Impossible d’ouvrir le portail de facturation.' }, 500);
     }
 
-    const result = await syncSubscriptionCheckoutSession(stripe, serviceClient, session);
-    const isPaid = isPaidPlanId(result.planId);
-
-    return jsonResponse(
-      {
-        planId: result.planId,
-        status: 'active',
-        isPaid,
-        /** @deprecated Prefer isPaid */
-        isPremium: isPaid,
-      },
-      200,
-    );
+    return jsonResponse({ portalUrl: session.url }, 200);
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Erreur inattendue.';
-    return jsonResponse({ error: message }, 400);
+    return jsonResponse({ error: message }, 500);
   }
 });
 
