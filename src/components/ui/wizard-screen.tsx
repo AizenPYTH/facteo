@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Platform, StyleSheet, View } from 'react-native';
+import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { StickyFooter } from '@/components/ui/sticky-footer';
@@ -38,9 +39,13 @@ export function WizardScreen({
   return (
     <View style={styles.root} testID={testID}>
       <SafeAreaView edges={['top']} style={styles.safeArea}>
-        {header ? <View style={styles.header}>{header}</View> : null}
-        {toolbar ? <View style={styles.toolbar}>{toolbar}</View> : null}
-        <View style={styles.body}>{children}</View>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          style={styles.flex}>
+          {header ? <View style={styles.header}>{header}</View> : null}
+          {toolbar ? <View style={styles.toolbar}>{toolbar}</View> : null}
+          <View style={styles.body}>{children}</View>
+        </KeyboardAvoidingView>
       </SafeAreaView>
       {footer ? <StickyFooter variant="toolbar">{footer}</StickyFooter> : null}
     </View>
@@ -56,6 +61,9 @@ const useStyles = () =>
     safeArea: {
       flex: 1,
     },
+    flex: {
+      flex: 1,
+    },
     header: {
       gap: spacing.md,
     },
@@ -68,6 +76,7 @@ const useStyles = () =>
     body: {
       flex: 1,
       paddingHorizontal: spacing.screenPaddingHorizontal,
+      minHeight: 0,
     },
     desktopRoot: {
       flex: 1,

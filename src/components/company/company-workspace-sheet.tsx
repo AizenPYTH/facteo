@@ -1,16 +1,18 @@
 import { Image } from 'expo-image';
 import { SymbolView } from 'expo-symbols';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import {
   Alert,
+  KeyboardAvoidingView,
   Modal,
   Platform,
   Pressable,
+  ScrollView,
   StyleSheet,
   TextInput,
   View,
+  type ScrollView as ScrollViewType,
 } from 'react-native';
-import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AppText } from '@/components/ui/app-text';
@@ -18,6 +20,7 @@ import { Button } from '@/components/ui/button';
 import { useCompanyAsset } from '@/hooks/use-company-asset';
 import { useCompanyManagement } from '@/hooks/use-company-management';
 import { useColors, useThemedStyles } from '@/hooks/use-colors';
+import { useKeyboardHeight } from '@/hooks/use-keyboard-height';
 import { components } from '@/constants/theme/design-system';
 import { radius } from '@/constants/theme/radius';
 import { spacing } from '@/constants/theme/spacing';
@@ -51,6 +54,8 @@ export function CompanyWorkspaceSheet({
   const styles = useStyles();
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const keyboardHeight = useKeyboardHeight();
+  const scrollRef = useRef<ScrollViewType>(null);
   const { showError, showSuccess } = useToast();
   const { createCompany, renameCompany, deleteCompany } = useCompanyManagement();
   const { uploadAsset } = useCompanyAsset('logo');
@@ -58,6 +63,14 @@ export function CompanyWorkspaceSheet({
   const [createName, setCreateName] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState('');
+
+  const sheetBottomPad = Math.max(insets.bottom, spacing.md) + (keyboardHeight > 0 ? spacing.sm : 0);
+
+  function scrollCreateIntoView() {
+    requestAnimationFrame(() => {
+      scrollRef.current?.scrollToEnd({ animated: true });
+    });
+  }
 
   async function handleCreate() {
     if (!createName.trim()) {
@@ -130,19 +143,28 @@ export function CompanyWorkspaceSheet({
 
   return (
     <Modal animationType="slide" onRequestClose={onClose} transparent visible={visible}>
-      <View style={styles.overlay}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        style={styles.overlay}>
         <Pressable accessibilityLabel="Fermer" onPress={onClose} style={StyleSheet.absoluteFill} />
-        <View style={[styles.sheet, { paddingBottom: Math.max(insets.bottom, spacing.lg) }]}>
+        <View
+          style={[
+            styles.sheet,
+            {
+              paddingBottom: sheetBottomPad,
+              marginBottom: Platform.OS === 'android' ? keyboardHeight : 0,
+            },
+          ]}>
           <View style={styles.handle} />
           <AppText variant="title">Espaces de travail</AppText>
           <AppText color="secondary" variant="subtitle">
             Gérez vos entreprises et changez d’espace en un clic.
           </AppText>
 
-          <KeyboardAwareScrollView
-            bottomOffset={spacing.xl}
+          <ScrollView
+            ref={scrollRef}
             contentContainerStyle={styles.list}
-            keyboardDismissMode="on-drag"
+            keyboardDismissMode="interactive"
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
             style={styles.scroll}>
@@ -172,6 +194,7 @@ export function CompanyWorkspaceSheet({
                         <TextInput
                           autoFocus
                           onChangeText={setEditingName}
+                          onFocus={scrollCreateIntoView}
                           placeholder="Nom de l’entreprise"
                           placeholderTextColor={colors.textTertiary}
                           returnKeyType="done"
@@ -246,17 +269,22 @@ export function CompanyWorkspaceSheet({
               </AppText>
               <TextInput
                 onChangeText={setCreateName}
+                onFocus={scrollCreateIntoView}
                 placeholder="Nom de l’entreprise"
                 placeholderTextColor={colors.textTertiary}
                 returnKeyType="done"
                 style={styles.input}
                 value={createName}
               />
-              <Button loading={createCompany.isPending} onPress={() => void handleCreate()} title="Créer" />
+              <Button
+                loading={createCompany.isPending}
+                onPress={() => void handleCreate()}
+                title="Créer"
+              />
             </View>
-          </KeyboardAwareScrollView>
+          </ScrollView>
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
@@ -277,7 +305,7 @@ const useStyles = () =>
       justifyContent: 'flex-end',
     },
     sheet: {
-      maxHeight: Platform.OS === 'ios' ? '92%' : '90%',
+      maxHeight: '92%',
       backgroundColor: colors.surface,
       borderTopLeftRadius: radius.sheet,
       borderTopRightRadius: radius.sheet,
@@ -296,10 +324,12 @@ const useStyles = () =>
     },
     scroll: {
       flexGrow: 0,
+      maxHeight: '100%',
     },
     list: {
       gap: spacing.sm,
       paddingBottom: spacing.xl,
+      flexGrow: 1,
     },
     card: {
       borderWidth: StyleSheet.hairlineWidth,
@@ -351,13 +381,15 @@ const useStyles = () =>
       borderTopColor: colors.separator,
     },
     input: {
+      minHeight: 48,
       borderWidth: StyleSheet.hairlineWidth,
       borderColor: colors.border,
       borderRadius: radius.md,
       paddingHorizontal: spacing.md,
       paddingVertical: spacing.sm,
       color: colors.text,
-      backgroundColor: colors.surface,
+      backgroundColor: colors.backgroundGrouped,
+      fontSize: 16,
     },
     pressed: {
       opacity: 0.9,

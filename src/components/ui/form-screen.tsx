@@ -1,11 +1,14 @@
 import type { ReactNode } from 'react';
-import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
+import { Platform, View, type StyleProp, type ViewStyle } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { SafeAreaView, type Edge } from 'react-native-safe-area-context';
 
 import { StickyFooter, useStickyFooterInset } from '@/components/ui/sticky-footer';
 import { useThemedStyles } from '@/hooks/use-colors';
 import { spacing } from '@/constants/theme/spacing';
+
+/** Extra space for iOS keyboard accessory (“Masquer mon adresse e-mail”, etc.). */
+const IOS_KEYBOARD_ACCESSORY = 52;
 
 type FormScreenProps = {
   children: ReactNode;
@@ -30,6 +33,8 @@ export function FormScreen({
 }: FormScreenProps) {
   const styles = useStyles(transparent);
   const footerInset = useStickyFooterInset();
+  const accessory = Platform.OS === 'ios' ? IOS_KEYBOARD_ACCESSORY : 0;
+  const bottomOffset = (footer ? footerInset : spacing.md) + accessory;
 
   return (
     <View style={styles.root} testID={testID}>
@@ -38,13 +43,14 @@ export function FormScreen({
 
         {scrollable ? (
           <KeyboardAwareScrollView
-            bottomOffset={footer ? footerInset : spacing.md}
+            bottomOffset={bottomOffset}
             contentContainerStyle={[
               styles.scrollContent,
-              footer ? { paddingBottom: footerInset + spacing.md } : null,
+              footer ? { paddingBottom: footerInset + spacing.xl } : null,
               contentContainerStyle,
             ]}
-            keyboardDismissMode="on-drag"
+            extraKeyboardSpace={accessory}
+            keyboardDismissMode="interactive"
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
             style={styles.flex}>

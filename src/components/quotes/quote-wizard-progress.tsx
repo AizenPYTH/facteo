@@ -91,7 +91,13 @@ function Step({ stepNumber, label, isActive, isCompleted }: StepProps) {
           <SymbolView name="checkmark" size={iconSize.sm} tintColor={colors.primary} />
         </Animated.View>
       </Animated.View>
-      <Text style={[styles.label, isActive && styles.labelActive]}>{label}</Text>
+      <Text
+        adjustsFontSizeToFit
+        minimumFontScale={0.85}
+        numberOfLines={1}
+        style={[styles.label, isActive && styles.labelActive]}>
+        {label}
+      </Text>
     </View>
   );
 }

@@ -9,13 +9,13 @@ import {
 } from 'react';
 import {
   Alert,
-  FlatList,
   Linking,
   Platform,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import Animated from 'react-native-reanimated';
 
 import {
@@ -255,17 +255,17 @@ export function QuoteAddLinesStep({
 
   return (
     <>
-      <FlatList
-        automaticallyAdjustKeyboardInsets
+      <KeyboardAwareScrollView
+        bottomOffset={Platform.OS === 'ios' ? 24 : 12}
         contentContainerStyle={styles.listContent}
-        data={lines}
-        keyExtractor={(item) => item.id}
-        keyboardDismissMode="on-drag"
+        extraKeyboardSpace={Platform.OS === 'ios' ? 24 : 0}
+        keyboardDismissMode="interactive"
         keyboardShouldPersistTaps="handled"
-        nestedScrollEnabled
-        ListHeaderComponent={listHeader}
-        renderItem={({ item, index }) => (
-          <Animated.View entering={fadeInUp({ index, step: 40 })}>
+        showsVerticalScrollIndicator={false}
+        style={styles.container}>
+        {listHeader}
+        {lines.map((item, index) => (
+          <Animated.View entering={fadeInUp({ index, step: 40 })} key={item.id}>
             <QuoteLine
               index={index}
               onChange={(updatedLine) => onChangeLine(index, updatedLine)}
@@ -273,9 +273,8 @@ export function QuoteAddLinesStep({
               value={item}
             />
           </Animated.View>
-        )}
-        showsVerticalScrollIndicator={false}
-      />
+        ))}
+      </KeyboardAwareScrollView>
       {actionSheetNode}
       <ProductAnalysisLoadingModal progress={analysisProgress} visible={isAnalyzing} />
       {analysisDraft && analysisImageUri ? (
@@ -301,11 +300,12 @@ function useStyles() {
     flex: 1,
   },
   listContent: {
-    gap: spacing.lg,
-    paddingBottom: spacing.lg,
+    gap: spacing.md,
+    paddingBottom: spacing.xl,
+    flexGrow: 1,
   },
   headerSection: {
-    gap: spacing.lg,
+    gap: spacing.md,
     paddingBottom: spacing.sm,
   },
   description: {
