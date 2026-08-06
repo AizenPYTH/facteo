@@ -4,6 +4,11 @@ import {
   mapUpdateInvoiceInputToInsert,
 } from '@/lib/invoices/mappers';
 import { resolveInvoiceStatusFromPayments } from '@/lib/invoices/status';
+import {
+  demoInvoiceDetails,
+  demoInvoices,
+} from '@/lib/screenshot-demo';
+import { isOfflineDemoData } from '@/lib/demo-data-mode';
 import { supabase } from '@/lib/supabase';
 import { logSupabaseError } from '@/lib/supabase/errors';
 import { mapInvoiceDetail, mapInvoiceRowToInvoice } from '@/lib/supabase/mappers';
@@ -170,6 +175,27 @@ export async function fetchInvoicesPage(
   scope: DataScope,
   { search = '', status = 'all', page = 0, pageSize = INVOICES_PAGE_SIZE }: InvoicesPageParams = {},
 ): Promise<InvoicesPage> {
+  if (isOfflineDemoData()) {
+    void scope;
+    const needle = search.trim().toLowerCase();
+    let filtered = status === 'all' ? demoInvoices : demoInvoices.filter((row) => row.status === status);
+    if (needle) {
+      filtered = filtered.filter((invoice) =>
+        [invoice.number, invoice.clientName, invoice.clientEmail]
+          .filter(Boolean)
+          .some((value) => String(value).toLowerCase().includes(needle)),
+      );
+    }
+    const from = page * pageSize;
+    const invoices = filtered.slice(from, from + pageSize);
+    const loadedCount = from + invoices.length;
+    return {
+      invoices,
+      nextPage: loadedCount < filtered.length ? page + 1 : null,
+      totalCount: filtered.length,
+    };
+  }
+
   const from = page * pageSize;
   const to = from + pageSize - 1;
 
@@ -210,6 +236,11 @@ export async function fetchInvoiceById(
   scope: DataScope,
   invoiceId: string,
 ): Promise<InvoiceDetail | null> {
+  if (isOfflineDemoData()) {
+    void scope;
+    return demoInvoiceDetails[invoiceId] ?? null;
+  }
+
   const { data: invoiceRow, error: invoiceError } = await supabase
     .from('invoices')
     .select(INVOICE_LIST_COLUMNS)

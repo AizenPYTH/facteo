@@ -1,6 +1,10 @@
+import { DEFAULT_PDF_TEMPLATE_ID } from '@/lib/pdf/engine/templates';
+import {
+  demoSettings,
+} from '@/lib/screenshot-demo';
+import { isOfflineDemoData } from '@/lib/demo-data-mode';
 import { supabase } from '@/lib/supabase';
 import { logSupabaseError } from '@/lib/supabase/errors';
-import { DEFAULT_PDF_TEMPLATE_ID } from '@/lib/pdf/engine/templates';
 import type { DataScope } from '@/types/tenant';
 import type { Settings, SettingsFormValues } from '@/types/settings';
 import type { SettingsRow, SettingsUpdate } from '@/types/database';
@@ -36,6 +40,11 @@ export function mapSettingsRow(row: SettingsRow & {
 }
 
 export async function fetchSettings(scope: DataScope): Promise<Settings | null> {
+  if (isOfflineDemoData()) {
+    void scope;
+    return demoSettings;
+  }
+
   const { data, error } = await supabase
     .from('settings')
     .select(SETTINGS_COLUMNS)

@@ -6,9 +6,10 @@ export type SubscriptionPlanId =
   | 'enterprise'
   | 'micro'
   | 'basique'
-  | 'standard';
+  | 'standard'
+  | 'max';
 
-export type EffectivePlanId = 'micro' | 'basique' | 'standard' | 'pro';
+export type EffectivePlanId = 'micro' | 'basique' | 'standard' | 'pro' | 'max';
 
 export type SubscriptionStatus =
   | 'trialing'

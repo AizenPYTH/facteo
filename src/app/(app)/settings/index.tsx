@@ -29,14 +29,19 @@ export default function SettingsScreen() {
   const useDesktopSettings = isWeb && (isDesktop || isTablet);
   const { user, signOut } = useAuth();
   const companyProfile = useCompanyProfile();
-  const { isPremium } = useSubscription();
+  const { isPremium, subscription } = useSubscription();
   const { preference, setPreference } = useThemePreference();
   const { showSuccess } = useToast();
   const versionInfo = getAppVersionInfo();
 
   const isDarkMode = preference === 'dark';
   const darkModeSupported = Platform.OS !== 'web';
-  const planLabel = isPremium ? 'INVEQ Premium' : 'INVEQ Standard';
+  const planLabel =
+    subscription?.effectivePlanId === 'max'
+      ? 'INVEQ Max'
+      : isPremium
+        ? 'INVEQ Premium'
+        : 'INVEQ Standard';
 
   async function handleToggleDarkMode(value: boolean) {
     if (!darkModeSupported) {
