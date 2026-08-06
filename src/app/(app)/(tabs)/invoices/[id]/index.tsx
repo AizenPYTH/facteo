@@ -210,7 +210,8 @@ export default function InvoiceDetailScreen() {
     }
 
     if (!isConfigured) {
-      showError('Le paiement en ligne n’est pas encore configuré.');
+      router.push('/company' as Href);
+      showError('Configurez votre espace entreprise, puis réessayez le paiement en ligne.');
       return;
     }
 

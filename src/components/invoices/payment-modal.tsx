@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/ui/button';
@@ -92,7 +93,8 @@ export function PaymentModal({
           <Text style={styles.title}>Enregistrer un paiement</Text>
           <Text style={styles.subtitle}>Reste à payer : {formatPriceHT(maxAmount)}</Text>
 
-          <ScrollView
+          <KeyboardAwareScrollView
+            bottomOffset={spacing.xl}
             contentContainerStyle={styles.form}
             keyboardDismissMode="on-drag"
             keyboardShouldPersistTaps="handled"
@@ -147,7 +149,7 @@ export function PaymentModal({
                 value={form.notes}
               />
             </CollapsibleSection>
-          </ScrollView>
+          </KeyboardAwareScrollView>
 
           <View style={styles.actions}>
             <Button onPress={onCancel} title="Annuler" variant="ghost" />

@@ -1,8 +1,9 @@
 import { LinearGradient } from 'expo-linear-gradient';
-import { router } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
-import { StyleSheet, Text, View } from 'react-native';
+import { Linking, StyleSheet, Text, View } from 'react-native';
 import Animated from 'react-native-reanimated';
+
+import { MARKETING_CONTACT } from '@/constants/marketing/site';
 
 import { PlanComparison } from '@/components/subscription/plan-comparison';
 import { SettingsScreenFrame } from '@/components/web/desktop/settings-screen-frame';
@@ -44,7 +45,11 @@ export default function PremiumScreen() {
     }
 
     if (!isConfigured) {
-      showError('Stripe n’est pas encore configuré. Contactez le support.');
+      const subject = encodeURIComponent('Demande INVEQ Premium');
+      const body = encodeURIComponent(
+        'Bonjour,\n\nJe souhaite activer INVEQ Premium.\n\nCordialement,',
+      );
+      await Linking.openURL(`mailto:${MARKETING_CONTACT.support}?subject=${subject}&body=${body}`);
       return;
     }
 
@@ -127,11 +132,17 @@ export default function PremiumScreen() {
               onPress={() => {
                 void handleSubscribe();
               }}
-              title={`Passer à Premium — ${PREMIUM_PRICE_LABEL}/mois`}
+              title={
+                isConfigured
+                  ? `Passer à Premium — ${PREMIUM_PRICE_LABEL}/mois`
+                  : 'Contacter le support pour Premium'
+              }
             />
           )}
           <Text style={styles.footnote}>
-            Paiement sécurisé par Stripe. Un code promo peut être saisi lors du paiement.
+            {isConfigured
+              ? 'Paiement sécurisé par Stripe. Un code promo peut être saisi lors du paiement.'
+              : `Écrivez à ${MARKETING_CONTACT.support} pour activer Premium.`}
           </Text>
         </Animated.View>
       </View>

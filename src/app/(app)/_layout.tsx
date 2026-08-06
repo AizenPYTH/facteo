@@ -1,6 +1,5 @@
 import { Redirect, Stack, type Href } from 'expo-router';
 
-import { AnimatedSplashOverlay } from '@/components/animated-icon';
 import { AuthLoadingScreen } from '@/components/auth/auth-loading-screen';
 import { TenantSwitchingOverlay } from '@/components/tenant/tenant-switching-overlay';
 import { useAuth } from '@/hooks/use-auth';
@@ -20,7 +19,6 @@ export default function AppLayout() {
 
   return (
     <>
-      <AnimatedSplashOverlay />
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="(tabs)" />
         <Stack.Screen

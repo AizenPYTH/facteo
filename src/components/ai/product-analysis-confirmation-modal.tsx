@@ -1,6 +1,7 @@
 import { Image } from 'expo-image';
 import { SymbolView } from 'expo-symbols';
-import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/ui/button';
@@ -94,7 +95,11 @@ export function ProductAnalysisConfirmationModal({
             <Text style={styles.confidenceText}>Confiance IA : {confidencePercent}%</Text>
           </View>
 
-          <ScrollView contentContainerStyle={styles.form} showsVerticalScrollIndicator={false}>
+          <KeyboardAwareScrollView
+            bottomOffset={24}
+            contentContainerStyle={styles.form}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}>
             <TextField
               label="Nom"
               onChangeText={(text) => updateField('title', text)}
@@ -183,7 +188,7 @@ export function ProductAnalysisConfirmationModal({
                 />
               </View>
             </View>
-          </ScrollView>
+          </KeyboardAwareScrollView>
 
           <View style={styles.actions}>
             <Button loading={isSaving} onPress={onConfirm} title="Créer le produit" />

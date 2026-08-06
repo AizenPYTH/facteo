@@ -4,12 +4,13 @@ import { useState } from 'react';
 import {
   Alert,
   Modal,
+  Platform,
   Pressable,
-  ScrollView,
   StyleSheet,
   TextInput,
   View,
 } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AppText } from '@/components/ui/app-text';
@@ -138,7 +139,13 @@ export function CompanyWorkspaceSheet({
             Gérez vos entreprises et changez d’espace en un clic.
           </AppText>
 
-          <ScrollView contentContainerStyle={styles.list} showsVerticalScrollIndicator={false}>
+          <KeyboardAwareScrollView
+            bottomOffset={spacing.xl}
+            contentContainerStyle={styles.list}
+            keyboardDismissMode="on-drag"
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+            style={styles.scroll}>
             {companies.map((company) => {
               const isActive = company.id === activeCompany?.id;
               const isEditing = editingId === company.id;
@@ -167,6 +174,7 @@ export function CompanyWorkspaceSheet({
                           onChangeText={setEditingName}
                           placeholder="Nom de l’entreprise"
                           placeholderTextColor={colors.textTertiary}
+                          returnKeyType="done"
                           style={styles.input}
                           value={editingName}
                         />
@@ -231,19 +239,22 @@ export function CompanyWorkspaceSheet({
                 </View>
               );
             })}
-          </ScrollView>
 
-          <View style={styles.createBlock}>
-            <AppText medium variant="body">Nouvelle entreprise</AppText>
-            <TextInput
-              onChangeText={setCreateName}
-              placeholder="Nom de l’entreprise"
-              placeholderTextColor={colors.textTertiary}
-              style={styles.input}
-              value={createName}
-            />
-            <Button loading={createCompany.isPending} onPress={() => void handleCreate()} title="Créer" />
-          </View>
+            <View style={styles.createBlock}>
+              <AppText medium variant="body">
+                Nouvelle entreprise
+              </AppText>
+              <TextInput
+                onChangeText={setCreateName}
+                placeholder="Nom de l’entreprise"
+                placeholderTextColor={colors.textTertiary}
+                returnKeyType="done"
+                style={styles.input}
+                value={createName}
+              />
+              <Button loading={createCompany.isPending} onPress={() => void handleCreate()} title="Créer" />
+            </View>
+          </KeyboardAwareScrollView>
         </View>
       </View>
     </Modal>
@@ -266,7 +277,7 @@ const useStyles = () =>
       justifyContent: 'flex-end',
     },
     sheet: {
-      maxHeight: '90%',
+      maxHeight: Platform.OS === 'ios' ? '92%' : '90%',
       backgroundColor: colors.surface,
       borderTopLeftRadius: radius.sheet,
       borderTopRightRadius: radius.sheet,
@@ -283,9 +294,12 @@ const useStyles = () =>
       borderRadius: 2,
       backgroundColor: colors.borderStrong,
     },
+    scroll: {
+      flexGrow: 0,
+    },
     list: {
       gap: spacing.sm,
-      paddingBottom: spacing.sm,
+      paddingBottom: spacing.xl,
     },
     card: {
       borderWidth: StyleSheet.hairlineWidth,
@@ -331,7 +345,8 @@ const useStyles = () =>
     },
     createBlock: {
       gap: spacing.sm,
-      paddingTop: spacing.sm,
+      paddingTop: spacing.md,
+      marginTop: spacing.sm,
       borderTopWidth: StyleSheet.hairlineWidth,
       borderTopColor: colors.separator,
     },

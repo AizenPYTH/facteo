@@ -1,7 +1,8 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useEffect } from 'react';
 import { Controller, useForm } from 'react-hook-form';
-import { KeyboardAvoidingView, Platform, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { z } from 'zod';
 
 import { SettingsScreenFrame } from '@/components/web/desktop/settings-screen-frame';
@@ -91,10 +92,12 @@ export default function NumberingSettingsScreen() {
 
   return (
     <SettingsScreenFrame scrollable={false} title="Numérotation">
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      <KeyboardAwareScrollView
+        bottomOffset={spacing.xl}
+        contentContainerStyle={styles.content}
+        keyboardDismissMode="on-drag"
+        keyboardShouldPersistTaps="handled"
         style={styles.flex}>
-        <View style={styles.content}>
           <FormSection title="Devis">
             <FormField>
               <Controller
@@ -179,8 +182,7 @@ export default function NumberingSettingsScreen() {
               title="Enregistrer"
             />
           </View>
-        </View>
-      </KeyboardAvoidingView>
+      </KeyboardAwareScrollView>
     </SettingsScreenFrame>
   );
 }
