@@ -1,3 +1,4 @@
+import { isScreenshotDemo } from '@/lib/screenshot-demo';
 import { supabase } from '@/lib/supabase';
 import { logSupabaseError } from '@/lib/supabase/errors';
 import type {
@@ -79,6 +80,12 @@ export async function fetchSentDocuments(
   userId: string,
   limit = 20,
 ): Promise<SentDocument[]> {
+  if (isScreenshotDemo()) {
+    void userId;
+    void limit;
+    return [];
+  }
+
   const { data, error } = await supabase
     .from('sent_documents')
     .select(SENT_DOCUMENT_COLUMNS)
@@ -99,6 +106,13 @@ export async function fetchSentDocumentsForDocument(
   documentType: SentDocumentType,
   documentId: string,
 ): Promise<SentDocument[]> {
+  if (isScreenshotDemo()) {
+    void userId;
+    void documentType;
+    void documentId;
+    return [];
+  }
+
   const { data, error } = await supabase
     .from('sent_documents')
     .select(SENT_DOCUMENT_COLUMNS)

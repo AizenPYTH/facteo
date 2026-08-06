@@ -1,3 +1,10 @@
+import {
+  demoDashboardStats,
+  demoExtendedDashboard,
+  demoProfile,
+  demoRecentInvoices,
+  isScreenshotDemo,
+} from '@/lib/screenshot-demo';
 import { supabase } from '@/lib/supabase';
 import { getCountFromQuery, getSumFromRows, logSupabaseError } from '@/lib/supabase/errors';
 import { mapInvoiceRowToDashboardInvoice } from '@/lib/supabase/mappers';
@@ -276,6 +283,11 @@ export function createEmptyDashboardData(metadata: UserMetadata = {}): Dashboard
 }
 
 export async function fetchDashboardStats(scope: DataScope): Promise<DashboardStats> {
+  if (isScreenshotDemo()) {
+    void scope;
+    return demoDashboardStats;
+  }
+
   const monthStart = getMonthStartIso();
   const weekStart = getWeekStartIso();
   const yearStart = getYearStartIso();
@@ -434,6 +446,11 @@ export async function fetchDashboardStats(scope: DataScope): Promise<DashboardSt
 }
 
 export async function fetchExtendedDashboardData(scope: DataScope): Promise<ExtendedDashboardData> {
+  if (isScreenshotDemo()) {
+    void scope;
+    return demoExtendedDashboard;
+  }
+
   const twelveMonthsAgo = getTwelveMonthsAgoIso();
   const monthKeys = buildLastMonthKeys();
 
@@ -536,6 +553,11 @@ export async function fetchExtendedDashboardData(scope: DataScope): Promise<Exte
 }
 
 export async function fetchRecentInvoices(scope: DataScope): Promise<Invoice[]> {
+  if (isScreenshotDemo()) {
+    void scope;
+    return demoRecentInvoices;
+  }
+
   const { data, error } = await supabase
     .from('invoices')
     .select(RECENT_INVOICE_COLUMNS)
@@ -555,6 +577,17 @@ export async function fetchDashboardData(
   scope: DataScope,
   metadata: UserMetadata,
 ): Promise<DashboardData> {
+  if (isScreenshotDemo()) {
+    void scope;
+    return {
+      profile: demoProfile,
+      display: resolveDashboardProfile(demoProfile, metadata),
+      stats: demoDashboardStats,
+      extended: demoExtendedDashboard,
+      recentInvoices: demoRecentInvoices,
+    };
+  }
+
   const [profile, stats, extended, recentInvoices] = await Promise.all([
     fetchUserProfile(scope.userId),
     fetchDashboardStats(scope),
