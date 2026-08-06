@@ -1,3 +1,4 @@
+import { demoProfile, isScreenshotDemo } from '@/lib/screenshot-demo';
 import { supabase } from '@/lib/supabase';
 import { logSupabaseError } from '@/lib/supabase/errors';
 import { debugProfileTrace } from '@/lib/supabase/profile-debug';
@@ -168,6 +169,11 @@ export async function upsertCompanyProfile(
 }
 
 export async function fetchUserProfile(userId: string): Promise<Profile | null> {
+  if (isScreenshotDemo()) {
+    void userId;
+    return demoProfile;
+  }
+
   const { data, error } = await supabase
     .from('profiles')
     .select(PROFILE_COLUMNS)

@@ -1,3 +1,4 @@
+import { demoCompany, isScreenshotDemo } from '@/lib/screenshot-demo';
 import { supabase } from '@/lib/supabase';
 import { logSupabaseError } from '@/lib/supabase/errors';
 import type { CompanyProfileFormValues, UpdateCompanyProfileInput } from '@/types/company-profile';
@@ -97,6 +98,11 @@ export function mapCompanyToFormValues(
 }
 
 export async function fetchUserCompanies(userId: string): Promise<TenantCompany[]> {
+  if (isScreenshotDemo()) {
+    void userId;
+    return [demoCompany];
+  }
+
   const { data: memberships, error: membersError } = await supabase
     .from('company_members')
     .select('role, company_id')
