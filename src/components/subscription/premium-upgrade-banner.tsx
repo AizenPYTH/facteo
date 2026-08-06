@@ -12,9 +12,8 @@ type PremiumUpgradeBannerProps = {
   compact?: boolean;
 };
 
-/** Always navigates to the Premium screen — never a dead toast. */
 export function PremiumUpgradeBanner({
-  message = 'Disponible avec INVEQ Premium',
+  message = 'Disponible avec une offre supérieure',
   compact = false,
 }: PremiumUpgradeBannerProps) {
   const styles = useStyles(compact);
@@ -22,15 +21,17 @@ export function PremiumUpgradeBanner({
 
   return (
     <Pressable
-      accessibilityLabel={`${message}. Voir Premium`}
       accessibilityRole="button"
-      onPress={() => router.push('/settings/premium' as Href)}
+      accessibilityLabel={`${message}. Voir les offres`}
+      onPress={() => {
+        router.push('/settings/premium' as Href);
+      }}
       style={({ pressed }) => [styles.banner, pressed && styles.pressed]}>
       <SymbolView name="lock.fill" size={compact ? 12 : 14} tintColor={colors.primary} />
       <Text numberOfLines={2} style={styles.message}>
         {message}
       </Text>
-      <Text style={styles.cta}>Voir</Text>
+      <Text style={styles.cta}>Voir les offres</Text>
     </Pressable>
   );
 }

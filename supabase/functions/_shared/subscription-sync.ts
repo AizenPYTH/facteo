@@ -1,7 +1,34 @@
 import Stripe from 'https://esm.sh/stripe@17.7.0?target=deno';
 import { createClient, type SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
 
-export type SubscriptionPlanId = 'free' | 'premium';
+/** Catalog + legacy ids persisted on `subscriptions.plan`. */
+export type SubscriptionPlanId =
+  | 'free'
+  | 'micro'
+  | 'basique'
+  | 'standard'
+  | 'pro'
+  | 'max'
+  | 'premium'
+  | 'starter'
+  | 'enterprise';
+
+export const PAID_CHECKOUT_PLAN_IDS = ['basique', 'standard', 'pro', 'max'] as const;
+export type PaidCheckoutPlanId = (typeof PAID_CHECKOUT_PLAN_IDS)[number];
+
+const FREE_PLAN_IDS = new Set(['free', 'micro']);
+
+export function isPaidCheckoutPlanId(planId: string): planId is PaidCheckoutPlanId {
+  return (PAID_CHECKOUT_PLAN_IDS as readonly string[]).includes(planId);
+}
+
+export function isPaidPlanId(planId: string | null | undefined): boolean {
+  if (!planId) {
+    return false;
+  }
+
+  return !FREE_PLAN_IDS.has(planId);
+}
 
 export function resolveStripePriceId(
   planStripePriceId: string | null | undefined,
@@ -45,8 +72,34 @@ export function toIso(unixSeconds: number | null | undefined): string | null {
   return new Date(unixSeconds * 1000).toISOString();
 }
 
+/**
+ * Maps Stripe metadata / legacy ids onto the catalog enum.
+ * Legacy `premium` → `pro` so entitlements match the four-plan matrix.
+ */
 export function resolvePlanId(metadataPlanId: string | undefined): SubscriptionPlanId {
-  return metadataPlanId === 'free' ? 'free' : 'premium';
+  const raw = metadataPlanId?.trim().toLowerCase();
+
+  if (!raw || raw === 'free' || raw === 'micro') {
+    return 'micro';
+  }
+
+  if (raw === 'basique') {
+    return 'basique';
+  }
+
+  if (raw === 'standard') {
+    return 'standard';
+  }
+
+  if (raw === 'max') {
+    return 'max';
+  }
+
+  if (raw === 'pro' || raw === 'premium' || raw === 'starter' || raw === 'enterprise') {
+    return 'pro';
+  }
+
+  return 'pro';
 }
 
 export function isPaidCheckoutSession(session: Stripe.Checkout.Session): boolean {
@@ -79,7 +132,7 @@ export async function findUserIdForSubscription(
   return data?.user_id ?? null;
 }
 
-export async function applyPremiumSubscription(
+export async function applyPaidSubscription(
   serviceClient: SupabaseClient,
   input: {
     userId: string;
@@ -93,7 +146,7 @@ export async function applyPremiumSubscription(
   },
 ): Promise<void> {
   const now = new Date().toISOString();
-  const planId = input.planId ?? 'premium';
+  const planId = input.planId ?? 'pro';
 
   const { error } = await serviceClient
     .from('subscriptions')
@@ -114,7 +167,10 @@ export async function applyPremiumSubscription(
   }
 }
 
-export async function applyStandardSubscription(
+/** @deprecated Use applyPaidSubscription */
+export const applyPremiumSubscription = applyPaidSubscription;
+
+export async function applyFreeSubscription(
   serviceClient: SupabaseClient,
   input: {
     userId: string;
@@ -130,7 +186,7 @@ export async function applyStandardSubscription(
   const { error } = await serviceClient
     .from('subscriptions')
     .update({
-      plan: 'free',
+      plan: 'micro',
       status: input.status ?? 'canceled',
       stripe_subscription_id: input.stripeSubscriptionId ?? null,
       current_period_start: input.currentPeriodStart ?? null,
@@ -144,6 +200,9 @@ export async function applyStandardSubscription(
     throw error;
   }
 }
+
+/** @deprecated Use applyFreeSubscription */
+export const applyStandardSubscription = applyFreeSubscription;
 
 export async function syncSubscriptionCheckoutSession(
   stripe: Stripe,
@@ -183,7 +242,7 @@ export async function syncSubscriptionCheckoutSession(
     status = subscription.status === 'trialing' ? 'trialing' : 'active';
   }
 
-  await applyPremiumSubscription(serviceClient, {
+  await applyPaidSubscription(serviceClient, {
     userId,
     planId,
     status,
@@ -208,11 +267,11 @@ export async function syncStripeSubscriptionObject(
   }
 
   const mappedStatus = mapStripeSubscriptionStatus(subscription.status);
-  const isPremium = subscription.status === 'active' || subscription.status === 'trialing';
-  const planId = isPremium ? resolvePlanId(subscription.metadata?.plan_id) : 'free';
+  const isActivePaid = subscription.status === 'active' || subscription.status === 'trialing';
+  const planId = isActivePaid ? resolvePlanId(subscription.metadata?.plan_id) : 'micro';
 
-  if (isPremium) {
-    await applyPremiumSubscription(serviceClient, {
+  if (isActivePaid) {
+    await applyPaidSubscription(serviceClient, {
       userId,
       planId,
       status: mappedStatus,
@@ -226,7 +285,7 @@ export async function syncStripeSubscriptionObject(
     return;
   }
 
-  await applyStandardSubscription(serviceClient, {
+  await applyFreeSubscription(serviceClient, {
     userId,
     status: mappedStatus,
     stripeSubscriptionId: subscription.id,

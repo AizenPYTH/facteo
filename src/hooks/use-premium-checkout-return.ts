@@ -6,6 +6,7 @@ import {
   parseSubscriptionReturnUrl,
 } from '@/lib/stripe/subscription-checkout';
 import { useSubscription } from '@/hooks/use-subscription';
+import { getEffectivePlanDisplayName } from '@/lib/subscription/plans';
 import { useToast } from '@/providers/toast-provider';
 
 export function usePremiumCheckoutReturn() {
@@ -33,14 +34,14 @@ export function usePremiumCheckoutReturn() {
 
     void (async () => {
       try {
-        await confirmSubscriptionCheckout(sessionId);
+        const result = await confirmSubscriptionCheckout(sessionId);
 
         if (cancelled) {
           return;
         }
 
         await refresh();
-        showSuccess('INVEQ Premium est activé.');
+        showSuccess(`Offre ${getEffectivePlanDisplayName(result.planId)} activée.`);
       } catch (error) {
         if (!cancelled) {
           showError(readErrorMessage(error));
@@ -71,5 +72,5 @@ function readErrorMessage(error: unknown): string {
     return error.message;
   }
 
-  return 'Impossible de confirmer l’abonnement Premium.';
+  return 'Impossible de confirmer l’abonnement.';
 }
