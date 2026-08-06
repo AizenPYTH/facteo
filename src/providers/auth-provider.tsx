@@ -1,3 +1,4 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { AuthError, Session, User } from '@supabase/supabase-js';
 import { createContext, useCallback, useEffect, useMemo, useState, type PropsWithChildren } from 'react';
 
@@ -37,12 +38,37 @@ export type AuthContextValue = {
 
 export const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
+const SCREENSHOT_DEMO_SESSION_KEY = 'inveq:screenshot-demo-session';
+
 function invalidCredentialsError(): AuthError {
   return {
     name: 'AuthApiError',
     message: 'Invalid login credentials',
     status: 400,
   } as AuthError;
+}
+
+async function persistDemoSession(session: Session | null) {
+  if (!session) {
+    await AsyncStorage.removeItem(SCREENSHOT_DEMO_SESSION_KEY);
+    return;
+  }
+
+  await AsyncStorage.setItem(SCREENSHOT_DEMO_SESSION_KEY, JSON.stringify(session));
+}
+
+async function readDemoSession(): Promise<Session | null> {
+  const raw = await AsyncStorage.getItem(SCREENSHOT_DEMO_SESSION_KEY);
+  if (!raw) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(raw) as Session;
+  } catch {
+    await AsyncStorage.removeItem(SCREENSHOT_DEMO_SESSION_KEY);
+    return null;
+  }
 }
 
 export function AuthProvider({ children }: PropsWithChildren) {
@@ -54,7 +80,23 @@ export function AuthProvider({ children }: PropsWithChildren) {
     let mounted = true;
 
     if (isScreenshotDemo()) {
-      setLoading(false);
+      async function restoreDemoSession() {
+        const stored = await readDemoSession();
+        if (!mounted) {
+          return;
+        }
+
+        if (stored?.user) {
+          setSession(stored);
+          setUser(stored.user);
+        } else {
+          setSession(null);
+          setUser(null);
+        }
+        setLoading(false);
+      }
+
+      void restoreDemoSession();
       return () => {
         mounted = false;
       };
@@ -108,6 +150,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
         password === demo.password
       ) {
         const nextSession = createDemoSession(demo.email) as Session;
+        await persistDemoSession(nextSession);
         setSession(nextSession);
         setUser(nextSession.user);
         setLoading(false);
@@ -152,6 +195,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
 
   const signOut = useCallback(async (): Promise<AuthResult> => {
     if (isScreenshotDemo()) {
+      await persistDemoSession(null);
       setSession(null);
       setUser(null);
       return { error: null, session: null };

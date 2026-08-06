@@ -116,23 +116,41 @@ async function login(page) {
     return;
   }
 
-  const email = page.getByPlaceholder('vous@entreprise.fr');
-  await email.waitFor({ state: 'visible', timeout: 60_000 });
+  const email = page
+    .getByPlaceholder('vous@entreprise.fr')
+    .or(page.getByLabel('Adresse e-mail'))
+    .first();
+  await email.waitFor({ state: 'visible', timeout: 90_000 });
   await email.fill(EMAIL);
 
-  const password = page.locator('input[type="password"]').first();
+  const password = page
+    .locator('input[type="password"]')
+    .or(page.getByLabel('Mot de passe'))
+    .first();
   await password.fill(PASSWORD);
 
-  await page.getByText('Connexion', { exact: true }).last().click();
+  await page.getByRole('button', { name: 'Connexion' }).or(page.getByText('Connexion', { exact: true })).last().click();
 
   await page.waitForURL((url) => !url.pathname.includes('login'), { timeout: 90_000 });
-  await page.waitForTimeout(2500);
+  // Splash overlay ~1.1s + data fetch
+  await page.waitForTimeout(3500);
   await dismissOverlays(page);
+}
+
+function readPngSize(filePath) {
+  const buf = readFileSync(filePath);
+  return { w: buf.readUInt32BE(16), h: buf.readUInt32BE(20) };
 }
 
 async function shot(page, name) {
   const path = resolve(OUT_DIR, name);
   await page.waitForTimeout(800);
+
+  const bodyText = await page.locator('body').innerText().catch(() => '');
+  if (bodyText.includes('Pas encore de compte') && bodyText.includes('Connexion')) {
+    throw new Error(`Screenshot ${name} still on login screen — demo session not restored`);
+  }
+
   await page.screenshot({
     path,
     type: 'png',
@@ -140,14 +158,10 @@ async function shot(page, name) {
     animations: 'disabled',
   });
 
-  // Verify dimensions via raw PNG IHDR is heavier; use Playwright clip size check
-  const box = await page.evaluate(() => ({
-    w: Math.round(window.devicePixelRatio * window.innerWidth),
-    h: Math.round(window.devicePixelRatio * window.innerHeight),
-  }));
-  console.log(`Saved ${name} (${box.w}×${box.h})`);
-  if (box.w !== 1284 || box.h !== 2778) {
-    console.warn(`  Warning: expected 1284×2778, got ${box.w}×${box.h}`);
+  const { w, h } = readPngSize(path);
+  console.log(`Saved ${name} (${w}×${h})`);
+  if (w !== 1284 || h !== 2778) {
+    throw new Error(`Expected 1284×2778, got ${w}×${h} for ${name}`);
   }
   return path;
 }

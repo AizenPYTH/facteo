@@ -62,7 +62,7 @@ export function PremiumSplashOverlay({ onComplete }: PremiumSplashOverlayProps) 
         <Image
           accessibilityIgnoresInvertColors
           accessibilityLabel="INVEQ"
-          source={require('@/assets/images/INVEQ-logo.png')}
+          source={require('@/assets/images/inveq-logo.png')}
           style={styles.logo}
         />
       </Animated.View>
@@ -85,7 +85,7 @@ export function AnimatedIcon() {
     <View style={styles.iconWrap}>
       <Image
         accessibilityIgnoresInvertColors
-        source={require('@/assets/images/INVEQ-logo.png')}
+        source={require('@/assets/images/inveq-logo.png')}
         style={styles.logo}
       />
     </View>
