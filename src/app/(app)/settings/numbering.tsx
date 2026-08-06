@@ -6,9 +6,10 @@ import { z } from 'zod';
 
 import { SettingsScreenFrame } from '@/components/web/desktop/settings-screen-frame';
 import { Button } from '@/components/ui/button';
+import { FormDivider, FormField, FormSection } from '@/components/ui/form-section';
 import { LoadingView } from '@/components/ui/loading-view';
 import { TextField } from '@/components/ui/text-field';
-import { useColors, useThemedStyles } from '@/hooks/use-colors';
+import { useThemedStyles } from '@/hooks/use-colors';
 import { spacing } from '@/constants/theme/spacing';
 import { useSettings, useUpdateSettings } from '@/hooks/use-settings';
 import { useToast } from '@/providers/toast-provider';
@@ -33,7 +34,6 @@ type NumberingFormValues = z.infer<typeof numberingSchema>;
 
 export default function NumberingSettingsScreen() {
   const styles = useStyles();
-  const colors = useColors();
   const { data, isLoading } = useSettings();
   const updateSettings = useUpdateSettings();
   const { showError, showSuccess } = useToast();
@@ -95,66 +95,81 @@ export default function NumberingSettingsScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.flex}>
         <View style={styles.content}>
-          <Controller
-            control={control}
-            name="quotePrefix"
-            render={({ field: { onChange, onBlur, value } }) => (
-              <TextField
-                autoCapitalize="characters"
-                error={errors.quotePrefix?.message}
-                label="Préfixe devis"
-                onBlur={onBlur}
-                onChangeText={onChange}
-                placeholder="DEV"
-                value={value}
+          <FormSection title="Devis">
+            <FormField>
+              <Controller
+                control={control}
+                name="quotePrefix"
+                render={({ field: { onChange, onBlur, value } }) => (
+                  <TextField
+                    autoCapitalize="characters"
+                    error={errors.quotePrefix?.message}
+                    label="Préfixe"
+                    onBlur={onBlur}
+                    onChangeText={onChange}
+                    placeholder="DEV"
+                    value={value}
+                  />
+                )}
               />
-            )}
-          />
-          <Controller
-            control={control}
-            name="nextQuoteNumber"
-            render={({ field: { onChange, onBlur, value } }) => (
-              <TextField
-                error={errors.nextQuoteNumber?.message}
-                keyboardType="number-pad"
-                label="Prochain numéro devis"
-                onBlur={onBlur}
-                onChangeText={onChange}
-                placeholder="1"
-                value={value}
+            </FormField>
+            <FormDivider />
+            <FormField>
+              <Controller
+                control={control}
+                name="nextQuoteNumber"
+                render={({ field: { onChange, onBlur, value } }) => (
+                  <TextField
+                    error={errors.nextQuoteNumber?.message}
+                    keyboardType="number-pad"
+                    label="Prochain numéro"
+                    onBlur={onBlur}
+                    onChangeText={onChange}
+                    placeholder="1"
+                    value={value}
+                  />
+                )}
               />
-            )}
-          />
-          <Controller
-            control={control}
-            name="invoicePrefix"
-            render={({ field: { onChange, onBlur, value } }) => (
-              <TextField
-                autoCapitalize="characters"
-                error={errors.invoicePrefix?.message}
-                label="Préfixe facture"
-                onBlur={onBlur}
-                onChangeText={onChange}
-                placeholder="FAC"
-                value={value}
+            </FormField>
+          </FormSection>
+
+          <FormSection title="Factures">
+            <FormField>
+              <Controller
+                control={control}
+                name="invoicePrefix"
+                render={({ field: { onChange, onBlur, value } }) => (
+                  <TextField
+                    autoCapitalize="characters"
+                    error={errors.invoicePrefix?.message}
+                    label="Préfixe"
+                    onBlur={onBlur}
+                    onChangeText={onChange}
+                    placeholder="FAC"
+                    value={value}
+                  />
+                )}
               />
-            )}
-          />
-          <Controller
-            control={control}
-            name="nextInvoiceNumber"
-            render={({ field: { onChange, onBlur, value } }) => (
-              <TextField
-                error={errors.nextInvoiceNumber?.message}
-                keyboardType="number-pad"
-                label="Prochain numéro facture"
-                onBlur={onBlur}
-                onChangeText={onChange}
-                placeholder="1"
-                value={value}
+            </FormField>
+            <FormDivider />
+            <FormField>
+              <Controller
+                control={control}
+                name="nextInvoiceNumber"
+                render={({ field: { onChange, onBlur, value } }) => (
+                  <TextField
+                    error={errors.nextInvoiceNumber?.message}
+                    keyboardType="number-pad"
+                    label="Prochain numéro"
+                    onBlur={onBlur}
+                    onChangeText={onChange}
+                    placeholder="1"
+                    value={value}
+                  />
+                )}
               />
-            )}
-          />
+            </FormField>
+          </FormSection>
 
           <View style={styles.actions}>
             <Button

@@ -1,5 +1,8 @@
+import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
+import { SymbolView } from 'expo-symbols';
 import { StyleSheet, Text, View } from 'react-native';
+import Animated from 'react-native-reanimated';
 
 import { PlanComparison } from '@/components/subscription/plan-comparison';
 import { SettingsScreenFrame } from '@/components/web/desktop/settings-screen-frame';
@@ -9,9 +12,12 @@ import {
   PREMIUM_PRICE_LABEL,
   PREMIUM_PRICE_PERIOD_LABEL,
 } from '@/constants/subscription-pricing';
+import { iconSize } from '@/constants/theme/design-system';
+import { radius } from '@/constants/theme/radius';
 import { spacing } from '@/constants/theme/spacing';
 import { typography } from '@/constants/theme/typography';
-import { useThemedStyles } from '@/hooks/use-colors';
+import { useColors, useGradients, useThemedStyles } from '@/hooks/use-colors';
+import { fadeInUp } from '@/lib/motion/presets';
 import { usePremiumCheckout } from '@/hooks/use-premium-checkout';
 import { usePremiumCheckoutReturn } from '@/hooks/use-premium-checkout-return';
 import { useSubscription, useSubscriptionPlans } from '@/hooks/use-subscription';
@@ -19,6 +25,8 @@ import { useToast } from '@/providers/toast-provider';
 
 export default function PremiumScreen() {
   const styles = useStyles();
+  const colors = useColors();
+  const gradients = useGradients();
   const { showError, showSuccess } = useToast();
   const { subscription, isPremium, usage, isLoading } = useSubscription();
   const plansQuery = useSubscriptionPlans();
@@ -62,36 +70,59 @@ export default function PremiumScreen() {
   return (
     <SettingsScreenFrame title="Abonnement">
       <View style={styles.content}>
-        <View style={styles.hero}>
-          <Text style={styles.heroTitle}>INVEQ Premium</Text>
-          <Text style={styles.heroPrice}>
-            {PREMIUM_PRICE_LABEL}
-            <Text style={styles.heroPeriod}>{PREMIUM_PRICE_PERIOD_LABEL}</Text>
-          </Text>
-          <Text style={styles.heroSubtitle}>
-            Débloquez toutes les fonctionnalités et supprimez les limites de votre activité.
-          </Text>
-        </View>
+        <Animated.View entering={fadeInUp({ index: 0 })}>
+          <LinearGradient
+            colors={gradients.primary}
+            end={{ x: 1, y: 1 }}
+            start={{ x: 0, y: 0 }}
+            style={styles.hero}>
+            <View style={styles.heroIconWrap}>
+              <SymbolView
+                name={{ ios: 'sparkles', android: 'auto_awesome', web: 'auto_awesome' }}
+                size={iconSize.lg}
+                tintColor={colors.onPrimary}
+              />
+            </View>
+            <Text style={styles.heroTitle}>INVEQ Premium</Text>
+            <Text style={styles.heroPrice}>
+              {PREMIUM_PRICE_LABEL}
+              <Text style={styles.heroPeriod}>{PREMIUM_PRICE_PERIOD_LABEL}</Text>
+            </Text>
+            <Text style={styles.heroSubtitle}>
+              Débloquez toutes les fonctionnalités et supprimez les limites de votre activité.
+            </Text>
+          </LinearGradient>
+        </Animated.View>
 
         {usage ? (
-          <View style={styles.usageRow}>
+          <Animated.View entering={fadeInUp({ index: 1 })} style={styles.usageRow}>
             <UsageChip label="Clients" value={usage.clients} />
             <UsageChip label="Devis" value={usage.quotes} />
             <UsageChip label="Factures" value={usage.invoices} />
-          </View>
+          </Animated.View>
         ) : null}
 
-        <PlanComparison
-          currentPlanId={subscription?.effectivePlanId}
-          premiumPlan={premiumPlan}
-          standardPlan={standardPlan}
-        />
+        <Animated.View entering={fadeInUp({ index: 2 })}>
+          <PlanComparison
+            currentPlanId={isPremium ? 'premium' : 'free'}
+            premiumPlan={premiumPlan}
+            standardPlan={standardPlan}
+          />
+        </Animated.View>
 
-        <View style={styles.actions}>
+        <Animated.View entering={fadeInUp({ index: 3 })} style={styles.actions}>
           {isPremium ? (
-            <Button onPress={() => router.back()} title="Vous êtes Premium" variant="ghost" />
+            <View style={styles.premiumConfirmed}>
+              <SymbolView
+                name={{ ios: 'checkmark.seal.fill', android: 'verified', web: 'verified' }}
+                size={iconSize.md}
+                tintColor={colors.success}
+              />
+              <Text style={styles.premiumConfirmedText}>Vous êtes abonné à INVEQ Premium</Text>
+            </View>
           ) : (
             <Button
+              elevated
               loading={subscribe.isPending}
               onPress={() => {
                 void handleSubscribe();
@@ -102,7 +133,7 @@ export default function PremiumScreen() {
           <Text style={styles.footnote}>
             Paiement sécurisé par Stripe. Un code promo peut être saisi lors du paiement.
           </Text>
-        </View>
+        </Animated.View>
       </View>
     </SettingsScreenFrame>
   );
@@ -134,24 +165,40 @@ function useStyles() {
     },
     hero: {
       gap: spacing.xs,
+      padding: spacing.lg,
+      borderRadius: radius.modal,
+      shadowColor: colors.primary,
+      shadowOffset: { width: 0, height: 8 },
+      shadowOpacity: 0.32,
+      shadowRadius: 24,
+      elevation: 10,
+    },
+    heroIconWrap: {
+      width: 44,
+      height: 44,
+      borderRadius: radius.full,
+      backgroundColor: 'rgba(255,255,255,0.2)',
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: spacing.xs,
     },
     heroTitle: {
       ...typography.title1,
-      color: colors.text,
+      color: colors.onPrimary,
     },
     heroPrice: {
       ...typography.title2,
-      color: colors.primary,
+      color: colors.onPrimary,
       marginTop: spacing.xs,
     },
     heroPeriod: {
       ...typography.body,
-      color: colors.textSecondary,
+      color: 'rgba(255,255,255,0.8)',
       fontWeight: '400',
     },
     heroSubtitle: {
       ...typography.body,
-      color: colors.textSecondary,
+      color: 'rgba(255,255,255,0.88)',
       lineHeight: 22,
     },
     usageRow: {
@@ -161,6 +208,19 @@ function useStyles() {
     actions: {
       gap: spacing.sm,
       paddingTop: spacing.xs,
+    },
+    premiumConfirmed: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: spacing.xs,
+      paddingVertical: spacing.md,
+      borderRadius: radius.buttonLarge,
+      backgroundColor: colors.successSubtle,
+    },
+    premiumConfirmedText: {
+      ...typography.headline,
+      color: colors.success,
     },
     footnote: {
       ...typography.caption1,
