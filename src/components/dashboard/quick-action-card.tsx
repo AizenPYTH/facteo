@@ -1,23 +1,15 @@
 import { SymbolView } from 'expo-symbols';
 import type { ComponentProps } from 'react';
-import { StyleSheet, Text, View, type ViewStyle } from 'react-native';
-import Animated, {
-  useAnimatedStyle,
-  useSharedValue,
-  withSpring,
-} from 'react-native-reanimated';
-import { Pressable } from 'react-native';
+import { Pressable, Text, type ViewStyle } from 'react-native';
+import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 
 import { useColors, useThemedStyles } from '@/hooks/use-colors';
-import { press } from '@/constants/theme/interaction';
-import { spring } from '@/constants/theme/motion';
 import { radius } from '@/constants/theme/radius';
+import { shadows } from '@/constants/theme/theme';
 import { spacing } from '@/constants/theme/spacing';
-import { elevation } from '@/constants/theme/surfaces';
-import { type } from '@/constants/theme/type-roles';
-import { triggerHaptic } from '@/lib/haptics';
-
-const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+import { typography } from '@/constants/theme/typography';
+import { triggerImpactHaptic } from '@/lib/haptics';
+import { springs } from '@/lib/motion/springs';
 
 type SymbolName = ComponentProps<typeof SymbolView>['name'];
 
@@ -41,87 +33,72 @@ export function QuickActionCard({
   const styles = useStyles();
   const colors = useColors();
   const scale = useSharedValue(1);
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
-  }));
+  const pressStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
 
   return (
-    <AnimatedPressable
-      accessibilityLabel={label}
-      accessibilityRole="button"
-      accessibilityState={{ disabled }}
-      disabled={disabled}
-      onPress={() => {
-        if (disabled) return;
-        void triggerHaptic('selection');
-        onPress();
-      }}
-      onPressIn={() => {
-        if (!disabled) {
-          scale.value = withSpring(press.card.scale, spring.snappy);
-        }
-      }}
-      onPressOut={() => {
-        scale.value = withSpring(1, spring.snappy);
-      }}
-      style={[
-        styles.card,
-        disabled && styles.disabled,
-        animatedStyle,
-        style,
-      ]}
-      testID={testID}>
-      <View style={[styles.iconWell, disabled && styles.iconWellDisabled]}>
+    <Animated.View style={[pressStyle, styles.flex]}>
+      <Pressable
+        accessibilityLabel={label}
+        accessibilityRole="button"
+        accessibilityState={{ disabled }}
+        disabled={disabled}
+        onPress={onPress}
+        onPressIn={() => {
+          if (disabled) {
+            return;
+          }
+          // Reanimated SharedValue mutation is safe outside render; the
+          // compiler's immutability check doesn't yet recognize it.
+          // eslint-disable-next-line react-hooks/immutability
+          scale.value = withSpring(0.94, springs.snappy);
+          void triggerImpactHaptic();
+        }}
+        onPressOut={() => {
+          // eslint-disable-next-line react-hooks/immutability
+          scale.value = withSpring(1, springs.snappy);
+        }}
+        style={[styles.card, disabled && styles.disabled, style]}
+        testID={testID}>
         <SymbolView
           name={icon}
-          size={20}
+          size={22}
           tintColor={disabled ? colors.iconTertiary : colors.primary}
           type="hierarchical"
         />
-      </View>
-      <Text style={[styles.label, disabled && styles.labelDisabled]}>{label}</Text>
-    </AnimatedPressable>
+        <Text style={[styles.label, disabled && styles.labelDisabled]}>{label}</Text>
+      </Pressable>
+    </Animated.View>
   );
 }
 
 function useStyles() {
   return useThemedStyles((colors) => ({
-    card: {
-      flex: 1,
-      alignItems: 'center',
-      justifyContent: 'center',
-      gap: spacing.sm,
-      backgroundColor: colors.surface,
-      borderRadius: radius.card,
-      paddingVertical: spacing.md,
-      paddingHorizontal: spacing.sm,
-      minHeight: 96,
-      borderWidth: StyleSheet.hairlineWidth,
-      borderColor: colors.border,
-      ...elevation[1],
-    },
-    iconWell: {
-      width: 40,
-      height: 40,
-      borderRadius: radius.full,
-      backgroundColor: colors.primarySubtle,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    iconWellDisabled: {
-      backgroundColor: colors.backgroundSecondary,
-    },
-    disabled: {
-      opacity: 0.5,
-    },
-    label: {
-      ...type.badge,
-      fontSize: 12,
-      color: colors.text,
-      textAlign: 'center',
-    },
-    labelDisabled: {
-      color: colors.textTertiary,
-    },
-  }));
+  flex: {
+    flex: 1,
+  },
+  card: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    backgroundColor: colors.surface,
+    borderRadius: radius.card,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.sm,
+    borderWidth: 1,
+    borderColor: colors.border,
+    minHeight: 88,
+    ...shadows.sm,
+  },
+  disabled: {
+    opacity: 0.5,
+  },
+  label: {
+    ...typography.footnoteMedium,
+    color: colors.text,
+    textAlign: 'center',
+  },
+  labelDisabled: {
+    color: colors.textTertiary,
+  },
+}));
 }

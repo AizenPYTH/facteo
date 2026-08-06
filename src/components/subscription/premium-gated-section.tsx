@@ -34,6 +34,5 @@ const styles = StyleSheet.create({
   },
   content: {
     gap: spacing.sectionGap,
-    opacity: 0.92,
   },
 });

@@ -1,117 +1,76 @@
-import { StyleSheet, View } from 'react-native';
+import { View } from 'react-native';
 
-import { useColors, useThemedStyles } from '@/hooks/use-colors';
+import { Skeleton, SkeletonCircle } from '@/components/ui/skeleton';
 import { radius } from '@/constants/theme/radius';
 import { spacing } from '@/constants/theme/spacing';
-import { elevation } from '@/constants/theme/surfaces';
+import { useThemedStyles } from '@/hooks/use-colors';
 
 /**
- * Structural skeleton for dashboard — perceived speed (P4).
- * Mirrors stats grid + section blocks; no spinner.
+ * Mirrors the shape of the loaded dashboard (header, 4 stat cards, quick
+ * actions, recent invoices) instead of a generic spinner — the loading state
+ * itself should already look like the finished product.
  */
 export function DashboardSkeleton() {
   const styles = useStyles();
 
   return (
-    <View style={styles.root} accessibilityLabel="Chargement du tableau de bord">
+    <View style={styles.container}>
+      <View style={styles.headerRow}>
+        <View style={styles.headerText}>
+          <Skeleton height={30} width={200} />
+          <Skeleton cornerRadius={radius.lg} height={30} width={150} />
+        </View>
+        <SkeletonCircle size={44} />
+      </View>
+
       <View style={styles.grid}>
-        {[0, 1, 2, 3].map((i) => (
-          <View key={i} style={styles.statCard}>
-            <View style={styles.lineShort} />
-            <View style={styles.lineValue} />
-          </View>
+        {[0, 1, 2, 3].map((index) => (
+          <Skeleton cornerRadius={radius.card} height={92} key={index} style={styles.gridItem} />
         ))}
       </View>
-      <View style={styles.block}>
-        <View style={styles.lineTitle} />
-        <View style={styles.row}>
-          <View style={styles.action} />
-          <View style={styles.action} />
-          <View style={styles.action} />
-        </View>
+
+      <View style={styles.row}>
+        {[0, 1, 2].map((index) => (
+          <Skeleton cornerRadius={radius.card} height={88} key={index} style={styles.tile} />
+        ))}
       </View>
-      <View style={styles.listBlock}>
-        <View style={styles.lineTitle} />
-        <View style={styles.listRow} />
-        <View style={styles.listRow} />
-        <View style={styles.listRow} />
-      </View>
+
+      <Skeleton cornerRadius={radius.card} height={200} />
     </View>
   );
 }
 
 function useStyles() {
-  return useThemedStyles((colors) => {
-    const bone = colors.backgroundSelected;
-    return {
-      root: {
-        gap: spacing.sectionGap,
-      },
-      grid: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        gap: spacing.md,
-      },
-      statCard: {
-        flexGrow: 1,
-        flexBasis: '46%',
-        minWidth: '46%',
-        minHeight: 92,
-        borderRadius: radius.card,
-        backgroundColor: colors.surface,
-        padding: spacing.md,
-        gap: spacing.md,
-        justifyContent: 'space-between',
-        borderWidth: StyleSheet.hairlineWidth,
-        borderColor: colors.border,
-        ...elevation[1],
-      },
-      lineShort: {
-        width: '42%',
-        height: 12,
-        borderRadius: radius.xs,
-        backgroundColor: bone,
-      },
-      lineValue: {
-        width: '68%',
-        height: 22,
-        borderRadius: radius.xs,
-        backgroundColor: bone,
-      },
-      lineTitle: {
-        width: '38%',
-        height: 16,
-        borderRadius: radius.xs,
-        backgroundColor: bone,
-        marginBottom: spacing.sm,
-      },
-      block: {
-        gap: spacing.md,
-      },
-      row: {
-        flexDirection: 'row',
-        gap: spacing.sm,
-      },
-      action: {
-        flex: 1,
-        height: 88,
-        borderRadius: radius.card,
-        backgroundColor: colors.surface,
-        borderWidth: StyleSheet.hairlineWidth,
-        borderColor: colors.border,
-        ...elevation[1],
-      },
-      listBlock: {
-        gap: spacing.sm,
-      },
-      listRow: {
-        height: 56,
-        borderRadius: radius.card,
-        backgroundColor: colors.surface,
-        borderWidth: StyleSheet.hairlineWidth,
-        borderColor: colors.border,
-        ...elevation[1],
-      },
-    };
-  });
+  return useThemedStyles(() => ({
+    container: {
+      gap: spacing.sectionGap,
+    },
+    headerRow: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      justifyContent: 'space-between',
+      gap: spacing.md,
+    },
+    headerText: {
+      flex: 1,
+      gap: spacing.sm,
+    },
+    grid: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: spacing.md,
+    },
+    gridItem: {
+      flexGrow: 1,
+      flexBasis: '46%',
+      minWidth: '46%',
+    },
+    row: {
+      flexDirection: 'row',
+      gap: spacing.sm,
+    },
+    tile: {
+      flex: 1,
+    },
+  }));
 }

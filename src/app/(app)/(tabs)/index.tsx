@@ -1,10 +1,8 @@
 import { router, type Href } from 'expo-router';
-import { ScrollView, View } from 'react-native';
-import Animated, { FadeIn } from 'react-native-reanimated';
+import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
-  DashboardAlerts,
   DashboardHeader,
   DashboardSkeleton,
   DashboardWelcome,
@@ -12,7 +10,6 @@ import {
   QuickActions,
   RecentActivitySection,
   RecentInvoicesSection,
-  ReplayLastSection,
   RevenueChart,
   SectionHeader,
   StatsGrid,
@@ -22,10 +19,9 @@ import {
 import { PremiumGatedSection } from '@/components/subscription/premium-gated-section';
 import { DashboardDesktopScreen } from '@/components/web/desktop/screens/dashboard-desktop-screen';
 import { BottomTabInset } from '@/constants/theme';
-import { duration } from '@/constants/theme/motion';
-import { spacing } from '@/constants/theme/spacing';
 import { useBreakpoint } from '@/hooks/use-breakpoint';
-import { useThemedStyles } from '@/hooks/use-colors';
+import { useColors, useThemedStyles } from '@/hooks/use-colors';
+import { spacing } from '@/constants/theme/spacing';
 import { useDashboard } from '@/hooks/use-dashboard';
 import { useSubscription } from '@/hooks/use-subscription';
 import { useTenant } from '@/hooks/use-tenant';
@@ -42,57 +38,49 @@ export default function DashboardScreen() {
 
 function DashboardMobileScreen() {
   const styles = useStyles();
-  const { firstName, companyName, stats, extended, recentInvoices, loading } = useDashboard();
+  const colors = useColors();
+  const { firstName, companyName, stats, extended, recentInvoices, loading, isRefetching, refetch } =
+    useDashboard();
   const { companies, activeCompany, switchCompany, createNewCompany } = useTenant();
   const { hasFeature } = useSubscription();
   const advancedStatsLocked = !hasFeature('advanced_stats');
   const insets = useSafeAreaInsets();
   const hasNoActivity = stats.totalClients === 0 && recentInvoices.length === 0;
-  const hasClients = stats.totalClients > 0;
 
   return (
     <SafeAreaView edges={['top']} style={styles.safeArea}>
       <ScrollView
         contentContainerStyle={[
           styles.content,
-          { paddingBottom: insets.bottom + BottomTabInset + spacing.xl },
+          { paddingBottom: insets.bottom + BottomTabInset + spacing.lg },
         ]}
         keyboardDismissMode="on-drag"
-        showsVerticalScrollIndicator={false}>
-        <Animated.View entering={FadeIn.duration(duration.fast)}>
-          <DashboardHeader
-            activeCompany={activeCompany}
-            companies={companies}
-            companyName={companyName}
-            firstName={firstName}
-            onCreateCompany={async (name) => {
-              await createNewCompany({ name });
-            }}
-            onSwitchCompany={switchCompany}
+        refreshControl={
+          <RefreshControl
+            colors={[colors.primary]}
+            onRefresh={() => void refetch()}
+            refreshing={isRefetching}
+            tintColor={colors.primary}
           />
-        </Animated.View>
+        }
+        showsVerticalScrollIndicator={false}>
+        <DashboardHeader
+          activeCompany={activeCompany}
+          companies={companies}
+          companyName={companyName}
+          firstName={firstName}
+          onCreateCompany={async (name) => {
+            await createNewCompany({ name });
+          }}
+          onSwitchCompany={switchCompany}
+        />
 
         {loading ? (
           <DashboardSkeleton />
-        ) : hasNoActivity ? (
-          <DashboardWelcome />
         ) : (
           <>
-            <DashboardAlerts stats={stats} />
-            <ReplayLastSection invoices={recentInvoices} />
-
-            <View style={styles.section}>
-              <SectionHeader title="Actions rapides" />
-              <QuickActions hasClients={hasClients} />
-            </View>
-
-            <RecentInvoicesSection
-              invoices={recentInvoices}
-              onInvoicePress={(invoice) => router.push(`/invoices/${invoice.id}` as Href)}
-            />
-
+            {hasNoActivity ? <DashboardWelcome /> : null}
             <StatsGrid stats={stats} />
-
             <PremiumGatedSection
               bannerMessage="Statistiques avancées — INVEQ Premium"
               locked={advancedStatsLocked}>
@@ -110,6 +98,16 @@ function DashboardMobileScreen() {
             </PremiumGatedSection>
           </>
         )}
+
+        <View style={styles.section}>
+          <SectionHeader title="Actions rapides" />
+          <QuickActions />
+        </View>
+
+        <RecentInvoicesSection
+          invoices={recentInvoices}
+          onInvoicePress={(invoice) => router.push(`/invoices/${invoice.id}` as Href)}
+        />
       </ScrollView>
     </SafeAreaView>
   );
@@ -117,17 +115,17 @@ function DashboardMobileScreen() {
 
 function useStyles() {
   return useThemedStyles((colors) => ({
-    safeArea: {
-      flex: 1,
-      backgroundColor: colors.backgroundGrouped,
-    },
-    content: {
-      paddingHorizontal: spacing.screenPaddingHorizontal,
-      paddingTop: spacing.lg,
-      gap: spacing.xl,
-    },
-    section: {
-      gap: spacing.md,
-    },
-  }));
+  safeArea: {
+    flex: 1,
+    backgroundColor: colors.backgroundGrouped,
+  },
+  content: {
+    paddingHorizontal: spacing.screenPaddingHorizontal,
+    paddingTop: spacing.md,
+    gap: spacing.sectionGap,
+  },
+  section: {
+    gap: spacing.md,
+  },
+}));
 }

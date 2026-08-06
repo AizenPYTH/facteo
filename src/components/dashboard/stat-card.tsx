@@ -1,26 +1,25 @@
-import { Pressable, StyleSheet, Text, View, type ViewStyle } from 'react-native';
-import Animated, {
-  useAnimatedStyle,
-  useSharedValue,
-  withSpring,
-} from 'react-native-reanimated';
+import { LinearGradient } from 'expo-linear-gradient';
 import { SymbolView } from 'expo-symbols';
+import { Pressable, Text, View, type ViewStyle } from 'react-native';
+import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 
+import { BlurredTeaser } from '@/components/ui/blurred-teaser';
 import { useColors, useThemedStyles } from '@/hooks/use-colors';
-import { press } from '@/constants/theme/interaction';
-import { spring } from '@/constants/theme/motion';
 import { radius } from '@/constants/theme/radius';
+import { shadows } from '@/constants/theme/theme';
 import { spacing } from '@/constants/theme/spacing';
-import { elevation } from '@/constants/theme/surfaces';
-import { type } from '@/constants/theme/type-roles';
-import { triggerHaptic } from '@/lib/haptics';
-
-const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+import { typography } from '@/constants/theme/typography';
+import { useCountUp } from '@/lib/motion/use-count-up';
+import { springs } from '@/lib/motion/springs';
 
 export type StatCardProps = {
   label: string;
+  /** Static display value. Ignored once `numericValue` is provided. */
   value: string;
-  /** Semantic tint for the value only — never a decorative bar. */
+  /** When set, the value counts up from 0 on mount instead of appearing static. */
+  numericValue?: number;
+  /** Formats `numericValue` at each animation frame — defaults to a plain integer. */
+  formatValue?: (value: number) => string;
   accentColor?: string;
   onPress?: () => void;
   style?: ViewStyle;
@@ -31,6 +30,8 @@ export type StatCardProps = {
 export function StatCard({
   label,
   value,
+  numericValue,
+  formatValue,
   accentColor,
   onPress,
   style,
@@ -39,58 +40,68 @@ export function StatCard({
 }: StatCardProps) {
   const styles = useStyles();
   const colors = useColors();
+  const resolvedAccent = accentColor ?? colors.primary;
   const scale = useSharedValue(1);
+  const pressStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
 
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
-  }));
+  const counted = useCountUp(numericValue ?? 0, {
+    enabled: numericValue !== undefined,
+    formatter: formatValue ?? ((v) => String(Math.round(v))),
+  });
+  const displayValue = numericValue !== undefined ? counted : value;
 
-  const valueColor = premiumLocked
-    ? colors.textSecondary
-    : (accentColor ?? colors.text);
+  const valueNode = (
+    <Text style={[styles.value, premiumLocked ? styles.valueLocked : null]}>{displayValue}</Text>
+  );
 
   const content = (
     <>
+      <LinearGradient
+        colors={[resolvedAccent, `${resolvedAccent}66`]}
+        end={{ x: 1, y: 0 }}
+        start={{ x: 0, y: 0 }}
+        style={styles.accent}
+      />
       {premiumLocked ? (
         <View style={styles.lockBadge}>
           <SymbolView name="lock.fill" size={11} tintColor={colors.textTertiary} />
         </View>
       ) : null}
       <Text style={styles.label}>{label}</Text>
-      <Text
-        adjustsFontSizeToFit
-        numberOfLines={1}
-        style={[styles.value, { color: valueColor }]}>
-        {value}
-      </Text>
+      <BlurredTeaser active={premiumLocked} cornerRadius={radius.sm} intensity={16}>
+        {valueNode}
+      </BlurredTeaser>
     </>
   );
 
-  if (onPress) {
+  if (!onPress) {
     return (
-      <AnimatedPressable
-        accessibilityRole="button"
-        onPress={() => {
-          void triggerHaptic('selection');
-          onPress();
-        }}
-        onPressIn={() => {
-          scale.value = withSpring(press.card.scale, spring.snappy);
-        }}
-        onPressOut={() => {
-          scale.value = withSpring(1, spring.snappy);
-        }}
-        style={[styles.card, premiumLocked ? styles.cardLocked : null, animatedStyle, style]}
-        testID={testID}>
+      <View style={[styles.card, premiumLocked ? styles.cardLocked : null, style]} testID={testID}>
         {content}
-      </AnimatedPressable>
+      </View>
     );
   }
 
   return (
-    <View style={[styles.card, premiumLocked ? styles.cardLocked : null, style]} testID={testID}>
-      {content}
-    </View>
+    <Animated.View style={pressStyle}>
+      <Pressable
+        accessibilityRole="button"
+        onPressIn={() => {
+          // Reanimated SharedValue mutation is safe outside render; the
+          // compiler's immutability check doesn't yet recognize it.
+          // eslint-disable-next-line react-hooks/immutability
+          scale.value = withSpring(0.96, springs.snappy);
+        }}
+        onPressOut={() => {
+          // eslint-disable-next-line react-hooks/immutability
+          scale.value = withSpring(1, springs.snappy);
+        }}
+        onPress={onPress}
+        style={[styles.card, premiumLocked ? styles.cardLocked : null, style]}
+        testID={testID}>
+        {content}
+      </Pressable>
+    </Animated.View>
   );
 }
 
@@ -99,17 +110,13 @@ function useStyles() {
     card: {
       backgroundColor: colors.surface,
       borderRadius: radius.card,
-      paddingVertical: spacing.md,
-      paddingHorizontal: spacing.md,
-      gap: spacing[1.5],
-      minHeight: 92,
-      justifyContent: 'space-between',
-      borderWidth: StyleSheet.hairlineWidth,
-      borderColor: colors.border,
-      ...elevation[1],
+      padding: spacing.md,
+      gap: spacing.sm,
+      overflow: 'hidden',
+      ...shadows.card,
     },
     cardLocked: {
-      opacity: 0.88,
+      opacity: 0.96,
     },
     lockBadge: {
       position: 'absolute',
@@ -117,13 +124,26 @@ function useStyles() {
       right: spacing.sm,
       zIndex: 1,
     },
+    accent: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      height: 3,
+    },
     label: {
-      ...type.caption,
+      ...typography.footnote,
       color: colors.textSecondary,
+      marginTop: spacing.xs,
+      flexShrink: 1,
     },
     value: {
-      ...type.primaryNumber,
-      letterSpacing: -0.4,
+      ...typography.title2,
+      color: colors.text,
+      flexShrink: 1,
+    },
+    valueLocked: {
+      color: colors.textSecondary,
     },
   }));
 }
