@@ -72,13 +72,18 @@ export function DocumentClientSignatureBlock({
     }
   }
 
-  if (!showSignAction && !hasSignature && isLocked) {
+  // Toujours monter la modal si elle est contrôlée par le parent (Actions → Faire signer),
+  // sinon un early-return empêche d’ouvrir la signature même quand Max est actif.
+  const showSection = showSignAction || hasSignature;
+  const externallyControlled = signModalVisible !== undefined;
+
+  if (!showSection && isLocked && !externallyControlled) {
     return null;
   }
 
   return (
     <>
-      {(showSignAction || hasSignature) && (
+      {showSection ? (
         <DocumentSignatureSection
           loading={loading}
           locked={isLocked}
@@ -90,7 +95,7 @@ export function DocumentClientSignatureBlock({
           signatureUrl={signature?.signatureUrl ?? null}
           signedAt={signature?.signedAt ?? null}
         />
-      )}
+      ) : null}
 
       <ClientSignatureModal
         documentLabel={documentLabel}

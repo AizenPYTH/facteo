@@ -41,8 +41,12 @@ function ActionRow({
       accessibilityState={{ disabled: item.disabled || item.loading }}
       disabled={item.disabled || item.loading}
       onPress={() => {
+        // iOS : ouvrir une 2e Modal pendant la fermeture de la sheet échoue souvent.
+        // On ferme d’abord, puis on enchaîne l’action après l’animation.
         onClose();
-        item.onPress();
+        setTimeout(() => {
+          item.onPress();
+        }, 320);
       }}
       style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}>
       <SymbolView

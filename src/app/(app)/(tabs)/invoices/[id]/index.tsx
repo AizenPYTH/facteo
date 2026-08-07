@@ -416,7 +416,7 @@ export default function InvoiceDetailScreen() {
           documentLabel={`la facture ${invoice.number}`}
           documentType="invoice"
           onSignModalVisibleChange={setSignModalVisible}
-          showSignAction={false}
+          showSignAction
           signModalVisible={signModalVisible}
         />
 

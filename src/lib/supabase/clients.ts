@@ -1,3 +1,4 @@
+import { getClientIdentityError } from '@/lib/clients/identity';
 import { mapFormValuesToClientInsert, mapFormValuesToClientUpdate } from '@/lib/clients/mappers';
 import {
   demoClients,
@@ -19,6 +20,13 @@ import {
   type ClientsPageParams,
 } from '@/types/clients-list';
 import type { ClientRow } from '@/types/database';
+
+function assertClientIdentity(input: ClientFormValues): void {
+  const identityError = getClientIdentityError(input);
+  if (identityError) {
+    throw new Error(identityError);
+  }
+}
 
 export const CLIENT_COLUMNS =
   'id, user_id, name, email, phone, company, address, postal_code, city, country, siren, siret, vat_number, notes, created_at, updated_at' as const;
@@ -120,6 +128,8 @@ export async function fetchClientById(scope: DataScope, clientId: string): Promi
 }
 
 export async function createClient(scope: DataScope, input: ClientFormValues): Promise<Client> {
+  assertClientIdentity(input);
+
   if (isOfflineDemoData()) {
     void scope;
     return offlineCreateClient(input);
@@ -144,6 +154,8 @@ export async function updateClient(
   clientId: string,
   input: ClientFormValues,
 ): Promise<Client> {
+  assertClientIdentity(input);
+
   if (isOfflineDemoData()) {
     void scope;
     return offlineUpdateClient(clientId, input);

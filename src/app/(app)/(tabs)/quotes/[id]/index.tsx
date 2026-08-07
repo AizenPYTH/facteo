@@ -178,7 +178,7 @@ export default function QuoteDetailScreen() {
           documentLabel={`le devis ${quote.number}`}
           documentType="quote"
           onSignModalVisibleChange={setSignModalVisible}
-          showSignAction={false}
+          showSignAction
           signModalVisible={signModalVisible}
         />
 
