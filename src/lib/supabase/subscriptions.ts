@@ -1,6 +1,17 @@
+import {
+  demoPlans,
+  demoSubscription,
+  getDemoSubscriptionSnapshot,
+} from '@/lib/screenshot-demo';
+import {
+  offlineDeleteDocumentSignature,
+  offlineGetDocumentSignature,
+  offlineUpsertDocumentSignature,
+} from '@/lib/screenshot-demo/offline-store';
+import { isOfflineDemoData } from '@/lib/demo-data-mode';
+import { resolveEffectivePlanId } from '@/lib/subscription/plans';
 import { supabase } from '@/lib/supabase';
 import { logSupabaseError } from '@/lib/supabase/errors';
-import { resolveEffectivePlanId } from '@/lib/subscription/plans';
 import type {
   EffectivePlanId,
   PlanFeatures,
@@ -114,6 +125,10 @@ export function isPlanLimitError(error: unknown): error is PlanLimitError {
 }
 
 export async function ensureUserSubscription(): Promise<void> {
+  if (isOfflineDemoData()) {
+    return;
+  }
+
   const { error } = await supabase.rpc('ensure_user_subscription');
 
   if (error) {
@@ -123,6 +138,10 @@ export async function ensureUserSubscription(): Promise<void> {
 }
 
 export async function fetchSubscriptionPlans(): Promise<SubscriptionPlan[]> {
+  if (isOfflineDemoData()) {
+    return demoPlans;
+  }
+
   const { data, error } = await supabase
     .from('subscription_plans')
     .select(PLAN_COLUMNS)
@@ -138,6 +157,11 @@ export async function fetchSubscriptionPlans(): Promise<SubscriptionPlan[]> {
 }
 
 export async function fetchUserSubscription(userId: string): Promise<UserSubscription | null> {
+  if (isOfflineDemoData()) {
+    void userId;
+    return demoSubscription;
+  }
+
   await ensureUserSubscription();
 
   const { data, error } = await supabase
@@ -155,6 +179,10 @@ export async function fetchUserSubscription(userId: string): Promise<UserSubscri
 }
 
 export async function fetchSubscriptionUsage(): Promise<SubscriptionUsage> {
+  if (isOfflineDemoData()) {
+    return getDemoSubscriptionSnapshot().usage;
+  }
+
   const { data, error } = await supabase.rpc('get_subscription_usage');
 
   if (error) {
@@ -166,6 +194,20 @@ export async function fetchSubscriptionUsage(): Promise<SubscriptionUsage> {
 }
 
 export async function checkPlanLimit(resource: PlanResource): Promise<PlanLimitCheck> {
+  if (isOfflineDemoData()) {
+    const snapshot = getDemoSubscriptionSnapshot();
+    return {
+      allowed: true,
+      resource,
+      current: 0,
+      limit: null,
+      planId: snapshot.subscription.effectivePlanId,
+      planName: snapshot.plan.displayName,
+      status: snapshot.subscription.status,
+      isPremium: true,
+    };
+  }
+
   const { data, error } = await supabase.rpc('check_plan_limit', {
     p_resource: resource,
   });
@@ -189,6 +231,10 @@ export async function assertPlanLimit(resource: PlanResource): Promise<PlanLimit
 }
 
 export async function consumeSirenSearch(): Promise<PlanLimitCheck> {
+  if (isOfflineDemoData()) {
+    return checkPlanLimit('siren_searches');
+  }
+
   const { data, error } = await supabase.rpc('consume_siren_search');
 
   if (error) {
@@ -206,6 +252,11 @@ export async function consumeSirenSearch(): Promise<PlanLimitCheck> {
 }
 
 export async function fetchSubscriptionSnapshot(userId: string): Promise<SubscriptionSnapshot> {
+  if (isOfflineDemoData()) {
+    void userId;
+    return getDemoSubscriptionSnapshot();
+  }
+
   const [subscription, plans, usage] = await Promise.all([
     fetchUserSubscription(userId),
     fetchSubscriptionPlans(),
@@ -261,6 +312,10 @@ export async function fetchDocumentSignature(
   documentType: 'quote' | 'invoice',
   documentId: string,
 ): Promise<DocumentSignature | null> {
+  if (isOfflineDemoData()) {
+    return offlineGetDocumentSignature(documentType, documentId);
+  }
+
   const { data, error } = await supabase
     .from('document_signatures')
     .select('*')
@@ -284,6 +339,10 @@ export async function upsertDocumentSignature(input: {
   signerName?: string | null;
   signedAt?: string;
 }): Promise<DocumentSignature> {
+  if (isOfflineDemoData()) {
+    return offlineUpsertDocumentSignature(input);
+  }
+
   const { data, error } = await supabase
     .from('document_signatures')
     .upsert(
@@ -312,6 +371,11 @@ export async function deleteDocumentSignature(
   documentType: 'quote' | 'invoice',
   documentId: string,
 ): Promise<void> {
+  if (isOfflineDemoData()) {
+    offlineDeleteDocumentSignature(documentType, documentId);
+    return;
+  }
+
   const { error } = await supabase
     .from('document_signatures')
     .delete()

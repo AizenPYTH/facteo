@@ -285,7 +285,7 @@ export function QuoteWizardScreen({
       header={
         isDesktop ? undefined : (
           <>
-            <QuoteScreenHeader showBackButton={false} title={title} />
+            <QuoteScreenHeader onBack={handleBack} showBackButton title={title} />
             <QuoteWizardProgress currentStep={step} />
           </>
         )

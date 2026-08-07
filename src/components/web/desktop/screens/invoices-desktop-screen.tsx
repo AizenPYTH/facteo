@@ -5,6 +5,8 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-nati
 import { InvoiceStatusBadge } from '@/components/invoices/invoice-status-badge';
 import { InvoiceStatusFilterBar } from '@/components/invoices/invoice-status-filter-bar';
 import { PaymentModal } from '@/components/invoices/payment-modal';
+import { TemplateGalleryModal } from '@/components/pdf/template-gallery-modal';
+import { DocumentClientSignatureBlock } from '@/components/signatures/document-client-signature-block';
 import {
   DocumentActionsPanel,
   DocumentPreviewPanel,
@@ -17,6 +19,7 @@ import { DesktopSearchInput } from '@/components/web/desktop/ui/desktop-search-i
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/use-auth';
 import { useColors, useThemedStyles } from '@/hooks/use-colors';
+import { useSubscription } from '@/hooks/use-subscription';
 import { spacing } from '@/constants/theme/spacing';
 import { typography } from '@/constants/theme/typography';
 import { useDebouncedValue } from '@/hooks/use-debounced-value';
@@ -49,6 +52,10 @@ export function InvoicesDesktopScreen() {
   const [sortKey, setSortKey] = useState<SortKey>('date');
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [paymentVisible, setPaymentVisible] = useState(false);
+  const [templateGalleryVisible, setTemplateGalleryVisible] = useState(false);
+  const [signModalVisible, setSignModalVisible] = useState(false);
+  const { hasFeature } = useSubscription();
+  const signatureLocked = !hasFeature('client_signature');
   const debouncedSearch = useDebouncedValue(search, 300);
 
   useEffect(() => {
@@ -91,7 +98,7 @@ export function InvoicesDesktopScreen() {
   }, [rawInvoices, sortKey]);
 
   const { data: selectedInvoice } = useInvoice(selectedId ?? '');
-  const { duplicateInvoice, addPayment } = useInvoiceMutations();
+  const { duplicateInvoice, addPayment, cancelInvoice } = useInvoiceMutations();
   const isInitialLoading = (isLoading || isSwitching) && invoices.length === 0;
 
   const buildHtml = useCallback(
@@ -170,6 +177,17 @@ export function InvoicesDesktopScreen() {
       handleSelect(dup.id);
     } catch {
       showError('Impossible de dupliquer la facture.');
+    }
+  }
+
+  async function handleCancelInvoice() {
+    if (!selectedId) return;
+    try {
+      await cancelInvoice.mutateAsync(selectedId);
+      showSuccess('Facture annulée.');
+      setPreviewVersion((value) => value + 1);
+    } catch {
+      showError('Impossible d’annuler la facture.');
     }
   }
 
@@ -276,39 +294,87 @@ export function InvoicesDesktopScreen() {
             documentType="invoice"
             downloadLoading={documentActions.loading}
             duplicateLoading={duplicateInvoice.isPending}
+            deleteLabel="Annuler la facture"
+            deleteLoading={cancelInvoice.isPending}
+            onChangeTemplate={
+              selectedInvoice ? () => setTemplateGalleryVisible(true) : undefined
+            }
+            onDelete={
+              selectedInvoice &&
+              selectedInvoice.status !== 'cancelled' &&
+              selectedInvoice.status !== 'paid'
+                ? () => void handleCancelInvoice()
+                : undefined
+            }
             onDownload={() => void documentActions.handleShare()}
             onDuplicate={() => void handleDuplicate()}
             onEdit={
-              selectedInvoice
+              selectedInvoice?.status === 'draft'
                 ? () => router.push(`/invoices/${selectedInvoice.id}/edit` as Href)
                 : undefined
             }
             onPayment={() => setPaymentVisible(true)}
             onSend={() => void documentActions.handleSendEmail()}
+            onSign={
+              selectedInvoice
+                ? () => {
+                    if (signatureLocked) {
+                      router.push('/settings/premium' as Href);
+                      return;
+                    }
+                    setSignModalVisible(true);
+                  }
+                : undefined
+            }
             sendLoading={documentActions.emailLoading}
             showPayment={Boolean(selectedInvoice && selectedInvoice.amountDue > 0)}
+            signLabel={signatureLocked ? 'Faire signer (Premium)' : 'Faire signer'}
           />
         </View>
       </View>
 
       {selectedInvoice ? (
-        <PaymentModal
-          loading={addPayment.isPending}
-          maxAmount={selectedInvoice.amountDue}
-          onCancel={() => setPaymentVisible(false)}
-          onConfirm={(input) => {
-            void (async () => {
-              try {
-                await addPayment.mutateAsync({ invoiceId: selectedInvoice.id, input });
-                setPaymentVisible(false);
-                showSuccess('Paiement enregistré.');
-              } catch {
-                showError('Impossible d’enregistrer le paiement.');
-              }
-            })();
-          }}
-          visible={paymentVisible}
-        />
+        <>
+          <DocumentClientSignatureBlock
+            documentId={selectedInvoice.id}
+            documentLabel={`la facture ${selectedInvoice.number}`}
+            documentType="invoice"
+            onSignModalVisibleChange={setSignModalVisible}
+            showSignAction={false}
+            signModalVisible={signModalVisible}
+          />
+
+          <TemplateGalleryModal
+            buildPreviewHtml={documentActions.buildPreviewHtml}
+            cacheKey={`invoice-desktop-${selectedInvoice.id}`}
+            onClose={() => setTemplateGalleryVisible(false)}
+            onSelect={(templateId) => {
+              documentActions.applyTemplate(templateId);
+              setPreviewVersion((value) => value + 1);
+            }}
+            selectedTemplateId={documentActions.templateId}
+            title="Modèle de la facture"
+            visible={templateGalleryVisible}
+          />
+
+          <PaymentModal
+            loading={addPayment.isPending}
+            maxAmount={selectedInvoice.amountDue}
+            onCancel={() => setPaymentVisible(false)}
+            onConfirm={(input) => {
+              void (async () => {
+                try {
+                  await addPayment.mutateAsync({ invoiceId: selectedInvoice.id, input });
+                  setPaymentVisible(false);
+                  showSuccess('Paiement enregistré.');
+                } catch {
+                  showError('Impossible d’enregistrer le paiement.');
+                }
+              })();
+            }}
+            visible={paymentVisible}
+          />
+        </>
       ) : null}
     </View>
   );

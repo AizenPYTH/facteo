@@ -3,7 +3,6 @@ import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { SafeAreaView, type Edge } from 'react-native-safe-area-context';
 
-import { StickyFooter, useStickyFooterInset } from '@/components/ui/sticky-footer';
 import { useThemedStyles } from '@/hooks/use-colors';
 import { spacing } from '@/constants/theme/spacing';
 
@@ -15,21 +14,37 @@ type FormScreenProps = {
   scrollable?: boolean;
   transparent?: boolean;
   contentContainerStyle?: StyleProp<ViewStyle>;
+  /** When true, keep vertical centering only when keyboard is closed (auth). */
+  centerContent?: boolean;
   testID?: string;
 };
 
+/**
+ * Formulaire natif iOS :
+ * - pas de KeyboardStickyView
+ * - pas de footer flottant au-dessus du clavier
+ * - le CTA est en bas du contenu scrollable
+ * - KeyboardAwareScrollView fait défiler le champ focalisé
+ */
 export function FormScreen({
   children,
   header,
   footer,
-  edges = ['top'],
+  edges = ['top', 'bottom'],
   scrollable = true,
   transparent = false,
   contentContainerStyle,
+  centerContent = false,
   testID,
 }: FormScreenProps) {
   const styles = useStyles(transparent);
-  const footerInset = useStickyFooterInset();
+
+  const body = (
+    <>
+      {children}
+      {footer ? <View style={styles.footer}>{footer}</View> : null}
+    </>
+  );
 
   return (
     <View style={styles.root} testID={testID}>
@@ -38,24 +53,22 @@ export function FormScreen({
 
         {scrollable ? (
           <KeyboardAwareScrollView
-            bottomOffset={footer ? footerInset : spacing.md}
+            bottomOffset={spacing.lg}
             contentContainerStyle={[
               styles.scrollContent,
-              footer ? { paddingBottom: footerInset + spacing.md } : null,
+              centerContent ? styles.scrollContentCentered : null,
               contentContainerStyle,
             ]}
-            keyboardDismissMode="on-drag"
+            keyboardDismissMode="interactive"
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
             style={styles.flex}>
-            {children}
+            {body}
           </KeyboardAwareScrollView>
         ) : (
-          <View style={styles.flex}>{children}</View>
+          <View style={styles.flex}>{body}</View>
         )}
       </SafeAreaView>
-
-      {footer ? <StickyFooter transparent={transparent}>{footer}</StickyFooter> : null}
     </View>
   );
 }
@@ -80,5 +93,16 @@ const useStyles = (transparent: boolean) =>
       paddingHorizontal: spacing.screenPaddingHorizontal,
       paddingBottom: spacing.lg,
       gap: spacing.lg,
+    },
+    scrollContentCentered: {
+      justifyContent: 'flex-start',
+      paddingTop: spacing['2xl'],
+    },
+    footer: {
+      marginTop: spacing.md,
+      paddingTop: spacing.md,
+      gap: spacing.sm,
+      borderTopWidth: transparent ? 0 : StyleSheet.hairlineWidth,
+      borderTopColor: colors.separator,
     },
   }));

@@ -151,7 +151,7 @@ export default function QuoteDetailScreen() {
   return (
     <SafeAreaView edges={['top', 'bottom']} style={styles.safeArea}>
       <View style={styles.header}>
-        <QuoteScreenHeader title={quote.number} />
+        <QuoteScreenHeader showBackButton title={quote.number} />
       </View>
 
       <ScrollView
@@ -178,7 +178,7 @@ export default function QuoteDetailScreen() {
           documentLabel={`le devis ${quote.number}`}
           documentType="quote"
           onSignModalVisibleChange={setSignModalVisible}
-          showSignAction={false}
+          showSignAction
           signModalVisible={signModalVisible}
         />
 

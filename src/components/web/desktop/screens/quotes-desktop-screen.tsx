@@ -4,6 +4,8 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-nati
 
 import { QuoteStatusBadge } from '@/components/quotes/quote-status-badge';
 import { QuoteStatusFilterBar } from '@/components/quotes/quote-status-filter-bar';
+import { TemplateGalleryModal } from '@/components/pdf/template-gallery-modal';
+import { DocumentClientSignatureBlock } from '@/components/signatures/document-client-signature-block';
 import {
   DocumentActionsPanel,
   DocumentPreviewPanel,
@@ -16,6 +18,7 @@ import { DesktopSearchInput } from '@/components/web/desktop/ui/desktop-search-i
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/use-auth';
 import { useColors, useThemedStyles } from '@/hooks/use-colors';
+import { useSubscription } from '@/hooks/use-subscription';
 import { spacing } from '@/constants/theme/spacing';
 import { typography } from '@/constants/theme/typography';
 import { useDebouncedValue } from '@/hooks/use-debounced-value';
@@ -45,6 +48,10 @@ export function QuotesDesktopScreen() {
   const [statusFilter, setStatusFilter] = useState<QuoteStatusFilter>('all');
   const [sortKey, setSortKey] = useState<SortKey>('date');
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [templateGalleryVisible, setTemplateGalleryVisible] = useState(false);
+  const [signModalVisible, setSignModalVisible] = useState(false);
+  const { hasFeature } = useSubscription();
+  const signatureLocked = !hasFeature('client_signature');
   const debouncedSearch = useDebouncedValue(search, 300);
 
   useEffect(() => {
@@ -77,7 +84,7 @@ export function QuotesDesktopScreen() {
   }, [rawQuotes, sortKey]);
 
   const { data: selectedQuote } = useQuote(selectedId ?? '');
-  const { duplicateQuote } = useQuoteMutations();
+  const { duplicateQuote, deleteQuote } = useQuoteMutations();
   const isInitialLoading = (isLoading || isSwitching) && quotes.length === 0;
 
   const buildHtml = useCallback(
@@ -156,6 +163,18 @@ export function QuotesDesktopScreen() {
       handleSelect(dup.id);
     } catch {
       showError('Impossible de dupliquer le devis.');
+    }
+  }
+
+  async function handleDelete() {
+    if (!selectedId) return;
+    try {
+      await deleteQuote.mutateAsync(selectedId);
+      showSuccess('Devis supprimé.');
+      setSelectedId(null);
+      router.replace('/quotes' as Href);
+    } catch {
+      showError('Impossible de supprimer le devis.');
     }
   }
 
@@ -259,18 +278,60 @@ export function QuotesDesktopScreen() {
             documentType="quote"
             downloadLoading={documentActions.loading}
             duplicateLoading={duplicateQuote.isPending}
+            deleteLabel="Supprimer"
+            deleteLoading={deleteQuote.isPending}
+            onChangeTemplate={selectedQuote ? () => setTemplateGalleryVisible(true) : undefined}
+            onDelete={selectedQuote ? () => void handleDelete() : undefined}
             onDownload={() => void documentActions.handleShare()}
             onDuplicate={() => void handleDuplicate()}
             onEdit={
-              selectedQuote
+              selectedQuote?.status === 'draft'
                 ? () => router.push(`/quotes/${selectedQuote.id}/edit` as Href)
                 : undefined
             }
             onSend={() => void documentActions.handleSendEmail()}
+            onSign={
+              selectedQuote
+                ? () => {
+                    if (signatureLocked) {
+                      router.push('/settings/premium' as Href);
+                      return;
+                    }
+                    setSignModalVisible(true);
+                  }
+                : undefined
+            }
             sendLoading={documentActions.emailLoading}
+            signLabel={signatureLocked ? 'Faire signer (Premium)' : 'Faire signer'}
           />
         </View>
       </View>
+
+      {selectedQuote ? (
+        <>
+          <DocumentClientSignatureBlock
+            documentId={selectedQuote.id}
+            documentLabel={`le devis ${selectedQuote.number}`}
+            documentType="quote"
+            onSignModalVisibleChange={setSignModalVisible}
+            showSignAction={false}
+            signModalVisible={signModalVisible}
+          />
+
+          <TemplateGalleryModal
+            buildPreviewHtml={documentActions.buildPreviewHtml}
+            cacheKey={`quote-desktop-${selectedQuote.id}`}
+            onClose={() => setTemplateGalleryVisible(false)}
+            onSelect={(templateId) => {
+              documentActions.applyTemplate(templateId);
+              setPreviewVersion((value) => value + 1);
+            }}
+            selectedTemplateId={documentActions.templateId}
+            title="Modèle du devis"
+            visible={templateGalleryVisible}
+          />
+        </>
+      ) : null}
     </View>
   );
 }

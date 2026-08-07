@@ -12,7 +12,21 @@ export type GeneratedPdf = {
 };
 
 export async function generatePdfFromHtml(html: string, fileName: string): Promise<GeneratedPdf> {
-  const { uri, numberOfPages } = await Print.printToFileAsync({
+  // expo-print web: printToFileAsync() appelle window.print() et ne renvoie rien.
+  // On sert un blob HTML préfixable (iframe) pour l’aperçu / partage navigateur.
+  if (Platform.OS === 'web') {
+    const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+    const objectUrl = URL.createObjectURL(blob);
+    const safeName = fileName.toLowerCase().endsWith('.pdf') ? fileName : `${fileName}.pdf`;
+
+    return {
+      uri: `html:${objectUrl}`,
+      fileName: safeName,
+      numberOfPages: 1,
+    };
+  }
+
+  const printed = await Print.printToFileAsync({
     html,
     base64: false,
     width: A4_PRINT_OPTIONS.width,
@@ -20,12 +34,16 @@ export async function generatePdfFromHtml(html: string, fileName: string): Promi
     margins: A4_PRINT_OPTIONS.margins,
   });
 
-  const normalizedUri = await ensurePdfFileUri(uri, fileName);
+  if (!printed?.uri) {
+    throw new Error('Impossible de générer le PDF.');
+  }
+
+  const normalizedUri = await ensurePdfFileUri(printed.uri, fileName);
 
   return {
     uri: normalizedUri,
     fileName: sanitizeFileNameFromUri(normalizedUri, fileName),
-    numberOfPages,
+    numberOfPages: printed.numberOfPages ?? 1,
   };
 }
 
@@ -39,18 +57,32 @@ function sanitizeFileNameFromUri(uri: string, fallback: string): string {
   return fallback.toLowerCase().endsWith('.pdf') ? fallback : `${fallback}.pdf`;
 }
 
+function resolveShareableUri(uri: string): string {
+  return uri.startsWith('html:') ? uri.slice('html:'.length) : uri;
+}
+
 export async function sharePdf(uri: string, dialogTitle = 'Partager le document'): Promise<void> {
+  const resolvedUri = resolveShareableUri(uri);
+
+  if (Platform.OS === 'web') {
+    // Ouvre l’aperçu HTML/PDF dans un nouvel onglet (fallback navigateur).
+    if (typeof window !== 'undefined') {
+      window.open(resolvedUri, '_blank', 'noopener,noreferrer');
+    }
+    return;
+  }
+
   const canShare = await Sharing.isAvailableAsync();
 
   if (!canShare) {
     if (Platform.OS === 'ios') {
-      await Print.printAsync({ uri });
+      await Print.printAsync({ uri: resolvedUri });
     }
 
     return;
   }
 
-  await Sharing.shareAsync(uri, {
+  await Sharing.shareAsync(resolvedUri, {
     mimeType: 'application/pdf',
     dialogTitle,
     UTI: 'com.adobe.pdf',
@@ -58,7 +90,17 @@ export async function sharePdf(uri: string, dialogTitle = 'Partager le document'
 }
 
 export async function printPdf(uri: string): Promise<void> {
-  await Print.printAsync({ uri });
+  const resolvedUri = resolveShareableUri(uri);
+
+  if (Platform.OS === 'web') {
+    if (typeof window !== 'undefined') {
+      const popup = window.open(resolvedUri, '_blank', 'noopener,noreferrer');
+      popup?.print();
+    }
+    return;
+  }
+
+  await Print.printAsync({ uri: resolvedUri });
 }
 
 export async function shareHtmlAsPdf(

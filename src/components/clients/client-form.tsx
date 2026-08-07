@@ -24,6 +24,25 @@ export function ClientForm({ control, errors, setValue }: ClientFormProps) {
         <FormField>
           <Controller
             control={control}
+            name="company"
+            render={({ field: { onChange, onBlur, value } }) => (
+              <TextField
+                autoCapitalize="words"
+                error={errors.company?.message}
+                label="Entreprise"
+                onBlur={onBlur}
+                onChangeText={onChange}
+                placeholder="Acme SARL (ou nom + prénom)"
+                textContentType="organizationName"
+                value={value}
+              />
+            )}
+          />
+        </FormField>
+        <FormDivider />
+        <FormField>
+          <Controller
+            control={control}
             name="lastName"
             render={({ field: { onChange, onBlur, value } }) => (
               <TextField
@@ -55,25 +74,6 @@ export function ClientForm({ control, errors, setValue }: ClientFormProps) {
                 placeholder="Jean"
                 returnKeyType="next"
                 textContentType="givenName"
-                value={value}
-              />
-            )}
-          />
-        </FormField>
-        <FormDivider />
-        <FormField>
-          <Controller
-            control={control}
-            name="company"
-            render={({ field: { onChange, onBlur, value } }) => (
-              <TextField
-                autoCapitalize="words"
-                error={errors.company?.message}
-                label="Entreprise"
-                onBlur={onBlur}
-                onChangeText={onChange}
-                placeholder="Acme SARL"
-                textContentType="organizationName"
                 value={value}
               />
             )}

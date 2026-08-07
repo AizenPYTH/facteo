@@ -79,10 +79,25 @@ export function buildSignaturePadHtml(width: number, height: number): string {
     }
 
     function post(payload) {
+      const message = JSON.stringify(payload);
       if (window.ReactNativeWebView) {
-        window.ReactNativeWebView.postMessage(JSON.stringify(payload));
+        window.ReactNativeWebView.postMessage(message);
+      }
+      // Fallback web (iframe srcDoc) + tests Playwright
+      if (window.parent && window.parent !== window) {
+        window.parent.postMessage(message, '*');
       }
     }
+
+    window.addEventListener('message', (event) => {
+      try {
+        const payload = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
+        if (payload && payload.type === 'command' && typeof payload.command === 'string') {
+          if (payload.command === 'clearPad') clearPad();
+          if (payload.command === 'exportSignature') exportSignature();
+        }
+      } catch (_) {}
+    });
 
     canvas.addEventListener('mousedown', startDraw);
     canvas.addEventListener('mousemove', draw);

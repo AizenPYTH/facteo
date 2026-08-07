@@ -15,24 +15,16 @@ export type PlanLimitModalProps = {
 
 export function PlanLimitModal({ visible, onClose }: PlanLimitModalProps) {
   const styles = useStyles();
-  const { startCheckout, subscribe, isConfigured } = usePremiumCheckout();
+  const { startCheckout, subscribe } = usePremiumCheckout();
   const { showError, showSuccess } = useToast();
 
   async function handleUpgrade() {
-    if (!isConfigured) {
-      showError('Stripe n’est pas encore configuré. Contactez le support.');
-      return;
-    }
-
     try {
       onClose();
-      const completed = await startCheckout();
-
-      if (completed) {
-        showSuccess('INVEQ Premium est activé.');
-      }
+      await startCheckout();
+      showSuccess('Consultez les offres sur inveq.fr');
     } catch (error) {
-      showError(readErrorMessage(error));
+      showError(error instanceof Error ? error.message : 'Impossible d’ouvrir le site.');
     }
   }
 
@@ -42,8 +34,8 @@ export function PlanLimitModal({ visible, onClose }: PlanLimitModalProps) {
         <Pressable onPress={(event) => event.stopPropagation()} style={styles.dialog}>
           <Text style={styles.title}>Limite atteinte</Text>
           <Text style={styles.description}>
-            Vous avez atteint la limite de votre offre actuelle. Passez à une offre supérieure pour
-            continuer.
+            Vous avez atteint la limite de votre offre actuelle. Consultez Basique, Standard ou Pro
+            sur inveq.fr pour continuer.
           </Text>
 
           <View style={styles.actions}>
@@ -52,7 +44,7 @@ export function PlanLimitModal({ visible, onClose }: PlanLimitModalProps) {
               onPress={() => {
                 void handleUpgrade();
               }}
-              title="Voir les offres"
+              title="Voir les offres sur le web"
             />
             <Button onPress={onClose} title="Fermer" variant="ghost" />
           </View>
@@ -60,14 +52,6 @@ export function PlanLimitModal({ visible, onClose }: PlanLimitModalProps) {
       </Pressable>
     </Modal>
   );
-}
-
-function readErrorMessage(error: unknown): string {
-  if (error instanceof Error) {
-    return error.message;
-  }
-
-  return 'Impossible d’ouvrir le paiement Stripe.';
 }
 
 function useStyles() {
@@ -80,23 +64,22 @@ function useStyles() {
     },
     dialog: {
       backgroundColor: colors.surface,
-      borderRadius: radius.sheet,
+      borderRadius: radius.xl,
       padding: spacing.lg,
       gap: spacing.md,
-      borderWidth: 1,
-      borderColor: colors.border,
     },
     title: {
       ...typography.title3,
       color: colors.text,
     },
     description: {
-      ...typography.subheadline,
+      ...typography.body,
       color: colors.textSecondary,
+      lineHeight: 22,
     },
     actions: {
       gap: spacing.sm,
-      marginTop: spacing.sm,
+      marginTop: spacing.xs,
     },
   }));
 }

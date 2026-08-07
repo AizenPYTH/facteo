@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { ClientDetailView } from '@/components/clients/client-detail-view';
+import { DeleteClientModal } from '@/components/clients';
 import { DesktopPanel } from '@/components/web/desktop/desktop-panel';
 import { DesktopTopHeader } from '@/components/web/desktop/desktop-top-header';
 import { MasterDetailLayout } from '@/components/web/desktop/layout/master-detail-layout';
@@ -15,12 +16,15 @@ import { useColors, useThemedStyles } from '@/hooks/use-colors';
 import { spacing } from '@/constants/theme/spacing';
 import { typography } from '@/constants/theme/typography';
 import { useDebouncedValue } from '@/hooks/use-debounced-value';
+import { useClientMutations } from '@/hooks/use-client-mutations';
 import { useClient, useInfiniteClients } from '@/hooks/use-clients';
 import { useInfiniteInvoices } from '@/hooks/use-invoices';
 import { useInfiniteQuotes } from '@/hooks/use-quotes';
 import { useTenant } from '@/hooks/use-tenant';
+import { getClientErrorMessage } from '@/lib/clients/errors';
 import { formatDate } from '@/lib/format/date';
 import { formatPriceHT } from '@/lib/format/currency';
+import { useToast } from '@/providers/toast-provider';
 import { getClientDisplayName, getClientSecondaryLabel, type Client } from '@/types/client';
 
 const CLIENT_TABS: DesktopTab[] = [
@@ -41,6 +45,9 @@ export function ClientsDesktopScreen() {
   const [search, setSearch] = useState('');
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('info');
+  const [deleteVisible, setDeleteVisible] = useState(false);
+  const { deleteClient } = useClientMutations();
+  const { showError, showSuccess } = useToast();
   const debouncedSearch = useDebouncedValue(search, 300);
 
   useEffect(() => {
@@ -98,6 +105,26 @@ export function ClientsDesktopScreen() {
     router.replace(`/clients?selected=${encodeURIComponent(client.id)}` as Href);
   }
 
+  async function handleDelete() {
+    if (!selectedId) {
+      return;
+    }
+
+    try {
+      await deleteClient.mutateAsync(selectedId);
+      setDeleteVisible(false);
+      setSelectedId(null);
+      showSuccess('Client supprimé.');
+      router.replace('/clients' as Href);
+    } catch (error) {
+      const rawMessage =
+        error && typeof error === 'object' && 'message' in error
+          ? String((error as { message: string }).message)
+          : '';
+      showError(getClientErrorMessage(rawMessage));
+    }
+  }
+
   return (
     <View style={styles.root}>
       <DesktopTopHeader
@@ -139,6 +166,11 @@ export function ClientsDesktopScreen() {
                             router.push(`/clients/${selectedClient.id}/edit` as Href)
                           }
                           title="Modifier"
+                          variant="ghost"
+                        />
+                        <Button
+                          onPress={() => setDeleteVisible(true)}
+                          title="Supprimer"
                           variant="ghost"
                         />
                         <Button
@@ -214,7 +246,7 @@ export function ClientsDesktopScreen() {
           </DesktopPanel>
         }
         list={
-          <DesktopPanel flex={0} style={styles.listPanel}>
+          <DesktopPanel flex={1} flush style={styles.listPanel}>
             <View style={styles.listToolbar}>
               <DesktopSearchInput onChangeText={setSearch} value={search} />
             </View>
@@ -273,6 +305,18 @@ export function ClientsDesktopScreen() {
           </DesktopPanel>
         }
       />
+
+      {selectedClient ? (
+        <DeleteClientModal
+          clientName={getClientDisplayName(selectedClient)}
+          loading={deleteClient.isPending}
+          onCancel={() => setDeleteVisible(false)}
+          onConfirm={() => {
+            void handleDelete();
+          }}
+          visible={deleteVisible}
+        />
+      ) : null}
     </View>
   );
 }
@@ -311,7 +355,7 @@ function ClientDocumentsTab({
 const useStyles = () =>
   useThemedStyles((colors) => ({
     root: { flex: 1, minHeight: 0 },
-    listPanel: { flex: 0 },
+    listPanel: { flex: 1, height: '100%', minHeight: 0 },
     listToolbar: {
       padding: spacing.md,
       borderBottomWidth: StyleSheet.hairlineWidth,
