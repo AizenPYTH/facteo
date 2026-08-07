@@ -151,13 +151,6 @@ export function DashboardDesktopScreen() {
                       label="Ajouter un client"
                       onPress={() => router.push('/clients/new' as Href)}
                     />
-                    <DesktopShortcutButton
-                      description="Bientôt disponible"
-                      disabled
-                      icon={{ ios: 'camera.viewfinder', android: 'document_scanner', web: 'document_scanner' }}
-                      label="Scanner IA"
-                      onPress={() => {}}
-                    />
                   </View>
                 </DesktopPanel>
 

@@ -382,6 +382,7 @@ export default function InvoiceDetailScreen() {
     <SafeAreaView edges={['top', 'bottom']} style={styles.safeArea}>
       <View style={styles.header}>
         <InvoiceScreenHeader
+          showBackButton
           title={invoice.number}
           trailing={
             <Pressable
