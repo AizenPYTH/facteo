@@ -1,9 +1,7 @@
 import type { ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { StickyFooter } from '@/components/ui/sticky-footer';
 import { useThemedStyles } from '@/hooks/use-colors';
 import { spacing } from '@/constants/theme/spacing';
 
@@ -16,6 +14,10 @@ type WizardScreenProps = {
   variant?: 'mobile' | 'desktop';
 };
 
+/**
+ * Wizard mobile : toolbar en haut, contenu flex (les steps gèrent leur scroll).
+ * Pas de footer flottant / KeyboardAvoidingView qui décale les CTA.
+ */
 export function WizardScreen({
   header,
   toolbar,
@@ -38,14 +40,11 @@ export function WizardScreen({
 
   return (
     <View style={styles.root} testID={testID}>
-      <KeyboardAvoidingView behavior="padding" style={styles.flex}>
-        <SafeAreaView edges={['top']} style={styles.safeArea}>
-          {header ? <View style={styles.header}>{header}</View> : null}
-          {toolbar ? <View style={styles.toolbar}>{toolbar}</View> : null}
-          <View style={styles.body}>{children}</View>
-        </SafeAreaView>
-        {footer ? <StickyFooter variant="toolbar">{footer}</StickyFooter> : null}
-      </KeyboardAvoidingView>
+      <SafeAreaView edges={['top', 'bottom']} style={styles.safeArea}>
+        {header ? <View style={styles.header}>{header}</View> : null}
+        {toolbar ? <View style={styles.toolbar}>{toolbar}</View> : null}
+        <View style={styles.body}>{children}</View>
+      </SafeAreaView>
     </View>
   );
 }
@@ -55,9 +54,6 @@ const useStyles = () =>
     root: {
       flex: 1,
       backgroundColor: colors.backgroundGrouped,
-    },
-    flex: {
-      flex: 1,
     },
     safeArea: {
       flex: 1,
@@ -74,6 +70,7 @@ const useStyles = () =>
     body: {
       flex: 1,
       paddingHorizontal: spacing.screenPaddingHorizontal,
+      minHeight: 0,
     },
     desktopRoot: {
       flex: 1,

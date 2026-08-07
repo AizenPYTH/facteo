@@ -1,3 +1,4 @@
+import { getClientIdentityError } from '@/lib/clients/identity';
 import { getClientDisplayName } from '@/lib/clients/name';
 import { normalizeFrenchPhone } from '@/lib/format/phone';
 import { mapLinesToDocumentTotals } from '@/lib/quotes/mappers';
@@ -22,14 +23,6 @@ import type {
   InvoiceStatus,
   UpdateInvoiceInput,
 } from '@/types/invoice';
-
-type OfflinePaymentInput = {
-  amount: number;
-  paymentMethod?: string | null;
-  paymentReference?: string | null;
-  notes?: string | null;
-  paidAt?: string;
-};
 import type {
   CreateQuoteInput,
   Quote,
@@ -39,6 +32,17 @@ import type {
 } from '@/types/quote';
 import type { Settings, SettingsFormValues } from '@/types/settings';
 import type { TenantCompany } from '@/types/tenant';
+
+type OfflinePaymentInput = {
+  amount: number;
+  paymentMethod?: string | null;
+  paymentReference?: string | null;
+  notes?: string | null;
+  paidAt?: string;
+};
+
+/** Entreprises démo mutables (création / liste offline). */
+export const demoCompanies: TenantCompany[] = [demoCompany];
 
 function nowIso(): string {
   return new Date().toISOString();
@@ -68,6 +72,11 @@ function resolveClientLabel(clientId: string | null | undefined): {
 }
 
 export function offlineCreateClient(input: ClientFormValues): Client {
+  const identityError = getClientIdentityError(input);
+  if (identityError) {
+    throw new Error(identityError);
+  }
+
   const timestamp = nowIso();
   const client: Client = {
     id: newId('client'),
@@ -92,6 +101,11 @@ export function offlineCreateClient(input: ClientFormValues): Client {
 }
 
 export function offlineUpdateClient(clientId: string, input: ClientFormValues): Client {
+  const identityError = getClientIdentityError(input);
+  if (identityError) {
+    throw new Error(identityError);
+  }
+
   const index = demoClients.findIndex((row) => row.id === clientId);
   if (index < 0) {
     throw new Error('Client introuvable.');
@@ -458,9 +472,15 @@ export function offlineUpdateDocumentTemplates(templates: {
   return { ...demoSettings };
 }
 
-export function offlineUpdateCompanyProfile(input: UpdateCompanyProfileInput): TenantCompany {
+export function offlineUpdateCompanyProfile(
+  companyId: string,
+  input: UpdateCompanyProfileInput,
+): TenantCompany {
   const timestamp = nowIso();
-  Object.assign(demoCompany, {
+  const index = demoCompanies.findIndex((company) => company.id === companyId);
+  const target = index >= 0 ? demoCompanies[index]! : demoCompany;
+
+  Object.assign(target, {
     name: input.companyName.trim(),
     email: input.email.trim(),
     phone: nullable(input.phone),
@@ -475,6 +495,10 @@ export function offlineUpdateCompanyProfile(input: UpdateCompanyProfileInput): T
     paymentMethods: input.paymentMethods,
     updatedAt: timestamp,
   });
+
+  if (target.id === demoCompany.id) {
+    Object.assign(demoCompany, target);
+  }
 
   Object.assign(demoProfile, {
     first_name: input.firstName.trim(),
@@ -494,5 +518,146 @@ export function offlineUpdateCompanyProfile(input: UpdateCompanyProfileInput): T
     updated_at: timestamp,
   });
 
-  return { ...demoCompany };
+  return { ...target };
+}
+
+type OfflineDocumentSignature = {
+  id: string;
+  userId: string;
+  documentType: 'quote' | 'invoice';
+  documentId: string;
+  signatureUrl: string;
+  signerName: string | null;
+  signedAt: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+const demoDocumentSignatures = new Map<string, OfflineDocumentSignature>();
+
+function signatureKey(documentType: 'quote' | 'invoice', documentId: string): string {
+  return `${documentType}:${documentId}`;
+}
+
+export function offlineGetDocumentSignature(
+  documentType: 'quote' | 'invoice',
+  documentId: string,
+): OfflineDocumentSignature | null {
+  return demoDocumentSignatures.get(signatureKey(documentType, documentId)) ?? null;
+}
+
+export function offlineUpsertDocumentSignature(input: {
+  userId: string;
+  documentType: 'quote' | 'invoice';
+  documentId: string;
+  signatureUrl: string;
+  signerName?: string | null;
+  signedAt?: string;
+}): OfflineDocumentSignature {
+  const key = signatureKey(input.documentType, input.documentId);
+  const existing = demoDocumentSignatures.get(key);
+  const timestamp = nowIso();
+  const next: OfflineDocumentSignature = {
+    id: existing?.id ?? newId('sig'),
+    userId: input.userId,
+    documentType: input.documentType,
+    documentId: input.documentId,
+    signatureUrl: input.signatureUrl,
+    signerName: input.signerName ?? null,
+    signedAt: input.signedAt ?? timestamp,
+    createdAt: existing?.createdAt ?? timestamp,
+    updatedAt: timestamp,
+  };
+  demoDocumentSignatures.set(key, next);
+  return next;
+}
+
+export function offlineDeleteDocumentSignature(
+  documentType: 'quote' | 'invoice',
+  documentId: string,
+): void {
+  demoDocumentSignatures.delete(signatureKey(documentType, documentId));
+}
+
+export function offlineCreateCompany(name: string): string {
+  const trimmed = name.trim();
+  if (!trimmed) {
+    throw new Error('Le nom de l’entreprise est obligatoire.');
+  }
+
+  const timestamp = nowIso();
+  const id = newId('company');
+  const company: TenantCompany = {
+    id,
+    name: trimmed,
+    email: null,
+    phone: null,
+    address: null,
+    postalCode: null,
+    city: null,
+    country: 'France',
+    siret: null,
+    vatNumber: null,
+    iban: null,
+    bic: null,
+    paymentMethods: ['bank_transfer'],
+    logoUrl: null,
+    signatureUrl: null,
+    role: 'owner',
+    createdAt: timestamp,
+    updatedAt: timestamp,
+  };
+  demoCompanies.unshift(company);
+  return id;
+}
+
+export function offlineListCompanies(): TenantCompany[] {
+  return demoCompanies.map((company) => ({ ...company }));
+}
+
+export function offlineDeleteCompany(companyId: string): void {
+  if (demoCompanies.length <= 1) {
+    throw new Error('Vous devez conserver au moins une entreprise.');
+  }
+
+  const index = demoCompanies.findIndex((company) => company.id === companyId);
+  if (index < 0) {
+    throw new Error('Entreprise introuvable.');
+  }
+
+  demoCompanies.splice(index, 1);
+}
+
+export function offlineUpdateCompanyAssetUrl(
+  companyId: string,
+  field: 'logo_url' | 'signature_url',
+  url: string | null,
+): void {
+  const company = demoCompanies.find((entry) => entry.id === companyId) ?? demoCompany;
+  if (field === 'logo_url') {
+    company.logoUrl = url;
+  } else {
+    company.signatureUrl = url;
+  }
+  company.updatedAt = nowIso();
+  if (company.id === demoCompany.id) {
+    Object.assign(demoCompany, company);
+  }
+}
+
+export function offlineRenameCompany(companyId: string, name: string): TenantCompany {
+  const trimmed = name.trim();
+  if (!trimmed) {
+    throw new Error('Le nom de l’entreprise est obligatoire.');
+  }
+
+  const company = demoCompanies.find((entry) => entry.id === companyId) ?? demoCompany;
+  company.name = trimmed;
+  company.updatedAt = nowIso();
+  if (company.id === demoCompany.id) {
+    Object.assign(demoCompany, company);
+    demoProfile.company_name = trimmed;
+    demoProfile.updated_at = company.updatedAt;
+  }
+  return { ...company };
 }

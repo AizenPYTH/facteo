@@ -9,10 +9,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import {
-  KeyboardAvoidingView,
-  KeyboardAwareScrollView,
-} from 'react-native-keyboard-controller';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AppText } from '@/components/ui/app-text';
@@ -134,9 +131,7 @@ export function CompanyWorkspaceSheet({
     <Modal animationType="slide" onRequestClose={onClose} transparent visible={visible}>
       <View style={styles.overlay}>
         <Pressable accessibilityLabel="Fermer" onPress={onClose} style={StyleSheet.absoluteFill} />
-        <KeyboardAvoidingView
-          behavior="padding"
-          style={[styles.sheet, { paddingBottom: Math.max(insets.bottom, spacing.lg) }]}>
+        <View style={[styles.sheet, { paddingBottom: Math.max(insets.bottom, spacing.lg) }]}>
           <View style={styles.handle} />
           <AppText variant="title">Espaces de travail</AppText>
           <AppText color="secondary" variant="subtitle">
@@ -240,20 +235,20 @@ export function CompanyWorkspaceSheet({
                 </View>
               );
             })}
-          </KeyboardAwareScrollView>
 
-          <View style={styles.createBlock}>
-            <AppText medium variant="body">Nouvelle entreprise</AppText>
-            <TextInput
-              onChangeText={setCreateName}
-              placeholder="Nom de l’entreprise"
-              placeholderTextColor={colors.textTertiary}
-              style={styles.input}
-              value={createName}
-            />
-            <Button loading={createCompany.isPending} onPress={() => void handleCreate()} title="Créer" />
-          </View>
-        </KeyboardAvoidingView>
+            <View style={styles.createBlock}>
+              <AppText medium variant="body">Nouvelle entreprise</AppText>
+              <TextInput
+                onChangeText={setCreateName}
+                placeholder="Nom de l’entreprise"
+                placeholderTextColor={colors.textTertiary}
+                style={styles.input}
+                value={createName}
+              />
+              <Button loading={createCompany.isPending} onPress={() => void handleCreate()} title="Créer" />
+            </View>
+          </KeyboardAwareScrollView>
+        </View>
       </View>
     </Modal>
   );

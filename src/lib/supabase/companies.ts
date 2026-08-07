@@ -3,7 +3,14 @@ import {
   demoProfile,
 } from '@/lib/screenshot-demo';
 import { isOfflineDemoData } from '@/lib/demo-data-mode';
-import { offlineUpdateCompanyProfile } from '@/lib/screenshot-demo/offline-store';
+import {
+  offlineCreateCompany,
+  offlineDeleteCompany,
+  offlineListCompanies,
+  offlineRenameCompany,
+  offlineUpdateCompanyAssetUrl,
+  offlineUpdateCompanyProfile,
+} from '@/lib/screenshot-demo/offline-store';
 import { supabase } from '@/lib/supabase';
 import { logSupabaseError } from '@/lib/supabase/errors';
 import type { CompanyProfileFormValues, UpdateCompanyProfileInput } from '@/types/company-profile';
@@ -105,7 +112,7 @@ export function mapCompanyToFormValues(
 export async function fetchUserCompanies(userId: string): Promise<TenantCompany[]> {
   if (isOfflineDemoData()) {
     void userId;
-    return [demoCompany];
+    return offlineListCompanies();
   }
 
   const { data: memberships, error: membersError } = await supabase
@@ -142,6 +149,10 @@ export async function fetchUserCompanies(userId: string): Promise<TenantCompany[
 }
 
 export async function fetchCompanyById(companyId: string): Promise<TenantCompany | null> {
+  if (isOfflineDemoData()) {
+    return offlineListCompanies().find((company) => company.id === companyId) ?? null;
+  }
+
   const { data, error } = await supabase
     .from('companies')
     .select(COMPANY_COLUMNS)
@@ -162,8 +173,7 @@ export async function fetchCompanyById(companyId: string): Promise<TenantCompany
 
 export async function createCompany(input: CreateCompanyInput): Promise<string> {
   if (isOfflineDemoData()) {
-    void input;
-    throw new Error('Création d’entreprise indisponible en démonstration.');
+    return offlineCreateCompany(input.name);
   }
 
   const trimmedName = input.name.trim();
@@ -189,8 +199,7 @@ export async function updateCompanyProfile(
   input: UpdateCompanyProfileInput,
 ): Promise<TenantCompany> {
   if (isOfflineDemoData()) {
-    void companyId;
-    return offlineUpdateCompanyProfile(input);
+    return offlineUpdateCompanyProfile(companyId, input);
   }
 
   const payload = {
@@ -232,12 +241,7 @@ export async function updateCompanyName(companyId: string, name: string): Promis
   }
 
   if (isOfflineDemoData()) {
-    void companyId;
-    demoCompany.name = trimmedName;
-    demoCompany.updatedAt = new Date().toISOString();
-    demoProfile.company_name = trimmedName;
-    demoProfile.updated_at = demoCompany.updatedAt;
-    return { ...demoCompany };
+    return offlineRenameCompany(companyId, trimmedName);
   }
 
   const { data, error } = await supabase
@@ -257,8 +261,8 @@ export async function updateCompanyName(companyId: string, name: string): Promis
 
 export async function deleteCompany(companyId: string): Promise<void> {
   if (isOfflineDemoData()) {
-    void companyId;
-    throw new Error('Vous devez conserver au moins une entreprise.');
+    offlineDeleteCompany(companyId);
+    return;
   }
 
   const { error } = await supabase.from('companies').delete().eq('id', companyId);
@@ -275,13 +279,7 @@ export async function updateCompanyAssetUrl(
   url: string | null,
 ): Promise<void> {
   if (isOfflineDemoData()) {
-    void companyId;
-    if (field === 'logo_url') {
-      demoCompany.logoUrl = url;
-    } else {
-      demoCompany.signatureUrl = url;
-    }
-    demoCompany.updatedAt = new Date().toISOString();
+    offlineUpdateCompanyAssetUrl(companyId, field, url);
     return;
   }
 

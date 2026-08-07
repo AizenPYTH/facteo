@@ -18,9 +18,8 @@ type StickyFooterProps = {
 };
 
 /**
- * Hauteur réservée pour le scroll (bouton + safe area bottom).
- * Le footer n’utilise plus KeyboardStickyView : il reste en bas de la
- * KeyboardAvoidingView parente (FormScreen / WizardScreen).
+ * Footer utilitaire (legacy). Les formulaires utilisent FormScreen avec
+ * CTA en bas du contenu scrollable (pas de footer flottant / sticky clavier).
  */
 export function useStickyFooterInset(variant: StickyFooterVariant = 'default'): number {
   const insets = useSafeAreaInsets();

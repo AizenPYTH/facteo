@@ -9,6 +9,7 @@ import { spacing } from '@/constants/theme/spacing';
 import { typography } from '@/constants/theme/typography';
 
 import { usePlanLimitGuard } from '@/hooks/use-plan-limit';
+import { useToast } from '@/providers/toast-provider';
 
 export type AddInvoiceFabProps = {
   onPress?: () => void;
@@ -26,6 +27,7 @@ export function AddInvoiceFab({
   const styles = useStyles();
   const colors = useColors();
   const { guardResource } = usePlanLimitGuard();
+  const { showError } = useToast();
 
   async function handlePress() {
     if (onPress) {
@@ -33,13 +35,21 @@ export function AddInvoiceFab({
       return;
     }
 
-    const allowed = await guardResource('documents');
+    try {
+      const allowed = await guardResource('documents');
 
-    if (!allowed) {
-      return;
+      if (!allowed) {
+        return;
+      }
+
+      router.push('/invoices/new' as Href);
+    } catch (error) {
+      const message =
+        error && typeof error === 'object' && 'message' in error
+          ? String((error as { message: string }).message)
+          : 'Impossible d’ouvrir la création de facture.';
+      showError(message);
     }
-
-    router.push('/invoices/new' as Href);
   }
 
   return (

@@ -37,6 +37,10 @@ function mapQuoteErrorMessage(message: string): string {
         return 'Numéro de devis déjà utilisé. Réessayez.';
       }
 
+      if (/[àâäéèêëïîôùûüç]/i.test(message) || message.includes('’') || message.includes("'")) {
+        return message;
+      }
+
       return GENERIC_ERROR_MESSAGE;
     }
   }

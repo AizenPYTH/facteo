@@ -2,7 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useEffect } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { View } from 'react-native';
-import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { z } from 'zod';
 
 import { SettingsScreenFrame } from '@/components/web/desktop/settings-screen-frame';
@@ -91,79 +91,82 @@ export default function NumberingSettingsScreen() {
 
   return (
     <SettingsScreenFrame scrollable={false} title="Numérotation">
-      <KeyboardAvoidingView behavior="padding" style={styles.flex}>
-        <View style={styles.content}>
-          <Controller
-            control={control}
-            name="quotePrefix"
-            render={({ field: { onChange, onBlur, value } }) => (
-              <TextField
-                autoCapitalize="characters"
-                error={errors.quotePrefix?.message}
-                label="Préfixe devis"
-                onBlur={onBlur}
-                onChangeText={onChange}
-                placeholder="DEV"
-                value={value}
-              />
-            )}
-          />
-          <Controller
-            control={control}
-            name="nextQuoteNumber"
-            render={({ field: { onChange, onBlur, value } }) => (
-              <TextField
-                error={errors.nextQuoteNumber?.message}
-                keyboardType="number-pad"
-                label="Prochain numéro devis"
-                onBlur={onBlur}
-                onChangeText={onChange}
-                placeholder="1"
-                value={value}
-              />
-            )}
-          />
-          <Controller
-            control={control}
-            name="invoicePrefix"
-            render={({ field: { onChange, onBlur, value } }) => (
-              <TextField
-                autoCapitalize="characters"
-                error={errors.invoicePrefix?.message}
-                label="Préfixe facture"
-                onBlur={onBlur}
-                onChangeText={onChange}
-                placeholder="FAC"
-                value={value}
-              />
-            )}
-          />
-          <Controller
-            control={control}
-            name="nextInvoiceNumber"
-            render={({ field: { onChange, onBlur, value } }) => (
-              <TextField
-                error={errors.nextInvoiceNumber?.message}
-                keyboardType="number-pad"
-                label="Prochain numéro facture"
-                onBlur={onBlur}
-                onChangeText={onChange}
-                placeholder="1"
-                value={value}
-              />
-            )}
-          />
-
-          <View style={styles.actions}>
-            <Button
-              disabled={!isDirty}
-              loading={isSubmitting || updateSettings.isPending}
-              onPress={handleSubmit(onSubmit)}
-              title="Enregistrer"
+      <KeyboardAwareScrollView
+        bottomOffset={spacing.lg}
+        contentContainerStyle={styles.content}
+        keyboardDismissMode="interactive"
+        keyboardShouldPersistTaps="handled"
+        style={styles.flex}>
+        <Controller
+          control={control}
+          name="quotePrefix"
+          render={({ field: { onChange, onBlur, value } }) => (
+            <TextField
+              autoCapitalize="characters"
+              error={errors.quotePrefix?.message}
+              label="Préfixe devis"
+              onBlur={onBlur}
+              onChangeText={onChange}
+              placeholder="DEV"
+              value={value}
             />
-          </View>
+          )}
+        />
+        <Controller
+          control={control}
+          name="nextQuoteNumber"
+          render={({ field: { onChange, onBlur, value } }) => (
+            <TextField
+              error={errors.nextQuoteNumber?.message}
+              keyboardType="number-pad"
+              label="Prochain numéro devis"
+              onBlur={onBlur}
+              onChangeText={onChange}
+              placeholder="1"
+              value={value}
+            />
+          )}
+        />
+        <Controller
+          control={control}
+          name="invoicePrefix"
+          render={({ field: { onChange, onBlur, value } }) => (
+            <TextField
+              autoCapitalize="characters"
+              error={errors.invoicePrefix?.message}
+              label="Préfixe facture"
+              onBlur={onBlur}
+              onChangeText={onChange}
+              placeholder="FAC"
+              value={value}
+            />
+          )}
+        />
+        <Controller
+          control={control}
+          name="nextInvoiceNumber"
+          render={({ field: { onChange, onBlur, value } }) => (
+            <TextField
+              error={errors.nextInvoiceNumber?.message}
+              keyboardType="number-pad"
+              label="Prochain numéro facture"
+              onBlur={onBlur}
+              onChangeText={onChange}
+              placeholder="1"
+              value={value}
+            />
+          )}
+        />
+
+        <View style={styles.actions}>
+          <Button
+            disabled={!isDirty}
+            loading={isSubmitting || updateSettings.isPending}
+            onPress={handleSubmit(onSubmit)}
+            title="Enregistrer"
+          />
         </View>
-      </KeyboardAvoidingView>
+      </KeyboardAwareScrollView>
     </SettingsScreenFrame>
   );
 }
