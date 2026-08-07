@@ -63,8 +63,8 @@ export function resolveEffectivePlanId(plan: SubscriptionPlanId | string): Effec
   if (plan === 'free' || plan === 'micro') return 'micro';
   if (plan === 'basique' || plan === 'starter') return 'basique';
   if (plan === 'standard') return 'standard';
-  if (plan === 'pro') return 'pro';
-  if (plan === 'max' || plan === 'premium' || plan === 'enterprise') return 'max';
+  if (plan === 'pro' || plan === 'premium' || plan === 'enterprise') return 'pro';
+  if (plan === 'max') return 'max';
   return 'micro';
 }
 

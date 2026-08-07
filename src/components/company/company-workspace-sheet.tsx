@@ -5,11 +5,14 @@ import {
   Alert,
   Modal,
   Pressable,
-  ScrollView,
   StyleSheet,
   TextInput,
   View,
 } from 'react-native';
+import {
+  KeyboardAvoidingView,
+  KeyboardAwareScrollView,
+} from 'react-native-keyboard-controller';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AppText } from '@/components/ui/app-text';
@@ -131,14 +134,20 @@ export function CompanyWorkspaceSheet({
     <Modal animationType="slide" onRequestClose={onClose} transparent visible={visible}>
       <View style={styles.overlay}>
         <Pressable accessibilityLabel="Fermer" onPress={onClose} style={StyleSheet.absoluteFill} />
-        <View style={[styles.sheet, { paddingBottom: Math.max(insets.bottom, spacing.lg) }]}>
+        <KeyboardAvoidingView
+          behavior="padding"
+          style={[styles.sheet, { paddingBottom: Math.max(insets.bottom, spacing.lg) }]}>
           <View style={styles.handle} />
           <AppText variant="title">Espaces de travail</AppText>
           <AppText color="secondary" variant="subtitle">
             Gérez vos entreprises et changez d’espace en un clic.
           </AppText>
 
-          <ScrollView contentContainerStyle={styles.list} showsVerticalScrollIndicator={false}>
+          <KeyboardAwareScrollView
+            bottomOffset={24}
+            contentContainerStyle={styles.list}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}>
             {companies.map((company) => {
               const isActive = company.id === activeCompany?.id;
               const isEditing = editingId === company.id;
@@ -231,7 +240,7 @@ export function CompanyWorkspaceSheet({
                 </View>
               );
             })}
-          </ScrollView>
+          </KeyboardAwareScrollView>
 
           <View style={styles.createBlock}>
             <AppText medium variant="body">Nouvelle entreprise</AppText>
@@ -244,7 +253,7 @@ export function CompanyWorkspaceSheet({
             />
             <Button loading={createCompany.isPending} onPress={() => void handleCreate()} title="Créer" />
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </View>
     </Modal>
   );

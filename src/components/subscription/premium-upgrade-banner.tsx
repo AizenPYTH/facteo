@@ -1,5 +1,5 @@
 import { SymbolView } from 'expo-symbols';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text } from 'react-native';
 
 import { usePremiumCheckout } from '@/hooks/use-premium-checkout';
 import { useColors, useThemedStyles } from '@/hooks/use-colors';
@@ -14,35 +14,26 @@ type PremiumUpgradeBannerProps = {
 };
 
 export function PremiumUpgradeBanner({
-  message = 'Disponible avec INVEQ Premium',
+  message = 'Disponible avec une offre supérieure',
   compact = false,
 }: PremiumUpgradeBannerProps) {
   const styles = useStyles(compact);
   const colors = useColors();
-  const { startCheckout, subscribe, isConfigured } = usePremiumCheckout();
-  const { showError, showSuccess } = useToast();
+  const { startCheckout, subscribe } = usePremiumCheckout();
+  const { showError } = useToast();
 
   async function handlePress() {
-    if (!isConfigured) {
-      showError('Stripe n’est pas encore configuré.');
-      return;
-    }
-
     try {
-      const completed = await startCheckout();
-
-      if (completed) {
-        showSuccess('INVEQ Premium est activé.');
-      }
+      await startCheckout();
     } catch (error) {
-      showError(readErrorMessage(error));
+      showError(error instanceof Error ? error.message : 'Impossible d’ouvrir le site.');
     }
   }
 
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`${message}. Débloquer Premium`}
+      accessibilityLabel={`${message}. Voir les offres`}
       disabled={subscribe.isPending}
       onPress={() => {
         void handlePress();
@@ -52,17 +43,9 @@ export function PremiumUpgradeBanner({
       <Text numberOfLines={2} style={styles.message}>
         {message}
       </Text>
-      <Text style={styles.cta}>{subscribe.isPending ? 'Ouverture…' : 'Débloquer'}</Text>
+      <Text style={styles.cta}>{subscribe.isPending ? 'Ouverture…' : 'Voir offres'}</Text>
     </Pressable>
   );
-}
-
-function readErrorMessage(error: unknown): string {
-  if (error instanceof Error) {
-    return error.message;
-  }
-
-  return 'Impossible d’ouvrir le paiement Stripe.';
 }
 
 function useStyles(compact: boolean) {

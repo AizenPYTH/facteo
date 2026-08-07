@@ -1,6 +1,5 @@
 import type { ReactNode } from 'react';
 import { Platform, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
-import { KeyboardStickyView } from 'react-native-keyboard-controller';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useColors, useThemedStyles } from '@/hooks/use-colors';
@@ -18,6 +17,11 @@ type StickyFooterProps = {
   variant?: StickyFooterVariant;
 };
 
+/**
+ * Hauteur réservée pour le scroll (bouton + safe area bottom).
+ * Le footer n’utilise plus KeyboardStickyView : il reste en bas de la
+ * KeyboardAvoidingView parente (FormScreen / WizardScreen).
+ */
 export function useStickyFooterInset(variant: StickyFooterVariant = 'default'): number {
   const insets = useSafeAreaInsets();
   const paddingBottom = Math.max(insets.bottom, Platform.OS === 'ios' ? spacing.sm : spacing.md);
@@ -40,20 +44,18 @@ export function StickyFooter({
   const isToolbar = variant === 'toolbar';
 
   return (
-    <KeyboardStickyView offset={{ closed: 0, opened: 0 }}>
-      <View
-        style={[
-          styles.footer,
-          {
-            paddingBottom,
-            borderTopColor: transparent || isToolbar ? 'transparent' : colors.separator,
-            backgroundColor: transparent || isToolbar ? 'transparent' : colors.surface,
-          },
-          style,
-        ]}>
-        {children}
-      </View>
-    </KeyboardStickyView>
+    <View
+      style={[
+        styles.footer,
+        {
+          paddingBottom,
+          borderTopColor: transparent || isToolbar ? 'transparent' : colors.separator,
+          backgroundColor: transparent || isToolbar ? 'transparent' : colors.surface,
+        },
+        style,
+      ]}>
+      {children}
+    </View>
   );
 }
 

@@ -1,6 +1,9 @@
 import type { ReactNode } from 'react';
 import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
-import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
+import {
+  KeyboardAvoidingView,
+  KeyboardAwareScrollView,
+} from 'react-native-keyboard-controller';
 import { SafeAreaView, type Edge } from 'react-native-safe-area-context';
 
 import { StickyFooter, useStickyFooterInset } from '@/components/ui/sticky-footer';
@@ -15,9 +18,16 @@ type FormScreenProps = {
   scrollable?: boolean;
   transparent?: boolean;
   contentContainerStyle?: StyleProp<ViewStyle>;
+  /** When true, keep vertical centering only when keyboard is closed (auth). */
+  centerContent?: boolean;
   testID?: string;
 };
 
+/**
+ * Formulaire global : le footer reste un sibling flex (pas de KeyboardStickyView).
+ * KeyboardAvoidingView réduit la colonne → le CTA reste juste au-dessus du clavier
+ * sans remonter dans les champs.
+ */
 export function FormScreen({
   children,
   header,
@@ -26,6 +36,7 @@ export function FormScreen({
   scrollable = true,
   transparent = false,
   contentContainerStyle,
+  centerContent = false,
   testID,
 }: FormScreenProps) {
   const styles = useStyles(transparent);
@@ -33,29 +44,32 @@ export function FormScreen({
 
   return (
     <View style={styles.root} testID={testID}>
-      <SafeAreaView edges={edges} style={styles.safeArea}>
-        {header ? <View style={styles.header}>{header}</View> : null}
+      <KeyboardAvoidingView behavior="padding" style={styles.flex}>
+        <SafeAreaView edges={edges} style={styles.safeArea}>
+          {header ? <View style={styles.header}>{header}</View> : null}
 
-        {scrollable ? (
-          <KeyboardAwareScrollView
-            bottomOffset={footer ? footerInset : spacing.md}
-            contentContainerStyle={[
-              styles.scrollContent,
-              footer ? { paddingBottom: footerInset + spacing.md } : null,
-              contentContainerStyle,
-            ]}
-            keyboardDismissMode="on-drag"
-            keyboardShouldPersistTaps="handled"
-            showsVerticalScrollIndicator={false}
-            style={styles.flex}>
-            {children}
-          </KeyboardAwareScrollView>
-        ) : (
-          <View style={styles.flex}>{children}</View>
-        )}
-      </SafeAreaView>
+          {scrollable ? (
+            <KeyboardAwareScrollView
+              bottomOffset={footer ? footerInset : spacing.md}
+              contentContainerStyle={[
+                styles.scrollContent,
+                centerContent ? styles.scrollContentCentered : null,
+                footer ? { paddingBottom: spacing.md } : null,
+                contentContainerStyle,
+              ]}
+              keyboardDismissMode="on-drag"
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
+              style={styles.flex}>
+              {children}
+            </KeyboardAwareScrollView>
+          ) : (
+            <View style={styles.flex}>{children}</View>
+          )}
+        </SafeAreaView>
 
-      {footer ? <StickyFooter transparent={transparent}>{footer}</StickyFooter> : null}
+        {footer ? <StickyFooter transparent={transparent}>{footer}</StickyFooter> : null}
+      </KeyboardAvoidingView>
     </View>
   );
 }
@@ -80,5 +94,9 @@ const useStyles = (transparent: boolean) =>
       paddingHorizontal: spacing.screenPaddingHorizontal,
       paddingBottom: spacing.lg,
       gap: spacing.lg,
+    },
+    scrollContentCentered: {
+      justifyContent: 'flex-start',
+      paddingTop: spacing['2xl'],
     },
   }));

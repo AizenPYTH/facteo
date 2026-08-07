@@ -1,14 +1,15 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useEffect } from 'react';
 import { Controller, useForm } from 'react-hook-form';
-import { KeyboardAvoidingView, Platform, StyleSheet, View } from 'react-native';
+import { View } from 'react-native';
+import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { z } from 'zod';
 
 import { SettingsScreenFrame } from '@/components/web/desktop/settings-screen-frame';
 import { Button } from '@/components/ui/button';
 import { LoadingView } from '@/components/ui/loading-view';
 import { TextField } from '@/components/ui/text-field';
-import { useColors, useThemedStyles } from '@/hooks/use-colors';
+import { useThemedStyles } from '@/hooks/use-colors';
 import { spacing } from '@/constants/theme/spacing';
 import { useSettings, useUpdateSettings } from '@/hooks/use-settings';
 import { useToast } from '@/providers/toast-provider';
@@ -33,7 +34,6 @@ type NumberingFormValues = z.infer<typeof numberingSchema>;
 
 export default function NumberingSettingsScreen() {
   const styles = useStyles();
-  const colors = useColors();
   const { data, isLoading } = useSettings();
   const updateSettings = useUpdateSettings();
   const { showError, showSuccess } = useToast();
@@ -91,9 +91,7 @@ export default function NumberingSettingsScreen() {
 
   return (
     <SettingsScreenFrame scrollable={false} title="Numérotation">
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.flex}>
+      <KeyboardAvoidingView behavior="padding" style={styles.flex}>
         <View style={styles.content}>
           <Controller
             control={control}

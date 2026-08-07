@@ -1,64 +1,78 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Link, router, type Href } from 'expo-router';
+import { Link, type Href } from 'expo-router';
 import { useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { Text } from 'react-native';
+import { z } from 'zod';
 
 import { AuthScreen } from '@/components/auth/auth-screen';
 import { AuthTextField } from '@/components/auth/auth-text-field';
 import { Button } from '@/components/ui/button';
-import { useAuth } from '@/hooks/use-auth';
 import { useAuthScreenStyles } from '@/hooks/use-auth-screen-styles';
 import { getAuthErrorMessage } from '@/lib/auth/errors';
-import { loginSchema, type LoginFormValues } from '@/lib/validations/login';
+import { MARKETING_SITE_URL } from '@/constants/marketing/site';
+import { supabase } from '@/lib/supabase';
 
-export default function LoginScreen() {
+const forgotSchema = z.object({
+  email: z.string().trim().email('Adresse e-mail invalide.'),
+});
+
+type ForgotFormValues = z.infer<typeof forgotSchema>;
+
+export default function ForgotPasswordScreen() {
   const authScreenStyles = useAuthScreenStyles();
-  const { signIn } = useAuth();
   const [formError, setFormError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   const {
     control,
     handleSubmit,
     formState: { errors, isSubmitting },
-  } = useForm<LoginFormValues>({
-    resolver: zodResolver(loginSchema),
-    defaultValues: { email: '', password: '' },
+  } = useForm<ForgotFormValues>({
+    resolver: zodResolver(forgotSchema),
+    defaultValues: { email: '' },
   });
 
-  async function onSubmit(values: LoginFormValues) {
+  async function onSubmit(values: ForgotFormValues) {
     setFormError(null);
-    const { error } = await signIn(values);
+    setSuccessMessage(null);
+
+    const { error } = await supabase.auth.resetPasswordForEmail(values.email.trim(), {
+      redirectTo: `${MARKETING_SITE_URL}/app/reset-password`,
+    });
 
     if (error) {
       setFormError(getAuthErrorMessage(error.message));
       return;
     }
 
-    router.replace('/');
+    setSuccessMessage(
+      'Si un compte existe pour cet e-mail, vous recevrez un lien de réinitialisation.',
+    );
   }
 
   return (
     <AuthScreen
       error={formError}
+      info={successMessage}
       footer={
         <Button
           elevated
           loading={isSubmitting}
           onPress={handleSubmit(onSubmit)}
-          title="Connexion"
+          title="Envoyer le lien"
         />
       }
       footerLink={
         <Text style={authScreenStyles.footerText}>
-          Pas encore de compte ?{' '}
-          <Link href={'/register' as Href}>
-            <Text style={authScreenStyles.footerLink}>Créer un compte</Text>
+          Retour à la{' '}
+          <Link href={'/login' as Href}>
+            <Text style={authScreenStyles.footerLink}>connexion</Text>
           </Link>
         </Text>
       }
-      subtitle="Gérez vos devis et factures simplement."
-      title="Connexion">
+      subtitle="Nous vous enverrons un lien pour choisir un nouveau mot de passe."
+      title="Mot de passe oublié">
       <Controller
         control={control}
         name="email"
@@ -72,36 +86,12 @@ export default function LoginScreen() {
             onBlur={onBlur}
             onChangeText={onChange}
             placeholder="vous@entreprise.fr"
-            returnKeyType="next"
+            returnKeyType="done"
             textContentType="emailAddress"
             value={value}
           />
         )}
       />
-      <Controller
-        control={control}
-        name="password"
-        render={({ field: { onChange, onBlur, value } }) => (
-          <AuthTextField
-            autoComplete="password"
-            error={errors.password?.message}
-            icon="lock.fill"
-            isPassword
-            label="Mot de passe"
-            onBlur={onBlur}
-            onChangeText={onChange}
-            placeholder="Votre mot de passe"
-            returnKeyType="done"
-            textContentType="password"
-            value={value}
-          />
-        )}
-      />
-      <Text style={authScreenStyles.footerText}>
-        <Link href={'/forgot-password' as Href}>
-          <Text style={authScreenStyles.footerLink}>Mot de passe oublié ?</Text>
-        </Link>
-      </Text>
     </AuthScreen>
   );
 }

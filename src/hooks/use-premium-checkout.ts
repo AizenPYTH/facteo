@@ -1,50 +1,28 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useState } from 'react';
 
-import { useAuth } from '@/hooks/use-auth';
-import {
-  isSubscriptionCheckoutCanceledError,
-  isSubscriptionCheckoutConfigured,
-  startPremiumCheckoutFlow,
-} from '@/lib/stripe/subscription-checkout';
-import { subscriptionQueryKeys } from '@/lib/supabase/query-keys';
+import { openManageSubscriptionOnWeb } from '@/lib/subscription/open-manage-subscription';
 
+/**
+ * Sur iOS, pas de Stripe Checkout in-app (guideline App Store).
+ * Les CTAs ouvrent la page tarifs web.
+ */
 export function usePremiumCheckout() {
-  const { user } = useAuth();
-  const queryClient = useQueryClient();
-
-  const subscribe = useMutation({
-    mutationFn: () => startPremiumCheckoutFlow('premium'),
-    onSuccess: async () => {
-      if (!user?.id) {
-        return;
-      }
-
-      await queryClient.invalidateQueries({
-        queryKey: subscriptionQueryKeys.snapshot(user.id),
-      });
-      await queryClient.invalidateQueries({
-        queryKey: subscriptionQueryKeys.plans(),
-      });
-    },
-  });
+  const [isPending, setIsPending] = useState(false);
 
   async function startCheckout(): Promise<boolean> {
+    setIsPending(true);
     try {
-      await subscribe.mutateAsync();
+      await openManageSubscriptionOnWeb();
       return true;
-    } catch (error) {
-      if (isSubscriptionCheckoutCanceledError(error)) {
-        return false;
-      }
-
-      throw error;
+    } finally {
+      setIsPending(false);
     }
   }
 
   return {
-    isConfigured: isSubscriptionCheckoutConfigured(),
-    subscribe,
+    isConfigured: true,
     startCheckout,
-    isSubscriptionCheckoutCanceledError,
+    subscribe: { isPending, mutateAsync: startCheckout },
+    isSubscriptionCheckoutCanceledError: () => false,
   };
 }

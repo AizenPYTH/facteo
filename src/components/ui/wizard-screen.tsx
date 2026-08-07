@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
+import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { StickyFooter } from '@/components/ui/sticky-footer';
@@ -37,12 +38,14 @@ export function WizardScreen({
 
   return (
     <View style={styles.root} testID={testID}>
-      <SafeAreaView edges={['top']} style={styles.safeArea}>
-        {header ? <View style={styles.header}>{header}</View> : null}
-        {toolbar ? <View style={styles.toolbar}>{toolbar}</View> : null}
-        <View style={styles.body}>{children}</View>
-      </SafeAreaView>
-      {footer ? <StickyFooter variant="toolbar">{footer}</StickyFooter> : null}
+      <KeyboardAvoidingView behavior="padding" style={styles.flex}>
+        <SafeAreaView edges={['top']} style={styles.safeArea}>
+          {header ? <View style={styles.header}>{header}</View> : null}
+          {toolbar ? <View style={styles.toolbar}>{toolbar}</View> : null}
+          <View style={styles.body}>{children}</View>
+        </SafeAreaView>
+        {footer ? <StickyFooter variant="toolbar">{footer}</StickyFooter> : null}
+      </KeyboardAvoidingView>
     </View>
   );
 }
@@ -52,6 +55,9 @@ const useStyles = () =>
     root: {
       flex: 1,
       backgroundColor: colors.backgroundGrouped,
+    },
+    flex: {
+      flex: 1,
     },
     safeArea: {
       flex: 1,
@@ -82,7 +88,7 @@ const useStyles = () =>
       borderTopWidth: StyleSheet.hairlineWidth,
       borderTopColor: colors.border,
       backgroundColor: colors.surface,
-      paddingHorizontal: spacing.xl,
-      paddingVertical: spacing.md,
+      paddingHorizontal: spacing.screenPaddingHorizontal,
+      paddingVertical: spacing.sm,
     },
   }));
