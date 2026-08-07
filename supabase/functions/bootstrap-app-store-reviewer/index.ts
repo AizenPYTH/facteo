@@ -57,8 +57,8 @@ Deno.serve(async (request) => {
         password: REVIEW_PASSWORD,
         email_confirm: true,
         user_metadata: {
-          first_name: 'Apple',
-          last_name: 'Review',
+          first_name: 'Thomas',
+          last_name: 'Martin',
           company_name: 'Atelier Martin',
         },
       });
@@ -71,8 +71,8 @@ Deno.serve(async (request) => {
         password: REVIEW_PASSWORD,
         email_confirm: true,
         user_metadata: {
-          first_name: 'Apple',
-          last_name: 'Review',
+          first_name: 'Thomas',
+          last_name: 'Martin',
           company_name: 'Atelier Martin',
         },
       });
@@ -85,8 +85,8 @@ Deno.serve(async (request) => {
     await admin.from('profiles').upsert(
       {
         id: user.id,
-        first_name: 'Apple',
-        last_name: 'Review',
+        first_name: 'Thomas',
+        last_name: 'Martin',
         company_name: 'Atelier Martin',
         email: REVIEW_EMAIL,
         onboarding_completed: true,

@@ -54,7 +54,7 @@ const SETTINGS_NAV_GROUPS: SettingsNavGroup[] = [
     title: 'Paiements',
     items: [
       { href: '/settings/premium', label: 'Abonnement', description: 'Micro à Pro' },
-      { href: '/settings/premium', label: 'Stripe', description: 'Paiements en ligne' },
+      { href: '/settings/premium', label: 'Abonnement', description: 'Plans et facturation' },
     ],
   },
   {

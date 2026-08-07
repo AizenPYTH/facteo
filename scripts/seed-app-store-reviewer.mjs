@@ -49,8 +49,8 @@ async function ensureUser() {
       password: REVIEW_PASSWORD,
       email_confirm: true,
       user_metadata: {
-        first_name: 'Apple',
-        last_name: 'Review',
+        first_name: 'Thomas',
+        last_name: 'Martin',
         company_name: 'Atelier Martin',
       },
     });
@@ -64,8 +64,8 @@ async function ensureUser() {
     password: REVIEW_PASSWORD,
     email_confirm: true,
     user_metadata: {
-      first_name: 'Apple',
-      last_name: 'Review',
+      first_name: 'Thomas',
+      last_name: 'Martin',
       company_name: 'Atelier Martin',
     },
   });
@@ -150,8 +150,8 @@ async function seedDemoData(userId, companyId) {
     .from('profiles')
     .upsert({
       id: userId,
-      first_name: 'Apple',
-      last_name: 'Review',
+      first_name: 'Thomas',
+      last_name: 'Martin',
       company_name: 'Atelier Martin',
       email: REVIEW_EMAIL,
       onboarding_completed: true,
@@ -177,9 +177,9 @@ async function seedDemoData(userId, companyId) {
       {
         user_id: userId,
         company_id: companyId,
-        name: 'Dupont Sophie',
+        name: 'Dupont, Sophie',
         company: 'Dupont Design',
-        email: 'sophie.dupont@exemple.fr',
+        email: 'sophie.dupont@dupont-design.fr',
         phone: '0612345678',
         address: '8 avenue Victor Hugo',
         postal_code: '75016',
@@ -189,9 +189,9 @@ async function seedDemoData(userId, companyId) {
       {
         user_id: userId,
         company_id: companyId,
-        name: 'Bernard Lucas',
+        name: 'Bernard, Lucas',
         company: 'LB Rénovation',
-        email: 'lucas.bernard@exemple.fr',
+        email: 'lucas.bernard@lb-renovation.fr',
         phone: '0678912345',
         address: '22 quai Saint-Antoine',
         postal_code: '69002',
@@ -201,9 +201,9 @@ async function seedDemoData(userId, companyId) {
       {
         user_id: userId,
         company_id: companyId,
-        name: 'Moreau Claire',
+        name: 'Moreau, Claire',
         company: 'Studio Moreau',
-        email: 'claire.moreau@exemple.fr',
+        email: 'claire.moreau@studio-moreau.fr',
         phone: '0699887766',
         address: '3 place Bellecour',
         postal_code: '69002',

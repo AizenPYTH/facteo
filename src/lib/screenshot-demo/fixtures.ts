@@ -6,7 +6,7 @@ import type {
   Invoice as DashboardInvoice,
 } from '@/types/dashboard';
 import type { Invoice, InvoiceDetail } from '@/types/invoice';
-import type { Quote } from '@/types/quote';
+import type { Quote, QuoteDetail } from '@/types/quote';
 import type { Settings } from '@/types/settings';
 import type {
   SubscriptionPlan,
@@ -37,7 +37,7 @@ const NOW = '2026-08-01T10:00:00.000Z';
 export const demoCompany: TenantCompany = {
   id: DEMO_COMPANY_ID,
   name: 'Atelier Martin',
-  email: 'review@inveq.fr',
+  email: 'contact@atelier-martin.fr',
   phone: '0472123456',
   address: '12 rue de la République',
   postalCode: '69002',
@@ -57,10 +57,10 @@ export const demoCompany: TenantCompany = {
 
 export const demoProfile: Profile = {
   id: DEMO_USER_ID,
-  first_name: 'Apple',
-  last_name: 'Review',
+  first_name: 'Thomas',
+  last_name: 'Martin',
   company_name: 'Atelier Martin',
-  email: 'review@inveq.fr',
+  email: 'thomas.martin@atelier-martin.fr',
   phone: '0472123456',
   address: '12 rue de la République',
   postal_code: '69002',
@@ -87,7 +87,7 @@ export const demoClients: Client[] = [
     lastName: 'Dupont',
     firstName: 'Sophie',
     company: 'Dupont Design',
-    email: 'sophie.dupont@exemple.fr',
+    email: 'sophie.dupont@dupont-design.fr',
     phone: '0612345678',
     address: '8 avenue Victor Hugo',
     postalCode: '75016',
@@ -105,7 +105,7 @@ export const demoClients: Client[] = [
     lastName: 'Bernard',
     firstName: 'Lucas',
     company: 'LB Rénovation',
-    email: 'lucas.bernard@exemple.fr',
+    email: 'lucas.bernard@lb-renovation.fr',
     phone: '0678912345',
     address: '22 quai Saint-Antoine',
     postalCode: '69002',
@@ -123,7 +123,7 @@ export const demoClients: Client[] = [
     lastName: 'Moreau',
     firstName: 'Claire',
     company: 'Studio Moreau',
-    email: 'claire.moreau@exemple.fr',
+    email: 'claire.moreau@studio-moreau.fr',
     phone: '0699887766',
     address: '3 place Bellecour',
     postalCode: '69002',
@@ -143,7 +143,7 @@ export const demoQuotes: Quote[] = [
     id: DEMO_QUOTE_ID,
     clientId: DEMO_CLIENT_IDS.dupont,
     clientName: 'Dupont Design',
-    clientEmail: 'sophie.dupont@exemple.fr',
+    clientEmail: 'sophie.dupont@dupont-design.fr',
     convertedInvoiceId: null,
     number: 'D-2026-001',
     status: 'sent',
@@ -160,12 +160,40 @@ export const demoQuotes: Quote[] = [
   },
 ];
 
+export const demoQuoteDetails: Record<string, QuoteDetail> = {
+  [DEMO_QUOTE_ID]: {
+    ...demoQuotes[0],
+    lines: [
+      {
+        id: 'quote-line-1',
+        productId: null,
+        description: 'Conception logo & charte',
+        quantity: '1',
+        unit: 'forfait',
+        unitPrice: '850',
+        vatRate: '20',
+        discountPercent: '0',
+      },
+      {
+        id: 'quote-line-2',
+        productId: null,
+        description: 'Déclinaisons print',
+        quantity: '3',
+        unit: 'unité',
+        unitPrice: '120',
+        vatRate: '20',
+        discountPercent: '0',
+      },
+    ],
+  },
+};
+
 export const demoInvoices: Invoice[] = [
   {
     id: DEMO_INVOICE_IDS.paid,
     clientId: DEMO_CLIENT_IDS.bernard,
     clientName: 'LB Rénovation',
-    clientEmail: 'lucas.bernard@exemple.fr',
+    clientEmail: 'lucas.bernard@lb-renovation.fr',
     quoteId: null,
     number: 'F-2026-001',
     status: 'paid',
@@ -186,7 +214,7 @@ export const demoInvoices: Invoice[] = [
     id: DEMO_INVOICE_IDS.sent,
     clientId: DEMO_CLIENT_IDS.moreau,
     clientName: 'Studio Moreau',
-    clientEmail: 'claire.moreau@exemple.fr',
+    clientEmail: 'claire.moreau@studio-moreau.fr',
     quoteId: null,
     number: 'F-2026-002',
     status: 'sent',
@@ -207,7 +235,7 @@ export const demoInvoices: Invoice[] = [
     id: DEMO_INVOICE_IDS.draft,
     clientId: DEMO_CLIENT_IDS.dupont,
     clientName: 'Dupont Design',
-    clientEmail: 'sophie.dupont@exemple.fr',
+    clientEmail: 'sophie.dupont@dupont-design.fr',
     quoteId: null,
     number: 'F-2026-003',
     status: 'draft',
@@ -494,8 +522,8 @@ export function createDemoAuthUser(email: string, userId: string = DEMO_USER_ID)
     id: userId,
     app_metadata: { provider: 'email', providers: ['email'] },
     user_metadata: {
-      first_name: 'Apple',
-      last_name: 'Review',
+      first_name: 'Thomas',
+      last_name: 'Martin',
       company_name: 'Atelier Martin',
     },
     aud: 'authenticated',

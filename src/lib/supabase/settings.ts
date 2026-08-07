@@ -2,6 +2,12 @@ import { DEFAULT_PDF_TEMPLATE_ID } from '@/lib/pdf/engine/templates';
 import {
   demoSettings,
 } from '@/lib/screenshot-demo';
+import {
+  offlineReserveInvoiceNumber,
+  offlineReserveQuoteNumber,
+  offlineUpdateDocumentTemplates,
+  offlineUpdateSettings,
+} from '@/lib/screenshot-demo/offline-store';
 import { isOfflineDemoData } from '@/lib/demo-data-mode';
 import { supabase } from '@/lib/supabase';
 import { logSupabaseError } from '@/lib/supabase/errors';
@@ -60,6 +66,11 @@ export async function fetchSettings(scope: DataScope): Promise<Settings | null> 
 }
 
 export async function reserveNextQuoteNumber(companyId: string): Promise<string> {
+  if (isOfflineDemoData()) {
+    void companyId;
+    return offlineReserveQuoteNumber();
+  }
+
   const { data, error } = await supabase.rpc('reserve_next_quote_number', {
     p_company_id: companyId,
   });
@@ -73,6 +84,11 @@ export async function reserveNextQuoteNumber(companyId: string): Promise<string>
 }
 
 export async function reserveNextInvoiceNumber(companyId: string): Promise<string> {
+  if (isOfflineDemoData()) {
+    void companyId;
+    return offlineReserveInvoiceNumber();
+  }
+
   const { data, error } = await supabase.rpc('reserve_next_invoice_number', {
     p_company_id: companyId,
   });
@@ -141,6 +157,11 @@ export async function updateSettings(
   scope: DataScope,
   values: SettingsFormValues,
 ): Promise<Settings> {
+  if (isOfflineDemoData()) {
+    void scope;
+    return offlineUpdateSettings(values);
+  }
+
   const payload = mapFormValuesToUpdate(values);
 
   const { data, error } = await supabase
@@ -162,6 +183,11 @@ export async function updateDocumentTemplates(
   scope: DataScope,
   templates: { quoteTemplateId: string; invoiceTemplateId: string },
 ): Promise<Settings> {
+  if (isOfflineDemoData()) {
+    void scope;
+    return offlineUpdateDocumentTemplates(templates);
+  }
+
   const { data, error } = await supabase
     .from('settings')
     .update({

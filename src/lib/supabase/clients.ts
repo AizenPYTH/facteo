@@ -2,6 +2,11 @@ import { mapFormValuesToClientInsert, mapFormValuesToClientUpdate } from '@/lib/
 import {
   demoClients,
 } from '@/lib/screenshot-demo';
+import {
+  offlineCreateClient,
+  offlineDeleteClient,
+  offlineUpdateClient,
+} from '@/lib/screenshot-demo/offline-store';
 import { isOfflineDemoData } from '@/lib/demo-data-mode';
 import { supabase } from '@/lib/supabase';
 import { logSupabaseError } from '@/lib/supabase/errors';
@@ -115,6 +120,11 @@ export async function fetchClientById(scope: DataScope, clientId: string): Promi
 }
 
 export async function createClient(scope: DataScope, input: ClientFormValues): Promise<Client> {
+  if (isOfflineDemoData()) {
+    void scope;
+    return offlineCreateClient(input);
+  }
+
   const { data, error } = await supabase
     .from('clients')
     .insert(mapFormValuesToClientInsert(scope, input))
@@ -134,6 +144,11 @@ export async function updateClient(
   clientId: string,
   input: ClientFormValues,
 ): Promise<Client> {
+  if (isOfflineDemoData()) {
+    void scope;
+    return offlineUpdateClient(clientId, input);
+  }
+
   const { data, error } = await supabase
     .from('clients')
     .update(mapFormValuesToClientUpdate(input))
@@ -151,6 +166,12 @@ export async function updateClient(
 }
 
 export async function deleteClient(scope: DataScope, clientId: string): Promise<void> {
+  if (isOfflineDemoData()) {
+    void scope;
+    offlineDeleteClient(clientId);
+    return;
+  }
+
   const { error } = await supabase
     .from('clients')
     .update({ deleted_at: new Date().toISOString() })

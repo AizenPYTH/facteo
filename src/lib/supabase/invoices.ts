@@ -8,6 +8,12 @@ import {
   demoInvoiceDetails,
   demoInvoices,
 } from '@/lib/screenshot-demo';
+import {
+  offlineAddInvoicePayment,
+  offlineCreateInvoice,
+  offlineUpdateInvoice,
+  offlineUpdateInvoiceStatus,
+} from '@/lib/screenshot-demo/offline-store';
 import { isOfflineDemoData } from '@/lib/demo-data-mode';
 import { supabase } from '@/lib/supabase';
 import { logSupabaseError } from '@/lib/supabase/errors';
@@ -299,6 +305,13 @@ export async function fetchInvoiceById(
 }
 
 export async function createInvoice(scope: DataScope, input: CreateInvoiceInput): Promise<Invoice> {
+  if (isOfflineDemoData()) {
+    const settings = await fetchSettings(scope);
+    const defaultDueAt =
+      input.dueAt ?? computeDueDate(input.paymentTermsDays ?? settings?.paymentTermsDays ?? 30);
+    return offlineCreateInvoice(input, defaultDueAt);
+  }
+
   if (!input.clientId) {
     throw new Error('Client is required.');
   }
@@ -356,6 +369,11 @@ export async function updateInvoice(
   invoiceId: string,
   input: UpdateInvoiceInput,
 ): Promise<InvoiceDetail> {
+  if (isOfflineDemoData()) {
+    void scope;
+    return offlineUpdateInvoice(invoiceId, input);
+  }
+
   const existing = await fetchInvoiceById(scope, invoiceId);
 
   if (!existing) {
@@ -430,6 +448,11 @@ export async function updateInvoiceStatus(
   invoiceId: string,
   status: InvoiceStatus,
 ): Promise<Invoice> {
+  if (isOfflineDemoData()) {
+    void scope;
+    return offlineUpdateInvoiceStatus(invoiceId, status);
+  }
+
   const now = new Date().toISOString();
   const payload: Partial<InvoiceInsert> = { status, updated_at: now };
 
@@ -522,6 +545,11 @@ export async function addInvoicePayment(
   invoiceId: string,
   input: AddPaymentInput,
 ): Promise<InvoicePayment> {
+  if (isOfflineDemoData()) {
+    void scope;
+    return offlineAddInvoicePayment(invoiceId, input);
+  }
+
   const invoice = await fetchInvoiceById(scope, invoiceId);
 
   if (!invoice) {

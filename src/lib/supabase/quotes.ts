@@ -5,6 +5,13 @@ import {
 import {
   demoQuotes,
 } from '@/lib/screenshot-demo';
+import {
+  offlineCreateQuote,
+  offlineDeleteQuote,
+  offlineGetQuoteDetail,
+  offlineUpdateQuote,
+  offlineUpdateQuoteStatus,
+} from '@/lib/screenshot-demo/offline-store';
 import { isOfflineDemoData } from '@/lib/demo-data-mode';
 import { supabase } from '@/lib/supabase';
 import { logSupabaseError } from '@/lib/supabase/errors';
@@ -157,35 +164,7 @@ export async function fetchQuoteById(
 ): Promise<QuoteDetail | null> {
   if (isOfflineDemoData()) {
     void scope;
-    const quote = demoQuotes.find((row) => row.id === quoteId);
-    if (!quote) {
-      return null;
-    }
-    return {
-      ...quote,
-      lines: [
-        {
-          id: 'quote-line-1',
-          productId: null,
-          description: 'Conception logo & charte',
-          quantity: '1',
-          unit: 'forfait',
-          unitPrice: '850',
-          vatRate: '20',
-          discountPercent: '0',
-        },
-        {
-          id: 'quote-line-2',
-          productId: null,
-          description: 'Déclinaisons print',
-          quantity: '3',
-          unit: 'unité',
-          unitPrice: '120',
-          vatRate: '20',
-          discountPercent: '0',
-        },
-      ],
-    };
+    return offlineGetQuoteDetail(quoteId);
   }
 
   const { data: quoteRow, error: quoteError } = await supabase
@@ -220,6 +199,11 @@ export async function fetchQuoteById(
 }
 
 export async function createQuote(scope: DataScope, input: CreateQuoteInput): Promise<Quote> {
+  if (isOfflineDemoData()) {
+    void scope;
+    return offlineCreateQuote(input);
+  }
+
   if (!input.clientId) {
     throw new Error('Client is required.');
   }
@@ -278,6 +262,11 @@ export async function updateQuote(
   quoteId: string,
   input: UpdateQuoteInput,
 ): Promise<Quote> {
+  if (isOfflineDemoData()) {
+    void scope;
+    return offlineUpdateQuote(quoteId, input);
+  }
+
   if (!input.clientId || input.lines.length === 0) {
     throw new Error('Quote must have at least one line.');
   }
@@ -328,6 +317,11 @@ export async function updateQuoteStatus(
   quoteId: string,
   status: QuoteStatus,
 ): Promise<Quote> {
+  if (isOfflineDemoData()) {
+    void scope;
+    return offlineUpdateQuoteStatus(quoteId, status);
+  }
+
   const { data, error } = await supabase
     .from('quotes')
     .update({ status, updated_at: new Date().toISOString() })
@@ -361,6 +355,12 @@ export async function updateQuoteStatus(
 }
 
 export async function deleteQuote(scope: DataScope, quoteId: string): Promise<void> {
+  if (isOfflineDemoData()) {
+    void scope;
+    offlineDeleteQuote(quoteId);
+    return;
+  }
+
   const { error: itemsError } = await supabase
     .from('quote_items')
     .delete()

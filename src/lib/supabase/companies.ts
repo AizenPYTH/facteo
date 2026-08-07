@@ -1,7 +1,9 @@
 import {
   demoCompany,
+  demoProfile,
 } from '@/lib/screenshot-demo';
 import { isOfflineDemoData } from '@/lib/demo-data-mode';
+import { offlineUpdateCompanyProfile } from '@/lib/screenshot-demo/offline-store';
 import { supabase } from '@/lib/supabase';
 import { logSupabaseError } from '@/lib/supabase/errors';
 import type { CompanyProfileFormValues, UpdateCompanyProfileInput } from '@/types/company-profile';
@@ -159,6 +161,11 @@ export async function fetchCompanyById(companyId: string): Promise<TenantCompany
 }
 
 export async function createCompany(input: CreateCompanyInput): Promise<string> {
+  if (isOfflineDemoData()) {
+    void input;
+    throw new Error('Création d’entreprise indisponible en démonstration.');
+  }
+
   const trimmedName = input.name.trim();
 
   if (!trimmedName) {
@@ -181,6 +188,11 @@ export async function updateCompanyProfile(
   companyId: string,
   input: UpdateCompanyProfileInput,
 ): Promise<TenantCompany> {
+  if (isOfflineDemoData()) {
+    void companyId;
+    return offlineUpdateCompanyProfile(input);
+  }
+
   const payload = {
     name: input.companyName.trim(),
     email: input.email.trim(),
@@ -219,6 +231,15 @@ export async function updateCompanyName(companyId: string, name: string): Promis
     throw new Error('Le nom de l’entreprise est obligatoire.');
   }
 
+  if (isOfflineDemoData()) {
+    void companyId;
+    demoCompany.name = trimmedName;
+    demoCompany.updatedAt = new Date().toISOString();
+    demoProfile.company_name = trimmedName;
+    demoProfile.updated_at = demoCompany.updatedAt;
+    return { ...demoCompany };
+  }
+
   const { data, error } = await supabase
     .from('companies')
     .update({ name: trimmedName, updated_at: new Date().toISOString() })
@@ -235,6 +256,11 @@ export async function updateCompanyName(companyId: string, name: string): Promis
 }
 
 export async function deleteCompany(companyId: string): Promise<void> {
+  if (isOfflineDemoData()) {
+    void companyId;
+    throw new Error('Vous devez conserver au moins une entreprise.');
+  }
+
   const { error } = await supabase.from('companies').delete().eq('id', companyId);
 
   if (error) {
@@ -248,6 +274,17 @@ export async function updateCompanyAssetUrl(
   field: 'logo_url' | 'signature_url',
   url: string | null,
 ): Promise<void> {
+  if (isOfflineDemoData()) {
+    void companyId;
+    if (field === 'logo_url') {
+      demoCompany.logoUrl = url;
+    } else {
+      demoCompany.signatureUrl = url;
+    }
+    demoCompany.updatedAt = new Date().toISOString();
+    return;
+  }
+
   const payload =
     field === 'logo_url'
       ? { logo_url: url, updated_at: new Date().toISOString() }
