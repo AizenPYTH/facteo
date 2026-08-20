@@ -42,6 +42,12 @@ export async function openHelpPage(path: HelpPagePath): Promise<void> {
 }
 
 export async function openMarketingSite(): Promise<void> {
+  // Guideline 3.1.1 : éviter d’ouvrir le site marketing depuis iOS (page tarifs accessible).
+  if (Platform.OS === 'ios') {
+    await openExternalUrl(MARKETING_HELP_URLS.support);
+    return;
+  }
+
   await openExternalUrl(MARKETING_SITE_URL);
 }
 

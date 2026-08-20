@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { useLocalSearchParams } from 'expo-router';
+import { Platform } from 'react-native';
 
 import {
   confirmSubscriptionCheckout,
@@ -20,6 +21,11 @@ export function usePremiumCheckoutReturn() {
   const sessionId = readParam(params.session_id);
 
   useEffect(() => {
+    // Guideline 3.1.1 : pas de confirmation Stripe abonnement sur iOS.
+    if (Platform.OS === 'ios') {
+      return;
+    }
+
     if (subscription === 'canceled') {
       showError('Paiement annulé.');
       return;

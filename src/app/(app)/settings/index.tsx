@@ -177,11 +177,15 @@ export default function SettingsScreen() {
               label="Contact"
               onPress={() => void openHelpPage('contact')}
             />
-            <View style={styles.separator} />
-            <SettingsRow
-              label="Site web INVEQ"
-              onPress={() => void openMarketingSite()}
-            />
+            {Platform.OS === 'ios' ? null : (
+              <>
+                <View style={styles.separator} />
+                <SettingsRow
+                  label="Site web INVEQ"
+                  onPress={() => void openMarketingSite()}
+                />
+              </>
+            )}
           </SettingsSection>
 
           <SettingsSection title="Confidentialité & conditions">

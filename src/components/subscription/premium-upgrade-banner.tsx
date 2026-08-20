@@ -1,12 +1,11 @@
+import { router, type Href } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
-import { Pressable, StyleSheet, Text } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { usePremiumCheckout } from '@/hooks/use-premium-checkout';
 import { useColors, useThemedStyles } from '@/hooks/use-colors';
 import { radius } from '@/constants/theme/radius';
 import { spacing } from '@/constants/theme/spacing';
 import { typography } from '@/constants/theme/typography';
-import { useToast } from '@/providers/toast-provider';
 
 type PremiumUpgradeBannerProps = {
   message?: string;
@@ -14,36 +13,23 @@ type PremiumUpgradeBannerProps = {
 };
 
 export function PremiumUpgradeBanner({
-  message = 'Disponible avec une offre supérieure',
+  message = 'Disponible avec INVEQ Premium',
   compact = false,
 }: PremiumUpgradeBannerProps) {
   const styles = useStyles(compact);
   const colors = useColors();
-  const { startCheckout, subscribe } = usePremiumCheckout();
-  const { showError } = useToast();
-
-  async function handlePress() {
-    try {
-      await startCheckout();
-    } catch (error) {
-      showError(error instanceof Error ? error.message : 'Impossible d’ouvrir le site.');
-    }
-  }
 
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`${message}. Voir les offres`}
-      disabled={subscribe.isPending}
-      onPress={() => {
-        void handlePress();
-      }}
+      accessibilityLabel={`${message}. Ouvrir Premium`}
+      onPress={() => router.push('/settings/premium' as Href)}
       style={({ pressed }) => [styles.banner, pressed && styles.pressed]}>
       <SymbolView name="lock.fill" size={compact ? 12 : 14} tintColor={colors.primary} />
       <Text numberOfLines={2} style={styles.message}>
         {message}
       </Text>
-      <Text style={styles.cta}>{subscribe.isPending ? 'Ouverture…' : 'Voir offres'}</Text>
+      <Text style={styles.cta}>Premium</Text>
     </Pressable>
   );
 }

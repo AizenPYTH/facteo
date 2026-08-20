@@ -1,12 +1,11 @@
+import { router, type Href } from 'expo-router';
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Button } from '@/components/ui/button';
-import { usePremiumCheckout } from '@/hooks/use-premium-checkout';
 import { useThemedStyles } from '@/hooks/use-colors';
 import { radius } from '@/constants/theme/radius';
 import { spacing } from '@/constants/theme/spacing';
 import { typography } from '@/constants/theme/typography';
-import { useToast } from '@/providers/toast-provider';
 
 export type PlanLimitModalProps = {
   visible: boolean;
@@ -15,17 +14,10 @@ export type PlanLimitModalProps = {
 
 export function PlanLimitModal({ visible, onClose }: PlanLimitModalProps) {
   const styles = useStyles();
-  const { startCheckout, subscribe } = usePremiumCheckout();
-  const { showError, showSuccess } = useToast();
 
-  async function handleUpgrade() {
-    try {
-      onClose();
-      await startCheckout();
-      showSuccess('Consultez les offres sur inveq.fr');
-    } catch (error) {
-      showError(error instanceof Error ? error.message : 'Impossible d’ouvrir le site.');
-    }
+  function handleSeeOffers() {
+    onClose();
+    router.push('/settings/premium' as Href);
   }
 
   return (
@@ -34,18 +26,12 @@ export function PlanLimitModal({ visible, onClose }: PlanLimitModalProps) {
         <Pressable onPress={(event) => event.stopPropagation()} style={styles.dialog}>
           <Text style={styles.title}>Limite atteinte</Text>
           <Text style={styles.description}>
-            Vous avez atteint la limite de votre offre actuelle. Consultez Basique, Standard ou Pro
-            sur inveq.fr pour continuer.
+            Vous avez atteint la limite de votre offre actuelle. Passez à Premium dans l’application
+            pour continuer.
           </Text>
 
           <View style={styles.actions}>
-            <Button
-              loading={subscribe.isPending}
-              onPress={() => {
-                void handleUpgrade();
-              }}
-              title="Voir les offres sur le web"
-            />
+            <Button onPress={handleSeeOffers} title="Voir Premium" />
             <Button onPress={onClose} title="Fermer" variant="ghost" />
           </View>
         </Pressable>
@@ -64,22 +50,23 @@ function useStyles() {
     },
     dialog: {
       backgroundColor: colors.surface,
-      borderRadius: radius.xl,
+      borderRadius: radius.sheet,
       padding: spacing.lg,
       gap: spacing.md,
+      borderWidth: 1,
+      borderColor: colors.border,
     },
     title: {
       ...typography.title3,
       color: colors.text,
     },
     description: {
-      ...typography.body,
+      ...typography.subheadline,
       color: colors.textSecondary,
-      lineHeight: 22,
     },
     actions: {
       gap: spacing.sm,
-      marginTop: spacing.xs,
+      marginTop: spacing.sm,
     },
   }));
 }

@@ -1,14 +1,22 @@
 import * as Linking from 'expo-linking';
+import { Platform } from 'react-native';
 
-import { MARKETING_SITE_URL } from '@/constants/marketing/site';
+/** Gestion des abonnements Apple (iOS) — jamais de lien tarifs web. */
+export const APPLE_MANAGE_SUBSCRIPTIONS_URL = 'https://apps.apple.com/account/subscriptions';
 
-export const MANAGE_SUBSCRIPTION_URL = `${MARKETING_SITE_URL}/tarifs`;
-
-/** Ouvre la page tarifs web (achat / gestion hors App Store). */
-export async function openManageSubscriptionOnWeb(): Promise<void> {
-  const supported = await Linking.canOpenURL(MANAGE_SUBSCRIPTION_URL);
-  if (!supported) {
-    throw new Error('Impossible d’ouvrir le site INVEQ.');
+/**
+ * Ouvre la gestion d’abonnement conforme App Store (Réglages Apple).
+ * Sur iOS, n’ouvre jamais inveq.fr/tarifs (Guideline 3.1.1).
+ */
+export async function openManageSubscription(): Promise<void> {
+  if (Platform.OS !== 'ios') {
+    throw new Error('La gestion d’abonnement App Store est disponible uniquement sur iOS.');
   }
-  await Linking.openURL(MANAGE_SUBSCRIPTION_URL);
+
+  const supported = await Linking.canOpenURL(APPLE_MANAGE_SUBSCRIPTIONS_URL);
+  if (!supported) {
+    throw new Error('Impossible d’ouvrir la gestion des abonnements Apple.');
+  }
+
+  await Linking.openURL(APPLE_MANAGE_SUBSCRIPTIONS_URL);
 }

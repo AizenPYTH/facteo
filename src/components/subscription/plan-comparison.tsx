@@ -31,7 +31,8 @@ export function PlanComparison({ currentPlanId }: PlanComparisonProps) {
     <View style={styles.container}>
       <Text style={styles.sectionLabel}>Nos offres</Text>
       <Text style={styles.sectionHint}>
-        Mêmes formules que sur inveq.fr — l’abonnement se gère sur le web.
+        Choisissez l’offre adaptée à votre activité. Sur iPhone et iPad, l’abonnement Premium
+        s’achète dans l’app via l’App Store.
       </Text>
 
       {SUBSCRIPTION_CATALOG.map((plan) => {
