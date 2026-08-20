@@ -38,13 +38,16 @@ npx supabase secrets set \
   "APPLE_BUNDLE_ID=$BUNDLE_ID"
 
 echo "==> Deploying edge functions"
-npx supabase functions deploy apple-confirm-subscription --project-ref "$PROJECT_REF"
-npx supabase functions deploy apple-subscription-notifications --project-ref "$PROJECT_REF"
-npx supabase functions deploy stripe-create-subscription-checkout --project-ref "$PROJECT_REF"
-npx supabase functions deploy stripe-confirm-subscription-checkout --project-ref "$PROJECT_REF"
+npx supabase functions deploy apple-confirm-subscription --project-ref "$PROJECT_REF" --use-api
+# Apple Server Notifications do not send a Supabase JWT
+npx supabase functions deploy apple-subscription-notifications --project-ref "$PROJECT_REF" --use-api --no-verify-jwt
+npx supabase functions deploy stripe-create-subscription-checkout --project-ref "$PROJECT_REF" --use-api
+npx supabase functions deploy stripe-confirm-subscription-checkout --project-ref "$PROJECT_REF" --use-api
 
-echo "==> Pushing migrations"
-npx supabase db push --project-ref "$PROJECT_REF"
+echo "==> Applying multi-plan SQL (db push may fail if remote history diverged)"
+if ! npx supabase db push --linked; then
+  echo "db push failed — apply scripts/sql/apply-multi-plan-canonical.sql via Management API / SQL Editor"
+fi
 
 echo ""
 echo "Done."
