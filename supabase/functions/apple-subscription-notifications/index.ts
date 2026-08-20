@@ -1,11 +1,11 @@
 /**
- * App Store Server Notifications V2 — renouvellements / expirations / remboursements.
- * Configurer l’URL dans App Store Connect → App → App Store Server Notifications.
+ * App Store Server Notifications V2 — renew / upgrade / downgrade / expire / refund.
  */
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
 
+import { planIdFromAppleProductId } from '../_shared/apple-products.ts';
 import {
-  applyPremiumSubscription,
+  applyPlanSubscription,
   applyStandardSubscription,
   findUserIdForAppleSubscription,
 } from '../_shared/subscription-sync.ts';
@@ -27,6 +27,7 @@ const PREMIUM_KEEP_TYPES = new Set([
   'OFFER_REDEEMED',
   'DID_CHANGE_RENEWAL_STATUS',
   'DID_CHANGE_RENEWAL_PREF',
+  'DID_FAIL_TO_RENEW',
 ]);
 
 const PREMIUM_REVOKE_TYPES = new Set([
@@ -58,7 +59,6 @@ Deno.serve(async (request) => {
     const signedTx = notification.data?.signedTransactionInfo;
 
     if (!signedTx) {
-      // Certains events n’ont pas de transaction — ACK pour éviter les retries inutiles.
       return jsonResponse({ received: true, ignored: true, type: notification.notificationType }, 200);
     }
 
@@ -78,11 +78,11 @@ Deno.serve(async (request) => {
       return jsonResponse({ error: 'originalTransactionId manquant.' }, 400);
     }
 
+    const planId = planIdFromAppleProductId(productId);
     const serviceClient = createClient(supabaseUrl, supabaseServiceRoleKey);
     const userId = await findUserIdForAppleSubscription(serviceClient, originalTransactionId);
 
     if (!userId) {
-      // Achat pas encore lié à un compte (race) — ACK ; le client confirmera via apple-confirm.
       return jsonResponse(
         {
           received: true,
@@ -101,7 +101,7 @@ Deno.serve(async (request) => {
       Boolean(revocationDate) ||
       (expiresDate !== null && expiresDate < Date.now() && type === 'EXPIRED');
 
-    if (isExpired) {
+    if (isExpired || !planId) {
       await applyStandardSubscription(serviceClient, {
         userId,
         status: 'canceled',
@@ -110,14 +110,14 @@ Deno.serve(async (request) => {
         currentPeriodEnd: toIsoFromAppleMs(expiresDate),
         cancelAtPeriodEnd: false,
       });
-    } else if (PREMIUM_KEEP_TYPES.has(type) || type === 'DID_FAIL_TO_RENEW') {
+    } else if (PREMIUM_KEEP_TYPES.has(type)) {
       const stillActive =
         !revocationDate && (expiresDate === null || expiresDate >= Date.now());
 
-      if (stillActive) {
-        await applyPremiumSubscription(serviceClient, {
+      if (stillActive || type === 'DID_CHANGE_RENEWAL_PREF') {
+        await applyPlanSubscription(serviceClient, {
           userId,
-          planId: 'premium',
+          planId,
           status: type === 'DID_FAIL_TO_RENEW' ? 'past_due' : 'active',
           stripeSubscriptionId: storageId,
           currentPeriodStart: toIsoFromAppleMs(purchaseDate),
@@ -133,6 +133,7 @@ Deno.serve(async (request) => {
         type,
         subtype: notification.subtype ?? null,
         productId,
+        planId,
         originalTransactionId,
         userId,
       },

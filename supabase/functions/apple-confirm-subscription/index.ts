@@ -1,6 +1,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
 
-import { applyPremiumSubscription } from '../_shared/subscription-sync.ts';
+import { planIdFromAppleProductId } from '../_shared/apple-products.ts';
+import { applyPlanSubscription } from '../_shared/subscription-sync.ts';
 import {
   appleSubscriptionStorageId,
   toIsoFromAppleMs,
@@ -59,8 +60,6 @@ Deno.serve(async (request) => {
       return jsonResponse({ error: 'Transaction Apple incomplète.' }, 400);
     }
 
-    // Source de vérité : App Store Server API (+ JWS device optionnel).
-    // Un client ne peut pas activer Premium en inventant un transactionId.
     const verified = await verifyAppleSubscriptionTransaction({
       transactionId,
       purchaseToken,
@@ -70,10 +69,14 @@ Deno.serve(async (request) => {
       return jsonResponse({ error: 'productId incohérent avec Apple.' }, 400);
     }
 
+    const planId = planIdFromAppleProductId(verified.productId);
+    if (!planId) {
+      return jsonResponse({ error: `Produit Apple non mappé: ${verified.productId}` }, 400);
+    }
+
     const serviceClient = createClient(supabaseUrl, supabaseServiceRoleKey);
     const storageId = appleSubscriptionStorageId(verified.originalTransactionId);
 
-    // Empêche qu’un 2e compte INVEQ vole le même abonnement Apple.
     const { data: existingOwner } = await serviceClient
       .from('subscriptions')
       .select('user_id')
@@ -87,9 +90,9 @@ Deno.serve(async (request) => {
       );
     }
 
-    await applyPremiumSubscription(serviceClient, {
+    await applyPlanSubscription(serviceClient, {
       userId: user.id,
-      planId: 'premium',
+      planId,
       status: 'active',
       stripeSubscriptionId: storageId,
       currentPeriodStart: toIsoFromAppleMs(verified.purchaseDate),
@@ -99,9 +102,9 @@ Deno.serve(async (request) => {
 
     return jsonResponse(
       {
-        planId: 'premium',
+        planId,
         status: 'active',
-        isPremium: true,
+        isPremium: planId !== 'micro',
         transactionId: verified.transactionId,
         originalTransactionId: verified.originalTransactionId,
         productId: verified.productId,

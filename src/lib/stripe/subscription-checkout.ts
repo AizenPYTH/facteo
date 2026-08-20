@@ -1,7 +1,10 @@
 import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
+import { Platform } from 'react-native';
 
+import type { CatalogPlanId } from '@/constants/subscription-catalog';
 import { supabase } from '@/lib/supabase';
+import type { EffectivePlanId } from '@/types/subscription';
 
 export type CreateSubscriptionCheckoutResult = {
   checkoutUrl: string;
@@ -9,7 +12,7 @@ export type CreateSubscriptionCheckoutResult = {
 };
 
 export type ConfirmSubscriptionCheckoutResult = {
-  planId: 'free' | 'premium';
+  planId: EffectivePlanId;
   status: string;
   isPremium: boolean;
 };
@@ -21,7 +24,9 @@ export class SubscriptionCheckoutCanceledError extends Error {
   }
 }
 
-export const PREMIUM_RETURN_PATH = 'settings/premium';
+export const PLAN_RETURN_PATH = 'settings/premium';
+/** @deprecated */
+export const PREMIUM_RETURN_PATH = PLAN_RETURN_PATH;
 
 function getSupabaseFunctionsBaseUrl(): string | null {
   const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL?.trim();
@@ -30,28 +35,25 @@ function getSupabaseFunctionsBaseUrl(): string | null {
 
 function getSubscriptionCheckoutUrl(): string | null {
   const explicit = process.env.EXPO_PUBLIC_STRIPE_SUBSCRIPTION_CHECKOUT_URL?.trim();
-
-  if (explicit) {
-    return explicit;
-  }
-
+  if (explicit) return explicit;
   const baseUrl = getSupabaseFunctionsBaseUrl();
   return baseUrl ? `${baseUrl}/stripe-create-subscription-checkout` : null;
 }
 
 function getSubscriptionConfirmUrl(): string | null {
   const explicit = process.env.EXPO_PUBLIC_STRIPE_SUBSCRIPTION_CONFIRM_URL?.trim();
-
-  if (explicit) {
-    return explicit;
-  }
-
+  if (explicit) return explicit;
   const baseUrl = getSupabaseFunctionsBaseUrl();
   return baseUrl ? `${baseUrl}/stripe-confirm-subscription-checkout` : null;
 }
 
+export function getPlanReturnUrl(): string {
+  return Linking.createURL(PLAN_RETURN_PATH);
+}
+
+/** @deprecated */
 export function getPremiumReturnUrl(): string {
-  return Linking.createURL(PREMIUM_RETURN_PATH);
+  return getPlanReturnUrl();
 }
 
 export function isSubscriptionCheckoutConfigured(): boolean {
@@ -64,43 +66,34 @@ export function parseSubscriptionReturnUrl(url: string): {
 } {
   const parsed = Linking.parse(url);
   const query = parsed.queryParams ?? {};
-
   const subscription = readQueryParam(query.subscription);
   const sessionId = readQueryParam(query.session_id) ?? readQueryParam(query.sessionId);
-
   return { subscription, sessionId };
 }
 
 function readQueryParam(value: string | string[] | undefined): string | undefined {
-  if (Array.isArray(value)) {
-    return value[0];
-  }
-
+  if (Array.isArray(value)) return value[0];
   return typeof value === 'string' ? value : undefined;
 }
 
 async function getAccessToken(): Promise<string> {
   const { data: sessionData } = await supabase.auth.getSession();
   const accessToken = sessionData.session?.access_token;
-
   if (!accessToken) {
     throw new Error('Session expirée. Reconnectez-vous.');
   }
-
   return accessToken;
 }
 
 export async function createSubscriptionCheckout(
-  planId: 'premium' = 'premium',
+  planId: Exclude<CatalogPlanId, 'micro'>,
 ): Promise<CreateSubscriptionCheckoutResult> {
   const endpoint = getSubscriptionCheckoutUrl();
-
   if (!endpoint) {
     throw new Error('Stripe abonnement non configuré.');
   }
 
   const accessToken = await getAccessToken();
-
   const response = await fetch(endpoint, {
     method: 'POST',
     headers: {
@@ -109,21 +102,19 @@ export async function createSubscriptionCheckout(
     },
     body: JSON.stringify({
       planId,
-      returnUrl: getPremiumReturnUrl(),
+      returnUrl: getPlanReturnUrl(),
     }),
   });
 
   if (!response.ok) {
     const payload = (await response.json().catch(() => null)) as { error?: string } | null;
-    throw new Error(payload?.error ?? 'Impossible de démarrer l’abonnement Premium.');
+    throw new Error(payload?.error ?? 'Impossible de démarrer l’abonnement.');
   }
 
   const payload = (await response.json()) as CreateSubscriptionCheckoutResult;
-
   if (!payload.checkoutUrl) {
     throw new Error('Réponse Stripe invalide.');
   }
-
   return payload;
 }
 
@@ -131,13 +122,11 @@ export async function confirmSubscriptionCheckout(
   sessionId: string,
 ): Promise<ConfirmSubscriptionCheckoutResult> {
   const endpoint = getSubscriptionConfirmUrl();
-
   if (!endpoint) {
     throw new Error('Confirmation Stripe non configurée.');
   }
 
   const accessToken = await getAccessToken();
-
   const response = await fetch(endpoint, {
     method: 'POST',
     headers: {
@@ -149,26 +138,23 @@ export async function confirmSubscriptionCheckout(
 
   if (!response.ok) {
     const payload = (await response.json().catch(() => null)) as { error?: string } | null;
-    throw new Error(payload?.error ?? 'Impossible de confirmer l’abonnement Premium.');
+    throw new Error(payload?.error ?? 'Impossible de confirmer l’abonnement.');
   }
 
   return (await response.json()) as ConfirmSubscriptionCheckoutResult;
 }
 
-export async function startPremiumCheckoutFlow(
-  planId: 'premium' = 'premium',
+export async function startPlanCheckoutFlow(
+  planId: Exclude<CatalogPlanId, 'micro'>,
 ): Promise<ConfirmSubscriptionCheckoutResult | null> {
-  // Guideline 3.1.1 : sur iOS, les abonnements app passent exclusivement par In-App Purchase.
-  const { Platform } = await import('react-native');
   if (Platform.OS === 'ios') {
     throw new Error(
-      'Sur iOS, l’abonnement Premium s’achète uniquement via In-App Purchase Apple.',
+      'Sur iOS, les abonnements s’achètent uniquement via In-App Purchase Apple.',
     );
   }
 
-  const returnUrl = getPremiumReturnUrl();
+  const returnUrl = getPlanReturnUrl();
   const checkout = await createSubscriptionCheckout(planId);
-
   WebBrowser.maybeCompleteAuthSession();
 
   const browserResult = await WebBrowser.openAuthSessionAsync(checkout.checkoutUrl, returnUrl, {
@@ -184,22 +170,26 @@ export async function startPremiumCheckoutFlow(
   }
 
   const { subscription, sessionId } = parseSubscriptionReturnUrl(browserResult.url);
-
   if (subscription === 'canceled') {
     throw new SubscriptionCheckoutCanceledError();
   }
-
   if (subscription !== 'success') {
     return null;
   }
 
   const resolvedSessionId = sessionId ?? checkout.sessionId;
-
   if (!resolvedSessionId) {
     throw new Error('Session Stripe introuvable après paiement.');
   }
 
   return confirmSubscriptionCheckout(resolvedSessionId);
+}
+
+/** @deprecated Utiliser startPlanCheckoutFlow */
+export async function startPremiumCheckoutFlow(
+  planId: Exclude<CatalogPlanId, 'micro'> = 'pro',
+): Promise<ConfirmSubscriptionCheckoutResult | null> {
+  return startPlanCheckoutFlow(planId === ('premium' as string) ? 'pro' : planId);
 }
 
 export function isSubscriptionCheckoutCanceledError(

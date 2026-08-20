@@ -4,6 +4,8 @@
  */
 import * as jose from 'https://esm.sh/jose@5.9.6';
 
+import { allowedAppleProductIds } from './apple-products.ts';
+
 export type AppleVerifiedTransaction = {
   transactionId: string;
   originalTransactionId: string;
@@ -54,9 +56,7 @@ export function getAppleBundleId(): string {
 }
 
 export function getAllowedAppleProductIds(): Set<string> {
-  const primary =
-    Deno.env.get('APPLE_PREMIUM_PRODUCT_ID')?.trim() || 'com.inveq.app.premium.monthly';
-  return new Set([primary]);
+  return allowedAppleProductIds();
 }
 
 export async function createAppStoreServerApiToken(): Promise<string> {

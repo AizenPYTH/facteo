@@ -58,17 +58,38 @@ export const DEFAULT_PLAN_FEATURES: Record<EffectivePlanId, PlanFeatures> = {
   },
 };
 
-/** Mappe l’enum legacy subscriptions.plan vers le catalogue actif. */
+/**
+ * Identité 1:1 vers le catalogue canonique.
+ * Legacy (free/starter/premium/enterprise) uniquement pour lignes non migrées.
+ */
 export function resolveEffectivePlanId(plan: SubscriptionPlanId | string): EffectivePlanId {
-  if (plan === 'free' || plan === 'micro') return 'micro';
-  if (plan === 'basique' || plan === 'starter') return 'basique';
-  if (plan === 'standard') return 'standard';
-  if (plan === 'pro' || plan === 'premium' || plan === 'enterprise') return 'pro';
-  if (plan === 'max') return 'max';
-  return 'micro';
+  switch (plan) {
+    case 'micro':
+      return 'micro';
+    case 'basique':
+      return 'basique';
+    case 'standard':
+      return 'standard';
+    case 'pro':
+      return 'pro';
+    case 'max':
+      return 'max';
+    case 'free':
+      return 'micro';
+    case 'starter':
+      return 'basique';
+    case 'premium':
+      return 'pro';
+    case 'enterprise':
+      return 'max';
+    default:
+      return 'micro';
+  }
 }
 
-export function getEffectivePlanDisplayName(plan: SubscriptionPlanId | EffectivePlanId | string): string {
+export function getEffectivePlanDisplayName(
+  plan: SubscriptionPlanId | EffectivePlanId | string,
+): string {
   switch (resolveEffectivePlanId(plan)) {
     case 'basique':
       return 'Basique';
@@ -106,4 +127,19 @@ export function hasPlanFeature(
 
 export function formatPlanLimit(limit: number | null): string {
   return limit === null ? 'Illimité' : String(limit);
+}
+
+export const PLAN_RANK: Record<EffectivePlanId, number> = {
+  micro: 0,
+  basique: 1,
+  standard: 2,
+  pro: 3,
+  max: 4,
+};
+
+export function isPlanAtLeast(
+  current: EffectivePlanId | string,
+  required: EffectivePlanId,
+): boolean {
+  return PLAN_RANK[resolveEffectivePlanId(current)] >= PLAN_RANK[required];
 }

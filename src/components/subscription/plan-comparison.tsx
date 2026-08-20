@@ -1,6 +1,7 @@
 import { SymbolView } from 'expo-symbols';
 import { Platform, StyleSheet, Text, View } from 'react-native';
 
+import type { ApplePaidPlanId } from '@/constants/iap';
 import {
   SUBSCRIPTION_CATALOG,
   formatCatalogLimit,
@@ -11,12 +12,13 @@ import { useColors, useThemedStyles } from '@/hooks/use-colors';
 import { radius } from '@/constants/theme/radius';
 import { spacing } from '@/constants/theme/spacing';
 import { typography } from '@/constants/theme/typography';
+import { resolveEffectivePlanId } from '@/lib/subscription/plans';
 import type { EffectivePlanId } from '@/types/subscription';
 
 type PlanComparisonProps = {
   currentPlanId?: EffectivePlanId | string | null;
-  /** Prix StoreKit (iOS). Si fourni, remplace tout prix hardcodé sur la carte Premium. */
-  storeKitDisplayPrice?: string | null;
+  /** Prix StoreKit par plan (iOS). */
+  storeKitPrices?: Partial<Record<ApplePaidPlanId, string>> | null;
 };
 
 type DisplayPlan = {
@@ -32,64 +34,32 @@ type DisplayPlan = {
   limits: CatalogPlan['limits'];
 };
 
-/** Sur iOS : uniquement Micro (gratuit) + Premium (IAP). Pas d’autres tarifs web. */
-function buildIosPlans(storeKitDisplayPrice?: string | null): DisplayPlan[] {
-  const micro = SUBSCRIPTION_CATALOG.find((plan) => plan.id === 'micro');
-  const pro = SUBSCRIPTION_CATALOG.find((plan) => plan.id === 'pro');
-
-  return [
-    {
-      id: 'micro',
-      name: 'Micro',
-      description: micro?.description ?? 'Pour découvrir INVEQ et facturer vos premiers clients.',
-      priceLabel: 'Gratuit',
-      pricePeriod: '',
-      features: micro?.features ?? [],
-      limits: micro?.limits ?? {
-        documentsPerMonth: 3,
-        sirenSearchesPerMonth: 0,
-        companies: 1,
-      },
-    },
-    {
-      id: 'premium',
-      name: 'Premium',
-      description:
-        'Débloquez documents illimités, signatures, modèles PDF, multi-entreprises et recherche SIREN.',
-      priceLabel: storeKitDisplayPrice?.trim() || 'Prix App Store',
-      pricePeriod: '',
-      highlighted: true,
-      badge: 'App Store',
-      features: [
-        ...(micro?.features ?? []),
-        ...(pro?.features ?? []),
-        'Signature électronique',
-        'Modèles de factures et devis',
-        'Jusqu’à plusieurs entreprises',
-      ].filter((feature, index, list) => list.indexOf(feature) === index),
-      limits: {
-        documentsPerMonth: null,
-        sirenSearchesPerMonth: null,
-        companies: null,
-      },
-    },
-  ];
-}
-
-function buildWebPlans(): DisplayPlan[] {
+function buildPlans(
+  storeKitPrices?: Partial<Record<ApplePaidPlanId, string>> | null,
+): DisplayPlan[] {
   return SUBSCRIPTION_CATALOG.map((plan) => {
     const parent = plan.inheritsFrom
       ? SUBSCRIPTION_CATALOG.find((entry) => entry.id === plan.inheritsFrom)
       : null;
 
+    const isIosPaid = Platform.OS === 'ios' && plan.id !== 'micro';
+    const storePrice =
+      isIosPaid && storeKitPrices
+        ? storeKitPrices[plan.id as ApplePaidPlanId]
+        : undefined;
+
     return {
       id: plan.id,
       name: plan.name,
       description: plan.description,
-      priceLabel: formatCatalogPriceHt(plan.priceMonthlyHt),
-      pricePeriod: ' / mois',
+      priceLabel: storePrice?.trim()
+        ? storePrice
+        : plan.id === 'micro'
+          ? 'Gratuit'
+          : formatCatalogPriceHt(plan.priceMonthlyHt),
+      pricePeriod: storePrice || plan.id === 'micro' ? '' : ' / mois',
       highlighted: plan.highlighted,
-      badge: plan.badge,
+      badge: Platform.OS === 'ios' && plan.id !== 'micro' ? 'App Store' : plan.badge,
       inherit: parent ? `Tout ${parent.name}` : null,
       features: plan.features,
       limits: plan.limits,
@@ -98,29 +68,21 @@ function buildWebPlans(): DisplayPlan[] {
 }
 
 function isCurrentPlan(currentPlanId: string | null | undefined, planId: string): boolean {
-  if (!currentPlanId) {
-    return planId === 'micro';
-  }
-
-  if (planId === 'premium') {
-    return currentPlanId !== 'micro';
-  }
-
-  return currentPlanId === planId;
+  const current = resolveEffectivePlanId(currentPlanId ?? 'micro');
+  return current === planId;
 }
 
-export function PlanComparison({ currentPlanId, storeKitDisplayPrice }: PlanComparisonProps) {
+export function PlanComparison({ currentPlanId, storeKitPrices }: PlanComparisonProps) {
   const styles = useStyles();
   const colors = useColors();
-  const plans =
-    Platform.OS === 'ios' ? buildIosPlans(storeKitDisplayPrice) : buildWebPlans();
+  const plans = buildPlans(storeKitPrices);
 
   return (
     <View style={styles.container}>
       <Text style={styles.sectionLabel}>Nos offres</Text>
       <Text style={styles.sectionHint}>
         {Platform.OS === 'ios'
-          ? 'Sur iPhone et iPad, Premium s’achète dans l’app via l’App Store.'
+          ? 'Sur iPhone et iPad, les abonnements payants s’achètent via l’App Store. Le prix affiché est celui d’Apple.'
           : 'Choisissez l’offre adaptée à votre activité.'}
       </Text>
 
@@ -204,9 +166,7 @@ function LimitRow({ label, value }: { label: string; value: string }) {
 
 function useStyles() {
   return useThemedStyles((colors) => ({
-    container: {
-      gap: spacing.md,
-    },
+    container: { gap: spacing.md },
     sectionLabel: {
       ...typography.footnoteMedium,
       color: colors.textSecondary,
@@ -226,33 +186,18 @@ function useStyles() {
       borderColor: colors.border,
       gap: spacing.sm,
     },
-    planCardHighlighted: {
-      borderColor: colors.primary,
-    },
-    planCardCurrent: {
-      borderWidth: 1.5,
-      borderColor: colors.primary,
-    },
-    planHeader: {
-      gap: spacing.xs,
-    },
+    planCardHighlighted: { borderColor: colors.primary },
+    planCardCurrent: { borderWidth: 1.5, borderColor: colors.primary },
+    planHeader: { gap: spacing.xs },
     planTitleRow: {
       flexDirection: 'row',
       alignItems: 'center',
       flexWrap: 'wrap',
       gap: spacing.xs,
     },
-    planTitle: {
-      ...typography.headline,
-      color: colors.text,
-    },
-    planTitleHighlight: {
-      color: colors.primary,
-    },
-    price: {
-      ...typography.title3,
-      color: colors.text,
-    },
+    planTitle: { ...typography.headline, color: colors.text },
+    planTitleHighlight: { color: colors.primary },
+    price: { ...typography.title3, color: colors.text },
     pricePeriod: {
       ...typography.footnote,
       color: colors.textSecondary,
@@ -290,39 +235,21 @@ function useStyles() {
       color: colors.textSecondary,
       fontWeight: '600',
     },
-    limits: {
-      gap: 4,
-      paddingTop: spacing.xs,
-    },
+    limits: { gap: 4, paddingTop: spacing.xs },
     limitRow: {
       flexDirection: 'row',
       justifyContent: 'space-between',
       gap: spacing.sm,
     },
-    limitLabel: {
-      ...typography.caption1,
-      color: colors.textTertiary,
-    },
-    limitValue: {
-      ...typography.caption1,
-      color: colors.text,
-      fontWeight: '600',
-    },
+    limitLabel: { ...typography.caption1, color: colors.textTertiary },
+    limitValue: { ...typography.caption1, color: colors.text, fontWeight: '600' },
     features: {
       gap: spacing.xs,
       paddingTop: spacing.xs,
       borderTopWidth: StyleSheet.hairlineWidth,
       borderTopColor: colors.separator,
     },
-    featureRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: spacing.sm,
-    },
-    featureText: {
-      ...typography.footnote,
-      color: colors.text,
-      flex: 1,
-    },
+    featureRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+    featureText: { ...typography.footnote, color: colors.text, flex: 1 },
   }));
 }

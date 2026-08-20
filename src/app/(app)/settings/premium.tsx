@@ -1,46 +1,51 @@
-import { router } from 'expo-router';
 import { Platform, StyleSheet, Text, View } from 'react-native';
 
 import { PlanComparison } from '@/components/subscription/plan-comparison';
 import { SettingsScreenFrame } from '@/components/web/desktop/settings-screen-frame';
 import { Button } from '@/components/ui/button';
 import { LoadingView } from '@/components/ui/loading-view';
-import {
-  PREMIUM_PRICE_LABEL,
-  PREMIUM_PRICE_PERIOD_LABEL,
-} from '@/constants/subscription-pricing';
+import type { ApplePaidPlanId } from '@/constants/iap';
+import { PAID_CATALOG_PLAN_IDS, type CatalogPlanId } from '@/constants/subscription-catalog';
 import { spacing } from '@/constants/theme/spacing';
 import { typography } from '@/constants/theme/typography';
-import { useApplePremiumProduct } from '@/hooks/use-apple-premium-product';
+import { useAppleStoreProducts } from '@/hooks/use-apple-store-products';
 import { useThemedStyles } from '@/hooks/use-colors';
-import { usePremiumCheckout } from '@/hooks/use-premium-checkout';
+import { usePlanCheckout } from '@/hooks/use-plan-checkout';
 import { usePremiumCheckoutReturn } from '@/hooks/use-premium-checkout-return';
 import { useSubscription } from '@/hooks/use-subscription';
+import { getEffectivePlanDisplayName, isPaidPlan, PLAN_RANK } from '@/lib/subscription/plans';
 import { openManageSubscription } from '@/lib/subscription/open-manage-subscription';
 import { useToast } from '@/providers/toast-provider';
 
 export default function PremiumScreen() {
   const styles = useStyles();
   const { showError, showSuccess } = useToast();
-  const { subscription, isPremium, usage, isLoading } = useSubscription();
+  const { subscription, usage, isLoading } = useSubscription();
   const { usesAppleIap, isConfigured, startCheckout, restorePurchases, subscribe, restore } =
-    usePremiumCheckout();
-  const { product: appleProduct, isLoading: appleProductLoading } = useApplePremiumProduct();
+    usePlanCheckout();
+  const { byPlanId, isLoading: appleProductsLoading } = useAppleStoreProducts();
 
   usePremiumCheckoutReturn();
 
-  const iosPriceLabel = appleProduct?.displayPrice ?? null;
-  const priceLabel = usesAppleIap ? iosPriceLabel : PREMIUM_PRICE_LABEL;
-  const pricePeriodLabel = usesAppleIap ? '' : PREMIUM_PRICE_PERIOD_LABEL;
-  const subscribeTitle = usesAppleIap
-    ? iosPriceLabel
-      ? `S’abonner — ${iosPriceLabel}`
-      : 'S’abonner via l’App Store'
-    : `Passer à Premium — ${PREMIUM_PRICE_LABEL}/mois`;
+  const currentPlanId = subscription?.effectivePlanId ?? 'micro';
+  const currentRank = PLAN_RANK[currentPlanId];
+  const hasPaid = isPaidPlan(currentPlanId);
+  const billingIsApple = Boolean(subscription?.stripeSubscriptionId?.startsWith('apple:'));
 
-  async function handleSubscribe() {
-    if (isPremium) {
-      showSuccess('Vous êtes déjà abonné à INVEQ Premium.');
+  const storeKitPrices = usesAppleIap
+    ? (Object.fromEntries(
+        PAID_CATALOG_PLAN_IDS.map((planId) => [
+          planId,
+          byPlanId[planId as ApplePaidPlanId]?.displayPrice,
+        ]),
+      ) as Partial<Record<ApplePaidPlanId, string>>)
+    : null;
+
+  async function handleSubscribe(planId: CatalogPlanId) {
+    if (planId === 'micro') return;
+
+    if (PLAN_RANK[planId] <= currentRank && hasPaid) {
+      showSuccess(`Vous êtes déjà sur ${getEffectivePlanDisplayName(currentPlanId)} ou supérieur.`);
       return;
     }
 
@@ -53,18 +58,17 @@ export default function PremiumScreen() {
       return;
     }
 
-    if (usesAppleIap && !appleProduct) {
+    if (usesAppleIap && !byPlanId[planId as ApplePaidPlanId]) {
       showError(
-        'Offre Premium introuvable sur l’App Store. Vérifiez que le produit In-App Purchase est créé.',
+        `Offre ${planId} introuvable sur l’App Store. Vérifiez les produits In-App Purchase.`,
       );
       return;
     }
 
     try {
-      const completed = await startCheckout();
-
+      const completed = await startCheckout(planId);
       if (completed) {
-        showSuccess('INVEQ Premium est activé.');
+        showSuccess(`INVEQ ${getEffectivePlanDisplayName(planId)} est activé.`);
       }
     } catch (error) {
       showError(readErrorMessage(error));
@@ -75,7 +79,7 @@ export default function PremiumScreen() {
     try {
       const restored = await restorePurchases();
       if (restored) {
-        showSuccess('Achats restaurés. INVEQ Premium est actif.');
+        showSuccess('Achats restaurés. Votre offre Apple est active.');
         return;
       }
       showError('Aucun abonnement Apple à restaurer pour ce compte.');
@@ -84,7 +88,7 @@ export default function PremiumScreen() {
     }
   }
 
-  async function handleManageSubscription() {
+  async function handleManageApple() {
     try {
       await openManageSubscription();
     } catch (error) {
@@ -92,7 +96,7 @@ export default function PremiumScreen() {
     }
   }
 
-  if (isLoading || (usesAppleIap && appleProductLoading && !isPremium)) {
+  if (isLoading || (usesAppleIap && appleProductsLoading && !hasPaid)) {
     return (
       <SettingsScreenFrame title="Abonnement">
         <LoadingView message="Chargement de votre offre..." />
@@ -104,15 +108,15 @@ export default function PremiumScreen() {
     <SettingsScreenFrame title="Abonnement">
       <View style={styles.content}>
         <View style={styles.hero}>
-          <Text style={styles.heroTitle}>INVEQ Premium</Text>
-          <Text style={styles.heroPrice}>
-            {priceLabel ?? 'Prix App Store'}
-            {pricePeriodLabel ? (
-              <Text style={styles.heroPeriod}>{pricePeriodLabel}</Text>
-            ) : null}
-          </Text>
+          <Text style={styles.heroTitle}>INVEQ {getEffectivePlanDisplayName(currentPlanId)}</Text>
           <Text style={styles.heroSubtitle}>
-            Débloquez toutes les fonctionnalités et supprimez les limites de votre activité.
+            {hasPaid
+              ? usesAppleIap && billingIsApple
+                ? 'Abonnement actif via l’App Store.'
+                : usesAppleIap
+                  ? 'Abonnement actif (souscrit hors App Store). Accès synchronisé sur ce compte.'
+                  : 'Abonnement actif sur votre compte INVEQ.'
+              : 'Passez à une offre supérieure pour débloquer plus de fonctionnalités.'}
           </Text>
         </View>
 
@@ -124,36 +128,43 @@ export default function PremiumScreen() {
           </View>
         ) : null}
 
-        <PlanComparison
-          currentPlanId={subscription?.effectivePlanId}
-          storeKitDisplayPrice={usesAppleIap ? iosPriceLabel : null}
-        />
+        <PlanComparison currentPlanId={currentPlanId} storeKitPrices={storeKitPrices} />
 
         <View style={styles.actions}>
-          {isPremium ? (
-            <>
-              <Button onPress={() => router.back()} title="Vous êtes Premium" variant="ghost" />
-              {usesAppleIap ? (
-                <Button
-                  onPress={() => {
-                    void handleManageSubscription();
-                  }}
-                  title="Gérer l’abonnement Apple"
-                  variant="ghost"
-                />
-              ) : null}
-            </>
-          ) : (
-            <Button
-              loading={subscribe.isPending}
-              onPress={() => {
-                void handleSubscribe();
-              }}
-              title={subscribeTitle}
-            />
-          )}
+          {PAID_CATALOG_PLAN_IDS.map((planId) => {
+            const rank = PLAN_RANK[planId];
+            if (rank <= currentRank) return null;
 
-          {usesAppleIap && !isPremium ? (
+            const storePrice = byPlanId[planId as ApplePaidPlanId]?.displayPrice;
+            const title = usesAppleIap
+              ? storePrice
+                ? `Passer à ${getEffectivePlanDisplayName(planId)} — ${storePrice}`
+                : `Passer à ${getEffectivePlanDisplayName(planId)}`
+              : `Passer à ${getEffectivePlanDisplayName(planId)}`;
+
+            return (
+              <Button
+                key={planId}
+                loading={subscribe.isPending}
+                onPress={() => {
+                  void handleSubscribe(planId);
+                }}
+                title={title}
+              />
+            );
+          })}
+
+          {usesAppleIap && billingIsApple ? (
+            <Button
+              onPress={() => {
+                void handleManageApple();
+              }}
+              title="Gérer l’abonnement Apple"
+              variant="ghost"
+            />
+          ) : null}
+
+          {usesAppleIap ? (
             <Button
               loading={restore.isPending}
               onPress={() => {
@@ -166,9 +177,9 @@ export default function PremiumScreen() {
 
           <Text style={styles.footnote}>
             {usesAppleIap
-              ? 'Paiement sécurisé via In-App Purchase Apple. Abonnement à renouvellement automatique, résiliable à tout moment dans Réglages > Abonnements. Le prix affiché est celui de l’App Store.'
+              ? 'Paiement via In-App Purchase Apple. Les prix affichés viennent de l’App Store. Résiliation dans Réglages > Abonnements.'
               : Platform.OS === 'web'
-                ? 'Paiement sécurisé. Un code promo peut être saisi lors du paiement.'
+                ? 'Paiement sécurisé Stripe. Un code promo peut être saisi lors du paiement.'
                 : 'Paiement sécurisé.'}
           </Text>
         </View>
@@ -179,7 +190,6 @@ export default function PremiumScreen() {
 
 function UsageChip({ label, value }: { label: string; value: number }) {
   const styles = useUsageStyles();
-
   return (
     <View style={styles.chip}>
       <Text style={styles.chipValue}>{value}</Text>
@@ -189,48 +199,22 @@ function UsageChip({ label, value }: { label: string; value: number }) {
 }
 
 function readErrorMessage(error: unknown): string {
-  if (error instanceof Error) {
-    return error.message;
-  }
-
+  if (error instanceof Error) return error.message;
   return 'Une erreur est survenue.';
 }
 
 function useStyles() {
   return useThemedStyles((colors) => ({
-    content: {
-      gap: spacing.lg,
-    },
-    hero: {
-      gap: spacing.xs,
-    },
-    heroTitle: {
-      ...typography.title1,
-      color: colors.text,
-    },
-    heroPrice: {
-      ...typography.title2,
-      color: colors.primary,
-      marginTop: spacing.xs,
-    },
-    heroPeriod: {
-      ...typography.body,
-      color: colors.textSecondary,
-      fontWeight: '400',
-    },
+    content: { gap: spacing.lg },
+    hero: { gap: spacing.xs },
+    heroTitle: { ...typography.title1, color: colors.text },
     heroSubtitle: {
       ...typography.body,
       color: colors.textSecondary,
       lineHeight: 22,
     },
-    usageRow: {
-      flexDirection: 'row',
-      gap: spacing.sm,
-    },
-    actions: {
-      gap: spacing.sm,
-      paddingTop: spacing.xs,
-    },
+    usageRow: { flexDirection: 'row', gap: spacing.sm },
+    actions: { gap: spacing.sm, paddingTop: spacing.xs },
     footnote: {
       ...typography.caption1,
       color: colors.textTertiary,
@@ -252,13 +236,7 @@ function useUsageStyles() {
       borderColor: colors.border,
       gap: 2,
     },
-    chipValue: {
-      ...typography.headline,
-      color: colors.text,
-    },
-    chipLabel: {
-      ...typography.caption1,
-      color: colors.textSecondary,
-    },
+    chipValue: { ...typography.headline, color: colors.text },
+    chipLabel: { ...typography.caption1, color: colors.textSecondary },
   }));
 }

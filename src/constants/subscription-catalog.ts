@@ -1,9 +1,9 @@
 /**
  * Catalogue offres INVEQ — aligné sur website/src/lib/subscription-plans.ts
- * (mêmes noms, prix HT, limites, hiérarchie).
+ * Plans canoniques : micro / basique / standard / pro / max.
  */
 
-export type CatalogPlanId = 'micro' | 'basique' | 'standard' | 'pro';
+export type CatalogPlanId = 'micro' | 'basique' | 'standard' | 'pro' | 'max';
 
 export type CatalogPlan = {
   id: CatalogPlanId;
@@ -100,7 +100,27 @@ export const SUBSCRIPTION_CATALOG: CatalogPlan[] = [
       companies: null,
     },
   },
+  {
+    id: 'max',
+    name: 'Max',
+    description: 'Toutes les fonctionnalités INVEQ pour une activité sans limite.',
+    priceMonthlyHt: 63.98,
+    priceYearlyMonthlyHt: 49.99,
+    inheritsFrom: 'pro',
+    features: [
+      'Paiements Stripe (encaisser vos clients)',
+      'Assistant IA',
+      'Statistiques avancées',
+    ],
+    limits: {
+      documentsPerMonth: null,
+      sirenSearchesPerMonth: null,
+      companies: null,
+    },
+  },
 ];
+
+export const PAID_CATALOG_PLAN_IDS: CatalogPlanId[] = ['basique', 'standard', 'pro', 'max'];
 
 export function formatCatalogPriceHt(amount: number): string {
   if (amount === 0) return '0 €';

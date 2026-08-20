@@ -1,7 +1,11 @@
 import Stripe from 'https://esm.sh/stripe@17.7.0?target=deno';
 import { createClient, type SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
 
-export type SubscriptionPlanId = 'free' | 'premium';
+/** Plans métier stockés dans subscriptions.plan */
+export type CanonicalPlanId = 'micro' | 'basique' | 'standard' | 'pro' | 'max';
+
+const CANONICAL_PLANS = new Set<string>(['micro', 'basique', 'standard', 'pro', 'max']);
+const PAID_PLANS = new Set<string>(['basique', 'standard', 'pro', 'max']);
 
 export function resolveStripePriceId(
   planStripePriceId: string | null | undefined,
@@ -45,8 +49,29 @@ export function toIso(unixSeconds: number | null | undefined): string | null {
   return new Date(unixSeconds * 1000).toISOString();
 }
 
-export function resolvePlanId(metadataPlanId: string | undefined): SubscriptionPlanId {
-  return metadataPlanId === 'free' ? 'free' : 'premium';
+/**
+ * Résout le plan métier depuis metadata Stripe / ids catalogue.
+ * N’accepte plus « premium » comme plan cible — remap one-shot legacy uniquement.
+ */
+export function resolveCanonicalPlanId(raw: string | undefined | null): CanonicalPlanId {
+  const value = (raw ?? '').trim().toLowerCase();
+
+  if (CANONICAL_PLANS.has(value)) {
+    return value as CanonicalPlanId;
+  }
+
+  // Legacy résiduel (anciennes sessions / metadata)
+  if (value === 'free') return 'micro';
+  if (value === 'starter') return 'basique';
+  if (value === 'premium' || value === 'enterprise') {
+    return value === 'enterprise' ? 'max' : 'pro';
+  }
+
+  return 'micro';
+}
+
+export function isPaidCanonicalPlan(planId: CanonicalPlanId): boolean {
+  return PAID_PLANS.has(planId);
 }
 
 export function isPaidCheckoutSession(session: Stripe.Checkout.Session): boolean {
@@ -79,11 +104,11 @@ export async function findUserIdForSubscription(
   return data?.user_id ?? null;
 }
 
-export async function applyPremiumSubscription(
+export async function applyPlanSubscription(
   serviceClient: SupabaseClient,
   input: {
     userId: string;
-    planId?: SubscriptionPlanId;
+    planId: CanonicalPlanId;
     status?: 'active' | 'trialing' | 'past_due' | 'canceled' | 'unpaid' | 'incomplete';
     stripeCustomerId?: string | null;
     stripeSubscriptionId?: string | null;
@@ -93,11 +118,9 @@ export async function applyPremiumSubscription(
   },
 ): Promise<void> {
   const now = new Date().toISOString();
-  const planId = input.planId ?? 'premium';
 
-  // Ne pas écraser les champs absents (ex. stripe_customer_id lors d’un achat Apple).
   const patch: Record<string, unknown> = {
-    plan: planId,
+    plan: input.planId,
     status: input.status ?? 'active',
     updated_at: now,
   };
@@ -128,7 +151,27 @@ export async function applyPremiumSubscription(
   }
 }
 
-/** Lie un originalTransactionId Apple à un user (restore / notifications). */
+/** @deprecated Utiliser applyPlanSubscription */
+export async function applyPremiumSubscription(
+  serviceClient: SupabaseClient,
+  input: {
+    userId: string;
+    planId?: CanonicalPlanId | 'premium' | 'free';
+    status?: 'active' | 'trialing' | 'past_due' | 'canceled' | 'unpaid' | 'incomplete';
+    stripeCustomerId?: string | null;
+    stripeSubscriptionId?: string | null;
+    currentPeriodStart?: string | null;
+    currentPeriodEnd?: string | null;
+    cancelAtPeriodEnd?: boolean;
+  },
+): Promise<void> {
+  const planId = resolveCanonicalPlanId(input.planId ?? 'pro');
+  await applyPlanSubscription(serviceClient, {
+    ...input,
+    planId: planId === 'micro' ? 'pro' : planId,
+  });
+}
+
 export async function findUserIdForAppleSubscription(
   serviceClient: SupabaseClient,
   originalTransactionId: string,
@@ -154,31 +197,22 @@ export async function applyStandardSubscription(
     cancelAtPeriodEnd?: boolean;
   },
 ): Promise<void> {
-  const now = new Date().toISOString();
-
-  const { error } = await serviceClient
-    .from('subscriptions')
-    .update({
-      plan: 'free',
-      status: input.status ?? 'canceled',
-      stripe_subscription_id: input.stripeSubscriptionId ?? null,
-      current_period_start: input.currentPeriodStart ?? null,
-      current_period_end: input.currentPeriodEnd ?? null,
-      cancel_at_period_end: input.cancelAtPeriodEnd ?? false,
-      updated_at: now,
-    })
-    .eq('user_id', input.userId);
-
-  if (error) {
-    throw error;
-  }
+  await applyPlanSubscription(serviceClient, {
+    userId: input.userId,
+    planId: 'micro',
+    status: input.status ?? 'canceled',
+    stripeSubscriptionId: input.stripeSubscriptionId,
+    currentPeriodStart: input.currentPeriodStart,
+    currentPeriodEnd: input.currentPeriodEnd,
+    cancelAtPeriodEnd: input.cancelAtPeriodEnd,
+  });
 }
 
 export async function syncSubscriptionCheckoutSession(
   stripe: Stripe,
   serviceClient: SupabaseClient,
   session: Stripe.Checkout.Session,
-): Promise<{ userId: string; planId: SubscriptionPlanId }> {
+): Promise<{ userId: string; planId: CanonicalPlanId }> {
   if (session.mode !== 'subscription') {
     throw new Error('Not a subscription checkout session.');
   }
@@ -188,10 +222,14 @@ export async function syncSubscriptionCheckoutSession(
   }
 
   const userId = session.metadata?.user_id ?? session.client_reference_id ?? null;
-  const planId = resolvePlanId(session.metadata?.plan_id);
+  const planId = resolveCanonicalPlanId(session.metadata?.plan_id);
 
   if (!userId) {
     throw new Error('Missing user reference on checkout session.');
+  }
+
+  if (!isPaidCanonicalPlan(planId)) {
+    throw new Error(`Plan Stripe non payant invalide: ${planId}`);
   }
 
   const customerId = typeof session.customer === 'string' ? session.customer : session.customer?.id ?? null;
@@ -212,7 +250,7 @@ export async function syncSubscriptionCheckoutSession(
     status = subscription.status === 'trialing' ? 'trialing' : 'active';
   }
 
-  await applyPremiumSubscription(serviceClient, {
+  await applyPlanSubscription(serviceClient, {
     userId,
     planId,
     status,
@@ -237,11 +275,11 @@ export async function syncStripeSubscriptionObject(
   }
 
   const mappedStatus = mapStripeSubscriptionStatus(subscription.status);
-  const isPremium = subscription.status === 'active' || subscription.status === 'trialing';
-  const planId = isPremium ? resolvePlanId(subscription.metadata?.plan_id) : 'free';
+  const isActivePaid = subscription.status === 'active' || subscription.status === 'trialing';
+  const planId = resolveCanonicalPlanId(subscription.metadata?.plan_id);
 
-  if (isPremium) {
-    await applyPremiumSubscription(serviceClient, {
+  if (isActivePaid && isPaidCanonicalPlan(planId)) {
+    await applyPlanSubscription(serviceClient, {
       userId,
       planId,
       status: mappedStatus,

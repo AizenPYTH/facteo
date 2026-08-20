@@ -47,11 +47,16 @@ Deno.serve(async (request) => {
     }
 
     const body = (await request.json().catch(() => ({}))) as CreateSubscriptionCheckoutBody;
-    const planId = body.planId ?? 'premium';
+    const planId = body.planId ?? 'pro';
     const appReturnUrl =
       body.returnUrl?.trim() ||
       Deno.env.get('INVEQ_SUBSCRIPTION_RETURN_URL')?.trim() ||
       'INVEQ://settings/premium';
+
+    const allowed = new Set(['basique', 'standard', 'pro', 'max']);
+    if (!allowed.has(planId)) {
+      return jsonResponse({ error: `Plan invalide: ${planId}` }, 400);
+    }
 
     const serviceClient = createClient(supabaseUrl, supabaseServiceRoleKey);
 
@@ -63,7 +68,7 @@ Deno.serve(async (request) => {
       .maybeSingle();
 
     if (planError || !plan) {
-      return jsonResponse({ error: 'Offre Premium introuvable.' }, 404);
+      return jsonResponse({ error: `Offre ${planId} introuvable.` }, 404);
     }
 
     const stripePriceId = resolveStripePriceId(plan.stripe_price_id);
@@ -72,7 +77,7 @@ Deno.serve(async (request) => {
       return jsonResponse(
         {
           error:
-            'Prix Stripe non configuré. Définissez stripe_price_id sur subscription_plans ou STRIPE_PREMIUM_PRICE_ID dans les secrets Supabase.',
+            'Prix Stripe non configuré. Définissez stripe_price_id sur subscription_plans.',
         },
         503,
       );
@@ -88,9 +93,11 @@ Deno.serve(async (request) => {
 
     if (
       subscriptionRow?.stripe_subscription_id &&
-      (subscriptionRow.plan === 'premium' || subscriptionRow.status === 'active')
+      !String(subscriptionRow.stripe_subscription_id).startsWith('apple:') &&
+      subscriptionRow.status === 'active' &&
+      subscriptionRow.plan === planId
     ) {
-      return jsonResponse({ error: 'Vous êtes déjà abonné à INVEQ Premium.' }, 400);
+      return jsonResponse({ error: `Vous êtes déjà abonné à INVEQ ${plan.display_name}.` }, 400);
     }
 
     let customerId = subscriptionRow?.stripe_customer_id ?? null;

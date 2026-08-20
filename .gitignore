@@ -46,3 +46,6 @@ example
 /ios
 /android
 .vercel
+
+.secrets/
+.apple-iap.env.local
