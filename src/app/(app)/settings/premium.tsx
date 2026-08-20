@@ -11,6 +11,7 @@ import {
 } from '@/constants/subscription-pricing';
 import { spacing } from '@/constants/theme/spacing';
 import { typography } from '@/constants/theme/typography';
+import { useApplePremiumProduct } from '@/hooks/use-apple-premium-product';
 import { useThemedStyles } from '@/hooks/use-colors';
 import { usePremiumCheckout } from '@/hooks/use-premium-checkout';
 import { usePremiumCheckoutReturn } from '@/hooks/use-premium-checkout-return';
@@ -24,8 +25,18 @@ export default function PremiumScreen() {
   const { subscription, isPremium, usage, isLoading } = useSubscription();
   const { usesAppleIap, isConfigured, startCheckout, restorePurchases, subscribe, restore } =
     usePremiumCheckout();
+  const { product: appleProduct, isLoading: appleProductLoading } = useApplePremiumProduct();
 
   usePremiumCheckoutReturn();
+
+  const iosPriceLabel = appleProduct?.displayPrice ?? null;
+  const priceLabel = usesAppleIap ? iosPriceLabel : PREMIUM_PRICE_LABEL;
+  const pricePeriodLabel = usesAppleIap ? '' : PREMIUM_PRICE_PERIOD_LABEL;
+  const subscribeTitle = usesAppleIap
+    ? iosPriceLabel
+      ? `S’abonner — ${iosPriceLabel}`
+      : 'S’abonner via l’App Store'
+    : `Passer à Premium — ${PREMIUM_PRICE_LABEL}/mois`;
 
   async function handleSubscribe() {
     if (isPremium) {
@@ -38,6 +49,13 @@ export default function PremiumScreen() {
         usesAppleIap
           ? 'In-App Purchase indisponible pour le moment.'
           : 'Le paiement n’est pas encore configuré. Contactez le support.',
+      );
+      return;
+    }
+
+    if (usesAppleIap && !appleProduct) {
+      showError(
+        'Offre Premium introuvable sur l’App Store. Vérifiez que le produit In-App Purchase est créé.',
       );
       return;
     }
@@ -74,7 +92,7 @@ export default function PremiumScreen() {
     }
   }
 
-  if (isLoading) {
+  if (isLoading || (usesAppleIap && appleProductLoading && !isPremium)) {
     return (
       <SettingsScreenFrame title="Abonnement">
         <LoadingView message="Chargement de votre offre..." />
@@ -88,8 +106,10 @@ export default function PremiumScreen() {
         <View style={styles.hero}>
           <Text style={styles.heroTitle}>INVEQ Premium</Text>
           <Text style={styles.heroPrice}>
-            {PREMIUM_PRICE_LABEL}
-            <Text style={styles.heroPeriod}>{PREMIUM_PRICE_PERIOD_LABEL}</Text>
+            {priceLabel ?? 'Prix App Store'}
+            {pricePeriodLabel ? (
+              <Text style={styles.heroPeriod}>{pricePeriodLabel}</Text>
+            ) : null}
           </Text>
           <Text style={styles.heroSubtitle}>
             Débloquez toutes les fonctionnalités et supprimez les limites de votre activité.
@@ -104,7 +124,10 @@ export default function PremiumScreen() {
           </View>
         ) : null}
 
-        <PlanComparison currentPlanId={subscription?.effectivePlanId} />
+        <PlanComparison
+          currentPlanId={subscription?.effectivePlanId}
+          storeKitDisplayPrice={usesAppleIap ? iosPriceLabel : null}
+        />
 
         <View style={styles.actions}>
           {isPremium ? (
@@ -126,11 +149,7 @@ export default function PremiumScreen() {
               onPress={() => {
                 void handleSubscribe();
               }}
-              title={
-                usesAppleIap
-                  ? `S’abonner — ${PREMIUM_PRICE_LABEL}/mois`
-                  : `Passer à Premium — ${PREMIUM_PRICE_LABEL}/mois`
-              }
+              title={subscribeTitle}
             />
           )}
 
@@ -147,7 +166,7 @@ export default function PremiumScreen() {
 
           <Text style={styles.footnote}>
             {usesAppleIap
-              ? 'Paiement sécurisé via In-App Purchase Apple. Abonnement à renouvellement automatique, résiliable à tout moment dans Réglages > Abonnements.'
+              ? 'Paiement sécurisé via In-App Purchase Apple. Abonnement à renouvellement automatique, résiliable à tout moment dans Réglages > Abonnements. Le prix affiché est celui de l’App Store.'
               : Platform.OS === 'web'
                 ? 'Paiement sécurisé. Un code promo peut être saisi lors du paiement.'
                 : 'Paiement sécurisé.'}

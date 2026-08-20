@@ -8,7 +8,9 @@ import {
   purchaseUpdatedListener,
   requestPurchase,
   restorePurchases as restoreStorePurchases,
+  type ProductSubscription,
   type Purchase,
+  type PurchaseIOS,
 } from 'expo-iap';
 
 import { APPLE_PREMIUM_PRODUCT_ID, APPLE_PREMIUM_PRODUCT_IDS } from '@/constants/iap';
@@ -26,6 +28,14 @@ export type ApplePremiumConfirmResult = {
   planId: 'free' | 'premium';
   status: string;
   isPremium: boolean;
+};
+
+export type ApplePremiumProductInfo = {
+  productId: string;
+  displayPrice: string;
+  currency: string;
+  title: string;
+  description: string;
 };
 
 function getConfirmUrl(): string | null {
@@ -49,36 +59,64 @@ async function getAccessToken(): Promise<string> {
   return token;
 }
 
+function asPurchaseIos(purchase: Purchase): PurchaseIOS | null {
+  if (purchase && typeof purchase === 'object' && 'transactionId' in purchase) {
+    return purchase as PurchaseIOS;
+  }
+  return null;
+}
+
 function readPurchaseIds(purchase: Purchase): {
   productId: string;
   transactionId: string;
+  originalTransactionId: string;
   purchaseToken: string | null;
 } {
-  const productId =
-    ('productId' in purchase && typeof purchase.productId === 'string' && purchase.productId) ||
-    ('id' in purchase && typeof purchase.id === 'string' && purchase.id) ||
-    APPLE_PREMIUM_PRODUCT_ID;
+  const ios = asPurchaseIos(purchase);
 
-  const transactionId =
-    ('transactionId' in purchase &&
-      typeof purchase.transactionId === 'string' &&
-      purchase.transactionId) ||
-    ('id' in purchase && typeof purchase.id === 'string' && purchase.id) ||
-    '';
-
-  const purchaseToken =
-    ('purchaseToken' in purchase && typeof purchase.purchaseToken === 'string'
-      ? purchase.purchaseToken
-      : null) ||
-    ('purchaseTokenAndroid' in purchase && typeof purchase.purchaseTokenAndroid === 'string'
-      ? purchase.purchaseTokenAndroid
-      : null);
+  const productId = ios?.productId || APPLE_PREMIUM_PRODUCT_ID;
+  const transactionId = ios?.transactionId || '';
+  const originalTransactionId =
+    ios?.originalTransactionIdentifierIOS || ios?.transactionId || transactionId;
+  const purchaseToken = ios?.purchaseToken ?? null;
 
   if (!transactionId) {
     throw new Error('Transaction Apple introuvable.');
   }
 
-  return { productId, transactionId, purchaseToken };
+  if (!purchaseToken) {
+    throw new Error('JWS Apple (purchaseToken) introuvable — validation serveur impossible.');
+  }
+
+  return { productId, transactionId, originalTransactionId, purchaseToken };
+}
+
+export async function fetchApplePremiumProduct(): Promise<ApplePremiumProductInfo | null> {
+  if (Platform.OS !== 'ios') {
+    return null;
+  }
+
+  await initConnection();
+  const products = await fetchProducts({
+    skus: [...APPLE_PREMIUM_PRODUCT_IDS],
+    type: 'subs',
+  });
+
+  const product = (products ?? []).find((entry) => entry.id === APPLE_PREMIUM_PRODUCT_ID) as
+    | ProductSubscription
+    | undefined;
+
+  if (!product) {
+    return null;
+  }
+
+  return {
+    productId: product.id,
+    displayPrice: product.displayPrice,
+    currency: product.currency,
+    title: product.title ?? 'INVEQ Premium',
+    description: product.description ?? '',
+  };
 }
 
 export async function confirmAppleSubscriptionPurchase(
@@ -93,7 +131,8 @@ export async function confirmAppleSubscriptionPurchase(
     throw new Error('Confirmation Apple non configurée.');
   }
 
-  const { productId, transactionId, purchaseToken } = readPurchaseIds(purchase);
+  const { productId, transactionId, originalTransactionId, purchaseToken } =
+    readPurchaseIds(purchase);
   const accessToken = await getAccessToken();
 
   const response = await fetch(endpoint, {
@@ -105,6 +144,7 @@ export async function confirmAppleSubscriptionPurchase(
     body: JSON.stringify({
       productId,
       transactionId,
+      originalTransactionId,
       purchaseToken,
       platform: Platform.OS,
     }),
@@ -125,15 +165,8 @@ async function finalizePurchase(purchase: Purchase): Promise<ApplePremiumConfirm
 }
 
 function isPremiumProduct(purchase: Purchase): boolean {
-  const productId =
-    ('productId' in purchase && typeof purchase.productId === 'string' && purchase.productId) ||
-    ('id' in purchase && typeof purchase.id === 'string' && purchase.id) ||
-    '';
-
-  if (!productId) {
-    return false;
-  }
-
+  const ios = asPurchaseIos(purchase);
+  const productId = ios?.productId ?? '';
   return APPLE_PREMIUM_PRODUCT_IDS.includes(productId as (typeof APPLE_PREMIUM_PRODUCT_IDS)[number]);
 }
 
@@ -220,7 +253,10 @@ export async function restoreApplePremiumPurchases(): Promise<ApplePremiumConfir
 
   await initConnection();
   await restoreStorePurchases();
-  const purchases = await getAvailablePurchases();
+  const purchases = await getAvailablePurchases({
+    alsoPublishToEventListenerIOS: false,
+    onlyIncludeActiveItemsIOS: true,
+  });
   const premiumPurchase = (purchases ?? []).find((purchase) => isPremiumProduct(purchase));
 
   if (!premiumPurchase) {
@@ -228,6 +264,10 @@ export async function restoreApplePremiumPurchases(): Promise<ApplePremiumConfir
   }
 
   return finalizePurchase(premiumPurchase);
+}
+
+export function isAppleSubscriptionConfirmConfigured(): boolean {
+  return Boolean(getConfirmUrl());
 }
 
 export function isApplePurchaseCanceledError(error: unknown): error is ApplePurchaseCanceledError {

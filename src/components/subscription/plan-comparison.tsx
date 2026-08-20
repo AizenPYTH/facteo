@@ -7,10 +7,6 @@ import {
   formatCatalogPriceHt,
   type CatalogPlan,
 } from '@/constants/subscription-catalog';
-import {
-  PREMIUM_PRICE_LABEL,
-  PREMIUM_PRICE_PERIOD_LABEL,
-} from '@/constants/subscription-pricing';
 import { useColors, useThemedStyles } from '@/hooks/use-colors';
 import { radius } from '@/constants/theme/radius';
 import { spacing } from '@/constants/theme/spacing';
@@ -19,6 +15,8 @@ import type { EffectivePlanId } from '@/types/subscription';
 
 type PlanComparisonProps = {
   currentPlanId?: EffectivePlanId | string | null;
+  /** Prix StoreKit (iOS). Si fourni, remplace tout prix hardcodé sur la carte Premium. */
+  storeKitDisplayPrice?: string | null;
 };
 
 type DisplayPlan = {
@@ -35,7 +33,7 @@ type DisplayPlan = {
 };
 
 /** Sur iOS : uniquement Micro (gratuit) + Premium (IAP). Pas d’autres tarifs web. */
-function buildIosPlans(): DisplayPlan[] {
+function buildIosPlans(storeKitDisplayPrice?: string | null): DisplayPlan[] {
   const micro = SUBSCRIPTION_CATALOG.find((plan) => plan.id === 'micro');
   const pro = SUBSCRIPTION_CATALOG.find((plan) => plan.id === 'pro');
 
@@ -58,8 +56,8 @@ function buildIosPlans(): DisplayPlan[] {
       name: 'Premium',
       description:
         'Débloquez documents illimités, signatures, modèles PDF, multi-entreprises et recherche SIREN.',
-      priceLabel: PREMIUM_PRICE_LABEL,
-      pricePeriod: PREMIUM_PRICE_PERIOD_LABEL,
+      priceLabel: storeKitDisplayPrice?.trim() || 'Prix App Store',
+      pricePeriod: '',
       highlighted: true,
       badge: 'App Store',
       features: [
@@ -111,10 +109,11 @@ function isCurrentPlan(currentPlanId: string | null | undefined, planId: string)
   return currentPlanId === planId;
 }
 
-export function PlanComparison({ currentPlanId }: PlanComparisonProps) {
+export function PlanComparison({ currentPlanId, storeKitDisplayPrice }: PlanComparisonProps) {
   const styles = useStyles();
   const colors = useColors();
-  const plans = Platform.OS === 'ios' ? buildIosPlans() : buildWebPlans();
+  const plans =
+    Platform.OS === 'ios' ? buildIosPlans(storeKitDisplayPrice) : buildWebPlans();
 
   return (
     <View style={styles.container}>

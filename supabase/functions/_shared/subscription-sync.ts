@@ -95,23 +95,52 @@ export async function applyPremiumSubscription(
   const now = new Date().toISOString();
   const planId = input.planId ?? 'premium';
 
+  // Ne pas écraser les champs absents (ex. stripe_customer_id lors d’un achat Apple).
+  const patch: Record<string, unknown> = {
+    plan: planId,
+    status: input.status ?? 'active',
+    updated_at: now,
+  };
+
+  if (input.stripeCustomerId !== undefined) {
+    patch.stripe_customer_id = input.stripeCustomerId;
+  }
+  if (input.stripeSubscriptionId !== undefined) {
+    patch.stripe_subscription_id = input.stripeSubscriptionId;
+  }
+  if (input.currentPeriodStart !== undefined) {
+    patch.current_period_start = input.currentPeriodStart;
+  }
+  if (input.currentPeriodEnd !== undefined) {
+    patch.current_period_end = input.currentPeriodEnd;
+  }
+  if (input.cancelAtPeriodEnd !== undefined) {
+    patch.cancel_at_period_end = input.cancelAtPeriodEnd;
+  }
+
   const { error } = await serviceClient
     .from('subscriptions')
-    .update({
-      plan: planId,
-      status: input.status ?? 'active',
-      stripe_customer_id: input.stripeCustomerId ?? null,
-      stripe_subscription_id: input.stripeSubscriptionId ?? null,
-      current_period_start: input.currentPeriodStart ?? null,
-      current_period_end: input.currentPeriodEnd ?? null,
-      cancel_at_period_end: input.cancelAtPeriodEnd ?? false,
-      updated_at: now,
-    })
+    .update(patch)
     .eq('user_id', input.userId);
 
   if (error) {
     throw error;
   }
+}
+
+/** Lie un originalTransactionId Apple à un user (restore / notifications). */
+export async function findUserIdForAppleSubscription(
+  serviceClient: SupabaseClient,
+  originalTransactionId: string,
+): Promise<string | null> {
+  const storageId = `apple:${originalTransactionId}`;
+  const { data } = await serviceClient
+    .from('subscriptions')
+    .select('user_id')
+    .eq('stripe_subscription_id', storageId)
+    .maybeSingle();
+
+  return data?.user_id ?? null;
 }
 
 export async function applyStandardSubscription(

@@ -1,15 +1,16 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
 
 import { applyPremiumSubscription } from '../_shared/subscription-sync.ts';
+import {
+  appleSubscriptionStorageId,
+  toIsoFromAppleMs,
+  verifyAppleSubscriptionTransaction,
+} from '../_shared/apple-verify.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
-
-const ALLOWED_PRODUCT_IDS = new Set([
-  Deno.env.get('APPLE_PREMIUM_PRODUCT_ID')?.trim() || 'com.inveq.app.premium.monthly',
-]);
 
 type ConfirmBody = {
   productId?: string;
@@ -51,44 +52,61 @@ Deno.serve(async (request) => {
     }
 
     const body = (await request.json()) as ConfirmBody;
-    const productId = body.productId?.trim() ?? '';
     const transactionId = body.transactionId?.trim() ?? '';
+    const purchaseToken = body.purchaseToken?.trim() || null;
 
-    if (!productId || !transactionId) {
+    if (!transactionId) {
       return jsonResponse({ error: 'Transaction Apple incomplète.' }, 400);
     }
 
-    if (!ALLOWED_PRODUCT_IDS.has(productId)) {
-      return jsonResponse({ error: 'Produit In-App Purchase non reconnu.' }, 400);
+    // Source de vérité : App Store Server API (+ JWS device optionnel).
+    // Un client ne peut pas activer Premium en inventant un transactionId.
+    const verified = await verifyAppleSubscriptionTransaction({
+      transactionId,
+      purchaseToken,
+    });
+
+    if (body.productId?.trim() && body.productId.trim() !== verified.productId) {
+      return jsonResponse({ error: 'productId incohérent avec Apple.' }, 400);
     }
 
     const serviceClient = createClient(supabaseUrl, supabaseServiceRoleKey);
-    const appleSubscriptionId = `apple:${transactionId}`;
+    const storageId = appleSubscriptionStorageId(verified.originalTransactionId);
+
+    // Empêche qu’un 2e compte INVEQ vole le même abonnement Apple.
+    const { data: existingOwner } = await serviceClient
+      .from('subscriptions')
+      .select('user_id')
+      .eq('stripe_subscription_id', storageId)
+      .maybeSingle();
+
+    if (existingOwner?.user_id && existingOwner.user_id !== user.id) {
+      return jsonResponse(
+        { error: 'Cet abonnement Apple est déjà lié à un autre compte INVEQ.' },
+        409,
+      );
+    }
 
     await applyPremiumSubscription(serviceClient, {
       userId: user.id,
       planId: 'premium',
       status: 'active',
-      stripeSubscriptionId: appleSubscriptionId,
-      currentPeriodStart: new Date().toISOString(),
+      stripeSubscriptionId: storageId,
+      currentPeriodStart: toIsoFromAppleMs(verified.purchaseDate),
+      currentPeriodEnd: toIsoFromAppleMs(verified.expiresDate),
       cancelAtPeriodEnd: false,
     });
-
-    // Persist product id for support / audits when column exists.
-    await serviceClient
-      .from('subscriptions')
-      .update({
-        updated_at: new Date().toISOString(),
-      })
-      .eq('user_id', user.id);
 
     return jsonResponse(
       {
         planId: 'premium',
         status: 'active',
         isPremium: true,
-        transactionId,
-        productId,
+        transactionId: verified.transactionId,
+        originalTransactionId: verified.originalTransactionId,
+        productId: verified.productId,
+        environment: verified.environment,
+        currentPeriodEnd: toIsoFromAppleMs(verified.expiresDate),
       },
       200,
     );

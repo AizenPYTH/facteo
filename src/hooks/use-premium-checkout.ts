@@ -4,6 +4,7 @@ import { Platform } from 'react-native';
 import { useAuth } from '@/hooks/use-auth';
 import {
   isApplePurchaseCanceledError,
+  isAppleSubscriptionConfirmConfigured,
   restoreApplePremiumPurchases,
   startApplePremiumPurchase,
 } from '@/lib/iap/apple-subscription';
@@ -83,7 +84,9 @@ export function usePremiumCheckout() {
 
   return {
     usesAppleIap,
-    isConfigured: usesAppleIap ? true : isSubscriptionCheckoutConfigured(),
+    isConfigured: usesAppleIap
+      ? isAppleSubscriptionConfirmConfigured()
+      : isSubscriptionCheckoutConfigured(),
     subscribe,
     restore,
     startCheckout,
