@@ -1,5 +1,5 @@
 import { SymbolView } from 'expo-symbols';
-import { StyleSheet, Text, View } from 'react-native';
+import { Platform, StyleSheet, Text, View } from 'react-native';
 
 import {
   SUBSCRIPTION_CATALOG,
@@ -7,6 +7,10 @@ import {
   formatCatalogPriceHt,
   type CatalogPlan,
 } from '@/constants/subscription-catalog';
+import {
+  PREMIUM_PRICE_LABEL,
+  PREMIUM_PRICE_PERIOD_LABEL,
+} from '@/constants/subscription-pricing';
 import { useColors, useThemedStyles } from '@/hooks/use-colors';
 import { radius } from '@/constants/theme/radius';
 import { spacing } from '@/constants/theme/spacing';
@@ -17,27 +21,112 @@ type PlanComparisonProps = {
   currentPlanId?: EffectivePlanId | string | null;
 };
 
-function inheritLabel(plan: CatalogPlan): string | null {
-  if (!plan.inheritsFrom) return null;
-  const parent = SUBSCRIPTION_CATALOG.find((entry) => entry.id === plan.inheritsFrom);
-  return parent ? `Tout ${parent.name}` : null;
+type DisplayPlan = {
+  id: string;
+  name: string;
+  description: string;
+  priceLabel: string;
+  pricePeriod: string;
+  highlighted?: boolean;
+  badge?: string;
+  inherit?: string | null;
+  features: string[];
+  limits: CatalogPlan['limits'];
+};
+
+/** Sur iOS : uniquement Micro (gratuit) + Premium (IAP). Pas d’autres tarifs web. */
+function buildIosPlans(): DisplayPlan[] {
+  const micro = SUBSCRIPTION_CATALOG.find((plan) => plan.id === 'micro');
+  const pro = SUBSCRIPTION_CATALOG.find((plan) => plan.id === 'pro');
+
+  return [
+    {
+      id: 'micro',
+      name: 'Micro',
+      description: micro?.description ?? 'Pour découvrir INVEQ et facturer vos premiers clients.',
+      priceLabel: 'Gratuit',
+      pricePeriod: '',
+      features: micro?.features ?? [],
+      limits: micro?.limits ?? {
+        documentsPerMonth: 3,
+        sirenSearchesPerMonth: 0,
+        companies: 1,
+      },
+    },
+    {
+      id: 'premium',
+      name: 'Premium',
+      description:
+        'Débloquez documents illimités, signatures, modèles PDF, multi-entreprises et recherche SIREN.',
+      priceLabel: PREMIUM_PRICE_LABEL,
+      pricePeriod: PREMIUM_PRICE_PERIOD_LABEL,
+      highlighted: true,
+      badge: 'App Store',
+      features: [
+        ...(micro?.features ?? []),
+        ...(pro?.features ?? []),
+        'Signature électronique',
+        'Modèles de factures et devis',
+        'Jusqu’à plusieurs entreprises',
+      ].filter((feature, index, list) => list.indexOf(feature) === index),
+      limits: {
+        documentsPerMonth: null,
+        sirenSearchesPerMonth: null,
+        companies: null,
+      },
+    },
+  ];
+}
+
+function buildWebPlans(): DisplayPlan[] {
+  return SUBSCRIPTION_CATALOG.map((plan) => {
+    const parent = plan.inheritsFrom
+      ? SUBSCRIPTION_CATALOG.find((entry) => entry.id === plan.inheritsFrom)
+      : null;
+
+    return {
+      id: plan.id,
+      name: plan.name,
+      description: plan.description,
+      priceLabel: formatCatalogPriceHt(plan.priceMonthlyHt),
+      pricePeriod: ' / mois',
+      highlighted: plan.highlighted,
+      badge: plan.badge,
+      inherit: parent ? `Tout ${parent.name}` : null,
+      features: plan.features,
+      limits: plan.limits,
+    };
+  });
+}
+
+function isCurrentPlan(currentPlanId: string | null | undefined, planId: string): boolean {
+  if (!currentPlanId) {
+    return planId === 'micro';
+  }
+
+  if (planId === 'premium') {
+    return currentPlanId !== 'micro';
+  }
+
+  return currentPlanId === planId;
 }
 
 export function PlanComparison({ currentPlanId }: PlanComparisonProps) {
   const styles = useStyles();
   const colors = useColors();
+  const plans = Platform.OS === 'ios' ? buildIosPlans() : buildWebPlans();
 
   return (
     <View style={styles.container}>
       <Text style={styles.sectionLabel}>Nos offres</Text>
       <Text style={styles.sectionHint}>
-        Choisissez l’offre adaptée à votre activité. Sur iPhone et iPad, l’abonnement Premium
-        s’achète dans l’app via l’App Store.
+        {Platform.OS === 'ios'
+          ? 'Sur iPhone et iPad, Premium s’achète dans l’app via l’App Store.'
+          : 'Choisissez l’offre adaptée à votre activité.'}
       </Text>
 
-      {SUBSCRIPTION_CATALOG.map((plan) => {
-        const isCurrent = currentPlanId === plan.id;
-        const inherit = inheritLabel(plan);
+      {plans.map((plan) => {
+        const isCurrent = isCurrentPlan(currentPlanId, plan.id);
 
         return (
           <View
@@ -64,13 +153,15 @@ export function PlanComparison({ currentPlanId }: PlanComparisonProps) {
                 ) : null}
               </View>
               <Text style={styles.price}>
-                {formatCatalogPriceHt(plan.priceMonthlyHt)}
-                <Text style={styles.pricePeriod}> / mois</Text>
+                {plan.priceLabel}
+                {plan.pricePeriod ? (
+                  <Text style={styles.pricePeriod}>{plan.pricePeriod}</Text>
+                ) : null}
               </Text>
             </View>
 
             <Text style={styles.description}>{plan.description}</Text>
-            {inherit ? <Text style={styles.inherit}>{inherit} +</Text> : null}
+            {plan.inherit ? <Text style={styles.inherit}>{plan.inherit} +</Text> : null}
 
             <View style={styles.limits}>
               <LimitRow
