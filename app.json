@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "INVEQ",
-    "slug": "FACTEO",
+    "slug": "inveq",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -12,7 +12,8 @@
       "bundleIdentifier": "com.inveq.app",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
-      }
+      },
+      "buildNumber": "38"
     },
     "android": {
       "adaptiveIcon": {
@@ -49,8 +50,8 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "INVEQ a besoin d’accéder à vos photos pour importer le logo et la signature.",
-          "cameraPermission": "INVEQ a besoin d’accéder à l’appareil photo pour importer le logo et la signature."
+          "photosPermission": "INVEQ a besoin d\u2019acc\u00e9der \u00e0 vos photos pour importer le logo et la signature.",
+          "cameraPermission": "INVEQ a besoin d\u2019acc\u00e9der \u00e0 l\u2019appareil photo pour importer le logo et la signature."
         }
       ],
       [
@@ -69,8 +70,9 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "b779bbfa-75a2-4712-98da-4dbec1134edc"
+        "projectId": "2431d113-6d0f-465b-b268-902ab04c5f35"
       }
-    }
+    },
+    "owner": "influence1s-team"
   }
 }
