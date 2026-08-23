@@ -13,6 +13,8 @@ function mapAuthErrorMessage(message: string): string {
       return 'Veuillez confirmer votre adresse e-mail avant de vous connecter.';
     case 'User already registered':
       return 'Un compte existe déjà avec cette adresse e-mail.';
+    case 'La création de compte n’est pas disponible dans l’application iOS. Créez votre compte sur www.inveq.fr.':
+      return message;
     default:
       return GENERIC_ERROR_MESSAGE;
   }

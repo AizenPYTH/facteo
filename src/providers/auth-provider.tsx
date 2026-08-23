@@ -10,6 +10,7 @@ import {
   deactivateAppStoreReviewMode,
   isAppStoreReviewCredentials,
 } from '@/lib/app-store-review';
+import { assertIosSignupAllowed } from '@/lib/auth/ios-no-signup';
 import {
   createDemoSession,
   getScreenshotDemoCredentials,
@@ -253,6 +254,18 @@ export function AuthProvider({ children }: PropsWithChildren) {
     }: SignUpParams): Promise<AuthResult> => {
       if (isScreenshotDemo()) {
         return { error: invalidCredentialsError(), session: null };
+      }
+
+      const iosBlocked = assertIosSignupAllowed();
+      if (iosBlocked) {
+        return {
+          error: {
+            name: 'AuthApiError',
+            message: iosBlocked.message,
+            status: 403,
+          } as AuthError,
+          session: null,
+        };
       }
 
       const { data, error } = await supabase.auth.signUp({

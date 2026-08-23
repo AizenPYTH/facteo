@@ -13,7 +13,7 @@
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       },
-      "buildNumber": "39"
+      "buildNumber": "40"
     },
     "android": {
       "adaptiveIcon": {
@@ -50,8 +50,8 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "INVEQ a besoin d’accéder à vos photos pour importer le logo et la signature.",
-          "cameraPermission": "INVEQ a besoin d’accéder à l’appareil photo pour importer le logo et la signature."
+          "photosPermission": "INVEQ a besoin d\u2019acc\u00e9der \u00e0 vos photos pour importer le logo et la signature.",
+          "cameraPermission": "INVEQ a besoin d\u2019acc\u00e9der \u00e0 l\u2019appareil photo pour importer le logo et la signature."
         }
       ],
       [
