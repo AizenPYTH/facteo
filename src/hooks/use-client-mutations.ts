@@ -4,6 +4,8 @@ import { useTenant } from '@/hooks/use-tenant';
 import { requireScope } from '@/lib/tenant/scope';
 import { createClient, deleteClient, updateClient } from '@/lib/supabase/clients';
 import { clientsQueryKeys, dashboardQueryKeys } from '@/lib/supabase/query-keys';
+import { enforcePlanLimit, withPlanLimitUi } from '@/lib/subscription/limit-guard';
+import { useSubscriptionContext } from '@/providers/subscription-provider';
 import type { ClientFormValues } from '@/types/client';
 
 function useInvalidateClients() {
@@ -19,10 +21,12 @@ export function useClientMutations() {
   const { scope } = useTenant();
   const invalidateClients = useInvalidateClients();
   const queryClient = useQueryClient();
+  const { showLimitModal } = useSubscriptionContext();
 
   const createClientMutation = useMutation({
     mutationFn: async (input: ClientFormValues) => {
-      return createClient(requireScope(scope), input);
+      await enforcePlanLimit('clients', showLimitModal);
+      return withPlanLimitUi(showLimitModal, () => createClient(requireScope(scope), input));
     },
     onSuccess: invalidateClients,
   });

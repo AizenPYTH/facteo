@@ -7,14 +7,27 @@ export type LegalSection = {
 
 export const LEGAL_LAST_UPDATED = '15 juillet 2026';
 
+const envContact = process.env.NEXT_PUBLIC_CONTACT_EMAIL?.trim() || '';
+const envSupport = process.env.NEXT_PUBLIC_SUPPORT_EMAIL?.trim() || '';
+
 export const LEGAL_CONTACT = {
   company: 'INVEQ',
-  email: process.env.NEXT_PUBLIC_CONTACT_EMAIL?.trim() || 'farouqdib@gmail.com',
-  support: process.env.NEXT_PUBLIC_SUPPORT_EMAIL?.trim() || 'farouqdib@gmail.com',
-  dpo: process.env.NEXT_PUBLIC_SUPPORT_EMAIL?.trim() || 'farouqdib@gmail.com',
+  email: envContact,
+  support: envSupport,
+  dpo: envSupport,
   website: process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, '') || 'https://www.inveq.fr',
   address: 'France',
 } as const;
+
+function contactPhrase(kind: 'privacy' | 'support' | 'general' = 'general'): string {
+  if (kind === 'support' && LEGAL_CONTACT.support) {
+    return `en écrivant à ${LEGAL_CONTACT.support}`;
+  }
+  if (LEGAL_CONTACT.email) {
+    return `à l’adresse : ${LEGAL_CONTACT.email}`;
+  }
+  return 'via la page Contact de notre site (www.inveq.fr/contact)';
+}
 
 export const PRIVACY_SECTIONS: LegalSection[] = [
   {
@@ -22,7 +35,7 @@ export const PRIVACY_SECTIONS: LegalSection[] = [
     title: '1. Responsable du traitement',
     paragraphs: [
       'INVEQ, accessible via son site web et ses applications, est responsable du traitement des données personnelles collectées via l’application mobile, l’application web et le site internet.',
-      `Pour toute question relative à la protection de vos données personnelles, vous pouvez nous contacter à l’adresse : ${LEGAL_CONTACT.email}.`,
+      `Pour toute question relative à la protection de vos données personnelles, vous pouvez nous contacter ${contactPhrase('privacy')}.`,
     ],
   },
   {
@@ -98,8 +111,10 @@ export const PRIVACY_SECTIONS: LegalSection[] = [
       '• Droit à la portabilité : recevoir vos données dans un format structuré.',
       '• Droit d’opposition : vous opposer au traitement fondé sur l’intérêt légitime.',
       '• Droit de retirer votre consentement à tout moment, sans affecter la licéité du traitement antérieur.',
-      `Vous pouvez demander la suppression de votre compte depuis Paramètres dans l’application, ou en écrivant à ${LEGAL_CONTACT.support} depuis l’adresse e-mail associée au compte. Nous traitons la demande sous 30 jours.`,
-      `Pour exercer vos droits, contactez-nous à ${LEGAL_CONTACT.email}. Vous pouvez également introduire une réclamation auprès de la CNIL (www.cnil.fr).`,
+      LEGAL_CONTACT.support
+        ? `Vous pouvez demander la suppression de votre compte depuis Paramètres dans l’application, ou en écrivant à ${LEGAL_CONTACT.support} depuis l’adresse e-mail associée au compte. Nous traitons la demande sous 30 jours.`
+        : 'Vous pouvez demander la suppression de votre compte depuis Paramètres dans l’application. Nous traitons la demande sous 30 jours.',
+      `Pour exercer vos droits, contactez-nous ${contactPhrase('privacy')}. Vous pouvez également introduire une réclamation auprès de la CNIL (www.cnil.fr).`,
     ],
   },
   {
@@ -114,9 +129,11 @@ export const PRIVACY_SECTIONS: LegalSection[] = [
     title: '10. Contact',
     paragraphs: [
       'Pour toute question relative à cette politique de confidentialité :',
-      `E-mail : ${LEGAL_CONTACT.email}`,
-      `Support : ${LEGAL_CONTACT.support}`,
-      `Délégué à la protection des données : ${LEGAL_CONTACT.dpo}`,
+      ...(LEGAL_CONTACT.email ? [`E-mail : ${LEGAL_CONTACT.email}`] : ['Contact : www.inveq.fr/contact']),
+      ...(LEGAL_CONTACT.support ? [`Support : ${LEGAL_CONTACT.support}`] : []),
+      ...(LEGAL_CONTACT.dpo
+        ? [`Délégué à la protection des données : ${LEGAL_CONTACT.dpo}`]
+        : ['Délégué à la protection des données : joignable via la page Contact.']),
     ],
   },
 ];
@@ -234,8 +251,10 @@ export const TERMS_SECTIONS: LegalSection[] = [
     id: 'contact',
     title: '14. Contact',
     paragraphs: [
-      `Pour toute question relative aux présentes CGU : ${LEGAL_CONTACT.email}`,
-      `Support technique : ${LEGAL_CONTACT.support}`,
+      `Pour toute question relative aux présentes CGU : ${contactPhrase('general')}`,
+      LEGAL_CONTACT.support
+        ? `Support technique : ${LEGAL_CONTACT.support}`
+        : 'Support technique : via la page Support de notre site.',
     ],
   },
 ];
@@ -249,8 +268,8 @@ export const LEGAL_MENTIONS_SECTIONS: LegalSection[] = [
       'Forme juridique : Société en cours de constitution',
       `Siège social : ${LEGAL_CONTACT.address}`,
       `Site web : ${LEGAL_CONTACT.website}`,
-      `E-mail : ${LEGAL_CONTACT.email}`,
-      `Support : ${LEGAL_CONTACT.support}`,
+      ...(LEGAL_CONTACT.email ? [`E-mail : ${LEGAL_CONTACT.email}`] : ['Contact : www.inveq.fr/contact']),
+      ...(LEGAL_CONTACT.support ? [`Support : ${LEGAL_CONTACT.support}`] : []),
     ],
   },
   {
@@ -289,7 +308,7 @@ export const LEGAL_MENTIONS_SECTIONS: LegalSection[] = [
     id: 'contact',
     title: 'Contact',
     paragraphs: [
-      `Pour toute question relative aux mentions légales : ${LEGAL_CONTACT.email}`,
+      `Pour toute question relative aux mentions légales : ${contactPhrase('general')}`,
     ],
   },
 ];
@@ -353,7 +372,7 @@ export const COOKIES_SECTIONS: LegalSection[] = [
     id: 'contact',
     title: '7. Contact',
     paragraphs: [
-      `Pour toute question sur notre utilisation des cookies : ${LEGAL_CONTACT.email}`,
+      `Pour toute question sur notre utilisation des cookies : ${contactPhrase('general')}`,
     ],
     links: [
       { label: 'Politique de confidentialité', href: '/confidentialite' },

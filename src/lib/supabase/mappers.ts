@@ -87,6 +87,7 @@ export function mapInvoiceRowToDashboardInvoice(row: InvoiceWithClient) {
   return {
     id: row.id,
     number: row.number,
+    clientId: row.client_id,
     clientName: resolveClientName(row.clients),
     amount: row.total_ttc ?? row.total ?? 0,
     status: isDashboardInvoiceStatus(row.status) ? row.status : 'draft',

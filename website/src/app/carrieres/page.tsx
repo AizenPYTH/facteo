@@ -1,8 +1,9 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 
 import { FadeIn } from '@/components/ui/fade-in';
 import { PageHero } from '@/components/sections/landing-sections';
-import { CONTACT_EMAIL } from '@/lib/constants';
+import { CONTACT_EMAIL, hasPublicContactEmail } from '@/lib/constants';
 
 export const metadata: Metadata = {
   title: 'Carrières',
@@ -22,9 +23,15 @@ export default function CareersPage() {
             Nous n’avons pas de postes ouverts pour le moment, mais nous sommes toujours intéressés par
             les profils passionnés par le SaaS, le design et la fintech.
           </p>
-          <a className="mt-8 inline-block font-semibold text-primary" href={`mailto:${CONTACT_EMAIL}`}>
-            {CONTACT_EMAIL}
-          </a>
+          {hasPublicContactEmail ? (
+            <a className="mt-8 inline-block font-semibold text-primary" href={`mailto:${CONTACT_EMAIL}`}>
+              {CONTACT_EMAIL}
+            </a>
+          ) : (
+            <Link className="mt-8 inline-block font-semibold text-primary hover:underline" href="/contact">
+              Nous contacter
+            </Link>
+          )}
         </FadeIn>
       </section>
     </>

@@ -110,22 +110,35 @@ export function LegalPage({
                 <dt className="text-muted">Site</dt>
                 <dd className="font-medium text-foreground">{LEGAL_CONTACT.website}</dd>
               </div>
-              <div>
-                <dt className="text-muted">E-mail</dt>
-                <dd>
-                  <a className="font-medium text-primary" href={`mailto:${LEGAL_CONTACT.email}`}>
-                    {LEGAL_CONTACT.email}
-                  </a>
-                </dd>
-              </div>
-              <div>
-                <dt className="text-muted">DPO</dt>
-                <dd>
-                  <a className="font-medium text-primary" href={`mailto:${LEGAL_CONTACT.dpo}`}>
-                    {LEGAL_CONTACT.dpo}
-                  </a>
-                </dd>
-              </div>
+              {LEGAL_CONTACT.email ? (
+                <div>
+                  <dt className="text-muted">E-mail</dt>
+                  <dd>
+                    <a className="font-medium text-primary" href={`mailto:${LEGAL_CONTACT.email}`}>
+                      {LEGAL_CONTACT.email}
+                    </a>
+                  </dd>
+                </div>
+              ) : (
+                <div>
+                  <dt className="text-muted">Contact</dt>
+                  <dd>
+                    <a className="font-medium text-primary" href="/contact">
+                      Page contact
+                    </a>
+                  </dd>
+                </div>
+              )}
+              {LEGAL_CONTACT.dpo ? (
+                <div>
+                  <dt className="text-muted">DPO</dt>
+                  <dd>
+                    <a className="font-medium text-primary" href={`mailto:${LEGAL_CONTACT.dpo}`}>
+                      {LEGAL_CONTACT.dpo}
+                    </a>
+                  </dd>
+                </div>
+              ) : null}
             </dl>
           </div>
 

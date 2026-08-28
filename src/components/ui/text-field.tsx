@@ -1,17 +1,67 @@
-import { StyleSheet, Text, TextInput, View, type TextInputProps } from 'react-native';
+import { useState } from 'react';
+import {
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+  type TextInputProps,
+  type NativeSyntheticEvent,
+  type TextInputFocusEventData,
+} from 'react-native';
+import Animated, {
+  interpolateColor,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
 
-import { useColors, useThemedStyles } from '@/hooks/use-colors';
+import { duration } from '@/constants/theme/motion';
+import { radius } from '@/constants/theme/radius';
 import { spacing } from '@/constants/theme/spacing';
-import { typography } from '@/constants/theme/typography';
+import { type } from '@/constants/theme/type-roles';
+import { useColors, useThemedStyles } from '@/hooks/use-colors';
+
+const AnimatedView = Animated.createAnimatedComponent(View);
 
 type TextFieldProps = TextInputProps & {
   label?: string;
   error?: string;
 };
 
-export function TextField({ label, error, style, accessibilityLabel, ...props }: TextFieldProps) {
+export function TextField({
+  label,
+  error,
+  style,
+  accessibilityLabel,
+  onFocus,
+  onBlur,
+  ...props
+}: TextFieldProps) {
   const styles = useStyles();
   const colors = useColors();
+  const [focused, setFocused] = useState(false);
+  const focusProgress = useSharedValue(0);
+
+  const borderStyle = useAnimatedStyle(() => ({
+    borderColor: interpolateColor(
+      focusProgress.value,
+      [0, 1],
+      [error ? colors.error : colors.border, error ? colors.error : colors.borderFocus],
+    ),
+  }));
+
+  const handleFocus = (e: NativeSyntheticEvent<TextInputFocusEventData>) => {
+    setFocused(true);
+    focusProgress.value = withTiming(1, { duration: duration.fast });
+    onFocus?.(e);
+  };
+
+  const handleBlur = (e: NativeSyntheticEvent<TextInputFocusEventData>) => {
+    setFocused(false);
+    focusProgress.value = withTiming(0, { duration: duration.fast });
+    onBlur?.(e);
+  };
+
   return (
     <View style={styles.container}>
       {label ? (
@@ -19,14 +69,24 @@ export function TextField({ label, error, style, accessibilityLabel, ...props }:
           {label}
         </Text>
       ) : null}
-      <TextInput
-        accessibilityLabel={accessibilityLabel ?? label ?? props.placeholder}
-        autoCapitalize="none"
-        autoCorrect={false}
-        placeholderTextColor={colors.textPlaceholder}
-        style={[styles.input, error ? styles.inputError : null, style]}
-        {...props}
-      />
+      <AnimatedView
+        style={[
+          styles.field,
+          error ? styles.fieldError : null,
+          focused && !error ? styles.fieldFocused : null,
+          borderStyle,
+        ]}>
+        <TextInput
+          accessibilityLabel={accessibilityLabel ?? label ?? props.placeholder}
+          autoCapitalize="none"
+          autoCorrect={false}
+          onBlur={handleBlur}
+          onFocus={handleFocus}
+          placeholderTextColor={colors.textPlaceholder}
+          style={[styles.input, style]}
+          {...props}
+        />
+      </AnimatedView>
       {error ? (
         <Text accessibilityRole="alert" maxFontSizeMultiplier={1.5} style={styles.error}>
           {error}
@@ -38,27 +98,38 @@ export function TextField({ label, error, style, accessibilityLabel, ...props }:
 
 function useStyles() {
   return useThemedStyles((colors) => ({
-  container: {
-    gap: spacing.xs,
-  },
-  label: {
-    ...typography.footnoteMedium,
-    color: colors.textSecondary,
-  },
-  input: {
-    ...typography.body,
-    color: colors.text,
-    minHeight: 44,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: 0,
-    margin: 0,
-  },
-  inputError: {
-    color: colors.error,
-  },
-  error: {
-    ...typography.caption1,
-    color: colors.error,
-  },
-}));
+    container: {
+      gap: spacing[1.5],
+    },
+    label: {
+      ...type.label,
+      color: colors.textSecondary,
+    },
+    field: {
+      minHeight: 48,
+      borderRadius: radius.input,
+      borderWidth: StyleSheet.hairlineWidth * 2,
+      borderColor: colors.border,
+      backgroundColor: colors.surface,
+      paddingHorizontal: spacing.md,
+      justifyContent: 'center',
+    },
+    fieldFocused: {
+      backgroundColor: colors.background,
+    },
+    fieldError: {
+      borderColor: colors.error,
+      backgroundColor: colors.errorSubtle,
+    },
+    input: {
+      ...type.body,
+      color: colors.text,
+      paddingVertical: spacing.sm,
+      margin: 0,
+    },
+    error: {
+      ...type.caption,
+      color: colors.error,
+    },
+  }));
 }

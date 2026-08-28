@@ -7,15 +7,20 @@ import {
   useState,
   type PropsWithChildren,
 } from 'react';
-import { StyleSheet } from 'react-native';
-import Animated, { FadeInUp, FadeOutUp } from 'react-native-reanimated';
+import { StyleSheet, Text, View } from 'react-native';
+import Animated, { FadeInDown, FadeOutUp } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SymbolView } from 'expo-symbols';
 
-import { useColors, useThemedStyles } from '@/hooks/use-colors';
+import { feedback } from '@/constants/theme/interaction';
+import { duration } from '@/constants/theme/motion';
 import { radius } from '@/constants/theme/radius';
 import { spacing } from '@/constants/theme/spacing';
-import { typography } from '@/constants/theme/typography';
+import { elevation } from '@/constants/theme/surfaces';
+import { type } from '@/constants/theme/type-roles';
+import { useColors, useThemedStyles } from '@/hooks/use-colors';
 import { GENERIC_ERROR_MESSAGE } from '@/lib/errors/messages';
+import { triggerFeedbackHaptic } from '@/lib/haptics';
 
 type ToastType = 'success' | 'error';
 
@@ -31,17 +36,6 @@ type ToastContextValue = {
 };
 
 const ToastContext = createContext<ToastContextValue | undefined>(undefined);
-
-const TOAST_DURATION_MS = 3200;
-
-function formatSuccessMessage(message: string): string {
-  const trimmed = message.trim();
-  if (!trimmed) {
-    return '✓ Action réussie';
-  }
-
-  return trimmed.startsWith('✓') ? trimmed : `✓ ${trimmed}`;
-}
 
 export function ToastProvider({ children }: PropsWithChildren) {
   const styles = useStyles();
@@ -62,19 +56,25 @@ export function ToastProvider({ children }: PropsWithChildren) {
   const showToast = useCallback(
     (type: ToastType, message: string) => {
       clearToast();
+      const dismissMs =
+        type === 'success' ? feedback.success.autoDismissMs : feedback.error.autoDismissMs;
+      void triggerFeedbackHaptic(type);
       setToast({ id: Date.now(), type, message });
 
       timeoutRef.current = setTimeout(() => {
         setToast(null);
         timeoutRef.current = null;
-      }, TOAST_DURATION_MS);
+      }, dismissMs);
     },
     [clearToast],
   );
 
   const value = useMemo<ToastContextValue>(
     () => ({
-      showSuccess: (message) => showToast('success', formatSuccessMessage(message)),
+      showSuccess: (message) => {
+        const trimmed = message.trim();
+        showToast('success', trimmed || 'Action réussie');
+      },
       showError: (message) =>
         showToast('error', message.trim() || GENERIC_ERROR_MESSAGE),
     }),
@@ -86,21 +86,33 @@ export function ToastProvider({ children }: PropsWithChildren) {
       {children}
       {toast ? (
         <Animated.View
-          entering={FadeInUp.duration(220)}
-          exiting={FadeOutUp.duration(180)}
+          entering={FadeInDown.duration(duration.fast).springify()}
+          exiting={FadeOutUp.duration(duration.fast)}
           style={[
             styles.container,
             { top: insets.top + spacing.sm },
             toast.type === 'success' ? styles.success : styles.error,
           ]}>
-          <Animated.Text
-            accessibilityLiveRegion="polite"
-            style={[
-              styles.message,
-              toast.type === 'success' ? styles.successMessage : styles.errorMessage,
-            ]}>
-            {toast.message}
-          </Animated.Text>
+          <View style={styles.row}>
+            <SymbolView
+              name={
+                toast.type === 'success'
+                  ? { ios: 'checkmark.circle.fill', android: 'check_circle', web: 'check_circle' }
+                  : { ios: 'exclamationmark.circle.fill', android: 'error', web: 'error' }
+              }
+              size={20}
+              tintColor={toast.type === 'success' ? colors.success : colors.error}
+              type="hierarchical"
+            />
+            <Text
+              accessibilityLiveRegion="polite"
+              style={[
+                styles.message,
+                toast.type === 'success' ? styles.successMessage : styles.errorMessage,
+              ]}>
+              {toast.message}
+            </Text>
+          </View>
         </Animated.View>
       ) : null}
     </ToastContext.Provider>
@@ -108,7 +120,6 @@ export function ToastProvider({ children }: PropsWithChildren) {
 }
 
 export function useToast() {
-  const styles = useStyles();
   const context = useContext(ToastContext);
 
   if (!context) {
@@ -120,33 +131,41 @@ export function useToast() {
 
 function useStyles() {
   return useThemedStyles((colors) => ({
-  container: {
-    position: 'absolute',
-    left: spacing.screenPaddingHorizontal,
-    right: spacing.screenPaddingHorizontal,
-    zIndex: 9999,
-    borderRadius: radius.md,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
-    borderWidth: 1,
-  },
-  success: {
-    backgroundColor: colors.successSubtle,
-    borderColor: colors.success,
-  },
-  error: {
-    backgroundColor: colors.errorSubtle,
-    borderColor: colors.error,
-  },
-  message: {
-    ...typography.subheadlineMedium,
-    textAlign: 'center',
-  },
-  successMessage: {
-    color: colors.success,
-  },
-  errorMessage: {
-    color: colors.error,
-  },
-}));
+    container: {
+      position: 'absolute',
+      left: spacing.screenPaddingHorizontal,
+      right: spacing.screenPaddingHorizontal,
+      zIndex: 9999,
+      borderRadius: radius.lg,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.md,
+      ...elevation[3],
+    },
+    success: {
+      backgroundColor: colors.surface,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: colors.success,
+    },
+    error: {
+      backgroundColor: colors.surface,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: colors.error,
+    },
+    row: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+    },
+    message: {
+      ...type.secondary,
+      fontWeight: '600',
+      flex: 1,
+    },
+    successMessage: {
+      color: colors.text,
+    },
+    errorMessage: {
+      color: colors.text,
+    },
+  }));
 }

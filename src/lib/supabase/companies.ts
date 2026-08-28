@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase';
 import { logSupabaseError } from '@/lib/supabase/errors';
+import { resolveCompanyAssetUrl } from '@/lib/supabase/storage';
 import type { CompanyProfileFormValues, UpdateCompanyProfileInput } from '@/types/company-profile';
 import { createEmptyCompanyProfileFormValues } from '@/types/company-profile';
 import type { CreateCompanyInput, TenantCompany } from '@/types/tenant';
@@ -58,6 +59,19 @@ export function mapCompanyRow(row: CompanyRow, role: string): TenantCompany {
     role: role as TenantCompany['role'],
     createdAt: row.created_at,
     updatedAt: row.updated_at,
+  };
+}
+
+async function withSignedCompanyAssets(company: TenantCompany): Promise<TenantCompany> {
+  const [logoUrl, signatureUrl] = await Promise.all([
+    resolveCompanyAssetUrl(company.logoUrl),
+    resolveCompanyAssetUrl(company.signatureUrl),
+  ]);
+
+  return {
+    ...company,
+    logoUrl,
+    signatureUrl,
   };
 }
 
@@ -125,9 +139,12 @@ export async function fetchUserCompanies(userId: string): Promise<TenantCompany[
 
   const roleByCompanyId = new Map(rows.map((row) => [row.company_id, row.role]));
 
-  return (companies as CompanyRow[] | null)?.map((company) =>
-    mapCompanyRow(company, roleByCompanyId.get(company.id) ?? 'member'),
-  ) ?? [];
+  const mapped =
+    (companies as CompanyRow[] | null)?.map((company) =>
+      mapCompanyRow(company, roleByCompanyId.get(company.id) ?? 'member'),
+    ) ?? [];
+
+  return Promise.all(mapped.map(withSignedCompanyAssets));
 }
 
 export async function fetchCompanyById(companyId: string): Promise<TenantCompany | null> {
@@ -146,7 +163,7 @@ export async function fetchCompanyById(companyId: string): Promise<TenantCompany
     return null;
   }
 
-  return mapCompanyRow(data as CompanyRow, 'owner');
+  return withSignedCompanyAssets(mapCompanyRow(data as CompanyRow, 'owner'));
 }
 
 export async function createCompany(input: CreateCompanyInput): Promise<string> {
@@ -200,7 +217,7 @@ export async function updateCompanyProfile(
     throw error;
   }
 
-  return mapCompanyRow(data as CompanyRow, 'owner');
+  return withSignedCompanyAssets(mapCompanyRow(data as CompanyRow, 'owner'));
 }
 
 export async function updateCompanyName(companyId: string, name: string): Promise<TenantCompany> {
@@ -222,7 +239,7 @@ export async function updateCompanyName(companyId: string, name: string): Promis
     throw error;
   }
 
-  return mapCompanyRow(data as CompanyRow, 'owner');
+  return withSignedCompanyAssets(mapCompanyRow(data as CompanyRow, 'owner'));
 }
 
 export async function deleteCompany(companyId: string): Promise<void> {

@@ -7,7 +7,9 @@ import { useCompanyProfile } from '@/hooks/use-company-profile';
 import { useSettings } from '@/hooks/use-settings';
 import { triggerImpactHaptic } from '@/lib/haptics';
 import { composeDocumentEmail, MailComposerError } from '@/lib/email/composer';
-import { buildEmailTemplate } from '@/lib/email/templates';
+import { buildEmailTemplate, buildReminderEmailTemplate } from '@/lib/email/templates';
+import { formatDate } from '@/lib/format/date';
+import { formatPriceTTC } from '@/lib/format/currency';
 import { getCachedPdf, setCachedPdf } from '@/lib/pdf/document-cache';
 import { generateHtmlAsPdf, printPdf, sharePdf, type GeneratedPdf } from '@/lib/pdf/share';
 import { sentDocumentsQueryKeys } from '@/lib/supabase/query-keys';
@@ -20,6 +22,9 @@ type UseDocumentActionsOptions = {
   documentNumber: string;
   clientEmail?: string | null;
   clientName: string;
+  /** Remaining amount for reminder emails (invoices). */
+  amountDue?: number | null;
+  dueAt?: string | null;
   buildHtml: (templateId?: string) => Promise<string>;
 };
 
@@ -29,6 +34,8 @@ export function useDocumentActions({
   documentNumber,
   clientEmail,
   clientName,
+  amountDue,
+  dueAt,
   buildHtml,
 }: UseDocumentActionsOptions) {
   const { user } = useAuth();
@@ -49,6 +56,7 @@ export function useDocumentActions({
   const [loading, setLoading] = useState(false);
   const [pdfLoading, setPdfLoading] = useState(false);
   const [emailLoading, setEmailLoading] = useState(false);
+  const [remindLoading, setRemindLoading] = useState(false);
   const activePdfRef = useRef<GeneratedPdf | null>(null);
   const pdfFileName = `${documentNumber}.pdf`;
 
@@ -196,6 +204,62 @@ export function useDocumentActions({
     user?.id,
   ]);
 
+  const handleRemindEmail = useCallback(async () => {
+    if (!user?.id || documentType !== 'invoice') {
+      return;
+    }
+
+    void triggerImpactHaptic();
+    setRemindLoading(true);
+    try {
+      const generated = await ensurePdf();
+      const template = buildReminderEmailTemplate({
+        documentNumber,
+        clientName,
+        companyName: companyProfile?.companyName,
+        amountLabel:
+          amountDue != null && amountDue > 0 ? formatPriceTTC(amountDue) : undefined,
+        dueAtLabel: dueAt ? formatDate(dueAt) : null,
+      });
+
+      await composeDocumentEmail({
+        userId: user.id,
+        documentType,
+        documentId,
+        documentNumber,
+        recipientEmail: clientEmail ?? '',
+        subject: template.subject,
+        body: template.body,
+        pdfUri: generated.uri,
+        pdfFileName: generated.fileName,
+        customMessage: template.body,
+      });
+
+      showSuccess('Relance prête dans votre application Mail.');
+      await queryClient.invalidateQueries({
+        queryKey: sentDocumentsQueryKeys.forDocument(user.id, documentType, documentId),
+      });
+    } catch (error) {
+      showError(readEmailErrorMessage(error));
+    } finally {
+      setRemindLoading(false);
+    }
+  }, [
+    amountDue,
+    clientEmail,
+    clientName,
+    companyProfile?.companyName,
+    documentId,
+    documentNumber,
+    documentType,
+    dueAt,
+    ensurePdf,
+    queryClient,
+    showError,
+    showSuccess,
+    user?.id,
+  ]);
+
   return {
     templateId,
     applyTemplate,
@@ -207,10 +271,12 @@ export function useDocumentActions({
     loading,
     pdfLoading,
     emailLoading,
+    remindLoading,
     handleOpenPreview,
     handleShare,
     handlePrint,
     handleSendEmail,
+    handleRemindEmail,
     buildPreviewHtml: (id: string) => buildHtml(id),
   };
 }

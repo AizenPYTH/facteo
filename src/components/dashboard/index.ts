@@ -15,6 +15,10 @@ export type { EmptyInvoicesProps } from './empty-invoices';
 
 export { DashboardWelcome } from './dashboard-welcome';
 
+export { DashboardSkeleton } from './dashboard-skeleton';
+
+export { DashboardAlerts } from './dashboard-alerts';
+
 export { StatsGrid } from './stats-grid';
 export { ExtendedStatsGrid } from './extended-stats-grid';
 export { RevenueChart } from './revenue-chart';
@@ -23,4 +27,5 @@ export { TopPrestationsSection } from './top-prestations-section';
 export { RecentActivitySection } from './recent-activity-section';
 export { QuickActions } from './quick-actions';
 export { RecentInvoicesSection } from './recent-invoices-section';
+export { ReplayLastSection } from './replay-last-section';
 export { SectionHeader } from './section-header';

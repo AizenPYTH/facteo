@@ -28,6 +28,7 @@ import { useInvoice } from '@/hooks/use-invoices';
 import { useInvoiceMutations } from '@/hooks/use-invoice-mutations';
 import { getInvoiceErrorMessage } from '@/lib/invoices/errors';
 import { buildInvoicePdfHtml } from '@/lib/pdf/document-pdf';
+import { newInvoiceHref } from '@/lib/navigation/new-document';
 import { useAuth } from '@/hooks/use-auth';
 import { useTenant } from '@/hooks/use-tenant';
 import { requireScope } from '@/lib/tenant/scope';
@@ -93,6 +94,8 @@ export default function InvoiceDetailScreen() {
     documentId: invoice?.id ?? '',
     documentNumber: invoice?.number ?? '',
     documentType: 'invoice',
+    amountDue: invoice?.amountDue,
+    dueAt: invoice?.dueAt,
   });
 
   useEffect(() => {
@@ -244,6 +247,17 @@ export default function InvoiceDetailScreen() {
     const signatureLocked = !hasFeature('client_signature');
 
     const primary = [
+      ...(markableAsPaid
+        ? [
+            {
+              id: 'remind',
+              label: 'Relancer le client',
+              icon: { ios: 'bell.badge.fill', android: 'notifications_active', web: 'notifications_active' } as const,
+              onPress: () => void documentActions.handleRemindEmail(),
+              loading: documentActions.remindLoading,
+            },
+          ]
+        : []),
       {
         id: 'send',
         label: 'Envoyer par e-mail',
@@ -330,6 +344,17 @@ export default function InvoiceDetailScreen() {
     ];
 
     const manage = [
+      ...(invoice.clientId
+        ? [
+            {
+              id: 'replay',
+              label: 'Comme la dernière fois',
+              icon: { ios: 'arrow.clockwise', android: 'replay', web: 'replay' } as const,
+              onPress: () =>
+                router.push(newInvoiceHref(invoice.clientId, { replay: true })),
+            },
+          ]
+        : []),
       ...(editable
         ? [
             {

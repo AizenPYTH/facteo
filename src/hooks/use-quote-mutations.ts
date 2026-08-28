@@ -10,7 +10,7 @@ import {
   updateQuoteStatus,
 } from '@/lib/supabase/quotes';
 import { convertQuoteToInvoice } from '@/lib/supabase/invoices';
-import { enforcePlanLimit } from '@/lib/subscription/limit-guard';
+import { enforcePlanLimit, withPlanLimitUi } from '@/lib/subscription/limit-guard';
 import { quotesQueryKeys, invoicesQueryKeys } from '@/lib/supabase/query-keys';
 import { useSubscriptionContext } from '@/providers/subscription-provider';
 import type { CreateQuoteInput, QuoteDetail, QuoteStatus, UpdateQuoteInput } from '@/types/quote';
@@ -53,7 +53,7 @@ export function useQuoteMutations() {
   const createQuoteMutation = useMutation({
     mutationFn: async (input: CreateQuoteInput) => {
       await enforcePlanLimit('documents', showLimitModal);
-      return createQuote(requireScope(scope), input);
+      return withPlanLimitUi(showLimitModal, () => createQuote(requireScope(scope), input));
     },
     onSuccess: () => invalidateQuotes(),
   });
@@ -110,7 +110,7 @@ export function useQuoteMutations() {
   const duplicateQuoteMutation = useMutation({
     mutationFn: async (quoteId: string) => {
       await enforcePlanLimit('documents', showLimitModal);
-      return duplicateQuote(requireScope(scope), quoteId);
+      return withPlanLimitUi(showLimitModal, () => duplicateQuote(requireScope(scope), quoteId));
     },
     onSuccess: () => invalidateQuotes(),
   });
@@ -118,7 +118,9 @@ export function useQuoteMutations() {
   const convertToInvoiceMutation = useMutation({
     mutationFn: async (quoteId: string) => {
       await enforcePlanLimit('documents', showLimitModal);
-      return convertQuoteToInvoice(requireScope(scope), quoteId);
+      return withPlanLimitUi(showLimitModal, () =>
+        convertQuoteToInvoice(requireScope(scope), quoteId),
+      );
     },
     onSuccess: () => {
       invalidateQuotes();

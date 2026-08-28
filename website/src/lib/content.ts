@@ -1,4 +1,4 @@
-import { APP_DASHBOARD_URL, APP_REGISTER_URL, SUPPORT_EMAIL } from './constants';
+import { APP_DASHBOARD_URL, APP_REGISTER_URL } from './constants';
 
 export const NAV_LINKS = [
   { label: 'Fonctionnalités', href: '/fonctionnalites' },
