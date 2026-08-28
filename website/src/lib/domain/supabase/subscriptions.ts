@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase';
 import { logSupabaseError } from '@/lib/domain/supabase/errors';
+import { sortPlansByDisplayOrder } from '@/lib/subscription/plan-order';
 import { resolveEffectivePlanId } from '@/lib/subscription/plans';
 import type {
   EffectivePlanId,
@@ -24,7 +25,7 @@ const SUBSCRIPTION_COLUMNS =
   'user_id, plan, status, stripe_customer_id, stripe_subscription_id, current_period_start, current_period_end, cancel_at_period_end, trial_ends_at, created_at, updated_at';
 
 const PLAN_COLUMNS =
-  'id, display_name, description, sort_order, max_clients, max_quotes, max_invoices, max_documents_per_month, max_siren_searches_per_month, max_companies, features, stripe_price_id, stripe_product_id, app_store_product_id, play_store_product_id, is_active';
+  'id, display_name, description, sort_order, max_clients, max_quotes, max_invoices, max_documents_per_month, max_siren_searches_per_month, max_companies, features, stripe_price_id, stripe_price_id_yearly, stripe_lookup_key_monthly, stripe_lookup_key_yearly, stripe_product_id, app_store_product_id, play_store_product_id, is_active';
 
 function mapPlanFeatures(value: unknown): PlanFeatures {
   const source = (value ?? {}) as Partial<PlanFeatures>;
@@ -55,6 +56,9 @@ function mapSubscriptionPlanRow(row: SubscriptionPlanRow): SubscriptionPlan {
     maxCompanies: row.max_companies ?? null,
     features: mapPlanFeatures(row.features),
     stripePriceId: row.stripe_price_id,
+    stripePriceIdYearly: row.stripe_price_id_yearly ?? null,
+    stripeLookupKeyMonthly: row.stripe_lookup_key_monthly ?? null,
+    stripeLookupKeyYearly: row.stripe_lookup_key_yearly ?? null,
     stripeProductId: row.stripe_product_id,
     appStoreProductId: row.app_store_product_id,
     playStoreProductId: row.play_store_product_id,
@@ -134,7 +138,9 @@ export async function fetchSubscriptionPlans(): Promise<SubscriptionPlan[]> {
     throw error;
   }
 
-  return ((data as SubscriptionPlanRow[] | null) ?? []).map(mapSubscriptionPlanRow);
+  return sortPlansByDisplayOrder(
+    ((data as SubscriptionPlanRow[] | null) ?? []).map(mapSubscriptionPlanRow),
+  );
 }
 
 export async function fetchUserSubscription(userId: string): Promise<UserSubscription | null> {

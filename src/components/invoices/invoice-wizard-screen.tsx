@@ -1,5 +1,5 @@
 import { router, type Href } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { InvoiceScreenHeader } from '@/components/invoices/invoice-screen-header';
 import { DocumentFinalizeStep } from '@/components/quotes/document-finalize-step';
@@ -8,7 +8,10 @@ import { QuoteClientStep } from '@/components/quotes/quote-client-step';
 import { QuoteWizardProgress } from '@/components/quotes/quote-wizard-progress';
 import { WizardActionBar } from '@/components/ui/wizard-action-bar';
 import { WizardScreen } from '@/components/ui/wizard-screen';
+import { useClient } from '@/hooks/use-clients';
+import { useClientDocumentMemory } from '@/hooks/use-client-document-memory';
 import { useCompanyProfile } from '@/hooks/use-company-profile';
+import { useDebouncedValue } from '@/hooks/use-debounced-value';
 import { useInvoiceMutations } from '@/hooks/use-invoice-mutations';
 import { useSettings } from '@/hooks/use-settings';
 import {
@@ -22,15 +25,24 @@ import {
   type InvoiceWizardState,
 } from '@/lib/invoices/form';
 import { mapInvoiceLinesToDocumentTotals } from '@/lib/invoices/mappers';
+import { suggestVatRegime } from '@/lib/invoices/legal-mentions';
+import {
+  hasBlockingPreflightIssues,
+  formatPreflightErrors,
+  validateInvoicePreflight,
+} from '@/lib/invoices/preflight-validation';
 import {
   areInvoiceLinesValid,
   isInvoiceInfoValid,
   parseInvoiceInfoValues,
 } from '@/lib/invoices/validators';
+import { memoryLinesToQuoteLines } from '@/lib/supabase/client-document-memory';
 import { useToast } from '@/providers/toast-provider';
 import { getClientDisplayName, type Client } from '@/types/client';
 import type { InvoiceLineValue } from '@/types/invoice';
 import { createEmptyQuoteLine, type QuoteLineValue } from '@/types/quote';
+
+const AUTOSAVE_DEBOUNCE_MS = 6000;
 
 const TOTAL_STEPS = 3;
 
@@ -43,6 +55,10 @@ type InvoiceWizardScreenProps = {
   title: string;
   invoiceId?: string;
   initialState?: InvoiceWizardState;
+  /** When the client is already known (e.g. from fiche client), start on lines. */
+  initialStep?: number;
+  /** Auto-apply last document lines ("Comme la dernière fois"). */
+  autoReplay?: boolean;
   variant?: 'mobile' | 'desktop';
   onStepChange?: (step: number) => void;
 };
@@ -52,6 +68,8 @@ export function InvoiceWizardScreen({
   title,
   invoiceId,
   initialState,
+  initialStep = 1,
+  autoReplay = false,
   variant = 'mobile',
   onStepChange,
 }: InvoiceWizardScreenProps) {
@@ -60,7 +78,9 @@ export function InvoiceWizardScreen({
   const { data: companyProfile } = useCompanyProfile();
   const { data: settings } = useSettings();
 
-  const [step, setStep] = useState(1);
+  const [step, setStep] = useState(() =>
+    Math.min(Math.max(initialStep, 1), TOTAL_STEPS),
+  );
 
   useEffect(() => {
     onStepChange?.(step);
@@ -68,10 +88,117 @@ export function InvoiceWizardScreen({
   const [state, setState] = useState<InvoiceWizardState>(
     initialState ?? createEmptyInvoiceWizardState(),
   );
+  const memoryAppliedForClient = useRef<string | null>(null);
+  const replayApplied = useRef(false);
+  const autosaveBaselineRef = useRef<string | null>(null);
+  const revisionRef = useRef(state.revision);
+  const { data: memory, isSuccess: memoryReady } = useClientDocumentMemory(state.clientId);
+  const { data: selectedClient } = useClient(state.clientId ?? '');
 
   const totals = useMemo(() => mapInvoiceLinesToDocumentTotals(state.lines), [state.lines]);
   const companyName = companyProfile?.companyName?.trim() || 'Votre entreprise';
   const isSaving = mode === 'create' ? createInvoice.isPending : updateInvoice.isPending;
+  const defaultVatRate = settings?.defaultVatRate ?? 20;
+  const debouncedAutosaveState = useDebouncedValue(state, AUTOSAVE_DEBOUNCE_MS);
+
+  useEffect(() => {
+    revisionRef.current = state.revision;
+  }, [state.revision]);
+
+  useEffect(() => {
+    if (mode !== 'edit' || !initialState) {
+      return;
+    }
+
+    autosaveBaselineRef.current = JSON.stringify({
+      clientId: initialState.clientId,
+      lines: initialState.lines,
+      info: initialState.info,
+      vatRegime: initialState.vatRegime,
+    });
+  }, [initialState, mode]);
+
+  useEffect(() => {
+    if (mode !== 'edit' || !invoiceId) {
+      return;
+    }
+
+    if (!debouncedAutosaveState.clientId || debouncedAutosaveState.lines.length === 0) {
+      return;
+    }
+
+    if (!areInvoiceLinesValid(debouncedAutosaveState.lines)) {
+      return;
+    }
+
+    if (!isInvoiceInfoValid(debouncedAutosaveState.info)) {
+      return;
+    }
+
+    const snapshot = JSON.stringify({
+      clientId: debouncedAutosaveState.clientId,
+      lines: debouncedAutosaveState.lines,
+      info: debouncedAutosaveState.info,
+      vatRegime: debouncedAutosaveState.vatRegime,
+    });
+
+    if (autosaveBaselineRef.current === snapshot) {
+      return;
+    }
+
+    let cancelled = false;
+
+    async function runAutosave() {
+      let metadata;
+      try {
+        metadata = parseInvoiceInfoValues(debouncedAutosaveState.info);
+      } catch {
+        return;
+      }
+
+      try {
+        const updated = await updateInvoice.mutateAsync({
+          invoiceId: invoiceId!,
+          input: {
+            clientId: debouncedAutosaveState.clientId!,
+            lines: debouncedAutosaveState.lines,
+            ...metadata,
+            vatRegime: debouncedAutosaveState.vatRegime,
+            expectedRevision: revisionRef.current,
+            revisionReason: 'Enregistrement automatique',
+          },
+        });
+
+        if (cancelled) {
+          return;
+        }
+
+        autosaveBaselineRef.current = snapshot;
+        revisionRef.current = updated.revision;
+        setState((current) => ({ ...current, revision: updated.revision }));
+      } catch (error) {
+        if (cancelled) {
+          return;
+        }
+
+        const message = readErrorMessage(error);
+        if (message.includes('revision conflict')) {
+          showError(
+            'Conflit de modification : la facture a été mise à jour ailleurs. Rechargez l’écran.',
+          );
+          return;
+        }
+
+        showError(getInvoiceErrorMessage(message));
+      }
+    }
+
+    void runAutosave();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [debouncedAutosaveState, invoiceId, mode, showError, updateInvoice]);
 
   useEffect(() => {
     if (state.info.issuedAt) {
@@ -93,29 +220,123 @@ export function InvoiceWizardScreen({
   }, [settings?.paymentTermsDays, state.info.issuedAt]);
 
   useEffect(() => {
-    if (step !== 2 || state.lines.length > 0) {
+    if (!state.clientId || !memory || memoryAppliedForClient.current === state.clientId) {
+      return;
+    }
+
+    memoryAppliedForClient.current = state.clientId;
+    const paymentDays = memory.defaults.paymentTermsDays;
+    const notes = memory.defaults.notes;
+
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- apply client memory once per client
+    setState((current) => {
+      const nextPayment =
+        paymentDays != null ? String(paymentDays) : current.info.paymentTermsDays;
+      const days = Number(nextPayment);
+      return {
+        ...current,
+        info: {
+          ...current.info,
+          paymentTermsDays: nextPayment,
+          dueAt:
+            current.info.issuedAt && Number.isFinite(days) && days > 0
+              ? addDaysFrenchDateInput(days)
+              : current.info.dueAt,
+          notes: current.info.notes?.trim() ? current.info.notes : notes ?? current.info.notes,
+        },
+      };
+    });
+  }, [memory, state.clientId]);
+
+  useEffect(() => {
+    if (!autoReplay || replayApplied.current || !state.clientId || !memoryReady) {
+      return;
+    }
+
+    replayApplied.current = true;
+    const last = memory?.lastDocument;
+    if (last && last.lines.length > 0) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- one-shot replay from URL
+      setState((current) => ({
+        ...current,
+        lines: memoryLinesToQuoteLines(last.lines),
+      }));
+      showSuccess('Comme la dernière fois — prestations reprises.');
+      return;
+    }
+
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- fallback empty line if no history
+    setState((current) => ({
+      ...current,
+      lines: [
+        createEmptyQuoteLine({
+          vatRate: memory?.defaults.vatRate ?? defaultVatRate,
+          discountPercent: memory?.defaults.discountPercent ?? 0,
+        }),
+      ],
+    }));
+  }, [
+    autoReplay,
+    defaultVatRate,
+    memory?.defaults.discountPercent,
+    memory?.defaults.vatRate,
+    memory?.lastDocument,
+    memoryReady,
+    showSuccess,
+    state.clientId,
+  ]);
+
+  useEffect(() => {
+    if (step !== 2 || state.lines.length > 0 || autoReplay) {
       return;
     }
 
     // eslint-disable-next-line react-hooks/set-state-in-effect -- add starter line when entering step 2
     setState((current) => ({
       ...current,
-      lines: [createEmptyQuoteLine()],
+      lines: [
+        createEmptyQuoteLine({
+          vatRate: memory?.defaults.vatRate ?? defaultVatRate,
+          discountPercent: memory?.defaults.discountPercent ?? 0,
+        }),
+      ],
     }));
-  }, [step, state.lines.length]);
+  }, [
+    autoReplay,
+    step,
+    state.lines.length,
+    memory?.defaults.vatRate,
+    memory?.defaults.discountPercent,
+    defaultVatRate,
+  ]);
 
   function handleSelectClient(client: Client) {
+    memoryAppliedForClient.current = null;
+    replayApplied.current = false;
     setState((current) => ({
       ...current,
       clientId: client.id,
       clientName: getClientDisplayName(client),
+      vatRegime: suggestVatRegime({
+        sellerCountry: companyProfile?.country,
+        clientCountry: client.country,
+        clientVatNumber: client.vatNumber,
+      }),
     }));
+    setStep(2);
   }
 
   function handleAddLine(line: QuoteLineValue) {
     setState((current) => ({
       ...current,
       lines: [...current.lines, line],
+    }));
+  }
+
+  function handleReplaceLines(lines: QuoteLineValue[]) {
+    setState((current) => ({
+      ...current,
+      lines,
     }));
   }
 
@@ -196,7 +417,7 @@ export function InvoiceWizardScreen({
         if (state.lines.length === 0) {
           showError('Ajoutez au moins une prestation à la facture.');
         } else {
-          showError('Renseignez la description, la quantité et le prix de chaque prestation.');
+          showError('Indiquez une description et un prix HT pour chaque prestation.');
         }
         break;
       case 3:
@@ -227,9 +448,50 @@ export function InvoiceWizardScreen({
     router.back();
   }
 
+  function runPreflight(): boolean {
+    const issues = validateInvoicePreflight({
+      clientId: state.clientId,
+      clientCompany: selectedClient?.company,
+      clientLastName: selectedClient?.lastName,
+      clientFirstName: selectedClient?.firstName,
+      clientEmail: selectedClient?.email,
+      clientPhone: selectedClient?.phone,
+      clientVatNumber: selectedClient?.vatNumber,
+      clientSiren: selectedClient?.siren,
+      clientSiret: selectedClient?.siret,
+      clientCountry: selectedClient?.country,
+      clientPostalCode: selectedClient?.postalCode,
+      clientAddress: selectedClient?.address,
+      clientCity: selectedClient?.city,
+      companyName: companyProfile?.companyName,
+      companyAddress: companyProfile?.address,
+      companyPostalCode: companyProfile?.postalCode,
+      companyCity: companyProfile?.city,
+      companySiret: companyProfile?.siret,
+      companyIban: companyProfile?.iban,
+      companyVatNumber: companyProfile?.vatNumber,
+      companyLegalForm: companyProfile?.legalForm,
+      currency: settings?.currency ?? 'EUR',
+      vatRegime: state.vatRegime,
+      linesCount: state.lines.filter((line) => line.description.trim()).length,
+      hasPositiveTotals: totals.totalTtc > 0,
+    });
+
+    if (hasBlockingPreflightIssues(issues)) {
+      showError(formatPreflightErrors(issues) || 'La facture ne peut pas être enregistrée.');
+      return false;
+    }
+
+    return true;
+  }
+
   async function handleSave() {
     if (!state.clientId || !canGoNext()) {
       showError('La facture est incomplète.');
+      return;
+    }
+
+    if (!runPreflight()) {
       return;
     }
 
@@ -246,13 +508,15 @@ export function InvoiceWizardScreen({
       clientId: state.clientId,
       lines: state.lines,
       ...metadata,
+      vatRegime: state.vatRegime,
+      expectedRevision: mode === 'edit' ? revisionRef.current : undefined,
     };
 
     try {
       if (mode === 'create') {
-        await createInvoice.mutateAsync(input);
-        showSuccess('Facture créée.');
-        router.replace('/invoices' as Href);
+        const created = await createInvoice.mutateAsync(input);
+        showSuccess('Facture créée — vous pouvez l’envoyer.');
+        router.replace(`/invoices/${created.id}` as Href);
         return;
       }
 
@@ -261,7 +525,14 @@ export function InvoiceWizardScreen({
         return;
       }
 
-      await updateInvoice.mutateAsync({ invoiceId, input });
+      const updated = await updateInvoice.mutateAsync({ invoiceId, input });
+      autosaveBaselineRef.current = JSON.stringify({
+        clientId: state.clientId,
+        lines: state.lines,
+        info: state.info,
+        vatRegime: state.vatRegime,
+      });
+      revisionRef.current = updated.revision;
       showSuccess('Facture modifiée.');
       router.replace(`/invoices/${invoiceId}` as Href);
     } catch (error) {
@@ -276,15 +547,20 @@ export function InvoiceWizardScreen({
           <QuoteClientStep
             onSelectClient={handleSelectClient}
             selectedClientId={state.clientId}
+            selectedClientName={state.clientName || undefined}
           />
         );
       case 2:
         return (
           <QuoteAddLinesStep
+            clientId={state.clientId}
+            clientName={state.clientName || undefined}
+            defaultVatRate={defaultVatRate}
             lines={asQuoteLines(state.lines)}
             onAddLine={handleAddLine}
             onChangeLine={handleChangeLine}
             onRemoveLine={handleRemoveLine}
+            onReplaceLines={handleReplaceLines}
           />
         );
       case 3:
@@ -330,7 +606,6 @@ export function InvoiceWizardScreen({
             backLabel={step === 1 ? 'Annuler' : 'Précédent'}
             onBack={handleBack}
             onPrimary={step < TOTAL_STEPS ? handleNext : handleSave}
-            primaryDisabled={step < TOTAL_STEPS ? !canGoNext() : false}
             primaryLabel={primaryActionLabel}
             primaryLoading={step >= TOTAL_STEPS && isSaving}
           />
@@ -350,7 +625,6 @@ export function InvoiceWizardScreen({
             backLabel={step === 1 ? 'Annuler' : 'Précédent'}
             onBack={handleBack}
             onPrimary={step < TOTAL_STEPS ? handleNext : handleSave}
-            primaryDisabled={step < TOTAL_STEPS ? !canGoNext() : false}
             primaryLabel={primaryActionLabel}
             primaryLoading={step >= TOTAL_STEPS && isSaving}
           />

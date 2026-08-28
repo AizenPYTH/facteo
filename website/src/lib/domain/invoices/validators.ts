@@ -36,6 +36,7 @@ export const invoiceInfoSchema = z.object({
     .min(1, 'Champ obligatoire.')
     .refine((value) => frenchDateInputToIso(value) !== null, 'Date invalide.'),
   dueAt: optionalDate,
+  serviceDate: optionalDate,
   paymentTermsDays: z
     .string()
     .trim()
@@ -51,6 +52,7 @@ export function parseInvoiceInfoValues(info: InvoiceInfoValues) {
   return {
     issuedAt: frenchDateInputToIso(parsed.issuedAt),
     dueAt: parsed.dueAt ? frenchDateInputToIso(parsed.dueAt) : null,
+    serviceDate: parsed.serviceDate ? frenchDateInputToIso(parsed.serviceDate) : null,
     paymentTermsDays: parsed.paymentTermsDays
       ? Number(parsed.paymentTermsDays)
       : null,

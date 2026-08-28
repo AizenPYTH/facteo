@@ -3,6 +3,9 @@ import { SymbolView } from 'expo-symbols';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { RevenueChart } from '@/components/dashboard/revenue-chart';
+import { DashboardAlerts } from '@/components/dashboard/dashboard-alerts';
+import { DashboardSubscriptionCard } from '@/components/dashboard/dashboard-subscription-card';
+import { ReplayLastSection } from '@/components/dashboard/replay-last-section';
 import { PremiumGatedSection } from '@/components/subscription/premium-gated-section';
 import { DesktopPanel } from '@/components/web/desktop/desktop-panel';
 import { DesktopTopHeader } from '@/components/web/desktop/desktop-top-header';
@@ -31,6 +34,23 @@ export function DashboardDesktopScreen() {
   return (
     <View style={styles.root}>
       <DesktopTopHeader
+        actions={
+          <View style={styles.headerActions}>
+            <Pressable
+              accessibilityLabel="Rechercher"
+              accessibilityRole="button"
+              hitSlop={8}
+              onPress={() => router.push('/search' as Href)}
+              style={styles.searchBtn}>
+              <SymbolView
+                name={{ ios: 'magnifyingglass', android: 'search', web: 'search' }}
+                size={18}
+                tintColor={colors.iconSecondary}
+                type="hierarchical"
+              />
+            </Pressable>
+          </View>
+        }
         subtitle={companyName ?? 'Vue d’ensemble de votre activité'}
         title={firstName ? `Bonjour, ${firstName}` : 'Tableau de bord'}
       />
@@ -40,6 +60,7 @@ export function DashboardDesktopScreen() {
           <LoadingView message="Chargement du tableau de bord…" size="small" />
         ) : (
           <>
+            <DashboardSubscriptionCard />
             <View style={styles.statsRow}>
               <DesktopStatCard
                 accentColor={colors.primary}
@@ -96,6 +117,12 @@ export function DashboardDesktopScreen() {
                 </DesktopPanel>
 
                 <View style={styles.tablesRow}>
+                  {recentInvoices.some((invoice) => invoice.clientId) ? (
+                    <DesktopPanel flex={1} title="Comme la dernière fois">
+                      <ReplayLastSection hideTitle invoices={recentInvoices} />
+                    </DesktopPanel>
+                  ) : null}
+
                   <DesktopPanel flex={1} title="Dernières factures">
                     <RecentDocumentsList
                       emptyLabel="Aucune facture récente."
@@ -111,20 +138,6 @@ export function DashboardDesktopScreen() {
                         router.push(`/invoices?selected=${encodeURIComponent(id)}` as Href)
                       }
                       type="invoice"
-                    />
-                  </DesktopPanel>
-
-                  <DesktopPanel flex={1} title="Activité récente">
-                    <ActivityList
-                      activity={extended.recentActivity}
-                      locked={advancedStatsLocked}
-                      onPress={(item) => {
-                        const path =
-                          item.type === 'invoice'
-                            ? `/invoices?selected=${encodeURIComponent(item.id)}`
-                            : `/quotes?selected=${encodeURIComponent(item.id)}`;
-                        router.push(path as Href);
-                      }}
                     />
                   </DesktopPanel>
                 </View>
@@ -161,28 +174,22 @@ export function DashboardDesktopScreen() {
                   </View>
                 </DesktopPanel>
 
-                <DesktopPanel title="Notifications">
-                  <View style={styles.notifications}>
-                    {stats.lateInvoices > 0 ? (
-                      <NotificationItem
-                        icon={{ ios: 'bell.badge', android: 'notifications_active', web: 'notifications_active' }}
-                        label={`${stats.lateInvoices} facture${stats.lateInvoices > 1 ? 's' : ''} en retard`}
-                        onPress={() => router.push('/invoices?status=overdue' as Href)}
-                        tone="warning"
-                      />
-                    ) : null}
-                    {stats.pendingQuotes > 0 ? (
-                      <NotificationItem
-                        icon={{ ios: 'doc.text', android: 'description', web: 'description' }}
-                        label={`${stats.pendingQuotes} devis en attente`}
-                        onPress={() => router.push('/quotes?status=sent' as Href)}
-                        tone="info"
-                      />
-                    ) : null}
-                    {stats.lateInvoices === 0 && stats.pendingQuotes === 0 ? (
-                      <Text style={styles.emptyNotice}>Aucune notification pour le moment.</Text>
-                    ) : null}
-                  </View>
+                <DesktopPanel title="À faire aujourd’hui">
+                  <DashboardAlerts compact stats={stats} />
+                </DesktopPanel>
+
+                <DesktopPanel title="Activité récente">
+                  <ActivityList
+                    activity={extended.recentActivity}
+                    locked={advancedStatsLocked}
+                    onPress={(item) => {
+                      const path =
+                        item.type === 'invoice'
+                          ? `/invoices?selected=${encodeURIComponent(item.id)}`
+                          : `/quotes?selected=${encodeURIComponent(item.id)}`;
+                      router.push(path as Href);
+                    }}
+                  />
                 </DesktopPanel>
               </View>
             </View>
@@ -308,29 +315,6 @@ function ActivityList({
   );
 }
 
-function NotificationItem({
-  label,
-  icon,
-  onPress,
-  tone,
-}: {
-  label: string;
-  icon: { ios: string; android: string; web: string };
-  onPress: () => void;
-  tone: 'warning' | 'info';
-}) {
-  const styles = useNoticeStyles();
-  const colors = useColors();
-  const tint = tone === 'warning' ? colors.warning : colors.primary;
-
-  return (
-    <Pressable onPress={onPress} style={styles.item}>
-      <SymbolView name={icon as never} size={16} tintColor={tint} type="hierarchical" />
-      <Text style={styles.label}>{label}</Text>
-    </Pressable>
-  );
-}
-
 const useStyles = () =>
   useThemedStyles((colors) => ({
     root: { flex: 1, minHeight: 0 },
@@ -369,14 +353,18 @@ const useStyles = () =>
       padding: spacing.md,
       gap: spacing.sm,
     },
-    notifications: {
-      padding: spacing.md,
+    headerActions: {
+      flexDirection: 'row',
+      alignItems: 'center',
       gap: spacing.sm,
     },
-    emptyNotice: {
-      ...typography.subheadline,
-      color: colors.textSecondary,
-      padding: spacing.sm,
+    searchBtn: {
+      width: 36,
+      height: 36,
+      borderRadius: radius.full,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: colors.backgroundSecondary,
     },
   }));
 
@@ -437,22 +425,5 @@ const useListStyles = () =>
       color: colors.textSecondary,
       padding: spacing.xl,
       textAlign: 'center',
-    },
-  }));
-
-const useNoticeStyles = () =>
-  useThemedStyles((colors) => ({
-    item: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: spacing.sm,
-      padding: spacing.sm,
-      borderRadius: radius.md,
-      backgroundColor: colors.backgroundSecondary,
-    },
-    label: {
-      ...typography.footnoteMedium,
-      color: colors.text,
-      flex: 1,
     },
   }));

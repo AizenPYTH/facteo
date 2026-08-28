@@ -16,6 +16,7 @@ import { resolvePdfTemplate } from '@/lib/pdf/engine/templates/registry';
 import { getTemplatePdfStyles } from '@/lib/pdf/engine/templates/styles';
 import type { PdfDocumentInput } from '@/lib/pdf/engine/types';
 import { formatPriceHT } from '@/lib/format/currency';
+import { formatDate } from '@/lib/format/date';
 
 function logoClass(position: string): string {
   if (position === 'center') return 'logo logo-center';
@@ -30,11 +31,22 @@ function buildHeader(input: PdfDocumentInput, meta: ReturnType<typeof buildDocum
     ? `<img class="${logoClass(template.logoPosition)}" src="${escapeHtml(company.logoUrl)}" alt="Logo" />`
     : '';
 
+  const serviceDateLine =
+    input.kind !== 'quote' && input.serviceDate
+      ? `<div><strong>Livraison / prestation</strong> ${escapeHtml(formatDate(input.serviceDate))}</div>`
+      : '';
+  const creditRefLine =
+    input.kind === 'credit_note' && input.creditOfInvoiceNumber
+      ? `<div><strong>Facture d’origine</strong> ${escapeHtml(input.creditOfInvoiceNumber)}</div>`
+      : '';
+
   const metaBlock = `
     <div class="meta">
       <h1 class="doc-title">${meta.title}</h1>
       <div><strong>N°</strong> ${escapeHtml(input.number)}</div>
       <div><strong>Date</strong> ${formatIssuedDate(input)}</div>
+      ${serviceDateLine}
+      ${creditRefLine}
       <div><strong>${meta.secondaryDateLabel}</strong> ${formatSecondaryDate(input)}</div>
     </div>`;
 

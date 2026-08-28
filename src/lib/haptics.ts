@@ -1,16 +1,10 @@
 import * as Haptics from 'expo-haptics';
 import { Platform } from 'react-native';
 
-export async function triggerSelectionHaptic(): Promise<void> {
-  if (Platform.OS === 'web') {
-    return;
-  }
+import { hapticIntent, type FeedbackRecipe } from '@/constants/theme/interaction';
 
-  try {
-    await Haptics.selectionAsync();
-  } catch {
-    // Haptics unavailable on simulator or unsupported device.
-  }
+export async function triggerSelectionHaptic(): Promise<void> {
+  return triggerHaptic('selection');
 }
 
 export async function triggerImpactHaptic(
@@ -25,4 +19,40 @@ export async function triggerImpactHaptic(
   } catch {
     // Haptics unavailable on simulator or unsupported device.
   }
+}
+
+/** Interaction-language entry point — prefer this in new UI. */
+export async function triggerHaptic(
+  intent: keyof typeof hapticIntent,
+): Promise<void> {
+  if (Platform.OS === 'web') {
+    return;
+  }
+
+  try {
+    const spec = hapticIntent[intent];
+    if (spec.type === 'selection') {
+      await Haptics.selectionAsync();
+      return;
+    }
+    if (spec.type === 'impact') {
+      await Haptics.impactAsync(spec.style);
+      return;
+    }
+    await Haptics.notificationAsync(spec.style);
+  } catch {
+    // Haptics unavailable on simulator or unsupported device.
+  }
+}
+
+export async function triggerFeedbackHaptic(
+  recipe: FeedbackRecipe,
+): Promise<void> {
+  if (recipe === 'success') {
+    return triggerHaptic('notificationSuccess');
+  }
+  if (recipe === 'error') {
+    return triggerHaptic('notificationError');
+  }
+  return triggerHaptic('selection');
 }

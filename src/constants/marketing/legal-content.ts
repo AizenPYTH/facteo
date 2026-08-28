@@ -4,9 +4,9 @@ export const LEGAL_LAST_UPDATED = '15 juillet 2026';
 
 export const LEGAL_CONTACT = {
   company: 'INVEQ',
-  email: 'farouqdib@gmail.com',
-  support: 'farouqdib@gmail.com',
-  dpo: 'farouqdib@gmail.com',
+  email: 'contact@inveq.fr',
+  support: 'support@inveq.fr',
+  dpo: 'support@inveq.fr',
   website: 'https://www.inveq.fr',
   address: 'France',
 } as const;

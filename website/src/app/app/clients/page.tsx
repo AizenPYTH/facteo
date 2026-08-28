@@ -52,12 +52,19 @@ function ClientsWorkspaceInner() {
   return (
     <div className="flex h-full min-h-0 flex-col">
       <WorkspaceToolbar subtitle={`${clients.length} client(s)`} title="Clients">
-        <Link
-          className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white shadow-[0_10px_24px_-10px_rgba(37,99,235,0.65)] transition duration-150 hover:-translate-y-0.5 hover:bg-primary-dark"
-          href="/app/clients/new">
-          <Plus size={16} />
-          Nouveau client
-        </Link>
+        <div className="flex flex-wrap items-center gap-2">
+          <Link
+            className="inline-flex items-center gap-2 rounded-xl border border-slate-200/90 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition duration-150 hover:-translate-y-0.5 hover:border-slate-300 hover:bg-slate-50"
+            href="/app/clients/new?ai=1">
+            Ajouter par IA
+          </Link>
+          <Link
+            className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white shadow-[0_10px_24px_-10px_rgba(37,99,235,0.65)] transition duration-150 hover:-translate-y-0.5 hover:bg-primary-dark"
+            href="/app/clients/new">
+            <Plus size={16} />
+            Nouveau client
+          </Link>
+        </div>
       </WorkspaceToolbar>
 
       <div className="min-h-0 flex-1">
@@ -143,8 +150,14 @@ function ClientsWorkspaceInner() {
 
                   <div className="mt-6 grid gap-4 sm:grid-cols-3">
                     {[
-                      { label: 'Devis', href: `/app/quotes?client=${client.id}` },
-                      { label: 'Factures', href: `/app/invoices?client=${client.id}` },
+                      {
+                        label: 'Nouveau devis',
+                        href: `/app/quotes?create=1&client=${client.id}`,
+                      },
+                      {
+                        label: 'Nouvelle facture',
+                        href: `/app/invoices?create=1&client=${client.id}`,
+                      },
                       { label: 'Modifier', href: `/app/clients/${client.id}/edit` },
                     ].map((action) => (
                       <Link
@@ -175,7 +188,24 @@ function ClientsWorkspaceInner() {
                   </div>
                 ) : clients.length === 0 ? (
                   <div className="p-4">
-                    <EmptyState title="Aucun client" />
+                    <EmptyState
+                      action={
+                        <div className="flex flex-col gap-2 sm:flex-row">
+                          <Link
+                            className="inline-flex items-center justify-center rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white"
+                            href="/app/clients/new">
+                            Créer un client
+                          </Link>
+                          <Link
+                            className="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700"
+                            href="/app/clients/new?ai=1">
+                            Ajouter par IA
+                          </Link>
+                        </div>
+                      }
+                      description="Ajoutez un contact manuellement ou importez-le avec l’IA."
+                      title="Aucun client"
+                    />
                   </div>
                 ) : (
                   <ul className="divide-y divide-slate-100/90">

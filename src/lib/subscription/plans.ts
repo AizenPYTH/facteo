@@ -46,16 +46,25 @@ export const DEFAULT_PLAN_FEATURES: Record<EffectivePlanId, PlanFeatures> = {
     advanced_stats: false,
     siren_search: true,
   },
+  max: {
+    custom_logo: true,
+    company_signature: true,
+    client_signature: true,
+    pdf_templates: true,
+    stripe_payments: true,
+    ai_assistant: true,
+    advanced_stats: true,
+    siren_search: true,
+  },
 };
 
 /** Mappe l’enum legacy subscriptions.plan vers le catalogue actif. */
 export function resolveEffectivePlanId(plan: SubscriptionPlanId | string): EffectivePlanId {
   if (plan === 'free' || plan === 'micro') return 'micro';
-  if (plan === 'basique') return 'basique';
+  if (plan === 'basique' || plan === 'starter') return 'basique';
   if (plan === 'standard') return 'standard';
-  if (plan === 'pro' || plan === 'premium' || plan === 'starter' || plan === 'enterprise') {
-    return 'pro';
-  }
+  if (plan === 'pro') return 'pro';
+  if (plan === 'max' || plan === 'premium' || plan === 'enterprise') return 'max';
   return 'micro';
 }
 
@@ -82,4 +91,20 @@ export function hasPlanFeature(
 
 export function formatPlanLimit(limit: number | null): string {
   return limit === null ? 'Illimité' : String(limit);
+}
+
+export function getPlanDisplayName(effectivePlanId: EffectivePlanId | string): string {
+  switch (effectivePlanId) {
+    case 'basique':
+      return 'Basique';
+    case 'standard':
+      return 'Standard';
+    case 'pro':
+      return 'Pro';
+    case 'max':
+      return 'Max';
+    case 'micro':
+    default:
+      return 'Micro';
+  }
 }

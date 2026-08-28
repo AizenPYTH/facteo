@@ -1,9 +1,10 @@
 import type { ReactNode } from 'react';
-import { Image, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 
+import { InveqWordmark } from '@/components/brand/inveq-wordmark';
 import { FormScreen } from '@/components/ui/form-screen';
 import { useColors, useThemedStyles } from '@/hooks/use-colors';
 import { motion } from '@/constants/theme/design-system';
@@ -43,19 +44,9 @@ export function AuthScreen({
       />
 
       <SafeAreaView edges={['top', 'bottom']} style={styles.safeArea}>
-        <FormScreen
-          contentContainerStyle={styles.content}
-          edges={[]}
-          footer={footer}
-          scrollable
-          transparent>
+        <FormScreen contentContainerStyle={styles.content} edges={[]} scrollable transparent>
           <Animated.View entering={FadeIn.duration(motion.slow)} style={styles.header}>
-            <Image
-              accessibilityIgnoresInvertColors
-              accessibilityLabel="INVEQ"
-              source={require('@/assets/images/INVEQ-logo.png')}
-              style={styles.logo}
-            />
+            <InveqWordmark height={42} />
             <Animated.View entering={FadeInDown.delay(80).duration(motion.normal).springify()}>
               <Text accessibilityRole="header" style={styles.title}>
                 {title}
@@ -77,6 +68,12 @@ export function AuthScreen({
             entering={FadeInDown.delay(140).duration(motion.normal).springify()}
             style={styles.card}>
             {children}
+          </Animated.View>
+
+          <Animated.View
+            entering={FadeInDown.delay(180).duration(motion.normal).springify()}
+            style={styles.actions}>
+            {footer}
           </Animated.View>
 
           {footerLink ? (
@@ -104,20 +101,15 @@ function useStyles() {
     content: {
       flexGrow: 1,
       paddingHorizontal: spacing.screenPaddingHorizontal,
-      paddingTop: spacing['3xl'],
-      paddingBottom: spacing.xl,
-      gap: spacing.xl,
-      justifyContent: 'center',
+      paddingTop: spacing.xl,
+      paddingBottom: spacing['2xl'],
+      gap: spacing.lg,
+      justifyContent: 'flex-start',
     },
     header: {
-      gap: spacing.lg,
+      gap: spacing.md,
       alignItems: 'center',
-      paddingBottom: spacing.sm,
-    },
-    logo: {
-      width: 176,
-      height: 48,
-      resizeMode: 'contain',
+      paddingBottom: spacing.xs,
     },
     title: {
       ...typography.title1,
@@ -141,6 +133,9 @@ function useStyles() {
       gap: spacing.lg,
       ...shadows.card,
     },
+    actions: {
+      gap: spacing.sm,
+    },
     errorBanner: {
       backgroundColor: colors.errorSubtle,
       borderRadius: radius.lg,
@@ -157,6 +152,7 @@ function useStyles() {
     footerLinkWrap: {
       alignItems: 'center',
       paddingTop: spacing.xs,
+      paddingBottom: spacing.md,
     },
   }));
 }

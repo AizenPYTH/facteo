@@ -12,6 +12,10 @@ export type CompanyProfile = {
   postalCode: string;
   city: string;
   country: string;
+  legalForm: string;
+  shareCapital: string;
+  rcsCity: string;
+  siren: string;
   siret: string;
   vatNumber: string;
   iban: string;
@@ -33,6 +37,10 @@ export type CompanyProfileFormValues = {
   postalCode: string;
   city: string;
   country: string;
+  legalForm: string;
+  shareCapital: string;
+  rcsCity: string;
+  siren: string;
   siret: string;
   vatNumber: string;
   iban: string;
@@ -53,6 +61,10 @@ export function createEmptyCompanyProfileFormValues(): CompanyProfileFormValues 
     postalCode: '',
     city: '',
     country: 'France',
+    legalForm: '',
+    shareCapital: '',
+    rcsCity: '',
+    siren: '',
     siret: '',
     vatNumber: '',
     iban: '',

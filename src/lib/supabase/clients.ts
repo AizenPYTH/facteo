@@ -12,7 +12,7 @@ import {
 import type { ClientRow } from '@/types/database';
 
 export const CLIENT_COLUMNS =
-  'id, user_id, name, email, phone, company, address, postal_code, city, country, siren, siret, vat_number, notes, created_at, updated_at' as const;
+  'id, user_id, name, email, phone, company, address, address_line2, postal_code, city, region, country, website, siren, siret, vat_number, notes, created_at, updated_at' as const;
 
 function sanitizeSearchTerm(search: string): string {
   return search.trim().replace(/[%_,]/g, '');
@@ -29,7 +29,21 @@ function applySearchFilter<T extends { or: (filters: string) => T }>(
   }
 
   return query.or(
-    `company.ilike.%${sanitizedSearch}%,name.ilike.%${sanitizedSearch}%,email.ilike.%${sanitizedSearch}%,phone.ilike.%${sanitizedSearch}%,city.ilike.%${sanitizedSearch}%,address.ilike.%${sanitizedSearch}%,vat_number.ilike.%${sanitizedSearch}%`,
+    [
+      `company.ilike.%${sanitizedSearch}%`,
+      `name.ilike.%${sanitizedSearch}%`,
+      `email.ilike.%${sanitizedSearch}%`,
+      `phone.ilike.%${sanitizedSearch}%`,
+      `city.ilike.%${sanitizedSearch}%`,
+      `address.ilike.%${sanitizedSearch}%`,
+      `address_line2.ilike.%${sanitizedSearch}%`,
+      `region.ilike.%${sanitizedSearch}%`,
+      `country.ilike.%${sanitizedSearch}%`,
+      `website.ilike.%${sanitizedSearch}%`,
+      `vat_number.ilike.%${sanitizedSearch}%`,
+      `siren.ilike.%${sanitizedSearch}%`,
+      `siret.ilike.%${sanitizedSearch}%`,
+    ].join(','),
   );
 }
 

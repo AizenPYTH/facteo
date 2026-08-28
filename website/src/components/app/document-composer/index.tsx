@@ -31,7 +31,7 @@ import { useAuth } from '@/providers/auth-provider';
 import { useTenant } from '@/providers/company-provider';
 import { useSettings } from '@/hooks/use-settings';
 import { fetchClientsPage } from '@/lib/domain/supabase/clients';
-import { createInvoice } from '@/lib/domain/supabase/invoices';
+import { createInvoice, updateInvoice } from '@/lib/domain/supabase/invoices';
 import { createQuote } from '@/lib/domain/supabase/quotes';
 import { enforcePlanLimit } from '@/lib/subscription/limit-guard';
 import { PlanLimitError } from '@/types/subscription';
@@ -39,10 +39,18 @@ import { fetchProductsByIds } from '@/lib/domain/supabase/products';
 import { clientsQueryKeys, invoicesQueryKeys, quotesQueryKeys } from '@/lib/domain/supabase/query-keys';
 import { analyzeProductImage, type ProductImageAnalysis } from '@/lib/domain/ai/product-image-analysis';
 import { calculateLineTotals } from '@/lib/calculations/totals';
+import {
+  hasBlockingPreflightIssues,
+  formatPreflightErrors,
+  validateInvoicePreflight,
+} from '@/lib/domain/invoices/preflight-validation';
+import { VAT_REGIME_OPTIONS, suggestVatRegime } from '@/lib/domain/invoices/legal-mentions';
 import { getDefaultComposerTemplateId } from '@/lib/domain/pdf/composer-templates';
 import { requireScope } from '@/lib/domain/tenant/scope';
 import { formatCurrency } from '@/lib/domain/format/currency';
-import { createEmptyInvoiceLine } from '@inveq/types/invoice';
+import { useInvoiceDetail } from '@/hooks/use-invoice-detail';
+import { useClientDetail } from '@/hooks/use-client-detail';
+import { createEmptyInvoiceLine, type VatRegime } from '@inveq/types/invoice';
 import { createEmptyQuoteLine, createLocalLineId } from '@inveq/types/quote';
 import type { Product } from '@/types/product';
 import { CLIENTS_PAGE_SIZE } from '@inveq/types/clients-list';
@@ -230,19 +238,29 @@ async function parseExcelLines(file: File, kind: 'invoice' | 'quote'): Promise<L
   return buildLinesFromTabularRows(headers, rows, kind);
 }
 
-export function DocumentComposer({ kind }: { kind: 'invoice' | 'quote' }) {
+export function DocumentComposer({
+  kind,
+  editInvoiceId,
+}: {
+  kind: 'invoice' | 'quote';
+  editInvoiceId?: string;
+}) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const preselectedClient = searchParams.get('client') ?? '';
   const fromProductsParam = searchParams.get('fromProducts') ?? '';
   const { user, loading: authLoading } = useAuth();
-  const { scope, loading: tenantLoading } = useTenant();
+  const { scope, activeCompany, loading: tenantLoading } = useTenant();
   const { settings, loading: settingsLoading } = useSettings();
   const queryClient = useQueryClient();
+  const isEditingInvoice = kind === 'invoice' && Boolean(editInvoiceId);
+  const editInvoiceQuery = useInvoiceDetail(editInvoiceId ?? null);
 
   const [clientId, setClientId] = useState(preselectedClient);
   const [notes, setNotes] = useState('');
   const [templateId, setTemplateId] = useState('');
+  const [vatRegime, setVatRegime] = useState<VatRegime>('standard');
+  const [revision, setRevision] = useState(1);
   const [lines, setLines] = useState<LineValue[]>([
     kind === 'invoice' ? createEmptyInvoiceLine() : createEmptyQuoteLine(),
   ]);
@@ -253,6 +271,8 @@ export function DocumentComposer({ kind }: { kind: 'invoice' | 'quote' }) {
   const [importFeedback, setImportFeedback] = useState<string | null>(null);
   const importInputRef = useRef<HTMLInputElement | null>(null);
   const initializedFromProductsRef = useRef(false);
+  const hydratedEditRef = useRef(false);
+  const clientDetailQuery = useClientDetail(clientId || null);
 
   const clientRef = useRef<HTMLDivElement>(null);
   const linesRef = useRef<HTMLDivElement>(null);
@@ -263,6 +283,24 @@ export function DocumentComposer({ kind }: { kind: 'invoice' | 'quote' }) {
       setTemplateId(getDefaultComposerTemplateId(kind, settings));
     }
   }, [settings, templateId, kind]);
+
+  useEffect(() => {
+    if (!isEditingInvoice || !editInvoiceQuery.data || hydratedEditRef.current) {
+      return;
+    }
+
+    const invoice = editInvoiceQuery.data;
+    hydratedEditRef.current = true;
+    setClientId(invoice.clientId ?? '');
+    setNotes(invoice.notes ?? '');
+    setVatRegime(invoice.vatRegime);
+    setRevision(invoice.revision);
+    setLines(
+      invoice.lines.length > 0
+        ? invoice.lines.map((line) => ({ ...line, id: line.id || createLocalLineId() }))
+        : [createEmptyInvoiceLine()],
+    );
+  }, [editInvoiceQuery.data, isEditingInvoice]);
 
   const clientsQuery = useQuery({
     queryKey: clientsQueryKeys.list(scope?.companyId ?? '', ''),
@@ -344,10 +382,61 @@ export function DocumentComposer({ kind }: { kind: 'invoice' | 'quote' }) {
         throw new Error('VALIDATION');
       }
 
-      await enforcePlanLimit('documents', () => undefined);
-
       const activeScope = requireScope(scope);
       const validLines = lines.filter((l) => l.description.trim());
+      const client = clientDetailQuery.data;
+
+      if (kind === 'invoice') {
+        const preflight = validateInvoicePreflight({
+          clientId,
+          clientCompany: client?.company,
+          clientLastName: client?.lastName,
+          clientFirstName: client?.firstName,
+          clientEmail: client?.email,
+          clientPhone: client?.phone,
+          clientVatNumber: client?.vatNumber,
+          clientSiren: client?.siren,
+          clientSiret: client?.siret,
+          clientCountry: client?.country,
+          clientPostalCode: client?.postalCode,
+          clientAddress: client?.address,
+          clientCity: client?.city,
+          companyName: activeCompany?.name,
+          companyAddress: activeCompany?.address,
+          companyPostalCode: activeCompany?.postalCode,
+          companyCity: activeCompany?.city,
+          companySiret: activeCompany?.siret,
+          companyIban: activeCompany?.iban,
+          companyVatNumber: activeCompany?.vatNumber,
+          companyLegalForm: activeCompany?.legalForm,
+          currency: settings?.currency ?? 'EUR',
+          vatRegime,
+          linesCount: validLines.length,
+          hasPositiveTotals: totals.total > 0,
+        });
+
+        if (hasBlockingPreflightIssues(preflight)) {
+          setFieldErrors({
+            linesGlobal:
+              formatPreflightErrors(preflight) || 'La facture ne peut pas être enregistrée.',
+          });
+          setSubmitAttempted(true);
+          throw new Error('VALIDATION');
+        }
+      }
+
+      if (isEditingInvoice && editInvoiceId) {
+        return updateInvoice(activeScope, editInvoiceId, {
+          clientId,
+          lines: validLines,
+          notes: notes.trim() || undefined,
+          vatRegime,
+          expectedRevision: revision,
+          revisionReason: 'Modification brouillon',
+        });
+      }
+
+      await enforcePlanLimit('documents', () => undefined);
 
       if (kind === 'quote') {
         return createQuote(activeScope, {
@@ -361,6 +450,7 @@ export function DocumentComposer({ kind }: { kind: 'invoice' | 'quote' }) {
         clientId,
         lines: validLines,
         notes: notes.trim() || undefined,
+        vatRegime,
       });
     },
     onSuccess: (doc) => {
@@ -373,6 +463,14 @@ export function DocumentComposer({ kind }: { kind: 'invoice' | 'quote' }) {
     },
     onError: (err: Error) => {
       if (err.message === 'VALIDATION') {
+        return;
+      }
+      if (err.message.includes('revision conflict')) {
+        setFieldErrors({
+          linesGlobal:
+            'Conflit de modification : la facture a été mise à jour ailleurs. Rechargez puis réessayez.',
+        });
+        setSubmitAttempted(true);
         return;
       }
       if (err instanceof PlanLimitError || err.message === 'PLAN_LIMIT_REACHED') {
@@ -539,17 +637,33 @@ export function DocumentComposer({ kind }: { kind: 'invoice' | 'quote' }) {
     router.replace(kind === 'quote' ? '/app/quotes' : '/app/invoices');
   }
 
-  if (authLoading || tenantLoading || settingsLoading) {
+  if (
+    authLoading ||
+    tenantLoading ||
+    settingsLoading ||
+    (isEditingInvoice && editInvoiceQuery.isLoading)
+  ) {
     return <LoadingState message="Préparation de l’éditeur…" />;
   }
 
   const clients = clientsQuery.data?.clients ?? [];
-  const title = kind === 'invoice' ? 'Nouvelle facture' : 'Nouveau devis';
+  const title = isEditingInvoice
+    ? 'Modifier la facture'
+    : kind === 'invoice'
+      ? 'Nouvelle facture'
+      : 'Nouveau devis';
   const label = kind === 'invoice' ? 'facture' : 'devis';
+  const submitLabel = isEditingInvoice
+    ? createMutation.isPending
+      ? 'Enregistrement…'
+      : 'Enregistrer'
+    : createMutation.isPending
+      ? 'Création…'
+      : `Créer la ${label}`;
 
   const bannerMessages = [
     fieldErrors.clientId,
-    fieldErrors.linesGlobal,
+    ...(fieldErrors.linesGlobal ? fieldErrors.linesGlobal.split('\n') : []),
   ].filter((m): m is string => Boolean(m));
 
   return (
@@ -585,7 +699,7 @@ export function DocumentComposer({ kind }: { kind: 'invoice' | 'quote' }) {
               onClick={handleSubmit}
               type="button">
               <Save size={16} />
-              {createMutation.isPending ? 'Création…' : `Créer la ${label}`}
+              {submitLabel}
             </button>
           </div>
         </div>
@@ -616,11 +730,38 @@ export function DocumentComposer({ kind }: { kind: 'invoice' | 'quote' }) {
                   if (submitAttempted) {
                     setFieldErrors(validateDocumentDraft(id, lines));
                   }
+                  const selected = clients.find((client) => client.id === id);
+                  if (kind === 'invoice' && selected) {
+                    setVatRegime(
+                      suggestVatRegime({
+                        clientCountry: selected.country,
+                        clientVatNumber: selected.vatNumber,
+                      }),
+                    );
+                  }
                 }}
                 value={clientId}
               />
               <InlineFieldError message={submitAttempted ? fieldErrors.clientId : undefined} />
             </section>
+
+            {kind === 'invoice' ? (
+              <section>
+                <h2 className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-400">
+                  Régime de TVA
+                </h2>
+                <select
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none transition hover:border-slate-300 focus:border-primary focus:ring-2 focus:ring-primary/20"
+                  onChange={(event) => setVatRegime(event.target.value as VatRegime)}
+                  value={vatRegime}>
+                  {VAT_REGIME_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </section>
+            ) : null}
 
             <section>
               <h2 className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-400">

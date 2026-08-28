@@ -38,6 +38,7 @@ export async function callAiEdgeFunction<TResponse>(
     method: 'POST',
     headers: {
       Authorization: `Bearer ${accessToken}`,
+      apikey: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY?.trim() || accessToken,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(payload),
@@ -80,7 +81,10 @@ async function fetchWithTimeout(url: string, init: RequestInit, timeoutMs = 45_0
     if (error instanceof Error && error.name === 'AbortError') {
       throw new Error('timeout');
     }
-    throw error;
+    // Network / DNS / CORS — often wraps a missing Edge Function (404 gateway).
+    throw new Error(
+      `Impossible de joindre la fonction « ${functionName} ». Vérifiez le déploiement sur le projet Supabase ${projectRef ?? 'inconnu'} (npx supabase functions deploy ${functionName}).`,
+    );
   } finally {
     clearTimeout(timeout);
   }

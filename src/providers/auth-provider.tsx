@@ -1,6 +1,7 @@
 import type { AuthError, Session, User } from '@supabase/supabase-js';
 import { createContext, useCallback, useEffect, useMemo, useState, type PropsWithChildren } from 'react';
 
+import { startGoogleOAuth, type GoogleOAuthResult } from '@/lib/auth/google-oauth';
 import { supabase } from '@/lib/supabase';
 
 export type SignInParams = {
@@ -27,6 +28,7 @@ export type AuthContextValue = {
   loading: boolean;
   signIn: (params: SignInParams) => Promise<AuthResult>;
   signUp: (params: SignUpParams) => Promise<AuthResult>;
+  signInWithGoogle: () => Promise<GoogleOAuthResult>;
   signOut: () => Promise<AuthResult>;
 };
 
@@ -109,6 +111,10 @@ export function AuthProvider({ children }: PropsWithChildren) {
     [],
   );
 
+  const signInWithGoogle = useCallback(async (): Promise<GoogleOAuthResult> => {
+    return startGoogleOAuth();
+  }, []);
+
   const signOut = useCallback(async (): Promise<AuthResult> => {
     const { error } = await supabase.auth.signOut();
     return { error, session: null };
@@ -121,9 +127,10 @@ export function AuthProvider({ children }: PropsWithChildren) {
       loading,
       signIn,
       signUp,
+      signInWithGoogle,
       signOut,
     }),
-    [user, session, loading, signIn, signUp, signOut],
+    [user, session, loading, signIn, signUp, signInWithGoogle, signOut],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

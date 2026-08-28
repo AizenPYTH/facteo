@@ -11,7 +11,12 @@ import { typography } from '@/constants/theme/typography';
 import { formatDate } from '@/lib/format/date';
 import { formatPriceHT } from '@/lib/format/currency';
 import { mapInvoiceLineValueToTotals, mapInvoiceLinesToDocumentTotals } from '@/lib/invoices/mappers';
-import type { InvoiceDetail } from '@/types/invoice';
+import {
+  INVOICE_DOCUMENT_KIND_LABELS,
+  VAT_REGIME_LABELS,
+  type InvoiceDetail,
+  type InvoiceRevision,
+} from '@/types/invoice';
 
 import { InvoiceStatusBadge } from './invoice-status-badge';
 
@@ -20,6 +25,7 @@ type InvoiceDetailViewProps = {
   style?: ViewStyle;
   canAddPayment?: boolean;
   onAddPayment?: () => void;
+  revisions?: InvoiceRevision[];
 };
 
 export function InvoiceDetailView({
@@ -27,6 +33,7 @@ export function InvoiceDetailView({
   style,
   canAddPayment = false,
   onAddPayment,
+  revisions = [],
 }: InvoiceDetailViewProps) {
   const styles = useStyles();
   const colors = useColors();
@@ -37,11 +44,29 @@ export function InvoiceDetailView({
       <View style={styles.section}>
         <View style={styles.headerRow}>
           <Text style={styles.sectionTitle}>Informations</Text>
-          <InvoiceStatusBadge status={invoice.status} />
+          <View style={styles.badgeRow}>
+            {invoice.documentKind === 'credit_note' ? (
+              <View style={[styles.kindBadge, { backgroundColor: colors.infoSubtle }]}>
+                <Text style={[styles.kindBadgeText, { color: colors.info }]}>
+                  {INVOICE_DOCUMENT_KIND_LABELS.credit_note}
+                </Text>
+              </View>
+            ) : null}
+            <InvoiceStatusBadge status={invoice.status} />
+          </View>
         </View>
         <View style={styles.card}>
           <QuoteField emphasize label="Numéro" value={invoice.number} />
           <QuoteField label="Client" value={invoice.clientName} />
+          {invoice.documentKind === 'credit_note' && invoice.creditOfInvoiceId ? (
+            <Pressable
+              accessibilityRole="button"
+              onPress={() =>
+                router.push(`/invoices/${invoice.creditOfInvoiceId}` as Href)
+              }>
+              <QuoteField emphasize label="Facture d’origine" value="Voir la facture source" />
+            </Pressable>
+          ) : null}
           {invoice.quoteId ? (
             <Pressable
               accessibilityRole="button"
@@ -58,6 +83,9 @@ export function InvoiceDetailView({
           ) : null}
           {invoice.paidAt ? (
             <QuoteField label="Date de paiement" value={formatDate(invoice.paidAt)} />
+          ) : null}
+          {invoice.vatRegime ? (
+            <QuoteField label="Régime de TVA" value={VAT_REGIME_LABELS[invoice.vatRegime]} />
           ) : null}
         </View>
       </View>
@@ -155,6 +183,30 @@ export function InvoiceDetailView({
           </View>
         </View>
       ) : null}
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Historique des révisions</Text>
+        <View style={styles.card}>
+          {revisions.length === 0 ? (
+            <Text style={styles.noPayments}>Aucune révision enregistrée.</Text>
+          ) : (
+            revisions.map((revision, index) => (
+              <View
+                key={revision.id}
+                style={index > 0 ? styles.paymentItemSeparator : undefined}>
+                <View style={styles.paymentItemHeader}>
+                  <Text style={styles.paymentItemDate}>
+                    Révision {revision.revision} · {formatDate(revision.createdAt)}
+                  </Text>
+                </View>
+                <Text style={styles.paymentItemMeta}>
+                  {revision.reason?.trim() || 'Modification enregistrée'}
+                </Text>
+              </View>
+            ))
+          )}
+        </View>
+      </View>
     </View>
   );
 }
@@ -171,6 +223,20 @@ function useStyles() {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+  },
+  badgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  kindBadge: {
+    borderRadius: radius.badge,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 4,
+  },
+  kindBadgeText: {
+    ...typography.caption1,
+    fontWeight: '600',
   },
   sectionTitle: {
     ...typography.headline,

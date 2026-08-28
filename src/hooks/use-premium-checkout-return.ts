@@ -40,7 +40,7 @@ export function usePremiumCheckoutReturn() {
         }
 
         await refresh();
-        showSuccess('INVEQ Premium est activé.');
+        showSuccess('Abonnement activé.');
       } catch (error) {
         if (!cancelled) {
           showError(readErrorMessage(error));
@@ -71,5 +71,5 @@ function readErrorMessage(error: unknown): string {
     return error.message;
   }
 
-  return 'Impossible de confirmer l’abonnement Premium.';
+  return 'Impossible de confirmer l’abonnement.';
 }

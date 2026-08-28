@@ -34,7 +34,7 @@ Deno.serve(async (request) => {
 
     const stripe = new Stripe(stripeSecret, { apiVersion: '2024-12-18.acacia' });
     const body = await request.text();
-    const event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
+    const event = await stripe.webhooks.constructEventAsync(body, signature, webhookSecret);
     const serviceClient = createClient(supabaseUrl, supabaseServiceRoleKey);
 
     switch (event.type) {
@@ -51,9 +51,10 @@ Deno.serve(async (request) => {
       case 'customer.subscription.updated':
       case 'customer.subscription.deleted': {
         const subscription = event.data.object as Stripe.Subscription;
-        await syncStripeSubscriptionObject(serviceClient, subscription);
+        await syncStripeSubscriptionObject(serviceClient, subscription, stripe);
         break;
       }
+      case 'invoice.paid':
       case 'invoice.payment_failed': {
         const invoice = event.data.object as Stripe.Invoice;
         const subscriptionId =
@@ -61,7 +62,7 @@ Deno.serve(async (request) => {
 
         if (subscriptionId) {
           const subscription = await stripe.subscriptions.retrieve(subscriptionId);
-          await syncStripeSubscriptionObject(serviceClient, subscription);
+          await syncStripeSubscriptionObject(serviceClient, subscription, stripe);
         }
 
         break;

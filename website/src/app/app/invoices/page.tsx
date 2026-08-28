@@ -10,9 +10,14 @@ import { LoadingState } from '@/components/app/ui';
 function InvoicesPageInner() {
   const searchParams = useSearchParams();
   const isCreating = searchParams.get('create') === '1';
+  const editId = searchParams.get('edit');
 
   if (isCreating) {
     return <DocumentComposer kind="invoice" />;
+  }
+
+  if (editId) {
+    return <DocumentComposer editInvoiceId={editId} kind="invoice" />;
   }
 
   return <InvoicesWorkspace />;

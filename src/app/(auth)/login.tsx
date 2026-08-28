@@ -6,6 +6,7 @@ import { Text } from 'react-native';
 
 import { AuthScreen } from '@/components/auth/auth-screen';
 import { AuthTextField } from '@/components/auth/auth-text-field';
+import { AuthDivider, GoogleAuthButton } from '@/components/auth/google-auth-button';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/use-auth';
 import { useAuthScreenStyles } from '@/hooks/use-auth-screen-styles';
@@ -59,6 +60,8 @@ export default function LoginScreen() {
       }
       subtitle="Gérez vos devis et factures simplement."
       title="Connexion">
+      <GoogleAuthButton />
+      <AuthDivider />
       <Controller
         control={control}
         name="email"

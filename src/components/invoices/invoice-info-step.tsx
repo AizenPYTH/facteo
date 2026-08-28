@@ -93,6 +93,12 @@ export function InvoiceInfoStep({ value, onChange }: InvoiceInfoStepProps) {
           value={value.issuedAt}
         />
         <TextField
+          label="Date de livraison / prestation"
+          onChangeText={(text) => updateField('serviceDate', text)}
+          placeholder="JJ/MM/AAAA"
+          value={value.serviceDate}
+        />
+        <TextField
           label="Date d'échéance"
           onChangeText={(text) => updateField('dueAt', text)}
           placeholder="JJ/MM/AAAA"

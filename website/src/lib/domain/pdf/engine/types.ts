@@ -18,6 +18,10 @@ export type PdfCompanyInfo = Pick<
   | 'siret'
   | 'vatNumber'
 > & {
+  legalForm?: string | null;
+  shareCapital?: string | null;
+  rcsCity?: string | null;
+  siren?: string | null;
   iban?: string;
   bic?: string;
   paymentMethods?: PaymentMethodId[];
@@ -55,14 +59,16 @@ export type PdfDocumentTotals = {
   amountDue?: number;
 };
 
-export type PdfDocumentKind = 'quote' | 'invoice';
+export type PdfDocumentKind = 'quote' | 'invoice' | 'credit_note';
 
 export type PdfDocumentInput = {
   kind: PdfDocumentKind;
   number: string;
   issuedAt: string | null;
   dueOrValidUntil: string | null;
+  serviceDate?: string | null;
   notes?: string | null;
+  creditOfInvoiceNumber?: string | null;
   lines: PdfDocumentLine[];
   totals: PdfDocumentTotals;
   company: PdfCompanyInfo;
@@ -74,4 +80,5 @@ export type PdfDocumentInput = {
     signedAt: string;
   } | null;
   templateId?: string | null;
+  vatRegime?: string | null;
 };

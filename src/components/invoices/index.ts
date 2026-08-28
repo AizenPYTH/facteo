@@ -6,6 +6,12 @@ export { CancelInvoiceModal } from './cancel-invoice-modal';
 export { EmptyInvoices } from './empty-invoices';
 export type { EmptyInvoicesProps } from './empty-invoices';
 
+export { InvoiceStickyActionsBar, useInvoiceStickyActionsInset } from './invoice-sticky-actions-bar';
+export type {
+  InvoiceStickyAction,
+  InvoiceStickyActionsBarProps,
+} from './invoice-sticky-actions-bar';
+
 export { InvoiceCard } from './invoice-card';
 export type { InvoiceCardProps } from './invoice-card';
 
@@ -20,6 +26,8 @@ export { InvoiceStatusBadge } from './invoice-status-badge';
 
 export { InvoicesList } from './invoices-list';
 export type { InvoicesListProps } from './invoices-list';
+
+export { InvoiceBatchBar } from './invoice-batch-bar';
 
 export { InvoicesScreenHeader } from './invoices-screen-header';
 export type { InvoicesScreenHeaderProps } from './invoices-screen-header';

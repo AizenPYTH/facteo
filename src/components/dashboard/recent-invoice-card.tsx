@@ -1,10 +1,21 @@
+import { router } from 'expo-router';
 import { Pressable, StyleSheet, Text, View, type ViewStyle } from 'react-native';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+} from 'react-native-reanimated';
 
-import { useColors, useThemedStyles } from '@/hooks/use-colors';
+import { useThemedStyles } from '@/hooks/use-colors';
+import { press } from '@/constants/theme/interaction';
+import { spring } from '@/constants/theme/motion';
 import { spacing } from '@/constants/theme/spacing';
-import { typography } from '@/constants/theme/typography';
+import { type } from '@/constants/theme/type-roles';
 import { formatCurrency } from '@/lib/format/currency';
+import { triggerHaptic } from '@/lib/haptics';
 import type { Invoice } from '@/types/dashboard';
+
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 export type RecentInvoiceCardProps = {
   invoice: Invoice;
@@ -14,6 +25,7 @@ export type RecentInvoiceCardProps = {
   testID?: string;
 };
 
+/** Row only — replay lives in the Accueil « Comme la dernière fois » section. */
 export function RecentInvoiceCard({
   invoice,
   onPress,
@@ -22,7 +34,11 @@ export function RecentInvoiceCard({
   testID,
 }: RecentInvoiceCardProps) {
   const styles = useStyles();
-  const colors = useColors();
+  const scale = useSharedValue(1);
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
+
   const content = (
     <View style={[styles.row, style]}>
       <View style={styles.leading}>
@@ -36,9 +52,21 @@ export function RecentInvoiceCard({
   return (
     <View testID={testID}>
       {onPress ? (
-        <Pressable accessibilityRole="button" onPress={onPress}>
+        <AnimatedPressable
+          accessibilityRole="button"
+          onPress={() => {
+            void triggerHaptic('selection');
+            onPress();
+          }}
+          onPressIn={() => {
+            scale.value = withSpring(press.row.scale === 1 ? 0.99 : press.row.scale, spring.snappy);
+          }}
+          onPressOut={() => {
+            scale.value = withSpring(1, spring.snappy);
+          }}
+          style={animatedStyle}>
           {content}
-        </Pressable>
+        </AnimatedPressable>
       ) : (
         content
       )}
@@ -49,34 +77,37 @@ export function RecentInvoiceCard({
 
 function useStyles() {
   return useThemedStyles((colors) => ({
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
-    gap: spacing.md,
-  },
-  leading: {
-    flex: 1,
-    gap: 2,
-  },
-  invoiceNumber: {
-    ...typography.bodyMedium,
-    color: colors.text,
-  },
-  clientName: {
-    ...typography.footnote,
-    color: colors.textSecondary,
-  },
-  amount: {
-    ...typography.bodySemibold,
-    color: colors.text,
-  },
-  separator: {
-    height: StyleSheet.hairlineWidth,
-    backgroundColor: colors.separator,
-    marginLeft: spacing.md,
-  },
-}));
+    row: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.md,
+      gap: spacing.md,
+    },
+    leading: {
+      flex: 1,
+      gap: 3,
+      minWidth: 0,
+    },
+    invoiceNumber: {
+      ...type.cardTitle,
+      color: colors.text,
+    },
+    clientName: {
+      ...type.caption,
+      color: colors.textSecondary,
+    },
+    amount: {
+      ...type.primaryNumber,
+      fontSize: 17,
+      lineHeight: 22,
+      color: colors.text,
+    },
+    separator: {
+      height: StyleSheet.hairlineWidth,
+      backgroundColor: colors.separator,
+      marginLeft: spacing.md,
+    },
+  }));
 }

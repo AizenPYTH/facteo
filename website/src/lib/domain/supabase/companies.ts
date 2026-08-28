@@ -6,7 +6,7 @@ import type { CreateCompanyInput, TenantCompany } from '@/types/tenant';
 import { normalizePaymentMethods } from '@/types/payment-methods';
 
 export const COMPANY_COLUMNS =
-  'id, name, email, phone, address, postal_code, city, country, siret, vat_number, iban, bic, payment_methods, logo_url, signature_url, created_at, updated_at' as const;
+  'id, name, email, phone, address, postal_code, city, country, legal_form, share_capital, rcs_city, siren, siret, vat_number, iban, bic, payment_methods, logo_url, signature_url, created_at, updated_at' as const;
 
 type CompanyRow = {
   id: string;
@@ -17,6 +17,10 @@ type CompanyRow = {
   postal_code: string | null;
   city: string | null;
   country: string | null;
+  legal_form: string | null;
+  share_capital: string | null;
+  rcs_city: string | null;
+  siren: string | null;
   siret: string | null;
   vat_number: string | null;
   iban: string | null;
@@ -48,6 +52,10 @@ export function mapCompanyRow(row: CompanyRow, role: string): TenantCompany {
     postalCode: row.postal_code,
     city: row.city,
     country: row.country,
+    legalForm: row.legal_form,
+    shareCapital: row.share_capital,
+    rcsCity: row.rcs_city,
+    siren: row.siren,
     siret: row.siret,
     vatNumber: row.vat_number,
     iban: row.iban,
@@ -88,6 +96,10 @@ export function mapCompanyToFormValues(
     postalCode: company.postalCode ?? '',
     city: company.city ?? '',
     country: company.country ?? defaults.country,
+    legalForm: company.legalForm ?? '',
+    shareCapital: company.shareCapital ?? '',
+    rcsCity: company.rcsCity ?? '',
+    siren: company.siren ?? '',
     siret: company.siret ?? '',
     vatNumber: company.vatNumber ?? '',
     iban: company.iban ?? '',
@@ -172,6 +184,10 @@ export async function updateCompanyProfile(
   companyId: string,
   input: UpdateCompanyProfileInput,
 ): Promise<TenantCompany> {
+  const siretDigits = input.siret.replace(/\D/g, '');
+  const sirenDigits =
+    input.siren.replace(/\D/g, '') || (siretDigits.length >= 9 ? siretDigits.slice(0, 9) : '');
+
   const payload = {
     name: input.companyName.trim(),
     email: input.email.trim(),
@@ -180,7 +196,11 @@ export async function updateCompanyProfile(
     postal_code: toNullableString(input.postalCode),
     city: toNullableString(input.city),
     country: toNullableString(input.country),
-    siret: toNullableString(input.siret.replace(/\s/g, '')),
+    legal_form: toNullableString(input.legalForm),
+    share_capital: toNullableString(input.shareCapital),
+    rcs_city: toNullableString(input.rcsCity),
+    siren: toNullableString(sirenDigits),
+    siret: toNullableString(siretDigits),
     vat_number: toNullableString(input.vatNumber.replace(/\s/g, '').toUpperCase()),
     iban: toNullableString(input.iban.replace(/\s/g, '').toUpperCase()),
     bic: toNullableString(input.bic.replace(/\s/g, '').toUpperCase()),

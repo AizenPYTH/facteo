@@ -11,9 +11,9 @@ export const APP_LOGIN_URL = '/login';
 export const APP_REGISTER_URL = '/register';
 
 export const CONTACT_EMAIL =
-  process.env.NEXT_PUBLIC_CONTACT_EMAIL?.trim() || 'farouqdib@gmail.com';
+  process.env.NEXT_PUBLIC_CONTACT_EMAIL?.trim() || 'contact@inveq.fr';
 export const SUPPORT_EMAIL =
-  process.env.NEXT_PUBLIC_SUPPORT_EMAIL?.trim() || 'farouqdib@gmail.com';
+  process.env.NEXT_PUBLIC_SUPPORT_EMAIL?.trim() || 'support@inveq.fr';
 
 export const SITE_NAME = 'INVEQ';
 

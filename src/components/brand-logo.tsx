@@ -1,5 +1,6 @@
-import { Image } from 'expo-image';
-import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
+import { View, type StyleProp, type ViewStyle } from 'react-native';
+
+import { InveqMark } from '@/components/brand/inveq-mark';
 
 type BrandLogoProps = {
   size?: number;
@@ -7,22 +8,14 @@ type BrandLogoProps = {
   testID?: string;
 };
 
+/** Compact brand mark for sidebars / loading — SVG, theme-safe. */
 export function BrandLogo({ size = 88, style, testID }: BrandLogoProps) {
   return (
-    <View style={[styles.container, { width: size, height: size }, style]} testID={testID}>
-      <Image
-        accessibilityIgnoresInvertColors
-        contentFit="contain"
-        source={require('@/assets/images/inveq-mark.png')}
-        style={{ width: size, height: size }}
-      />
+    <View
+      accessibilityLabel="INVEQ"
+      style={[{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }, style]}
+      testID={testID}>
+      <InveqMark size={size} />
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});
