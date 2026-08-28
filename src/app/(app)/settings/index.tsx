@@ -163,6 +163,11 @@ export default function SettingsScreen() {
 
           <SettingsSection title="Aide">
             <SettingsRow
+              label="Découvrir INVEQ"
+              onPress={() => router.push('/settings/discover' as Href)}
+            />
+            <View style={styles.separator} />
+            <SettingsRow
               label="Centre d’aide"
               onPress={() => void openHelpPage('support')}
             />

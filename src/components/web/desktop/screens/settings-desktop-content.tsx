@@ -135,6 +135,11 @@ export function SettingsDesktopContent() {
           </SettingsSection>
 
           <SettingsSection title="Aide">
+            <SettingsRow
+              label="Découvrir INVEQ"
+              onPress={() => router.push('/settings/discover' as Href)}
+            />
+            <View style={styles.separator} />
             <SettingsRow label="Centre d’aide" onPress={() => void openHelpPage('support')} />
             <View style={styles.separator} />
             <SettingsRow label="Guide d’utilisation" onPress={() => void openHelpPage('guide')} />

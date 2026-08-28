@@ -1,6 +1,7 @@
 import { router, type Href } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 
+import { FeatureIntroModal } from '@/components/feature-intros';
 import { DocumentFinalizeStep } from '@/components/quotes/document-finalize-step';
 import { QuoteAddLinesStep } from '@/components/quotes/quote-add-lines-step';
 import { QuoteClientStep } from '@/components/quotes/quote-client-step';
@@ -9,6 +10,7 @@ import { QuoteWizardProgress } from '@/components/quotes/quote-wizard-progress';
 import { WizardActionBar } from '@/components/ui/wizard-action-bar';
 import { WizardScreen } from '@/components/ui/wizard-screen';
 import { useCompanyProfile } from '@/hooks/use-company-profile';
+import { useFeatureIntro } from '@/hooks/use-feature-intro';
 import { useQuoteMutations } from '@/hooks/use-quote-mutations';
 import { useSettings } from '@/hooks/use-settings';
 import { addDaysFrenchDateInput, todayFrenchDateInput } from '@/lib/format/date-input';
@@ -46,12 +48,20 @@ export function QuoteWizardScreen({
   const { showError, showSuccess } = useToast();
   const { data: companyProfile } = useCompanyProfile();
   const { data: settings } = useSettings();
+  const quoteIntro = useFeatureIntro('quote');
 
   const [step, setStep] = useState(1);
 
   useEffect(() => {
     onStepChange?.(step);
   }, [onStepChange, step]);
+
+  useEffect(() => {
+    if (mode === 'create') {
+      quoteIntro.presentOnFirstVisit();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only when storage ready / create mode
+  }, [mode, quoteIntro.isReady]);
   const [state, setState] = useState<QuoteWizardState>(
     initialState ?? createEmptyQuoteWizardState(),
   );
@@ -304,6 +314,13 @@ export function QuoteWizardScreen({
       }
       variant={variant}>
       {renderStep()}
+      <FeatureIntroModal
+        config={quoteIntro.config}
+        onClose={quoteIntro.onClose}
+        onCta={quoteIntro.onCta}
+        onDontShowAgain={quoteIntro.onDontShowAgain}
+        visible={quoteIntro.visible}
+      />
     </WizardScreen>
   );
 }

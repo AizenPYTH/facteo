@@ -22,9 +22,11 @@ import {
   type ProductAnalysisDraft,
 } from '@/components/ai/product-analysis-confirmation-modal';
 import { ProductAnalysisLoadingModal } from '@/components/ai/product-analysis-loading-modal';
+import { FeatureIntroModal } from '@/components/feature-intros';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/use-auth';
 import { useThemedStyles } from '@/hooks/use-colors';
+import { useFeatureIntro } from '@/hooks/use-feature-intro';
 import { usePlatformActionSheet } from '@/hooks/use-platform-action-sheet';
 import { useSubscription } from '@/hooks/use-subscription';
 import { spacing } from '@/constants/theme/spacing';
@@ -57,6 +59,8 @@ export function QuoteAddLinesStep({
   const { user } = useAuth();
   const { hasFeature } = useSubscription();
   const { showError, showSuccess } = useToast();
+  const scannerIntro = useFeatureIntro('scanner');
+  const aiIntro = useFeatureIntro('ai');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisProgress, setAnalysisProgress] = useState(0.08);
   const [analysisImageUri, setAnalysisImageUri] = useState<string | null>(null);
@@ -75,7 +79,11 @@ export function QuoteAddLinesStep({
   }
 
   function handleScanProductWithAi() {
-    void handleSourceSelection(Platform.OS === 'web' ? 'gallery' : 'camera');
+    scannerIntro.runWithIntro(() => {
+      aiIntro.runWithIntro(() => {
+        void handleSourceSelection(Platform.OS === 'web' ? 'gallery' : 'camera');
+      });
+    });
   }
 
   function handleAddPrestation() {
@@ -221,6 +229,25 @@ export function QuoteAddLinesStep({
     </View>
   );
 
+  const introOverlays = (
+    <>
+      <FeatureIntroModal
+        config={scannerIntro.config}
+        onClose={scannerIntro.onClose}
+        onCta={scannerIntro.onCta}
+        onDontShowAgain={scannerIntro.onDontShowAgain}
+        visible={scannerIntro.visible}
+      />
+      <FeatureIntroModal
+        config={aiIntro.config}
+        onClose={aiIntro.onClose}
+        onCta={aiIntro.onCta}
+        onDontShowAgain={aiIntro.onDontShowAgain}
+        visible={aiIntro.visible}
+      />
+    </>
+  );
+
   if (lines.length === 0) {
     return (
       <>
@@ -233,6 +260,7 @@ export function QuoteAddLinesStep({
           </View>
         </View>
         {actionSheetNode}
+        {introOverlays}
         <ProductAnalysisLoadingModal progress={analysisProgress} visible={isAnalyzing} />
         {analysisDraft && analysisImageUri ? (
           <ProductAnalysisConfirmationModal
@@ -273,6 +301,7 @@ export function QuoteAddLinesStep({
         showsVerticalScrollIndicator={false}
       />
       {actionSheetNode}
+      {introOverlays}
       <ProductAnalysisLoadingModal progress={analysisProgress} visible={isAnalyzing} />
       {analysisDraft && analysisImageUri ? (
         <ProductAnalysisConfirmationModal

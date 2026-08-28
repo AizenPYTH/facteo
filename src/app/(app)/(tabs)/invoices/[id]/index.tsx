@@ -14,6 +14,7 @@ import {
   InvoiceScreenHeader,
   PaymentModal,
 } from '@/components/invoices';
+import { FeatureIntroModal } from '@/components/feature-intros';
 import { PdfPreviewModal } from '@/components/pdf/pdf-preview-modal';
 import { TemplateGalleryModal } from '@/components/pdf/template-gallery-modal';
 import { DocumentClientSignatureBlock } from '@/components/signatures/document-client-signature-block';
@@ -24,6 +25,7 @@ import { spacing } from '@/constants/theme/spacing';
 import { typography } from '@/constants/theme/typography';
 import { useDesktopListRedirect } from '@/hooks/use-desktop-list-redirect';
 import { useBreakpoint } from '@/hooks/use-breakpoint';
+import { useFeatureIntro } from '@/hooks/use-feature-intro';
 import { useInvoice } from '@/hooks/use-invoices';
 import { useInvoiceMutations } from '@/hooks/use-invoice-mutations';
 import { getInvoiceErrorMessage } from '@/lib/invoices/errors';
@@ -69,6 +71,13 @@ export default function InvoiceDetailScreen() {
   const [cancelVisible, setCancelVisible] = useState(false);
   const [paymentVisible, setPaymentVisible] = useState(false);
   const [signModalVisible, setSignModalVisible] = useState(false);
+  const paymentsIntro = useFeatureIntro('payments');
+
+  function openPaymentFlow() {
+    paymentsIntro.runWithIntro(() => {
+      setPaymentVisible(true);
+    });
+  }
 
   const { data: sentDocuments = [], isLoading: sentDocumentsLoading } = useSentDocuments(
     'invoice',
@@ -313,7 +322,7 @@ export default function InvoiceDetailScreen() {
               id: 'partial-pay',
               label: 'Paiement partiel',
               icon: { ios: 'eurosign.circle.fill', android: 'payments', web: 'payments' } as const,
-              onPress: () => setPaymentVisible(true),
+              onPress: () => openPaymentFlow(),
             },
           ]
         : []),
@@ -408,7 +417,7 @@ export default function InvoiceDetailScreen() {
         <InvoiceDetailView
           canAddPayment={false}
           invoice={invoice}
-          onAddPayment={() => setPaymentVisible(true)}
+          onAddPayment={() => openPaymentFlow()}
         />
 
         <DocumentClientSignatureBlock
@@ -470,6 +479,13 @@ export default function InvoiceDetailScreen() {
         onCancel={() => setPaymentVisible(false)}
         onConfirm={handleAddPayment}
         visible={paymentVisible}
+      />
+      <FeatureIntroModal
+        config={paymentsIntro.config}
+        onClose={paymentsIntro.onClose}
+        onCta={paymentsIntro.onCta}
+        onDontShowAgain={paymentsIntro.onDontShowAgain}
+        visible={paymentsIntro.visible}
       />
     </SafeAreaView>
   );

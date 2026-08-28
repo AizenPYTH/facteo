@@ -1,0 +1,187 @@
+import type { FeatureIntroConfig, FeatureIntroId } from '@/lib/feature-intros/types';
+
+const configs: Record<FeatureIntroId, FeatureIntroConfig> = {
+  scanner: {
+    id: 'scanner',
+    title: 'Scanner un produit',
+    ctaLabel: 'Scanner maintenant',
+    steps: [
+      {
+        key: 'scan',
+        headline: 'Scannez un produit',
+        body: 'Identifiez automatiquement vos produits et ajoutez-les à vos factures.',
+        durationMs: 1100,
+      },
+      {
+        key: 'identify',
+        headline: 'Produit identifié',
+        body: 'Nom, référence, prix et TVA apparaissent automatiquement.',
+        durationMs: 1100,
+      },
+      {
+        key: 'add',
+        headline: 'Ajoutez-le à votre facture',
+        body: 'La fiche devient une ligne normale, toujours modifiable.',
+        durationMs: 1100,
+      },
+    ],
+  },
+  invoice: {
+    id: 'invoice',
+    title: 'Créer une facture',
+    ctaLabel: 'Créer une facture',
+    steps: [
+      {
+        key: 'client',
+        headline: 'Choisissez un client',
+        body: 'Sélectionnez le destinataire de votre facture.',
+        durationMs: 1000,
+      },
+      {
+        key: 'lines',
+        headline: 'Ajoutez vos produits',
+        body: 'Lignes manuelles, scan ou import — tout est possible.',
+        durationMs: 1100,
+      },
+      {
+        key: 'done',
+        headline: 'Facture prête',
+        body: 'Total calculé, prête à envoyer ou encaisser.',
+        durationMs: 1100,
+      },
+    ],
+  },
+  quote: {
+    id: 'quote',
+    title: 'Créer un devis',
+    ctaLabel: 'Créer un devis',
+    steps: [
+      {
+        key: 'client',
+        headline: 'Client du devis',
+        body: 'Commencez par le destinataire de votre proposition.',
+        durationMs: 1000,
+      },
+      {
+        key: 'lines',
+        headline: 'Construisez l’offre',
+        body: 'Ajoutez vos prestations et ajustez les montants.',
+        durationMs: 1100,
+      },
+      {
+        key: 'convert',
+        headline: 'Convertissez en facture',
+        body: 'Une fois accepté, transformez le devis en un clic.',
+        durationMs: 1100,
+      },
+    ],
+  },
+  ai: {
+    id: 'ai',
+    title: 'Assistant IA',
+    ctaLabel: 'Essayer l’IA',
+    steps: [
+      {
+        key: 'ask',
+        headline: 'Posez votre demande',
+        body: 'Photo produit, capture ou instruction — l’assistant vous suit.',
+        durationMs: 1000,
+      },
+      {
+        key: 'process',
+        headline: 'Analyse en cours',
+        body: 'INVEQ extrait les informations utiles sans saisie manuelle.',
+        durationMs: 1100,
+      },
+      {
+        key: 'result',
+        headline: 'Résultat prêt',
+        body: 'Vérifiez, ajustez, puis ajoutez à votre document.',
+        durationMs: 1100,
+      },
+    ],
+  },
+  templates: {
+    id: 'templates',
+    title: 'Modèles de facture',
+    ctaLabel: 'Voir les modèles',
+    steps: [
+      {
+        key: 'pick',
+        headline: 'Choisissez un modèle',
+        body: 'Plusieurs styles pour coller à votre image de marque.',
+        durationMs: 1000,
+      },
+      {
+        key: 'select',
+        headline: 'Sélectionnez',
+        body: 'Le modèle s’applique à vos prochaines factures.',
+        durationMs: 1100,
+      },
+      {
+        key: 'preview',
+        headline: 'Aperçu instantané',
+        body: 'Visualisez le rendu avant d’envoyer.',
+        durationMs: 1100,
+      },
+    ],
+  },
+  payments: {
+    id: 'payments',
+    title: 'Paiements',
+    ctaLabel: 'Compris',
+    steps: [
+      {
+        key: 'invoice',
+        headline: 'Facture émise',
+        body: 'Suivez chaque facture depuis son écran détail.',
+        durationMs: 1000,
+      },
+      {
+        key: 'pay',
+        headline: 'Enregistrez un paiement',
+        body: 'Montant, mode et date — en quelques secondes.',
+        durationMs: 1100,
+      },
+      {
+        key: 'paid',
+        headline: 'Statut à jour',
+        body: 'La facture passe en payée, le suivi reste clair.',
+        durationMs: 1100,
+      },
+    ],
+  },
+  statistics: {
+    id: 'statistics',
+    title: 'Statistiques',
+    ctaLabel: 'Voir mon tableau',
+    steps: [
+      {
+        key: 'data',
+        headline: 'Vos données',
+        body: 'CA, factures et devis alimentent le tableau de bord.',
+        durationMs: 1000,
+      },
+      {
+        key: 'chart',
+        headline: 'Visualisez',
+        body: 'Graphiques et indicateurs pour lire l’activité d’un coup d’œil.',
+        durationMs: 1100,
+      },
+      {
+        key: 'insights',
+        headline: 'Pilotez',
+        body: 'Repérez les tendances et agissez plus vite.',
+        durationMs: 1100,
+      },
+    ],
+  },
+};
+
+export function getFeatureIntroConfig(id: FeatureIntroId): FeatureIntroConfig {
+  return configs[id];
+}
+
+export function listFeatureIntroConfigs(): FeatureIntroConfig[] {
+  return Object.values(configs);
+}
