@@ -282,6 +282,8 @@ function StatisticsStage({ stepIndex }: { stepIndex: number }) {
   );
 }
 
+const BAR_MAX_HEIGHT = 96;
+
 function Bar({
   heightRatio,
   progress,
@@ -291,8 +293,9 @@ function Bar({
   progress: SharedValue<number>;
   color: string;
 }) {
+  // Use numeric heights only — percentage strings in useAnimatedStyle can crash iOS.
   const style = useAnimatedStyle(() => ({
-    height: `${interpolate(progress.value, [0, 1], [8, heightRatio * 100])}%`,
+    height: interpolate(progress.value, [0, 1], [8, heightRatio * BAR_MAX_HEIGHT]),
     backgroundColor: color,
   }));
   return <Animated.View style={[barBase, style]} />;

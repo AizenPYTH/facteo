@@ -83,9 +83,14 @@ export function useFeatureIntro(id: FeatureIntroId) {
 
   /** Auto-present once when a screen mounts (invoice/quote/stats). */
   const presentOnFirstVisit = useCallback(() => {
-    if (seen === false) {
-      setVisible(true);
+    if (seen !== false) {
+      return;
     }
+    // Defer so the host screen finishes its first paint (avoids startup jank/crashes).
+    const timer = setTimeout(() => {
+      setVisible(true);
+    }, 450);
+    return () => clearTimeout(timer);
   }, [seen]);
 
   const resetAndShow = useCallback(async () => {

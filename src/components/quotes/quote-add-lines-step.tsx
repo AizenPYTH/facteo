@@ -23,7 +23,6 @@ import {
   type ProductAnalysisDraft,
 } from '@/components/ai/product-analysis-confirmation-modal';
 import { ProductAnalysisLoadingModal } from '@/components/ai/product-analysis-loading-modal';
-import { ProductBarcodeScannerModal } from '@/components/ai/product-barcode-scanner-modal';
 import { FeatureIntroModal } from '@/components/feature-intros';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/use-auth';
@@ -49,6 +48,23 @@ import { createEmptyQuoteLine, formatDecimalForInput } from '@/types/quote';
 import { router, type Href } from 'expo-router';
 
 import { QuoteLine } from './quote-line';
+
+type BarcodeScannerProps = {
+  visible: boolean;
+  onClose: () => void;
+  onBarcode: (code: string) => void;
+  onFallbackPhotoSearch: () => void;
+};
+
+/** Load expo-camera only when the scanner is opened (avoids cold-start native init). */
+function LazyProductBarcodeScannerModal(props: BarcodeScannerProps) {
+  if (!props.visible) {
+    return null;
+  }
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { ProductBarcodeScannerModal } = require('@/components/ai/product-barcode-scanner-modal') as typeof import('@/components/ai/product-barcode-scanner-modal');
+  return <ProductBarcodeScannerModal {...props} />;
+}
 
 type QuoteAddLinesStepProps = {
   lines: QuoteLineValue[];
@@ -412,7 +428,7 @@ export function QuoteAddLinesStep({
         visible={aiIntro.visible}
       />
       <ProductAnalysisLoadingModal progress={analysisProgress} visible={isAnalyzing} />
-      <ProductBarcodeScannerModal
+      <LazyProductBarcodeScannerModal
         visible={barcodeScannerVisible}
         onBarcode={(code) => {
           void handleBarcode(code);

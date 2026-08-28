@@ -58,7 +58,7 @@ export function QuoteWizardScreen({
 
   useEffect(() => {
     if (mode === 'create') {
-      quoteIntro.presentOnFirstVisit();
+      return quoteIntro.presentOnFirstVisit();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- only when storage ready / create mode
   }, [mode, quoteIntro.isReady]);

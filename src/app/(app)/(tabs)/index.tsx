@@ -51,7 +51,7 @@ function DashboardMobileScreen() {
 
   useEffect(() => {
     if (!loading) {
-      statsIntro.presentOnFirstVisit();
+      return statsIntro.presentOnFirstVisit();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading, statsIntro.isReady]);

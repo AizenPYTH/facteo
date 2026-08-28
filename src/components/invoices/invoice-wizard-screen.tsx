@@ -71,7 +71,7 @@ export function InvoiceWizardScreen({
 
   useEffect(() => {
     if (mode === 'create') {
-      invoiceIntro.presentOnFirstVisit();
+      return invoiceIntro.presentOnFirstVisit();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- only on first mount / mode
   }, [mode, invoiceIntro.isReady]);

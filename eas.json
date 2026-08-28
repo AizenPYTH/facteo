@@ -34,7 +34,11 @@
       "autoIncrement": true,
       "env": {
         "APP_VARIANT": "production",
-        "EXPO_PUBLIC_APP_ENV": "production"
+        "EXPO_PUBLIC_APP_ENV": "production",
+        "EXPO_PUBLIC_SUPABASE_URL": "https://eogyopufctnqasjhsthp.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_g3hjZwok18GG7pRCEuARhQ_C7qhP0EI",
+        "EXPO_PUBLIC_COMPANY_SEARCH_API_URL": "https://recherche-entreprises.api.gouv.fr",
+        "EXPO_PUBLIC_COMPANY_SEARCH_PROVIDER": "recherche-entreprises"
       }
     }
   },

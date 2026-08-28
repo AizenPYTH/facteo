@@ -4,10 +4,8 @@ import Animated, {
   Easing,
   useAnimatedStyle,
   useSharedValue,
-  withDelay,
   withTiming,
 } from 'react-native-reanimated';
-import { scheduleOnRN } from 'react-native-worklets';
 
 import { useColors } from '@/hooks/use-colors';
 
@@ -37,15 +35,23 @@ export function PremiumSplashOverlay({ onComplete }: PremiumSplashOverlayProps) 
       easing: Easing.out(Easing.cubic),
     });
 
-    overlayOpacity.value = withDelay(
-      FADE_IN_MS + HOLD_MS,
-      withTiming(0, { duration: FADE_OUT_MS, easing: Easing.in(Easing.cubic) }, (finished) => {
-        'worklet';
-        if (finished && onComplete) {
-          scheduleOnRN(onComplete);
-        }
-      }),
-    );
+    // Keep completion on the JS thread — avoid scheduleOnRN/worklet callbacks
+    // which can SIGSEGV when given unstable closures on iOS.
+    const fadeTimer = setTimeout(() => {
+      overlayOpacity.value = withTiming(0, {
+        duration: FADE_OUT_MS,
+        easing: Easing.in(Easing.cubic),
+      });
+    }, FADE_IN_MS + HOLD_MS);
+
+    const doneTimer = setTimeout(() => {
+      onComplete?.();
+    }, TOTAL_MS);
+
+    return () => {
+      clearTimeout(fadeTimer);
+      clearTimeout(doneTimer);
+    };
   }, [logoOpacity, logoScale, onComplete, overlayOpacity]);
 
   const overlayStyle = useAnimatedStyle(() => ({ opacity: overlayOpacity.value }));
@@ -91,9 +97,6 @@ export function AnimatedIcon() {
     </View>
   );
 }
-
-// Keep TOTAL_MS referenced for documentation / future tuning.
-void TOTAL_MS;
 
 const styles = StyleSheet.create({
   overlay: {

@@ -38,7 +38,7 @@ export default function DocumentTemplatesScreen() {
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    templatesIntro.presentOnFirstVisit();
+    return templatesIntro.presentOnFirstVisit();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [templatesIntro.isReady]);
 

@@ -10,6 +10,7 @@ import {
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { FeatureIntroErrorBoundary } from '@/components/feature-intros/feature-intro-error-boundary';
 import { FeatureIntroStage } from '@/components/feature-intros/feature-intro-stage';
 import { Button } from '@/components/ui/button';
 import { useColors, useThemedStyles } from '@/hooks/use-colors';
@@ -76,66 +77,68 @@ export function FeatureIntroModal({
   const step = config.steps[Math.min(stepIndex, config.steps.length - 1)];
 
   return (
-    <Modal
-      animationType="fade"
-      onRequestClose={onClose}
-      statusBarTranslucent
-      transparent
-      visible={visible}>
-      <View style={[styles.overlay, { paddingTop: insets.top + spacing.sm, paddingBottom: insets.bottom + spacing.sm }]}>
-        <Pressable
-          accessibilityLabel="Fermer l’introduction"
-          onPress={onClose}
-          style={StyleSheet.absoluteFill}
-        />
+    <FeatureIntroErrorBoundary onError={onClose}>
+      <Modal
+        animationType="fade"
+        onRequestClose={onClose}
+        statusBarTranslucent
+        transparent
+        visible={visible}>
+        <View style={[styles.overlay, { paddingTop: insets.top + spacing.sm, paddingBottom: insets.bottom + spacing.sm }]}>
+          <Pressable
+            accessibilityLabel="Fermer l’introduction"
+            onPress={onClose}
+            style={StyleSheet.absoluteFill}
+          />
 
-        <Animated.View
-          entering={FadeIn.duration(motion.fast)}
-          style={[styles.card, isTablet && styles.cardTablet]}>
-          <View style={styles.header}>
-            <Text style={styles.kicker}>Découvrir</Text>
-            <Pressable
-              accessibilityLabel="Fermer"
-              accessibilityRole="button"
-              hitSlop={12}
-              onPress={onClose}>
-              <Text style={[styles.close, { color: colors.primary }]}>Fermer</Text>
-            </Pressable>
-          </View>
+          <Animated.View
+            entering={FadeIn.duration(motion.fast)}
+            style={[styles.card, isTablet && styles.cardTablet]}>
+            <View style={styles.header}>
+              <Text style={styles.kicker}>Découvrir</Text>
+              <Pressable
+                accessibilityLabel="Fermer"
+                accessibilityRole="button"
+                hitSlop={12}
+                onPress={onClose}>
+                <Text style={[styles.close, { color: colors.primary }]}>Fermer</Text>
+              </Pressable>
+            </View>
 
-          <Text style={styles.title}>{config.title}</Text>
+            <Text style={styles.title}>{config.title}</Text>
 
-          <FeatureIntroStage featureId={config.id} stepIndex={stepIndex} />
+            <FeatureIntroStage featureId={config.id} stepIndex={stepIndex} />
 
-          {step ? (
-            <Animated.View
-              key={step.key}
-              entering={FadeInDown.duration(220)}
-              style={styles.copy}>
-              <Text style={styles.headline}>{step.headline}</Text>
-              <Text style={styles.body}>{step.body}</Text>
-            </Animated.View>
-          ) : null}
+            {step ? (
+              <Animated.View
+                key={step.key}
+                entering={FadeInDown.duration(220)}
+                style={styles.copy}>
+                <Text style={styles.headline}>{step.headline}</Text>
+                <Text style={styles.body}>{step.body}</Text>
+              </Animated.View>
+            ) : null}
 
-          <View style={styles.dots}>
-            {config.steps.map((item, index) => (
-              <View
-                key={item.key}
-                style={[styles.dot, index === stepIndex && styles.dotActive]}
-              />
-            ))}
-          </View>
+            <View style={styles.dots}>
+              {config.steps.map((item, index) => (
+                <View
+                  key={item.key}
+                  style={[styles.dot, index === stepIndex && styles.dotActive]}
+                />
+              ))}
+            </View>
 
-          <View style={styles.actions}>
-            <Button onPress={onCta} title={config.ctaLabel} elevated />
-            <Button onPress={onDontShowAgain} title="Ne plus afficher" variant="ghost" />
-            <Pressable accessibilityRole="button" onPress={onClose} hitSlop={8}>
-              <Text style={styles.skip}>Passer</Text>
-            </Pressable>
-          </View>
-        </Animated.View>
-      </View>
-    </Modal>
+            <View style={styles.actions}>
+              <Button onPress={onCta} title={config.ctaLabel} elevated />
+              <Button onPress={onDontShowAgain} title="Ne plus afficher" variant="ghost" />
+              <Pressable accessibilityRole="button" onPress={onClose} hitSlop={8}>
+                <Text style={styles.skip}>Passer</Text>
+              </Pressable>
+            </View>
+          </Animated.View>
+        </View>
+      </Modal>
+    </FeatureIntroErrorBoundary>
   );
 }
 
