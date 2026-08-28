@@ -1,3 +1,4 @@
+import { isOfflineDemoData } from '@/lib/demo-data-mode';
 import { supabase } from '@/lib/supabase';
 import { logSupabaseError } from '@/lib/supabase/errors';
 
@@ -16,6 +17,8 @@ const DEFAULT_PREFERENCES: NotificationPreferences = {
   dueDateReminderEnabled: true,
   dueDateReminderDays: 3,
 };
+
+let offlinePreferences: NotificationPreferences = { ...DEFAULT_PREFERENCES };
 
 type NotificationPreferencesRow = {
   invoice_overdue_enabled: boolean;
@@ -38,6 +41,11 @@ function mapRow(row: NotificationPreferencesRow): NotificationPreferences {
 export async function fetchNotificationPreferences(
   userId: string,
 ): Promise<NotificationPreferences> {
+  if (isOfflineDemoData()) {
+    void userId;
+    return { ...offlinePreferences };
+  }
+
   const { data, error } = await supabase
     .from('notification_preferences')
     .select(
@@ -62,6 +70,12 @@ export async function upsertNotificationPreferences(
   userId: string,
   preferences: NotificationPreferences,
 ): Promise<NotificationPreferences> {
+  if (isOfflineDemoData()) {
+    void userId;
+    offlinePreferences = { ...preferences };
+    return { ...offlinePreferences };
+  }
+
   const { data, error } = await supabase
     .from('notification_preferences')
     .upsert(

@@ -32,7 +32,7 @@ export type PlanFeature = {
   comingSoon?: boolean;
 };
 
-export type SubscriptionPlanId = 'micro' | 'basique' | 'standard' | 'pro';
+export type SubscriptionPlanId = 'micro' | 'basique' | 'standard' | 'pro' | 'max';
 
 export type SubscriptionPlan = {
   id: SubscriptionPlanId;
@@ -202,6 +202,27 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
     features: [
       { id: 'siren-unlimited', label: 'Recherche SIREN / SIRET illimitée', icon: 'search' },
       { id: 'companies-unlimited', label: 'Entreprises illimitées', icon: 'building' },
+    ],
+  },
+  {
+    id: 'max',
+    name: 'Max',
+    description: 'Toutes les fonctionnalités INVEQ pour une activité sans limite.',
+    priceMonthlyHt: 63.98,
+    priceYearlyMonthlyHt: 49.99,
+    cta: 'Choisir Max',
+    inheritsFrom: 'pro',
+    limits: {
+      documentsPerMonth: null,
+      sirenSearchesPerMonth: null,
+      users: 1,
+      departments: null,
+      companies: null,
+    },
+    features: [
+      { id: 'stripe', label: 'Paiements Stripe (encaisser vos clients)', icon: 'chart' },
+      { id: 'ai', label: 'Assistant IA', icon: 'ai' },
+      { id: 'stats', label: 'Statistiques avancées', icon: 'stats' },
     ],
   },
 ];

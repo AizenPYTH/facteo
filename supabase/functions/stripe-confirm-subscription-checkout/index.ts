@@ -68,7 +68,7 @@ Deno.serve(async (request) => {
       {
         planId: result.planId,
         status: 'active',
-        isPremium: result.planId === 'premium',
+        isPremium: result.planId !== 'micro',
       },
       200,
     );

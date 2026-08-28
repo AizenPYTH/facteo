@@ -339,7 +339,7 @@ export function InvoiceWizardScreen({
       header={
         isDesktop ? undefined : (
           <>
-            <InvoiceScreenHeader showBackButton={false} title={title} />
+            <InvoiceScreenHeader onBack={handleBack} showBackButton title={title} />
             <QuoteWizardProgress currentStep={step} />
           </>
         )

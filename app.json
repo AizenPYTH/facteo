@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "INVEQ",
-    "slug": "FACTEO",
+    "slug": "inveq",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -12,7 +12,8 @@
       "bundleIdentifier": "com.inveq.app",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
-      }
+      },
+      "buildNumber": "39"
     },
     "android": {
       "adaptiveIcon": {
@@ -34,6 +35,7 @@
     },
     "plugins": [
       "expo-router",
+      "expo-iap",
       [
         "expo-splash-screen",
         {
@@ -68,8 +70,9 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "55dde7c8-8d60-4b90-a665-53d800d2aa22"
+        "projectId": "2431d113-6d0f-465b-b268-902ab04c5f35"
       }
-    }
+    },
+    "owner": "influence1s-team"
   }
 }

@@ -1,3 +1,4 @@
+import { isOfflineDemoData } from '@/lib/demo-data-mode';
 import { supabase } from '@/lib/supabase';
 import { logSupabaseError } from '@/lib/supabase/errors';
 
@@ -27,6 +28,12 @@ export async function createInvoicePaymentLink(
   userId: string,
   input: CreatePaymentLinkInput,
 ): Promise<CreatePaymentLinkResult> {
+  if (isOfflineDemoData()) {
+    void userId;
+    void input;
+    throw new Error('Le paiement en ligne n’est pas encore configuré.');
+  }
+
   const endpoint = getStripeEdgeFunctionUrl();
 
   if (!endpoint) {

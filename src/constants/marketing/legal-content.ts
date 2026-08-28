@@ -147,7 +147,7 @@ export const TERMS_SECTIONS: LegalSection[] = [
     title: '4. Abonnement et tarifs',
     paragraphs: [
       'INVEQ propose une offre Standard gratuite avec des fonctionnalités limitées, et une offre Premium payante donnant accès à l’ensemble des fonctionnalités avancées.',
-      'Les tarifs en vigueur sont affichés sur le site et dans l’application au moment de la souscription. Les prix sont indiqués en euros, toutes taxes comprises (TTC) pour les consommateurs.',
+      'Les tarifs en vigueur sont affichés dans l’application au moment de la souscription. Sur iPhone et iPad, l’abonnement Premium est proposé via In-App Purchase Apple. Sur le web et les autres plateformes, les offres peuvent également être souscrites via le site. Les prix sont indiqués en euros, toutes taxes comprises (TTC) pour les consommateurs.',
       'INVEQ se réserve le droit de modifier ses tarifs. Toute modification sera notifiée avec un préavis de 30 jours. En cas de désaccord, vous pouvez résilier votre abonnement avant l’entrée en vigueur du nouveau tarif.',
     ],
   },
@@ -155,9 +155,10 @@ export const TERMS_SECTIONS: LegalSection[] = [
     id: 'paiement',
     title: '5. Paiement',
     paragraphs: [
-      'Les abonnements Premium sont facturés mensuellement ou annuellement selon l’offre choisie. Le paiement est traité par Stripe, prestataire de paiement sécurisé.',
+      'Sur iPhone et iPad, les abonnements Premium sont facturés via In-App Purchase Apple (App Store), à renouvellement automatique, et peuvent être gérés ou résiliés dans Réglages > Abonnements.',
+      'Sur le web et les autres plateformes, les abonnements Premium peuvent être facturés via Stripe, prestataire de paiement sécurisé.',
       'En cas de défaut de paiement, INVEQ se réserve le droit de suspendre l’accès aux fonctionnalités Premium après notification.',
-      'Les paiements de vos clients (liens de paiement Stripe) sont traités directement par Stripe. INVEQ n’est pas partie aux transactions entre vous et vos clients.',
+      'Les paiements de vos clients (liens de paiement Stripe pour factures de biens ou services) sont traités directement par Stripe. INVEQ n’est pas partie aux transactions entre vous et vos clients.',
     ],
   },
   {

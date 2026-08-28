@@ -19,6 +19,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { useCompanyProfile } from '@/hooks/use-company-profile';
 import { useSubscription } from '@/hooks/use-subscription';
 import { getAppVersionInfo } from '@/lib/app-version';
+import { getEffectivePlanDisplayName } from '@/lib/subscription/plans';
 import { useThemePreference } from '@/providers/theme-preference-provider';
 import { useToast } from '@/providers/toast-provider';
 
@@ -29,14 +30,14 @@ export default function SettingsScreen() {
   const useDesktopSettings = isWeb && (isDesktop || isTablet);
   const { user, signOut } = useAuth();
   const companyProfile = useCompanyProfile();
-  const { isPremium } = useSubscription();
+  const { subscription } = useSubscription();
   const { preference, setPreference } = useThemePreference();
   const { showSuccess } = useToast();
   const versionInfo = getAppVersionInfo();
 
   const isDarkMode = preference === 'dark';
   const darkModeSupported = Platform.OS !== 'web';
-  const planLabel = isPremium ? 'INVEQ Premium' : 'INVEQ Standard';
+  const planLabel = `INVEQ ${getEffectivePlanDisplayName(subscription?.effectivePlanId ?? 'micro')}`;
 
   async function handleToggleDarkMode(value: boolean) {
     if (!darkModeSupported) {
@@ -176,11 +177,15 @@ export default function SettingsScreen() {
               label="Contact"
               onPress={() => void openHelpPage('contact')}
             />
-            <View style={styles.separator} />
-            <SettingsRow
-              label="Site web INVEQ"
-              onPress={() => void openMarketingSite()}
-            />
+            {Platform.OS === 'ios' ? null : (
+              <>
+                <View style={styles.separator} />
+                <SettingsRow
+                  label="Site web INVEQ"
+                  onPress={() => void openMarketingSite()}
+                />
+              </>
+            )}
           </SettingsSection>
 
           <SettingsSection title="Confidentialité & conditions">

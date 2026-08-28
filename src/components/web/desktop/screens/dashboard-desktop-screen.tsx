@@ -84,7 +84,7 @@ export function DashboardDesktopScreen() {
               <View style={styles.centerColumn}>
                 <DesktopPanel title="Évolution du chiffre d'affaires">
                   <PremiumGatedSection
-                    bannerMessage="Statistiques avancées — INVEQ Premium"
+                    bannerMessage="Statistiques avancées — offre Basique ou supérieure"
                     locked={advancedStatsLocked}>
                     <View style={styles.chartBody}>
                       <RevenueChart
@@ -150,13 +150,6 @@ export function DashboardDesktopScreen() {
                       icon={{ ios: 'person.badge.plus', android: 'person_add', web: 'person_add' }}
                       label="Ajouter un client"
                       onPress={() => router.push('/clients/new' as Href)}
-                    />
-                    <DesktopShortcutButton
-                      description="Bientôt disponible"
-                      disabled
-                      icon={{ ios: 'camera.viewfinder', android: 'document_scanner', web: 'document_scanner' }}
-                      label="Scanner IA"
-                      onPress={() => {}}
                     />
                   </View>
                 </DesktopPanel>
