@@ -9,6 +9,7 @@ const corsHeaders = {
 type AnalyzeProductBody = {
   imageBase64?: string;
   mimeType?: string;
+  barcodeHint?: string;
 };
 
 type ProductAnalysis = {
@@ -24,6 +25,9 @@ type ProductAnalysis = {
   unit: string;
   quantity: number;
   confidence: number;
+  sku: string;
+  ean: string;
+  source_url: string;
 };
 
 const PRODUCT_ANALYSIS_SCHEMA = {
@@ -42,6 +46,9 @@ const PRODUCT_ANALYSIS_SCHEMA = {
     unit: { type: 'string' },
     quantity: { type: 'number' },
     confidence: { type: 'number' },
+    sku: { type: 'string' },
+    ean: { type: 'string' },
+    source_url: { type: 'string' },
     products: {
       type: 'array',
       items: {
@@ -60,6 +67,9 @@ const PRODUCT_ANALYSIS_SCHEMA = {
           unit: { type: 'string' },
           quantity: { type: 'number' },
           confidence: { type: 'number' },
+          sku: { type: 'string' },
+          ean: { type: 'string' },
+          source_url: { type: 'string' },
         },
         required: [
           'title',
@@ -74,6 +84,9 @@ const PRODUCT_ANALYSIS_SCHEMA = {
           'unit',
           'quantity',
           'confidence',
+          'sku',
+          'ean',
+          'source_url',
         ],
       },
     },
@@ -91,6 +104,9 @@ const PRODUCT_ANALYSIS_SCHEMA = {
     'unit',
     'quantity',
     'confidence',
+    'sku',
+    'ean',
+    'source_url',
     'products',
   ],
 };
@@ -147,6 +163,7 @@ Deno.serve(async (request) => {
     const mimeType = (body.mimeType ?? 'image/jpeg').trim() || 'image/jpeg';
     const imageDataUrl = `data:${mimeType};base64,${body.imageBase64}`;
     const model = Deno.env.get('OPENAI_VISION_MODEL')?.trim() || 'gpt-4.1-mini';
+    const barcodeHint = typeof body.barcodeHint === 'string' ? body.barcodeHint.trim() : '';
 
     const modelOutput = await requestOpenAiJsonSchema({
       apiKey: openAiApiKey,
@@ -221,6 +238,9 @@ function normalizeProductAnalysis(source: Partial<ProductAnalysis>): ProductAnal
     unit: normalizeText(source.unit) || 'piece',
     quantity: Math.max(1, toNullableNumber(source.quantity) ?? 1),
     confidence: clamp(toNullableNumber(source.confidence) ?? 0.5, 0, 1),
+    sku: normalizeText(source.sku),
+    ean: normalizeText(source.ean),
+    source_url: normalizeText(source.source_url),
   };
 }
 
