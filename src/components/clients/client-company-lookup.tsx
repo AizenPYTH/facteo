@@ -124,7 +124,7 @@ export function ClientCompanyLookup({ control, errors, setValue }: ClientCompany
       {!sirenSearchEnabled ? (
         <PremiumUpgradeBanner
           compact
-          message="Recherche SIREN / SIRET — INVEQ Premium"
+          message="Recherche SIREN / SIRET — offre Basique ou supérieure"
         />
       ) : null}
 
@@ -191,7 +191,7 @@ export function ClientCompanyLookup({ control, errors, setValue }: ClientCompany
       <Text style={styles.hint}>
         {sirenSearchEnabled
           ? 'Saisissez un SIREN (9 chiffres) ou un SIRET (14 chiffres) pour remplir automatiquement les informations de l\'entreprise.'
-          : 'La saisie manuelle reste possible. La recherche automatique est incluse dans INVEQ Premium.'}
+          : 'La saisie manuelle reste possible. La recherche automatique est incluse dès l’offre Basique.'}
       </Text>
     </FormSection>
   );

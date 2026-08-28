@@ -20,6 +20,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { PdfPreviewWebView } from '@/components/pdf/pdf-preview-webview';
 import { AppText } from '@/components/ui/app-text';
+import { Button } from '@/components/ui/button';
 import { useColors, useThemedStyles } from '@/hooks/use-colors';
 import { triggerImpactHaptic } from '@/lib/haptics';
 import { ensureTemplatePreviewPdf } from '@/lib/pdf/template-preview-pdf';
@@ -62,7 +63,6 @@ export function TemplateGalleryModal({
   const { width: screenWidth } = useWindowDimensions();
 
   const buildPreviewHtmlRef = useRef(buildPreviewHtml);
-  const onSelectRef = useRef(onSelect);
   const gestureLockedRef = useRef(false);
   const loadGenerationRef = useRef(0);
   const cacheKeyRef = useRef(cacheKey);
@@ -78,11 +78,12 @@ export function TemplateGalleryModal({
   const navButtonScale = useSharedValue(1);
 
   buildPreviewHtmlRef.current = buildPreviewHtml;
-  onSelectRef.current = onSelect;
   gestureLockedRef.current = gestureLocked;
   cacheKeyRef.current = cacheKey;
 
   const activeTemplate: PdfTemplateDefinition = PDF_TEMPLATES[activeIndex] ?? PDF_TEMPLATES[0]!;
+  const draftTemplateId = activeTemplate.id;
+  const isDirty = draftTemplateId !== selectedTemplateId;
 
   const loadTemplatePdf = useCallback(async (templateId: string): Promise<string | null> => {
     try {
@@ -149,7 +150,6 @@ export function TemplateGalleryModal({
 
       setActiveIndex(bounded);
       setActivePdfUri(pdfUri);
-      onSelectRef.current(template.id);
       prefetchNeighbors(bounded);
       setLoading(false);
 
@@ -207,6 +207,15 @@ export function TemplateGalleryModal({
     }
   }, [activeIndex, goToIndex]);
 
+  const handleCancel = useCallback(() => {
+    onClose();
+  }, [onClose]);
+
+  const handleConfirm = useCallback(() => {
+    onSelect(draftTemplateId);
+    onClose();
+  }, [draftTemplateId, onClose, onSelect]);
+
   const panGesture = Gesture.Pan()
     .activeOffsetX([-24, 24])
     .failOffsetY([-18, 18])
@@ -237,14 +246,18 @@ export function TemplateGalleryModal({
   const progressWidth = ((activeIndex + 1) / TOTAL_TEMPLATES) * Math.min(screenWidth - spacing.lg * 2, 280);
 
   return (
-    <Modal animationType="fade" onRequestClose={onClose} statusBarTranslucent visible={visible}>
+    <Modal animationType="fade" onRequestClose={handleCancel} statusBarTranslucent visible={visible}>
       <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
         <View style={styles.header}>
-          <Pressable accessibilityLabel="Fermer" hitSlop={12} onPress={onClose} style={styles.iconButton}>
+          <Pressable
+            accessibilityLabel="Retour"
+            hitSlop={12}
+            onPress={handleCancel}
+            style={styles.iconButton}>
             <SymbolView
-              name={{ ios: 'xmark', android: 'close', web: 'close' }}
-              size={18}
-              tintColor={colors.textSecondary}
+              name={{ ios: 'chevron.left', android: 'arrow_back', web: 'arrow_back' }}
+              size={20}
+              tintColor={colors.primary}
             />
           </Pressable>
 
@@ -255,7 +268,17 @@ export function TemplateGalleryModal({
             </AppText>
           </View>
 
-          <View style={styles.iconButton} />
+          <Pressable
+            accessibilityLabel="Fermer"
+            hitSlop={12}
+            onPress={handleCancel}
+            style={styles.iconButton}>
+            <SymbolView
+              name={{ ios: 'xmark', android: 'close', web: 'close' }}
+              size={18}
+              tintColor={colors.textSecondary}
+            />
+          </Pressable>
         </View>
 
         <View style={styles.templateMeta}>
@@ -307,7 +330,7 @@ export function TemplateGalleryModal({
           </Animated.View>
         </GestureDetector>
 
-        <View style={styles.footer}>
+        <View style={styles.navRow}>
           <Animated.View style={navAnimatedStyle}>
             <Pressable
               accessibilityLabel="Modèle précédent"
@@ -329,7 +352,7 @@ export function TemplateGalleryModal({
           </Animated.View>
 
           <AppText color="secondary" style={styles.hint} variant="caption">
-            Rendu PDF final · balayez · pincez · double-tapez
+            Balayez pour parcourir les modèles
           </AppText>
 
           <Animated.View style={navAnimatedStyle}>
@@ -354,6 +377,16 @@ export function TemplateGalleryModal({
               />
             </Pressable>
           </Animated.View>
+        </View>
+
+        <View style={styles.actions}>
+          <Button onPress={handleCancel} title="Annuler" variant="ghost" />
+          <Button
+            disabled={loading || Boolean(errorMessage)}
+            elevated
+            onPress={handleConfirm}
+            title={isDirty ? 'Choisir ce modèle' : 'Utiliser ce modèle'}
+          />
         </View>
       </View>
     </Modal>
@@ -441,12 +474,11 @@ const useStyles = () =>
       justifyContent: 'center',
       padding: spacing.lg,
     },
-    footer: {
+    navRow: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
       paddingHorizontal: spacing.lg,
-      paddingTop: spacing.xs,
       gap: spacing.md,
     },
     navButton: {
@@ -458,11 +490,6 @@ const useStyles = () =>
       backgroundColor: colors.surface,
       borderWidth: StyleSheet.hairlineWidth,
       borderColor: colors.border,
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.1,
-      shadowRadius: 8,
-      elevation: 3,
     },
     navButtonDisabled: {
       opacity: 0.35,
@@ -470,5 +497,10 @@ const useStyles = () =>
     hint: {
       flex: 1,
       textAlign: 'center',
+    },
+    actions: {
+      paddingHorizontal: spacing.lg,
+      paddingBottom: spacing.sm,
+      gap: spacing.xs,
     },
   }));

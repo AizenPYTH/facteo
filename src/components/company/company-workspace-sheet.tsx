@@ -5,11 +5,11 @@ import {
   Alert,
   Modal,
   Pressable,
-  ScrollView,
   StyleSheet,
   TextInput,
   View,
 } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AppText } from '@/components/ui/app-text';
@@ -138,7 +138,11 @@ export function CompanyWorkspaceSheet({
             Gérez vos entreprises et changez d’espace en un clic.
           </AppText>
 
-          <ScrollView contentContainerStyle={styles.list} showsVerticalScrollIndicator={false}>
+          <KeyboardAwareScrollView
+            bottomOffset={24}
+            contentContainerStyle={styles.list}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}>
             {companies.map((company) => {
               const isActive = company.id === activeCompany?.id;
               const isEditing = editingId === company.id;
@@ -231,19 +235,19 @@ export function CompanyWorkspaceSheet({
                 </View>
               );
             })}
-          </ScrollView>
 
-          <View style={styles.createBlock}>
-            <AppText medium variant="body">Nouvelle entreprise</AppText>
-            <TextInput
-              onChangeText={setCreateName}
-              placeholder="Nom de l’entreprise"
-              placeholderTextColor={colors.textTertiary}
-              style={styles.input}
-              value={createName}
-            />
-            <Button loading={createCompany.isPending} onPress={() => void handleCreate()} title="Créer" />
-          </View>
+            <View style={styles.createBlock}>
+              <AppText medium variant="body">Nouvelle entreprise</AppText>
+              <TextInput
+                onChangeText={setCreateName}
+                placeholder="Nom de l’entreprise"
+                placeholderTextColor={colors.textTertiary}
+                style={styles.input}
+                value={createName}
+              />
+              <Button loading={createCompany.isPending} onPress={() => void handleCreate()} title="Créer" />
+            </View>
+          </KeyboardAwareScrollView>
         </View>
       </View>
     </Modal>

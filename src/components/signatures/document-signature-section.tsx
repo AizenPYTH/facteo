@@ -84,7 +84,7 @@ export function DocumentSignatureSection({
     return (
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Signature client</Text>
-        <Text style={styles.lockedText}>Disponible avec INVEQ Premium.</Text>
+        <Text style={styles.lockedText}>Disponible avec l’offre Standard ou Pro.</Text>
         <Button onPress={onRequestSign} title="Découvrir Premium" variant="ghost" />
       </View>
     );

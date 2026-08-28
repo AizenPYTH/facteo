@@ -4,6 +4,17 @@ import {
   mapUpdateInvoiceInputToInsert,
 } from '@/lib/invoices/mappers';
 import { resolveInvoiceStatusFromPayments } from '@/lib/invoices/status';
+import {
+  demoInvoiceDetails,
+  demoInvoices,
+} from '@/lib/screenshot-demo';
+import {
+  offlineAddInvoicePayment,
+  offlineCreateInvoice,
+  offlineUpdateInvoice,
+  offlineUpdateInvoiceStatus,
+} from '@/lib/screenshot-demo/offline-store';
+import { isOfflineDemoData } from '@/lib/demo-data-mode';
 import { supabase } from '@/lib/supabase';
 import { logSupabaseError } from '@/lib/supabase/errors';
 import { mapInvoiceDetail, mapInvoiceRowToInvoice } from '@/lib/supabase/mappers';
@@ -170,6 +181,27 @@ export async function fetchInvoicesPage(
   scope: DataScope,
   { search = '', status = 'all', page = 0, pageSize = INVOICES_PAGE_SIZE }: InvoicesPageParams = {},
 ): Promise<InvoicesPage> {
+  if (isOfflineDemoData()) {
+    void scope;
+    const needle = search.trim().toLowerCase();
+    let filtered = status === 'all' ? demoInvoices : demoInvoices.filter((row) => row.status === status);
+    if (needle) {
+      filtered = filtered.filter((invoice) =>
+        [invoice.number, invoice.clientName, invoice.clientEmail]
+          .filter(Boolean)
+          .some((value) => String(value).toLowerCase().includes(needle)),
+      );
+    }
+    const from = page * pageSize;
+    const invoices = filtered.slice(from, from + pageSize);
+    const loadedCount = from + invoices.length;
+    return {
+      invoices,
+      nextPage: loadedCount < filtered.length ? page + 1 : null,
+      totalCount: filtered.length,
+    };
+  }
+
   const from = page * pageSize;
   const to = from + pageSize - 1;
 
@@ -210,6 +242,11 @@ export async function fetchInvoiceById(
   scope: DataScope,
   invoiceId: string,
 ): Promise<InvoiceDetail | null> {
+  if (isOfflineDemoData()) {
+    void scope;
+    return demoInvoiceDetails[invoiceId] ?? null;
+  }
+
   const { data: invoiceRow, error: invoiceError } = await supabase
     .from('invoices')
     .select(INVOICE_LIST_COLUMNS)
@@ -268,6 +305,13 @@ export async function fetchInvoiceById(
 }
 
 export async function createInvoice(scope: DataScope, input: CreateInvoiceInput): Promise<Invoice> {
+  if (isOfflineDemoData()) {
+    const settings = await fetchSettings(scope);
+    const defaultDueAt =
+      input.dueAt ?? computeDueDate(input.paymentTermsDays ?? settings?.paymentTermsDays ?? 30);
+    return offlineCreateInvoice(input, defaultDueAt);
+  }
+
   if (!input.clientId) {
     throw new Error('Client is required.');
   }
@@ -325,6 +369,11 @@ export async function updateInvoice(
   invoiceId: string,
   input: UpdateInvoiceInput,
 ): Promise<InvoiceDetail> {
+  if (isOfflineDemoData()) {
+    void scope;
+    return offlineUpdateInvoice(invoiceId, input);
+  }
+
   const existing = await fetchInvoiceById(scope, invoiceId);
 
   if (!existing) {
@@ -399,6 +448,11 @@ export async function updateInvoiceStatus(
   invoiceId: string,
   status: InvoiceStatus,
 ): Promise<Invoice> {
+  if (isOfflineDemoData()) {
+    void scope;
+    return offlineUpdateInvoiceStatus(invoiceId, status);
+  }
+
   const now = new Date().toISOString();
   const payload: Partial<InvoiceInsert> = { status, updated_at: now };
 
@@ -491,6 +545,11 @@ export async function addInvoicePayment(
   invoiceId: string,
   input: AddPaymentInput,
 ): Promise<InvoicePayment> {
+  if (isOfflineDemoData()) {
+    void scope;
+    return offlineAddInvoicePayment(invoiceId, input);
+  }
+
   const invoice = await fetchInvoiceById(scope, invoiceId);
 
   if (!invoice) {

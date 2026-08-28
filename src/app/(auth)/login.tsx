@@ -97,6 +97,11 @@ export default function LoginScreen() {
           />
         )}
       />
+      <Text style={authScreenStyles.footerText}>
+        <Link href={'/forgot-password' as Href}>
+          <Text style={authScreenStyles.footerLink}>Mot de passe oublié ?</Text>
+        </Link>
+      </Text>
     </AuthScreen>
   );
 }

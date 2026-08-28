@@ -34,6 +34,7 @@
     },
     "plugins": [
       "expo-router",
+      "expo-iap",
       [
         "expo-splash-screen",
         {
@@ -68,7 +69,7 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "55dde7c8-8d60-4b90-a665-53d800d2aa22"
+        "projectId": "b779bbfa-75a2-4712-98da-4dbec1134edc"
       }
     }
   }

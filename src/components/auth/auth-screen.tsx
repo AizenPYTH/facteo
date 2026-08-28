@@ -19,6 +19,7 @@ type AuthScreenProps = {
   footer: ReactNode;
   footerLink?: ReactNode;
   error?: string | null;
+  info?: string | null;
 };
 
 export function AuthScreen({
@@ -28,6 +29,7 @@ export function AuthScreen({
   footer,
   footerLink,
   error,
+  info,
 }: AuthScreenProps) {
   const styles = useStyles();
   const colors = useColors();
@@ -42,8 +44,9 @@ export function AuthScreen({
         style={StyleSheet.absoluteFill}
       />
 
-      <SafeAreaView edges={['top', 'bottom']} style={styles.safeArea}>
+      <SafeAreaView edges={['top']} style={styles.safeArea}>
         <FormScreen
+          centerContent
           contentContainerStyle={styles.content}
           edges={[]}
           footer={footer}
@@ -53,7 +56,7 @@ export function AuthScreen({
             <Image
               accessibilityIgnoresInvertColors
               accessibilityLabel="INVEQ"
-              source={require('@/assets/images/INVEQ-logo.png')}
+              source={require('@/assets/images/inveq-logo.png')}
               style={styles.logo}
             />
             <Animated.View entering={FadeInDown.delay(80).duration(motion.normal).springify()}>
@@ -70,6 +73,15 @@ export function AuthScreen({
               entering={FadeInDown.duration(motion.fast)}
               style={styles.errorBanner}>
               <Text style={styles.errorBannerText}>{error}</Text>
+            </Animated.View>
+          ) : null}
+
+          {info && !error ? (
+            <Animated.View
+              accessibilityRole="text"
+              entering={FadeInDown.duration(motion.fast)}
+              style={styles.infoBanner}>
+              <Text style={styles.infoBannerText}>{info}</Text>
             </Animated.View>
           ) : null}
 
@@ -104,10 +116,12 @@ function useStyles() {
     content: {
       flexGrow: 1,
       paddingHorizontal: spacing.screenPaddingHorizontal,
-      paddingTop: spacing['3xl'],
-      paddingBottom: spacing.xl,
-      gap: spacing.xl,
-      justifyContent: 'center',
+      paddingTop: spacing.xl,
+      paddingBottom: spacing.md,
+      gap: spacing.lg,
+      // Pas de justifyContent:'center' : avec le clavier, le centrage
+      // faisait remonter le CTA dans les champs (bug App Review).
+      justifyContent: 'flex-start',
     },
     header: {
       gap: spacing.lg,
@@ -152,6 +166,19 @@ function useStyles() {
     errorBannerText: {
       ...typography.footnote,
       color: colors.error,
+      textAlign: 'center',
+    },
+    infoBanner: {
+      backgroundColor: colors.primarySubtle,
+      borderRadius: radius.lg,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm + 2,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: colors.primary,
+    },
+    infoBannerText: {
+      ...typography.footnote,
+      color: colors.primary,
       textAlign: 'center',
     },
     footerLinkWrap: {

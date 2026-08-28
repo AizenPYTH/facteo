@@ -38,10 +38,28 @@ export async function openLegalPage(path: LegalPagePath): Promise<void> {
 }
 
 export async function openHelpPage(path: HelpPagePath): Promise<void> {
+  // Guideline 3.1.1 : depuis iOS, éviter les pages marketing qui mènent aux tarifs.
+  if (Platform.OS === 'ios') {
+    const subject =
+      path === 'guide'
+        ? 'INVEQ — Guide d’utilisation'
+        : path === 'contact'
+          ? 'INVEQ — Contact'
+          : 'INVEQ — Support';
+    await openSupportEmail(subject);
+    return;
+  }
+
   await openExternalUrl(MARKETING_HELP_URLS[path]);
 }
 
 export async function openMarketingSite(): Promise<void> {
+  // Guideline 3.1.1 : éviter d’ouvrir le site marketing depuis iOS (page tarifs accessible).
+  if (Platform.OS === 'ios') {
+    await openSupportEmail('INVEQ — Support');
+    return;
+  }
+
   await openExternalUrl(MARKETING_SITE_URL);
 }
 

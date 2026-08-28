@@ -48,6 +48,10 @@ function mapInvoiceErrorMessage(message: string): string {
         return 'Numéro de facture déjà utilisé. Réessayez.';
       }
 
+      if (/[àâäéèêëïîôùûüç]/i.test(message) || message.includes('’') || message.includes("'")) {
+        return message;
+      }
+
       return GENERIC_ERROR_MESSAGE;
     }
   }

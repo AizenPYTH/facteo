@@ -158,6 +158,14 @@ export async function confirmSubscriptionCheckout(
 export async function startPremiumCheckoutFlow(
   planId: 'premium' = 'premium',
 ): Promise<ConfirmSubscriptionCheckoutResult | null> {
+  // Guideline 3.1.1 : sur iOS, les abonnements app passent exclusivement par In-App Purchase.
+  const { Platform } = await import('react-native');
+  if (Platform.OS === 'ios') {
+    throw new Error(
+      'Sur iOS, l’abonnement Premium s’achète uniquement via In-App Purchase Apple.',
+    );
+  }
+
   const returnUrl = getPremiumReturnUrl();
   const checkout = await createSubscriptionCheckout(planId);
 

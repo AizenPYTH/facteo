@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { StyleSheet, Text, View } from 'react-native';
+import { Platform, StyleSheet, Text, View } from 'react-native';
 
 import { PlanComparison } from '@/components/subscription/plan-comparison';
 import { SettingsScreenFrame } from '@/components/web/desktop/settings-screen-frame';
@@ -11,23 +11,32 @@ import {
 } from '@/constants/subscription-pricing';
 import { spacing } from '@/constants/theme/spacing';
 import { typography } from '@/constants/theme/typography';
+import { useApplePremiumProduct } from '@/hooks/use-apple-premium-product';
 import { useThemedStyles } from '@/hooks/use-colors';
 import { usePremiumCheckout } from '@/hooks/use-premium-checkout';
 import { usePremiumCheckoutReturn } from '@/hooks/use-premium-checkout-return';
-import { useSubscription, useSubscriptionPlans } from '@/hooks/use-subscription';
+import { useSubscription } from '@/hooks/use-subscription';
+import { openManageSubscription } from '@/lib/subscription/open-manage-subscription';
 import { useToast } from '@/providers/toast-provider';
 
 export default function PremiumScreen() {
   const styles = useStyles();
   const { showError, showSuccess } = useToast();
   const { subscription, isPremium, usage, isLoading } = useSubscription();
-  const plansQuery = useSubscriptionPlans();
-  const { isConfigured, startCheckout, subscribe } = usePremiumCheckout();
+  const { usesAppleIap, isConfigured, startCheckout, restorePurchases, subscribe, restore } =
+    usePremiumCheckout();
+  const { product: appleProduct, isLoading: appleProductLoading } = useApplePremiumProduct();
 
   usePremiumCheckoutReturn();
 
-  const standardPlan = plansQuery.data?.find((plan) => plan.id === 'free');
-  const premiumPlan = plansQuery.data?.find((plan) => plan.id === 'premium');
+  const iosPriceLabel = appleProduct?.displayPrice ?? null;
+  const priceLabel = usesAppleIap ? iosPriceLabel : PREMIUM_PRICE_LABEL;
+  const pricePeriodLabel = usesAppleIap ? '' : PREMIUM_PRICE_PERIOD_LABEL;
+  const subscribeTitle = usesAppleIap
+    ? iosPriceLabel
+      ? `S’abonner — ${iosPriceLabel}`
+      : 'S’abonner via l’App Store'
+    : `Passer à Premium — ${PREMIUM_PRICE_LABEL}/mois`;
 
   async function handleSubscribe() {
     if (isPremium) {
@@ -36,7 +45,18 @@ export default function PremiumScreen() {
     }
 
     if (!isConfigured) {
-      showError('Stripe n’est pas encore configuré. Contactez le support.');
+      showError(
+        usesAppleIap
+          ? 'In-App Purchase indisponible pour le moment.'
+          : 'Le paiement n’est pas encore configuré. Contactez le support.',
+      );
+      return;
+    }
+
+    if (usesAppleIap && !appleProduct) {
+      showError(
+        'Offre Premium introuvable sur l’App Store. Vérifiez que le produit In-App Purchase est créé.',
+      );
       return;
     }
 
@@ -51,7 +71,28 @@ export default function PremiumScreen() {
     }
   }
 
-  if (isLoading || plansQuery.isLoading || !standardPlan || !premiumPlan) {
+  async function handleRestore() {
+    try {
+      const restored = await restorePurchases();
+      if (restored) {
+        showSuccess('Achats restaurés. INVEQ Premium est actif.');
+        return;
+      }
+      showError('Aucun abonnement Apple à restaurer pour ce compte.');
+    } catch (error) {
+      showError(readErrorMessage(error));
+    }
+  }
+
+  async function handleManageSubscription() {
+    try {
+      await openManageSubscription();
+    } catch (error) {
+      showError(readErrorMessage(error));
+    }
+  }
+
+  if (isLoading || (usesAppleIap && appleProductLoading && !isPremium)) {
     return (
       <SettingsScreenFrame title="Abonnement">
         <LoadingView message="Chargement de votre offre..." />
@@ -65,8 +106,10 @@ export default function PremiumScreen() {
         <View style={styles.hero}>
           <Text style={styles.heroTitle}>INVEQ Premium</Text>
           <Text style={styles.heroPrice}>
-            {PREMIUM_PRICE_LABEL}
-            <Text style={styles.heroPeriod}>{PREMIUM_PRICE_PERIOD_LABEL}</Text>
+            {priceLabel ?? 'Prix App Store'}
+            {pricePeriodLabel ? (
+              <Text style={styles.heroPeriod}>{pricePeriodLabel}</Text>
+            ) : null}
           </Text>
           <Text style={styles.heroSubtitle}>
             Débloquez toutes les fonctionnalités et supprimez les limites de votre activité.
@@ -83,24 +126,50 @@ export default function PremiumScreen() {
 
         <PlanComparison
           currentPlanId={subscription?.effectivePlanId}
-          premiumPlan={premiumPlan}
-          standardPlan={standardPlan}
+          storeKitDisplayPrice={usesAppleIap ? iosPriceLabel : null}
         />
 
         <View style={styles.actions}>
           {isPremium ? (
-            <Button onPress={() => router.back()} title="Vous êtes Premium" variant="ghost" />
+            <>
+              <Button onPress={() => router.back()} title="Vous êtes Premium" variant="ghost" />
+              {usesAppleIap ? (
+                <Button
+                  onPress={() => {
+                    void handleManageSubscription();
+                  }}
+                  title="Gérer l’abonnement Apple"
+                  variant="ghost"
+                />
+              ) : null}
+            </>
           ) : (
             <Button
               loading={subscribe.isPending}
               onPress={() => {
                 void handleSubscribe();
               }}
-              title={`Passer à Premium — ${PREMIUM_PRICE_LABEL}/mois`}
+              title={subscribeTitle}
             />
           )}
+
+          {usesAppleIap && !isPremium ? (
+            <Button
+              loading={restore.isPending}
+              onPress={() => {
+                void handleRestore();
+              }}
+              title="Restaurer les achats"
+              variant="ghost"
+            />
+          ) : null}
+
           <Text style={styles.footnote}>
-            Paiement sécurisé par Stripe. Un code promo peut être saisi lors du paiement.
+            {usesAppleIap
+              ? 'Paiement sécurisé via In-App Purchase Apple. Abonnement à renouvellement automatique, résiliable à tout moment dans Réglages > Abonnements. Le prix affiché est celui de l’App Store.'
+              : Platform.OS === 'web'
+                ? 'Paiement sécurisé. Un code promo peut être saisi lors du paiement.'
+                : 'Paiement sécurisé.'}
           </Text>
         </View>
       </View>

@@ -1,3 +1,16 @@
+import {
+  demoCompany,
+  demoProfile,
+} from '@/lib/screenshot-demo';
+import { isOfflineDemoData } from '@/lib/demo-data-mode';
+import {
+  offlineCreateCompany,
+  offlineDeleteCompany,
+  offlineListCompanies,
+  offlineRenameCompany,
+  offlineUpdateCompanyAssetUrl,
+  offlineUpdateCompanyProfile,
+} from '@/lib/screenshot-demo/offline-store';
 import { supabase } from '@/lib/supabase';
 import { logSupabaseError } from '@/lib/supabase/errors';
 import type { CompanyProfileFormValues, UpdateCompanyProfileInput } from '@/types/company-profile';
@@ -97,6 +110,11 @@ export function mapCompanyToFormValues(
 }
 
 export async function fetchUserCompanies(userId: string): Promise<TenantCompany[]> {
+  if (isOfflineDemoData()) {
+    void userId;
+    return offlineListCompanies();
+  }
+
   const { data: memberships, error: membersError } = await supabase
     .from('company_members')
     .select('role, company_id')
@@ -131,6 +149,10 @@ export async function fetchUserCompanies(userId: string): Promise<TenantCompany[
 }
 
 export async function fetchCompanyById(companyId: string): Promise<TenantCompany | null> {
+  if (isOfflineDemoData()) {
+    return offlineListCompanies().find((company) => company.id === companyId) ?? null;
+  }
+
   const { data, error } = await supabase
     .from('companies')
     .select(COMPANY_COLUMNS)
@@ -150,6 +172,10 @@ export async function fetchCompanyById(companyId: string): Promise<TenantCompany
 }
 
 export async function createCompany(input: CreateCompanyInput): Promise<string> {
+  if (isOfflineDemoData()) {
+    return offlineCreateCompany(input.name);
+  }
+
   const trimmedName = input.name.trim();
 
   if (!trimmedName) {
@@ -172,6 +198,10 @@ export async function updateCompanyProfile(
   companyId: string,
   input: UpdateCompanyProfileInput,
 ): Promise<TenantCompany> {
+  if (isOfflineDemoData()) {
+    return offlineUpdateCompanyProfile(companyId, input);
+  }
+
   const payload = {
     name: input.companyName.trim(),
     email: input.email.trim(),
@@ -210,6 +240,10 @@ export async function updateCompanyName(companyId: string, name: string): Promis
     throw new Error('Le nom de l’entreprise est obligatoire.');
   }
 
+  if (isOfflineDemoData()) {
+    return offlineRenameCompany(companyId, trimmedName);
+  }
+
   const { data, error } = await supabase
     .from('companies')
     .update({ name: trimmedName, updated_at: new Date().toISOString() })
@@ -226,6 +260,11 @@ export async function updateCompanyName(companyId: string, name: string): Promis
 }
 
 export async function deleteCompany(companyId: string): Promise<void> {
+  if (isOfflineDemoData()) {
+    offlineDeleteCompany(companyId);
+    return;
+  }
+
   const { error } = await supabase.from('companies').delete().eq('id', companyId);
 
   if (error) {
@@ -239,6 +278,11 @@ export async function updateCompanyAssetUrl(
   field: 'logo_url' | 'signature_url',
   url: string | null,
 ): Promise<void> {
+  if (isOfflineDemoData()) {
+    offlineUpdateCompanyAssetUrl(companyId, field, url);
+    return;
+  }
+
   const payload =
     field === 'logo_url'
       ? { logo_url: url, updated_at: new Date().toISOString() }

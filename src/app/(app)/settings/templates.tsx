@@ -111,8 +111,7 @@ export default function DocumentTemplatesScreen() {
         ) : null}
 
         <AppText color="secondary" variant="subtitle">
-          Parcourez les modèles en taille réelle. Le modèle sélectionné est enregistré
-          automatiquement.
+          Parcourez les modèles en taille réelle, puis validez avec « Choisir ce modèle ».
         </AppText>
 
         <View style={styles.segment}>

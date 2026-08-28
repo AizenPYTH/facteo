@@ -25,9 +25,15 @@ type DocumentActionsPanelProps = {
   onDuplicate: () => void;
   onPayment?: () => void;
   onEdit?: () => void;
+  onChangeTemplate?: () => void;
+  onSign?: () => void;
+  onDelete?: () => void;
+  deleteLabel?: string;
+  signLabel?: string;
   sendLoading?: boolean;
   downloadLoading?: boolean;
   duplicateLoading?: boolean;
+  deleteLoading?: boolean;
   showPayment?: boolean;
 };
 
@@ -40,9 +46,15 @@ export function DocumentActionsPanel({
   onDuplicate,
   onPayment,
   onEdit,
+  onChangeTemplate,
+  onSign,
+  onDelete,
+  deleteLabel = 'Supprimer',
+  signLabel = 'Faire signer',
   sendLoading = false,
   downloadLoading = false,
   duplicateLoading = false,
+  deleteLoading = false,
   showPayment = false,
 }: DocumentActionsPanelProps) {
   const styles = useStyles();
@@ -66,6 +78,20 @@ export function DocumentActionsPanel({
             loading={downloadLoading}
             onPress={onDownload}
           />
+          {onChangeTemplate ? (
+            <DesktopActionButton
+              icon={{ ios: 'paintpalette', android: 'palette', web: 'palette' }}
+              label="Changer de modèle"
+              onPress={onChangeTemplate}
+            />
+          ) : null}
+          {onSign ? (
+            <DesktopActionButton
+              icon={{ ios: 'pencil.tip', android: 'draw', web: 'draw' }}
+              label={signLabel}
+              onPress={onSign}
+            />
+          ) : null}
           <DesktopActionButton
             icon={{ ios: 'doc.on.doc', android: 'content_copy', web: 'content_copy' }}
             label={`Dupliquer le ${label}`}
@@ -84,6 +110,15 @@ export function DocumentActionsPanel({
               icon={{ ios: 'square.and.pencil', android: 'edit', web: 'edit' }}
               label="Modifier"
               onPress={onEdit}
+            />
+          ) : null}
+          {onDelete ? (
+            <DesktopActionButton
+              destructive
+              icon={{ ios: 'trash', android: 'delete', web: 'delete' }}
+              label={deleteLabel}
+              loading={deleteLoading}
+              onPress={onDelete}
             />
           ) : null}
         </View>

@@ -1,9 +1,20 @@
-import { supabase } from '@/lib/supabase';
-import { logSupabaseError } from '@/lib/supabase/errors';
 import {
   mapCreateQuoteInputToInsert,
   mapUpdateQuoteInputToInsert,
 } from '@/lib/quotes/mappers';
+import {
+  demoQuotes,
+} from '@/lib/screenshot-demo';
+import {
+  offlineCreateQuote,
+  offlineDeleteQuote,
+  offlineGetQuoteDetail,
+  offlineUpdateQuote,
+  offlineUpdateQuoteStatus,
+} from '@/lib/screenshot-demo/offline-store';
+import { isOfflineDemoData } from '@/lib/demo-data-mode';
+import { supabase } from '@/lib/supabase';
+import { logSupabaseError } from '@/lib/supabase/errors';
 import { mapQuoteDetail, mapQuoteRowToQuote } from '@/lib/supabase/mappers';
 import { reserveNextQuoteNumber } from '@/lib/supabase/settings';
 import type {
@@ -90,6 +101,27 @@ export async function fetchQuotesPage(
   scope: DataScope,
   { search = '', status = 'all', page = 0, pageSize = QUOTES_PAGE_SIZE }: QuotesPageParams = {},
 ): Promise<QuotesPage> {
+  if (isOfflineDemoData()) {
+    void scope;
+    const needle = search.trim().toLowerCase();
+    let filtered = status === 'all' ? demoQuotes : demoQuotes.filter((row) => row.status === status);
+    if (needle) {
+      filtered = filtered.filter((quote) =>
+        [quote.number, quote.clientName, quote.clientEmail]
+          .filter(Boolean)
+          .some((value) => String(value).toLowerCase().includes(needle)),
+      );
+    }
+    const from = page * pageSize;
+    const quotes = filtered.slice(from, from + pageSize);
+    const loadedCount = from + quotes.length;
+    return {
+      quotes,
+      nextPage: loadedCount < filtered.length ? page + 1 : null,
+      totalCount: filtered.length,
+    };
+  }
+
   const from = page * pageSize;
   const to = from + pageSize - 1;
 
@@ -130,6 +162,11 @@ export async function fetchQuoteById(
   scope: DataScope,
   quoteId: string,
 ): Promise<QuoteDetail | null> {
+  if (isOfflineDemoData()) {
+    void scope;
+    return offlineGetQuoteDetail(quoteId);
+  }
+
   const { data: quoteRow, error: quoteError } = await supabase
     .from('quotes')
     .select(QUOTE_LIST_COLUMNS)
@@ -162,6 +199,11 @@ export async function fetchQuoteById(
 }
 
 export async function createQuote(scope: DataScope, input: CreateQuoteInput): Promise<Quote> {
+  if (isOfflineDemoData()) {
+    void scope;
+    return offlineCreateQuote(input);
+  }
+
   if (!input.clientId) {
     throw new Error('Client is required.');
   }
@@ -220,6 +262,11 @@ export async function updateQuote(
   quoteId: string,
   input: UpdateQuoteInput,
 ): Promise<Quote> {
+  if (isOfflineDemoData()) {
+    void scope;
+    return offlineUpdateQuote(quoteId, input);
+  }
+
   if (!input.clientId || input.lines.length === 0) {
     throw new Error('Quote must have at least one line.');
   }
@@ -270,6 +317,11 @@ export async function updateQuoteStatus(
   quoteId: string,
   status: QuoteStatus,
 ): Promise<Quote> {
+  if (isOfflineDemoData()) {
+    void scope;
+    return offlineUpdateQuoteStatus(quoteId, status);
+  }
+
   const { data, error } = await supabase
     .from('quotes')
     .update({ status, updated_at: new Date().toISOString() })
@@ -303,6 +355,12 @@ export async function updateQuoteStatus(
 }
 
 export async function deleteQuote(scope: DataScope, quoteId: string): Promise<void> {
+  if (isOfflineDemoData()) {
+    void scope;
+    offlineDeleteQuote(quoteId);
+    return;
+  }
+
   const { error: itemsError } = await supabase
     .from('quote_items')
     .delete()
