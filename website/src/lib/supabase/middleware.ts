@@ -1,29 +1,92 @@
-import { createServerClient, type CookieOptions } from '@supabase/ssr';
-import { type NextRequest, NextResponse } from 'next/server';
+import { createServerClient, type CookieOptions } from "@supabase/ssr";
+import { type NextRequest, NextResponse } from "next/server";
 
-import type { Database } from '@inveq/types/database';
+import type { Database } from "@inveq/types/database";
 
-import { getSupabaseAnonKey, getSupabaseUrl, isSupabaseConfigured } from '@/lib/supabase/env';
+import {
+  getSupabaseAnonKey,
+  getSupabaseUrl,
+  isSupabaseConfigured,
+} from "@/lib/supabase/env";
+import {
+  AUTH_FETCH_TIMEOUT_MS,
+  decideSessionGate,
+  needsOnboardingGate,
+} from "./middleware-session";
 
-async function fetchOnboardingCompleted(
-  supabase: ReturnType<typeof createServerClient<Database>>,
-  userId: string,
-): Promise<boolean> {
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('onboarding_completed')
-    .eq('id', userId)
-    .maybeSingle();
+export {
+  AUTH_FETCH_TIMEOUT_MS,
+  decideSessionGate,
+  isAuthFlowRoute,
+  isPrivateAppPath,
+  isPublicAuthRoute,
+  needsOnboardingGate,
+  type SessionGateDecision,
+} from "./middleware-session";
 
-  // Si le profil n'existe pas encore, forcer l'onboarding
-  if (error || !data) return false;
-  return Boolean(data.onboarding_completed);
+/**
+ * Fetch wrapper that aborts after AUTH_FETCH_TIMEOUT_MS so middleware cannot
+ * hang until Vercel's MIDDLEWARE_INVOCATION_TIMEOUT (~25s).
+ */
+function createTimeoutFetch(timeoutMs: number): typeof fetch {
+  return (input, init) => {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+
+    const upstream = init?.signal;
+    if (upstream) {
+      if (upstream.aborted) {
+        controller.abort();
+      } else {
+        upstream.addEventListener("abort", () => controller.abort(), {
+          once: true,
+        });
+      }
+    }
+
+    return fetch(input, { ...init, signal: controller.signal }).finally(() => {
+      clearTimeout(timer);
+    });
+  };
 }
 
-function redirectTo(request: NextRequest, pathname: string, clearSearch = true) {
+/**
+ * @returns boolean when the query succeeds (missing profile → false, same as before)
+ * @returns null on network/timeout so we do not invent redirects
+ */
+async function fetchOnboardingCompleted(
+  supabase: ReturnType<typeof createServerClient<Database>>,
+  userId: string
+): Promise<boolean | null> {
+  try {
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("onboarding_completed")
+      .eq("id", userId)
+      .maybeSingle();
+
+    // Si le profil n'existe pas encore, forcer l'onboarding (comportement historique)
+    if (error || !data) return false;
+    return Boolean(data.onboarding_completed);
+  } catch {
+    return null;
+  }
+}
+
+function applyDecision(
+  request: NextRequest,
+  decision: ReturnType<typeof decideSessionGate>
+) {
+  if (decision.type === "next") return null;
+
   const url = request.nextUrl.clone();
-  url.pathname = pathname;
-  if (clearSearch) url.search = '';
+  url.pathname = decision.to;
+  if (decision.redirectParam) {
+    url.search = "";
+    url.searchParams.set("redirect", decision.redirectParam);
+  } else {
+    url.search = "";
+  }
   return NextResponse.redirect(url);
 }
 
@@ -34,73 +97,89 @@ export async function updateSession(request: NextRequest) {
     return response;
   }
 
-  const supabase = createServerClient<Database>(getSupabaseUrl(), getSupabaseAnonKey(), {
-    cookies: {
-      getAll() {
-        return request.cookies.getAll();
-      },
-      setAll(cookiesToSet: { name: string; value: string; options?: CookieOptions }[]) {
-        cookiesToSet.forEach(({ name, value }) => {
-          request.cookies.set(name, value);
-        });
-        response = NextResponse.next({ request });
-        cookiesToSet.forEach(({ name, value, options }) => {
-          response.cookies.set(name, value, options);
-        });
-      },
-    },
-  });
+  try {
+    const supabase = createServerClient<Database>(
+      getSupabaseUrl(),
+      getSupabaseAnonKey(),
+      {
+        cookies: {
+          getAll() {
+            return request.cookies.getAll();
+          },
+          setAll(
+            cookiesToSet: {
+              name: string;
+              value: string;
+              options?: CookieOptions;
+            }[]
+          ) {
+            cookiesToSet.forEach(({ name, value }) => {
+              request.cookies.set(name, value);
+            });
+            response = NextResponse.next({ request });
+            cookiesToSet.forEach(({ name, value, options }) => {
+              response.cookies.set(name, value, options);
+            });
+          },
+        },
+        global: {
+          fetch: createTimeoutFetch(AUTH_FETCH_TIMEOUT_MS),
+        },
+      }
+    );
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+    const { pathname } = request.nextUrl;
+    let userId: string | null = null;
+    let authUnavailable = false;
 
-  const { pathname } = request.nextUrl;
-  const isAppRoute = pathname.startsWith('/app');
-  const isOnboardingRoute = pathname.startsWith('/onboarding');
-  const isPublicAuthRoute =
-    pathname.startsWith('/login') ||
-    pathname.startsWith('/register') ||
-    pathname.startsWith('/mot-de-passe-oublie') ||
-    pathname.startsWith('/connexion') ||
-    pathname.startsWith('/inscription');
-  const isAuthFlowRoute =
-    pathname.startsWith('/reinitialiser-mot-de-passe') ||
-    pathname.startsWith('/auth/confirm') ||
-    pathname.startsWith('/auth/callback') ||
-    pathname.startsWith('/auth/confirmed');
+    try {
+      const {
+        data: { user },
+        error,
+      } = await supabase.auth.getUser();
+      if (error) {
+        // Invalid/expired session is not an outage — treat as logged out.
+        // Only mark unavailable when we could not reach Auth at all.
+        // getUser() typically returns a user error without throwing for bad JWT.
+        userId = null;
+        authUnavailable = false;
+      } else {
+        userId = user?.id ?? null;
+      }
+    } catch {
+      authUnavailable = true;
+      userId = null;
+    }
 
-  // Routes privées sans session
-  if ((isAppRoute || isOnboardingRoute) && !user) {
-    const loginUrl = request.nextUrl.clone();
-    loginUrl.pathname = '/login';
-    loginUrl.searchParams.set('redirect', pathname);
-    return NextResponse.redirect(loginUrl);
-  }
+    let onboardingCompleted: boolean | null = null;
+    if (userId && !authUnavailable && needsOnboardingGate(pathname)) {
+      onboardingCompleted = await fetchOnboardingCompleted(supabase, userId);
+    }
 
-  if (!user) {
+    const decision = decideSessionGate({
+      pathname,
+      userId,
+      authUnavailable,
+      onboardingCompleted,
+    });
+
+    const redirected = applyDecision(request, decision);
+    if (redirected) return redirected;
+
+    return response;
+  } catch (err) {
+    // Last-resort: never crash middleware for public traffic.
+    // Private routes: fail-closed via a second decide with authUnavailable.
+    console.error("[middleware] unexpected error:", err);
+    const { pathname } = request.nextUrl;
+    const decision = decideSessionGate({
+      pathname,
+      userId: null,
+      authUnavailable: true,
+      onboardingCompleted: null,
+    });
+    const redirected = applyDecision(request, decision);
+    if (redirected) return redirected;
     return response;
   }
-
-  // Flux auth technique : ne pas bloquer
-  if (isAuthFlowRoute) {
-    return response;
-  }
-
-  const onboardingDone = await fetchOnboardingCompleted(supabase, user.id);
-
-  if (isAppRoute && !onboardingDone) {
-    return redirectTo(request, '/onboarding');
-  }
-
-  if (isOnboardingRoute && onboardingDone) {
-    return redirectTo(request, '/app');
-  }
-
-  // Déjà connecté → login/register inutiles
-  if (isPublicAuthRoute) {
-    return redirectTo(request, onboardingDone ? '/app' : '/onboarding');
-  }
-
-  return response;
 }
