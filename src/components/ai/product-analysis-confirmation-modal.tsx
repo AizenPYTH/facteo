@@ -18,11 +18,15 @@ export type ProductAnalysisDraft = {
   description: string;
   unitPriceHt: string;
   unitPriceTtc: string;
+  /** Empty string = TVA non déterminée (never invent a rate). */
   vatRate: string;
   currency: string;
   unit: string;
   quantity: string;
   confidence: number;
+  sku: string;
+  ean: string;
+  sourceUrl: string;
 };
 
 type ProductAnalysisConfirmationModalProps = {
@@ -67,7 +71,13 @@ export function ProductAnalysisConfirmationModal({
           </View>
 
           <View style={styles.summaryCard}>
-            <Image contentFit="cover" source={{ uri: imageUri }} style={styles.photo} />
+            {imageUri ? (
+              <Image contentFit="cover" source={{ uri: imageUri }} style={styles.photo} />
+            ) : (
+              <View style={[styles.photo, { alignItems: 'center', justifyContent: 'center' }]}>
+                <Text style={styles.summaryDescription}>Import</Text>
+              </View>
+            )}
             <View style={styles.summaryContent}>
               <Text numberOfLines={2} style={styles.summaryTitle}>
                 {value.title || 'Produit sans nom'}
@@ -77,9 +87,14 @@ export function ProductAnalysisConfirmationModal({
               </Text>
               <View style={styles.metaRow}>
                 <Text style={styles.metaChip}>
-                  {value.unitPriceTtc || value.unitPriceHt || 'Prix à compléter'} {value.currency || 'EUR'}
+                  {value.unitPriceTtc || value.unitPriceHt || 'Prix à compléter'}{' '}
+                  {value.currency || 'EUR'}
                 </Text>
-                <Text style={styles.metaChip}>TVA {value.vatRate || '0'}%</Text>
+                <Text style={styles.metaChip}>
+                  {value.vatRate.trim()
+                    ? `TVA ${value.vatRate}%`
+                    : 'TVA non déterminée'}
+                </Text>
               </View>
             </View>
           </View>
@@ -134,6 +149,22 @@ export function ProductAnalysisConfirmationModal({
             <View style={styles.row}>
               <View style={styles.half}>
                 <TextField
+                  label="SKU"
+                  onChangeText={(text) => updateField('sku', text)}
+                  value={value.sku}
+                />
+              </View>
+              <View style={styles.half}>
+                <TextField
+                  label="EAN / GTIN"
+                  onChangeText={(text) => updateField('ean', text)}
+                  value={value.ean}
+                />
+              </View>
+            </View>
+            <View style={styles.row}>
+              <View style={styles.half}>
+                <TextField
                   keyboardType="decimal-pad"
                   label="Prix TTC"
                   onChangeText={(text) => updateField('unitPriceTtc', text)}
@@ -153,8 +184,9 @@ export function ProductAnalysisConfirmationModal({
               <View style={styles.half}>
                 <TextField
                   keyboardType="decimal-pad"
-                  label="TVA (%)"
+                  label="TVA (%) — vide si inconnue"
                   onChangeText={(text) => updateField('vatRate', text)}
+                  placeholder="Non déterminée"
                   value={value.vatRate}
                 />
               </View>
@@ -186,7 +218,7 @@ export function ProductAnalysisConfirmationModal({
           </ScrollView>
 
           <View style={styles.actions}>
-            <Button loading={isSaving} onPress={onConfirm} title="Créer le produit" />
+            <Button loading={isSaving} onPress={onConfirm} title="Ajouter à la facture" />
             <Button onPress={onClose} title="Annuler" variant="ghost" />
           </View>
         </View>
