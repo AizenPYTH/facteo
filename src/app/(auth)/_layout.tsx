@@ -14,5 +14,6 @@ export default function AuthLayout() {
     return <Redirect href={'/' as Href} />;
   }
 
+  // register.tsx redirects to login on iOS (Guideline 3.1.1).
   return <Stack screenOptions={{ animation: 'fade', headerShown: false }} />;
 }

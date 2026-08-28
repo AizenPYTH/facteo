@@ -7,6 +7,10 @@ import {
   marketingText,
   marketingTypography,
 } from '@/constants/marketing/theme';
+import {
+  isAccountCreationPathOrUrl,
+  isIosAccountCreationDisabled,
+} from '@/lib/auth/ios-no-signup';
 
 type MarketingButtonProps = {
   label: string;
@@ -15,6 +19,14 @@ type MarketingButtonProps = {
   variant?: 'primary' | 'secondary' | 'ghost';
   style?: ViewStyle;
 };
+
+function resolveSafeHref(href: Href): Href {
+  const hrefString = String(href);
+  if (isIosAccountCreationDisabled() && isAccountCreationPathOrUrl(hrefString)) {
+    return '/login' as Href;
+  }
+  return href;
+}
 
 export function MarketingButton({
   label,
@@ -35,7 +47,8 @@ export function MarketingButton({
       return;
     }
 
-    const hrefString = String(href);
+    const safeHref = resolveSafeHref(href);
+    const hrefString = String(safeHref);
 
     if (hrefString.includes('#')) {
       const [path, anchor] = hrefString.split('#');
@@ -45,11 +58,11 @@ export function MarketingButton({
         return;
       }
 
-      router.push(href);
+      router.push(safeHref);
       return;
     }
 
-    router.push(href);
+    router.push(safeHref);
   }
 
   const buttonStyle = StyleSheet.flatten([

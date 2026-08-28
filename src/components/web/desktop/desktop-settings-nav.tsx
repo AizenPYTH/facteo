@@ -53,8 +53,8 @@ const SETTINGS_NAV_GROUPS: SettingsNavGroup[] = [
     id: 'payments',
     title: 'Paiements',
     items: [
-      { href: '/settings/premium', label: 'Abonnement', description: 'INVEQ Premium' },
-      { href: '/settings/premium', label: 'Stripe', description: 'Paiements en ligne' },
+      { href: '/settings/premium', label: 'Abonnement', description: 'Micro à Max' },
+      { href: '/settings/premium', label: 'Abonnement', description: 'Plans et facturation' },
     ],
   },
   {

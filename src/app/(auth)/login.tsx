@@ -10,7 +10,10 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/use-auth';
 import { useAuthScreenStyles } from '@/hooks/use-auth-screen-styles';
 import { getAuthErrorMessage } from '@/lib/auth/errors';
+import { isIosAccountCreationDisabled } from '@/lib/auth/ios-no-signup';
 import { loginSchema, type LoginFormValues } from '@/lib/validations/login';
+
+const hideAccountCreation = isIosAccountCreationDisabled();
 
 export default function LoginScreen() {
   const authScreenStyles = useAuthScreenStyles();
@@ -50,12 +53,14 @@ export default function LoginScreen() {
         />
       }
       footerLink={
-        <Text style={authScreenStyles.footerText}>
-          Pas encore de compte ?{' '}
-          <Link href={'/register' as Href}>
-            <Text style={authScreenStyles.footerLink}>Créer un compte</Text>
-          </Link>
-        </Text>
+        hideAccountCreation ? null : (
+          <Text style={authScreenStyles.footerText}>
+            Pas encore de compte ?{' '}
+            <Link href={'/register' as Href}>
+              <Text style={authScreenStyles.footerLink}>Créer un compte</Text>
+            </Link>
+          </Text>
+        )
       }
       subtitle="Gérez vos devis et factures simplement."
       title="Connexion">
@@ -97,6 +102,11 @@ export default function LoginScreen() {
           />
         )}
       />
+      <Text style={authScreenStyles.footerText}>
+        <Link href={'/forgot-password' as Href}>
+          <Text style={authScreenStyles.footerLink}>Mot de passe oublié ?</Text>
+        </Link>
+      </Text>
     </AuthScreen>
   );
 }

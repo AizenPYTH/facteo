@@ -72,7 +72,7 @@ function DashboardMobileScreen() {
             {hasNoActivity ? <DashboardWelcome /> : null}
             <StatsGrid stats={stats} />
             <PremiumGatedSection
-              bannerMessage="Statistiques avancées — INVEQ Premium"
+              bannerMessage="Statistiques avancées — offre Basique ou supérieure"
               locked={advancedStatsLocked}>
               <ExtendedStatsGrid premiumLocked={advancedStatsLocked} stats={stats} />
               <RevenueChart data={extended.revenueByMonth} premiumLocked={advancedStatsLocked} />

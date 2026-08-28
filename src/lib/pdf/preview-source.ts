@@ -30,6 +30,14 @@ function getParentDirectory(uri: string): string | undefined {
 }
 
 async function buildPdfJsPreviewSource(pdfUri: string): Promise<PdfPreviewSource> {
+  // Blob HTML généré côté web (expo-print ne produit pas de fichier PDF).
+  if (pdfUri.startsWith('html:')) {
+    return {
+      mode: 'native',
+      uri: pdfUri.slice('html:'.length),
+    };
+  }
+
   const canLoadByUrl =
     Platform.OS === 'web' &&
     (pdfUri.startsWith('blob:') ||

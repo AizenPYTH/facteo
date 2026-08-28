@@ -1,3 +1,4 @@
+import { isOfflineDemoData } from '@/lib/demo-data-mode';
 import { readLocalFileAsBytes } from '@/lib/files/read-as-bytes';
 import { supabase } from '@/lib/supabase';
 import { logSupabaseError } from '@/lib/supabase/errors';
@@ -24,6 +25,16 @@ export async function uploadDocumentSignatureFromDataUri(
   documentId: string,
   dataUri: string,
 ): Promise<string> {
+  if (isOfflineDemoData()) {
+    void userId;
+    void documentType;
+    void documentId;
+    if (!dataUri.startsWith('data:image/')) {
+      throw new Error('Signature invalide.');
+    }
+    return dataUri;
+  }
+
   const base64 = dataUri.replace(/^data:image\/\w+;base64,/, '');
   const bytes = Uint8Array.from(atob(base64), (char) => char.charCodeAt(0));
   const path = buildSignaturePath(userId, documentType, documentId);
@@ -64,6 +75,10 @@ export async function uploadDocumentSignatureFromFile(
 }
 
 export async function deleteDocumentSignatureByUrl(publicUrl: string): Promise<void> {
+  if (isOfflineDemoData() || publicUrl.startsWith('data:image/')) {
+    return;
+  }
+
   const marker = `/storage/v1/object/public/${DOCUMENT_SIGNATURES_BUCKET}/`;
 
   if (!publicUrl.includes(marker)) {

@@ -1,3 +1,4 @@
+import { isOfflineDemoData } from '@/lib/demo-data-mode';
 import { supabase } from '@/lib/supabase';
 import { logSupabaseError } from '@/lib/supabase/errors';
 import { readLocalFileAsBytes } from '@/lib/files/read-as-bytes';
@@ -24,6 +25,13 @@ export async function uploadCompanyAsset(
   fileUri: string,
   mimeType: string,
 ): Promise<string> {
+  if (isOfflineDemoData()) {
+    void companyId;
+    void kind;
+    void mimeType;
+    return fileUri;
+  }
+
   const extension = mimeType.includes('png')
     ? 'png'
     : mimeType.includes('webp')
@@ -46,6 +54,10 @@ export async function uploadCompanyAsset(
 }
 
 export async function deleteCompanyAssetByUrl(publicUrl: string): Promise<void> {
+  if (isOfflineDemoData() || publicUrl.startsWith('file:') || publicUrl.startsWith('data:')) {
+    return;
+  }
+
   const marker = `/storage/v1/object/public/${COMPANY_ASSETS_BUCKET}/`;
 
   if (!publicUrl.includes(marker)) {

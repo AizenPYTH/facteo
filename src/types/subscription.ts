@@ -1,14 +1,16 @@
 export type SubscriptionPlanId =
+  | 'micro'
+  | 'basique'
+  | 'standard'
+  | 'pro'
+  | 'max'
+  // Legacy (lecture seule — ne plus écrire)
   | 'free'
   | 'premium'
   | 'starter'
-  | 'pro'
-  | 'enterprise'
-  | 'micro'
-  | 'basique'
-  | 'standard';
+  | 'enterprise';
 
-export type EffectivePlanId = 'micro' | 'basique' | 'standard' | 'pro';
+export type EffectivePlanId = 'micro' | 'basique' | 'standard' | 'pro' | 'max';
 
 export type SubscriptionStatus =
   | 'trialing'
@@ -98,43 +100,23 @@ export type SubscriptionSnapshot = {
   usage: SubscriptionUsage;
 };
 
+export class PlanLimitError extends Error {
+  readonly check: PlanLimitCheck;
+
+  constructor(check: PlanLimitCheck) {
+    super(`Limite atteinte pour ${check.resource} (${check.planName}).`);
+    this.name = 'PlanLimitError';
+    this.check = check;
+  }
+}
+
 export const PLAN_FEATURE_LABELS: Record<PlanFeatureKey, string> = {
   custom_logo: 'Logo personnalisé',
   company_signature: 'Signature entreprise',
   client_signature: 'Signature client',
-  pdf_templates: 'Modèles de factures et devis',
+  pdf_templates: 'Modèles PDF',
   stripe_payments: 'Paiement Stripe',
   ai_assistant: 'Assistant IA',
   advanced_stats: 'Statistiques avancées',
-  siren_search: 'Recherche SIREN / SIRET',
+  siren_search: 'Recherche SIREN',
 };
-
-export const MICRO_PLAN_LIMITS = {
-  maxDocumentsPerMonth: 3,
-  maxSirenSearchesPerMonth: 0,
-  maxCompanies: 1,
-} as const;
-
-/** @deprecated Utiliser MICRO_PLAN_LIMITS */
-export const FREE_PLAN_LIMITS = {
-  maxClients: null as number | null,
-  maxQuotes: 3,
-  maxInvoices: 3,
-} as const;
-
-export class PlanLimitError extends Error {
-  constructor(
-    readonly resource: PlanResource,
-    readonly check: PlanLimitCheck,
-  ) {
-    super('PLAN_LIMIT_REACHED');
-    this.name = 'PlanLimitError';
-  }
-}
-
-export class PremiumFeatureError extends Error {
-  constructor(readonly feature: PlanFeatureKey) {
-    super('PREMIUM_FEATURE_REQUIRED');
-    this.name = 'PremiumFeatureError';
-  }
-}

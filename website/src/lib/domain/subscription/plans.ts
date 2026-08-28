@@ -46,17 +46,41 @@ export const DEFAULT_PLAN_FEATURES: Record<EffectivePlanId, PlanFeatures> = {
     advanced_stats: false,
     siren_search: true,
   },
+  max: {
+    custom_logo: true,
+    company_signature: true,
+    client_signature: true,
+    pdf_templates: true,
+    stripe_payments: true,
+    ai_assistant: true,
+    advanced_stats: true,
+    siren_search: true,
+  },
 };
 
-/** Mappe l’enum legacy subscriptions.plan vers le catalogue actif. */
 export function resolveEffectivePlanId(plan: SubscriptionPlanId | string): EffectivePlanId {
-  if (plan === 'free' || plan === 'micro') return 'micro';
-  if (plan === 'basique') return 'basique';
-  if (plan === 'standard') return 'standard';
-  if (plan === 'pro' || plan === 'premium' || plan === 'starter' || plan === 'enterprise') {
-    return 'pro';
+  switch (plan) {
+    case 'micro':
+      return 'micro';
+    case 'basique':
+      return 'basique';
+    case 'standard':
+      return 'standard';
+    case 'pro':
+      return 'pro';
+    case 'max':
+      return 'max';
+    case 'free':
+      return 'micro';
+    case 'starter':
+      return 'basique';
+    case 'premium':
+      return 'pro';
+    case 'enterprise':
+      return 'max';
+    default:
+      return 'micro';
   }
-  return 'micro';
 }
 
 export function isPaidPlan(plan: SubscriptionPlanId | EffectivePlanId | string): boolean {

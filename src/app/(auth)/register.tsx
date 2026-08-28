@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Link, router, type Href } from 'expo-router';
+import { Link, Redirect, router, type Href } from 'expo-router';
 import { useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { Text } from 'react-native';
@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/use-auth';
 import { useAuthScreenStyles } from '@/hooks/use-auth-screen-styles';
 import { getAuthErrorMessage } from '@/lib/auth/errors';
+import { isIosAccountCreationDisabled } from '@/lib/auth/ios-no-signup';
 import { openLegalPage } from '@/lib/legal/open-legal-page';
 import { registerSchema, type RegisterFormValues } from '@/lib/validations/register';
 import { useToast } from '@/providers/toast-provider';
@@ -74,6 +75,15 @@ const FIELDS = [
 ] as const;
 
 export default function RegisterScreen() {
+  // Guideline 3.1.1 — iOS binary must not expose account creation (business/org signup).
+  if (isIosAccountCreationDisabled()) {
+    return <Redirect href={'/login' as Href} />;
+  }
+
+  return <RegisterScreenForm />;
+}
+
+function RegisterScreenForm() {
   const authScreenStyles = useAuthScreenStyles();
   const { signUp } = useAuth();
   const { showSuccess } = useToast();

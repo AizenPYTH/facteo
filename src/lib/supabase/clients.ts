@@ -1,6 +1,16 @@
+import { getClientIdentityError } from '@/lib/clients/identity';
+import { mapFormValuesToClientInsert, mapFormValuesToClientUpdate } from '@/lib/clients/mappers';
+import {
+  demoClients,
+} from '@/lib/screenshot-demo';
+import {
+  offlineCreateClient,
+  offlineDeleteClient,
+  offlineUpdateClient,
+} from '@/lib/screenshot-demo/offline-store';
+import { isOfflineDemoData } from '@/lib/demo-data-mode';
 import { supabase } from '@/lib/supabase';
 import { logSupabaseError } from '@/lib/supabase/errors';
-import { mapFormValuesToClientInsert, mapFormValuesToClientUpdate } from '@/lib/clients/mappers';
 import { mapClientRowToClient } from '@/lib/supabase/mappers';
 import type { Client, ClientFormValues } from '@/types/client';
 import type { DataScope } from '@/types/tenant';
@@ -10,6 +20,13 @@ import {
   type ClientsPageParams,
 } from '@/types/clients-list';
 import type { ClientRow } from '@/types/database';
+
+function assertClientIdentity(input: ClientFormValues): void {
+  const identityError = getClientIdentityError(input);
+  if (identityError) {
+    throw new Error(identityError);
+  }
+}
 
 export const CLIENT_COLUMNS =
   'id, user_id, name, email, phone, company, address, postal_code, city, country, siren, siret, vat_number, notes, created_at, updated_at' as const;
@@ -37,6 +54,26 @@ export async function fetchClientsPage(
   scope: DataScope,
   { search = '', page = 0, pageSize = CLIENTS_PAGE_SIZE }: ClientsPageParams = {},
 ): Promise<ClientsPage> {
+  if (isOfflineDemoData()) {
+    void scope;
+    const needle = search.trim().toLowerCase();
+    const filtered = needle
+      ? demoClients.filter((client) =>
+          [client.company, client.firstName, client.lastName, client.email, client.city]
+            .filter(Boolean)
+            .some((value) => String(value).toLowerCase().includes(needle)),
+        )
+      : demoClients;
+    const from = page * pageSize;
+    const clients = filtered.slice(from, from + pageSize);
+    const loadedCount = from + clients.length;
+    return {
+      clients,
+      nextPage: loadedCount < filtered.length ? page + 1 : null,
+      totalCount: filtered.length,
+    };
+  }
+
   const from = page * pageSize;
   const to = from + pageSize - 1;
 
@@ -69,6 +106,11 @@ export async function fetchClientsPage(
 }
 
 export async function fetchClientById(scope: DataScope, clientId: string): Promise<Client | null> {
+  if (isOfflineDemoData()) {
+    void scope;
+    return demoClients.find((client) => client.id === clientId) ?? null;
+  }
+
   const { data, error } = await supabase
     .from('clients')
     .select(CLIENT_COLUMNS)
@@ -86,6 +128,13 @@ export async function fetchClientById(scope: DataScope, clientId: string): Promi
 }
 
 export async function createClient(scope: DataScope, input: ClientFormValues): Promise<Client> {
+  assertClientIdentity(input);
+
+  if (isOfflineDemoData()) {
+    void scope;
+    return offlineCreateClient(input);
+  }
+
   const { data, error } = await supabase
     .from('clients')
     .insert(mapFormValuesToClientInsert(scope, input))
@@ -105,6 +154,13 @@ export async function updateClient(
   clientId: string,
   input: ClientFormValues,
 ): Promise<Client> {
+  assertClientIdentity(input);
+
+  if (isOfflineDemoData()) {
+    void scope;
+    return offlineUpdateClient(clientId, input);
+  }
+
   const { data, error } = await supabase
     .from('clients')
     .update(mapFormValuesToClientUpdate(input))
@@ -122,6 +178,12 @@ export async function updateClient(
 }
 
 export async function deleteClient(scope: DataScope, clientId: string): Promise<void> {
+  if (isOfflineDemoData()) {
+    void scope;
+    offlineDeleteClient(clientId);
+    return;
+  }
+
   const { error } = await supabase
     .from('clients')
     .update({ deleted_at: new Date().toISOString() })
