@@ -586,11 +586,10 @@ function useStageStyles() {
       color: colors.text,
     },
     bars: {
-      flex: 1,
       flexDirection: 'row',
       alignItems: 'flex-end',
       gap: 6,
-      minHeight: 80,
+      height: 96,
     },
   }));
 }
