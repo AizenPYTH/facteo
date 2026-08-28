@@ -69,12 +69,6 @@ export function InvoiceWizardScreen({
     onStepChange?.(step);
   }, [onStepChange, step]);
 
-  useEffect(() => {
-    if (mode === 'create') {
-      return invoiceIntro.presentOnFirstVisit();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- only on first mount / mode
-  }, [mode, invoiceIntro.isReady]);
   const [state, setState] = useState<InvoiceWizardState>(
     initialState ?? createEmptyInvoiceWizardState(),
   );

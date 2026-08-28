@@ -56,12 +56,6 @@ export function QuoteWizardScreen({
     onStepChange?.(step);
   }, [onStepChange, step]);
 
-  useEffect(() => {
-    if (mode === 'create') {
-      return quoteIntro.presentOnFirstVisit();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- only when storage ready / create mode
-  }, [mode, quoteIntro.isReady]);
   const [state, setState] = useState<QuoteWizardState>(
     initialState ?? createEmptyQuoteWizardState(),
   );

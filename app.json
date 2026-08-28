@@ -3,7 +3,7 @@
     "name": "INVEQ",
     "slug": "inveq",
     "owner": "influence1s-team",
-    "version": "1.0.2",
+    "version": "1.0.3",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "inveq",
@@ -52,13 +52,6 @@
         {
           "photosPermission": "INVEQ a besoin d’accéder à vos photos pour importer des produits, le logo et la signature.",
           "cameraPermission": "INVEQ a besoin d’accéder à l’appareil photo pour scanner des produits, le logo et la signature."
-        }
-      ],
-      [
-        "expo-camera",
-        {
-          "cameraPermission": "INVEQ a besoin d’accéder à l’appareil photo pour scanner les codes-barres produits.",
-          "barcodeScannerEnabled": true
         }
       ],
       "expo-document-picker",

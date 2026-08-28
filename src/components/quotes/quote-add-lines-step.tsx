@@ -47,24 +47,9 @@ import type { QuoteLineValue } from '@/types/quote';
 import { createEmptyQuoteLine, formatDecimalForInput } from '@/types/quote';
 import { router, type Href } from 'expo-router';
 
+import { ProductBarcodeScannerModal } from '@/components/ai/product-barcode-scanner-modal';
+
 import { QuoteLine } from './quote-line';
-
-type BarcodeScannerProps = {
-  visible: boolean;
-  onClose: () => void;
-  onBarcode: (code: string) => void;
-  onFallbackPhotoSearch: () => void;
-};
-
-/** Load expo-camera only when the scanner is opened (avoids cold-start native init). */
-function LazyProductBarcodeScannerModal(props: BarcodeScannerProps) {
-  if (!props.visible) {
-    return null;
-  }
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { ProductBarcodeScannerModal } = require('@/components/ai/product-barcode-scanner-modal') as typeof import('@/components/ai/product-barcode-scanner-modal');
-  return <ProductBarcodeScannerModal {...props} />;
-}
 
 type QuoteAddLinesStepProps = {
   lines: QuoteLineValue[];
@@ -123,7 +108,7 @@ export function QuoteAddLinesStep({
           onPress: handleAddManualPrestation,
         },
         {
-          label: 'Scanner un produit (code-barres)',
+          label: 'Code-barres produit',
           onPress: () => {
             scannerIntro.runWithIntro(() => {
               setBarcodeScannerVisible(true);
@@ -428,7 +413,7 @@ export function QuoteAddLinesStep({
         visible={aiIntro.visible}
       />
       <ProductAnalysisLoadingModal progress={analysisProgress} visible={isAnalyzing} />
-      <LazyProductBarcodeScannerModal
+      <ProductBarcodeScannerModal
         visible={barcodeScannerVisible}
         onBarcode={(code) => {
           void handleBarcode(code);
@@ -474,7 +459,7 @@ export function QuoteAddLinesStep({
   const listHeader = (
     <View style={styles.headerSection}>
       <Text style={styles.description}>
-        Ajoutez vos prestations : manuel, scan code-barres, photo IA (Amazon / facture) ou Excel.
+        Ajoutez vos prestations : manuel, code-barres, photo IA ou Excel.
       </Text>
 
       <Button onPress={handleAddPrestation} title="Ajouter une prestation" />

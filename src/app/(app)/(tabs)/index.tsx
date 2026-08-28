@@ -27,7 +27,6 @@ import { useDashboard } from '@/hooks/use-dashboard';
 import { useFeatureIntro } from '@/hooks/use-feature-intro';
 import { useSubscription } from '@/hooks/use-subscription';
 import { useTenant } from '@/hooks/use-tenant';
-import { useEffect } from 'react';
 
 export default function DashboardScreen() {
   const { isDesktop, isTablet, isWeb } = useBreakpoint();
@@ -48,13 +47,6 @@ function DashboardMobileScreen() {
   const insets = useSafeAreaInsets();
   const hasNoActivity = stats.totalClients === 0 && recentInvoices.length === 0;
   const statsIntro = useFeatureIntro('statistics');
-
-  useEffect(() => {
-    if (!loading) {
-      return statsIntro.presentOnFirstVisit();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loading, statsIntro.isReady]);
 
   return (
     <SafeAreaView edges={['top']} style={styles.safeArea}>

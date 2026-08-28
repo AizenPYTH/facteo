@@ -37,10 +37,6 @@ export default function DocumentTemplatesScreen() {
   const [galleryVisible, setGalleryVisible] = useState(false);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  useEffect(() => {
-    return templatesIntro.presentOnFirstVisit();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [templatesIntro.isReady]);
 
   useEffect(() => {
     if (data) {

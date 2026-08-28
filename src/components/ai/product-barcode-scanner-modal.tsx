@@ -1,16 +1,10 @@
-import {
-  CameraView,
-  useCameraPermissions,
-  type BarcodeScanningResult,
-} from 'expo-camera';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/ui/button';
 import { TextField } from '@/components/ui/text-field';
 import { useColors, useThemedStyles } from '@/hooks/use-colors';
-import { radius } from '@/constants/theme/radius';
 import { spacing } from '@/constants/theme/spacing';
 import { typography } from '@/constants/theme/typography';
 
@@ -21,6 +15,12 @@ type ProductBarcodeScannerModalProps = {
   onFallbackPhotoSearch: () => void;
 };
 
+/**
+ * Barcode entry without expo-camera / ZXing.
+ * Live camera barcode was removed: those native frameworks caused an immediate
+ * cold-start crash on TestFlight (absent from last stable build #41).
+ * Flow: type EAN/UPC, or continue with product photo (IA).
+ */
 export function ProductBarcodeScannerModal({
   visible,
   onClose,
@@ -30,28 +30,13 @@ export function ProductBarcodeScannerModal({
   const styles = useStyles();
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const [permission, requestPermission] = useCameraPermissions();
   const [manualCode, setManualCode] = useState('');
-  const lockedRef = useRef(false);
 
   useEffect(() => {
     if (visible) {
-      lockedRef.current = false;
       setManualCode('');
     }
   }, [visible]);
-
-  function handleScanned(result: BarcodeScanningResult) {
-    if (lockedRef.current) {
-      return;
-    }
-    const data = (result.data ?? '').replace(/\s/g, '').trim();
-    if (!data) {
-      return;
-    }
-    lockedRef.current = true;
-    onBarcode(data);
-  }
 
   function handleManualSubmit() {
     const data = manualCode.replace(/\s/g, '').trim();
@@ -65,45 +50,31 @@ export function ProductBarcodeScannerModal({
     <Modal animationType="slide" onRequestClose={onClose} visible={visible}>
       <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
         <View style={styles.header}>
-          <Text style={styles.title}>Scanner un code-barres</Text>
+          <Text style={styles.title}>Code-barres produit</Text>
           <Pressable onPress={onClose} hitSlop={12}>
             <Text style={[styles.close, { color: colors.primary }]}>Fermer</Text>
           </Pressable>
         </View>
 
-        {!permission?.granted ? (
-          <View style={styles.permissionBox}>
-            <Text style={styles.permissionText}>
-              Autorisez la caméra pour scanner EAN / UPC / GTIN.
-            </Text>
-            <Button onPress={() => void requestPermission()} title="Autoriser la caméra" />
-          </View>
-        ) : (
-          <View style={styles.cameraWrap}>
-            <CameraView
-              barcodeScannerSettings={{
-                barcodeTypes: ['ean13', 'ean8', 'upc_a', 'upc_e', 'code128', 'code39', 'qr'],
-              }}
-              onBarcodeScanned={handleScanned}
-              style={StyleSheet.absoluteFill}
-            />
-            <View style={styles.frame} pointerEvents="none" />
-            <Text style={styles.hint}>Cadrez le code-barres du produit</Text>
-          </View>
-        )}
+        <View style={styles.body}>
+          <Text style={styles.help}>
+            Saisissez l’EAN / UPC / GTIN du produit, ou utilisez une photo pour l’identifier avec
+            l’IA (comme sur le site).
+          </Text>
 
-        <View style={styles.footer}>
           <TextField
-            label="Saisie manuelle (EAN / UPC / GTIN)"
+            label="Code-barres (EAN / UPC / GTIN)"
             onChangeText={setManualCode}
             placeholder="Ex. 3017620422003"
             value={manualCode}
             keyboardType="number-pad"
+            autoFocus
           />
+
           <Button onPress={handleManualSubmit} title="Rechercher ce code" />
           <Button
             onPress={onFallbackPhotoSearch}
-            title="Pas de résultat ? Photo / capture produit"
+            title="Photo / capture produit (IA)"
             variant="ghost"
           />
         </View>
@@ -133,47 +104,15 @@ function useStyles() {
     close: {
       ...typography.subheadlineMedium,
     },
-    permissionBox: {
+    body: {
       flex: 1,
-      justifyContent: 'center',
       gap: spacing.md,
       paddingHorizontal: spacing.lg,
+      paddingTop: spacing.md,
     },
-    permissionText: {
-      ...typography.body,
+    help: {
+      ...typography.subheadline,
       color: colors.textSecondary,
-      textAlign: 'center',
-    },
-    cameraWrap: {
-      flex: 1,
-      marginHorizontal: spacing.lg,
-      borderRadius: radius.lg,
-      overflow: 'hidden',
-      backgroundColor: '#000',
-    },
-    frame: {
-      position: 'absolute',
-      left: '10%',
-      right: '10%',
-      top: '30%',
-      bottom: '30%',
-      borderWidth: 2,
-      borderColor: 'rgba(255,255,255,0.85)',
-      borderRadius: radius.md,
-    },
-    hint: {
-      position: 'absolute',
-      bottom: spacing.md,
-      left: 0,
-      right: 0,
-      textAlign: 'center',
-      color: '#fff',
-      ...typography.footnote,
-    },
-    footer: {
-      gap: spacing.sm,
-      paddingHorizontal: spacing.lg,
-      paddingBottom: spacing.md,
     },
   }));
 }
