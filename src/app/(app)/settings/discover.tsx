@@ -1,4 +1,4 @@
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import { FeatureIntroModal } from '@/components/feature-intros';
 import { SettingsRow, SettingsSection } from '@/components/settings';
