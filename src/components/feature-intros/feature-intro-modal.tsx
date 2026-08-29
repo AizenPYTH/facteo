@@ -3,16 +3,18 @@ import {
   AccessibilityInfo,
   Modal,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   useWindowDimensions,
   View,
 } from 'react-native';
-import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
+import Animated, { FadeIn } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { FeatureIntroErrorBoundary } from '@/components/feature-intros/feature-intro-error-boundary';
 import { FeatureIntroStage } from '@/components/feature-intros/feature-intro-stage';
+import { FeatureIntroVignettes } from '@/components/feature-intros/feature-intro-vignettes';
 import { Button } from '@/components/ui/button';
 import { useColors, useThemedStyles } from '@/hooks/use-colors';
 import { motion } from '@/constants/theme/design-system';
@@ -99,7 +101,6 @@ export function FeatureIntroModal({
     };
   }, [visible, config, reduceMotionEnabled]);
 
-  const step = config.steps[Math.min(stepIndex, config.steps.length - 1)];
   const lastStepIndex = config.steps.length - 1;
 
   return (
@@ -131,38 +132,51 @@ export function FeatureIntroModal({
               </Pressable>
             </View>
 
-            <Text style={styles.title}>{config.title}</Text>
+            <ScrollView
+              contentContainerStyle={styles.content}
+              showsVerticalScrollIndicator={false}
+              style={styles.scroll}>
+              <Text style={styles.title}>{config.title}</Text>
 
-            <Pressable
-              accessibilityLabel="Passer à l’étape suivante"
-              accessibilityRole="button"
-              disabled={reduceMotionEnabled || stepIndex >= lastStepIndex}
-              onPress={() => setStepIndex((current) => Math.min(current + 1, lastStepIndex))}>
-              <FeatureIntroStage
+              {!reduceMotionEnabled ? (
+                <Pressable
+                  accessibilityLabel="Passer à l’étape suivante"
+                  accessibilityRole="button"
+                  disabled={stepIndex >= lastStepIndex}
+                  onPress={() =>
+                    setStepIndex((current) => Math.min(current + 1, lastStepIndex))
+                  }>
+                  <FeatureIntroStage
+                    featureId={config.id}
+                    reduceMotionEnabled={false}
+                    stepIndex={stepIndex}
+                  />
+                </Pressable>
+              ) : null}
+
+              <Text style={styles.promise}>{config.promise}</Text>
+
+              <FeatureIntroVignettes
+                activeStepIndex={reduceMotionEnabled ? undefined : stepIndex}
                 featureId={config.id}
-                reduceMotionEnabled={reduceMotionEnabled}
-                stepIndex={stepIndex}
+                prominent={reduceMotionEnabled}
+                steps={config.steps}
               />
-            </Pressable>
 
-            {step ? (
-              <Animated.View
-                key={step.key}
-                entering={reduceMotionEnabled ? undefined : FadeInDown.duration(motion.exit)}
-                style={styles.copy}>
-                <Text style={styles.headline}>{step.headline}</Text>
-                <Text style={styles.body}>{step.body}</Text>
-              </Animated.View>
-            ) : null}
-
-            <View accessibilityLabel={`Étape ${stepIndex + 1} sur 3`} style={styles.progress}>
-              {config.steps.map((item, index) => (
-                <View
-                  key={item.key}
-                  style={[styles.segment, index <= stepIndex && styles.segmentActive]}
-                />
-              ))}
-            </View>
+              <View
+                accessibilityLabel={`Étape ${stepIndex + 1} sur 3`}
+                accessibilityRole="progressbar"
+                accessibilityValue={{ min: 1, max: 3, now: stepIndex + 1 }}
+                accessible
+                style={styles.progress}>
+                {config.steps.map((item, index) => (
+                  <View
+                    key={item.key}
+                    style={[styles.segment, index <= stepIndex && styles.segmentActive]}
+                  />
+                ))}
+              </View>
+            </ScrollView>
 
             <View style={styles.actions}>
               <Button onPress={onCta} title={config.ctaLabel} />
@@ -222,15 +236,14 @@ function useStyles() {
       ...typography.title2,
       color: colors.text,
     },
-    copy: {
-      gap: spacing.xs,
-      minHeight: 72,
+    scroll: {
+      flexShrink: 1,
     },
-    headline: {
-      ...typography.headline,
-      color: colors.text,
+    content: {
+      gap: spacing.md,
+      paddingBottom: spacing.xs,
     },
-    body: {
+    promise: {
       ...typography.subheadline,
       color: colors.textSecondary,
     },

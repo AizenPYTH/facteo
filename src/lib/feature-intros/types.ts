@@ -21,6 +21,8 @@ export type FeatureIntroStep = {
 export type FeatureIntroConfig = {
   id: FeatureIntroId;
   title: string;
+  /** Promesse toujours visible sous la scène animée — DESIGN §6. */
+  promise: string;
   ctaLabel: string;
   steps: FeatureIntroStep[];
 };

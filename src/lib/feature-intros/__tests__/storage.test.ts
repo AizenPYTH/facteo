@@ -50,6 +50,7 @@ describe('feature intro config', () => {
       assert.ok(total >= 2800 && total <= 4000, `${config.id} total ${total}`);
       assert.ok(config.ctaLabel.length > 0);
       assert.ok(config.title.length > 0);
+      assert.match(config.promise, /[.!?]$/, `${config.id} promise`);
     }
   });
 

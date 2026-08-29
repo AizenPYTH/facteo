@@ -4,6 +4,7 @@ const configs: Record<FeatureIntroId, FeatureIntroConfig> = {
   scanner: {
     id: 'scanner',
     title: 'Scanner un produit',
+    promise: 'Du code produit à la ligne de facture, gardez toujours le contrôle.',
     ctaLabel: 'Scanner maintenant',
     steps: [
       {
@@ -29,6 +30,7 @@ const configs: Record<FeatureIntroId, FeatureIntroConfig> = {
   invoice: {
     id: 'invoice',
     title: 'Créer une facture',
+    promise: 'Créez une facture claire, calculée et prête à envoyer en trois étapes.',
     ctaLabel: 'Créer une facture',
     steps: [
       {
@@ -54,6 +56,7 @@ const configs: Record<FeatureIntroId, FeatureIntroConfig> = {
   quote: {
     id: 'quote',
     title: 'Créer un devis',
+    promise: 'Préparez une proposition puis convertissez-la sans aucune ressaisie.',
     ctaLabel: 'Créer un devis',
     steps: [
       {
@@ -79,6 +82,7 @@ const configs: Record<FeatureIntroId, FeatureIntroConfig> = {
   ai: {
     id: 'ai',
     title: 'Assistant IA',
+    promise: 'L’IA extrait les informations, puis vous vérifiez chaque ligne avant l’ajout.',
     ctaLabel: 'Essayer l’IA',
     steps: [
       {
@@ -104,6 +108,7 @@ const configs: Record<FeatureIntroId, FeatureIntroConfig> = {
   templates: {
     id: 'templates',
     title: 'Modèles de facture',
+    promise: 'Choisissez un style cohérent et prévisualisez-le avant de l’appliquer.',
     ctaLabel: 'Voir les modèles',
     steps: [
       {
@@ -129,6 +134,7 @@ const configs: Record<FeatureIntroId, FeatureIntroConfig> = {
   payments: {
     id: 'payments',
     title: 'Paiements',
+    promise: 'Enregistrez chaque règlement et gardez le reste à payer à jour.',
     ctaLabel: 'Compris',
     steps: [
       {
@@ -154,6 +160,7 @@ const configs: Record<FeatureIntroId, FeatureIntroConfig> = {
   statistics: {
     id: 'statistics',
     title: 'Statistiques',
+    promise: 'Transformez vos documents en indicateurs simples pour piloter votre activité.',
     ctaLabel: 'Voir mon tableau',
     steps: [
       {
