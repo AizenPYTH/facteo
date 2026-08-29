@@ -1,8 +1,8 @@
-import { zodResolver } from '@hookform/resolvers/zod';
 import { Link, router, type Href } from 'expo-router';
+import { Platform, Text } from 'react-native';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
-import { Text } from 'react-native';
 
 import { AuthScreen } from '@/components/auth/auth-screen';
 import { AuthTextField } from '@/components/auth/auth-text-field';
@@ -14,66 +14,44 @@ import { openLegalPage } from '@/lib/legal/open-legal-page';
 import { registerSchema, type RegisterFormValues } from '@/lib/validations/register';
 import { useToast } from '@/providers/toast-provider';
 
-const FIELDS = [
-  {
-    name: 'firstName' as const,
-    label: 'Prénom',
-    placeholder: 'Jean',
-    autoComplete: 'given-name' as const,
-    textContentType: 'givenName' as const,
-    autoCapitalize: 'words' as const,
-    icon: 'person.fill' as const,
-  },
-  {
-    name: 'lastName' as const,
-    label: 'Nom',
-    placeholder: 'Dupont',
-    autoComplete: 'family-name' as const,
-    textContentType: 'familyName' as const,
-    autoCapitalize: 'words' as const,
-    icon: 'person.fill' as const,
-  },
-  {
-    name: 'companyName' as const,
-    label: "Nom de l'entreprise",
-    placeholder: 'Acme SARL',
-    autoComplete: 'organization' as const,
-    textContentType: 'organizationName' as const,
-    autoCapitalize: 'words' as const,
-    icon: 'building.2.fill' as const,
-  },
-  {
-    name: 'email' as const,
-    label: 'Adresse e-mail',
-    placeholder: 'vous@entreprise.fr',
-    autoComplete: 'email' as const,
-    textContentType: 'emailAddress' as const,
-    autoCapitalize: 'none' as const,
-    icon: 'envelope.fill' as const,
-  },
-  {
-    name: 'password' as const,
-    label: 'Mot de passe',
-    placeholder: 'Au moins 8 caractères',
-    autoComplete: 'new-password' as const,
-    textContentType: 'newPassword' as const,
-    autoCapitalize: 'none' as const,
-    icon: 'lock.fill' as const,
-    isPassword: true,
-  },
-  {
-    name: 'confirmPassword' as const,
-    label: 'Confirmer le mot de passe',
-    placeholder: 'Confirmez votre mot de passe',
-    autoComplete: 'new-password' as const,
-    textContentType: 'newPassword' as const,
-    autoCapitalize: 'none' as const,
-    icon: 'lock.fill' as const,
-    isPassword: true,
-  },
-] as const;
-
+/**
+ * iOS / Android : pas de parcours d'inscription — texte informatif seulement (DESIGN §1 / §5.1).
+ * Web : formulaire d'inscription conservé.
+ */
 export default function RegisterScreen() {
+  if (Platform.OS === 'web') {
+    return <WebRegisterScreen />;
+  }
+
+  return <NativeRegisterInfoScreen />;
+}
+
+function NativeRegisterInfoScreen() {
+  const authScreenStyles = useAuthScreenStyles();
+
+  return (
+    <AuthScreen
+      footer={
+        <Button onPress={() => router.replace('/login' as Href)} title="Se connecter" />
+      }
+      footerLink={
+        <Text style={authScreenStyles.footerText}>
+          La création de compte se fait sur inveq.fr. Une fois votre compte créé, reconnectez-vous
+          dans l’app.
+        </Text>
+      }
+      subtitle="L’app iOS sert à vous connecter à un compte INVEQ existant."
+      title="Compte INVEQ"
+    >
+      <Text style={authScreenStyles.footerText}>
+        Aucun achat ni inscription n’est proposé ici. Créez votre compte sur le site, puis utilisez
+        e-mail, Apple ou Google pour vous connecter.
+      </Text>
+    </AuthScreen>
+  );
+}
+
+function WebRegisterScreen() {
   const authScreenStyles = useAuthScreenStyles();
   const { signUp } = useAuth();
   const { showSuccess } = useToast();
@@ -91,29 +69,15 @@ export default function RegisterScreen() {
       companyName: '',
       email: '',
       password: '',
-      confirmPassword: '',
     },
   });
 
   async function onSubmit(values: RegisterFormValues) {
     setFormError(null);
-
-    const { error, session } = await signUp({
-      email: values.email,
-      password: values.password,
-      firstName: values.firstName,
-      lastName: values.lastName,
-      companyName: values.companyName,
-    });
+    const { error } = await signUp(values);
 
     if (error) {
       setFormError(getAuthErrorMessage(error.message));
-      return;
-    }
-
-    if (!session) {
-      showSuccess("Un e-mail de confirmation vient d'être envoyé.");
-      router.replace('/login' as Href);
       return;
     }
 
@@ -126,7 +90,6 @@ export default function RegisterScreen() {
       error={formError}
       footer={
         <Button
-          elevated
           loading={isSubmitting}
           onPress={handleSubmit(onSubmit)}
           title="Créer un compte"
@@ -140,45 +103,96 @@ export default function RegisterScreen() {
           </Link>
         </Text>
       }
-      subtitle="Commencez en quelques secondes."
-      title="Créer un compte">
-      {FIELDS.map((field, index) => (
-        <Controller
-          key={field.name}
-          control={control}
-          name={field.name}
-          render={({ field: { onChange, onBlur, value } }) => (
-            <AuthTextField
-              autoCapitalize={field.autoCapitalize}
-              autoComplete={field.autoComplete}
-              error={errors[field.name]?.message}
-              icon={field.icon}
-              isPassword={'isPassword' in field ? field.isPassword : false}
-              keyboardType={field.name === 'email' ? 'email-address' : 'default'}
-              label={field.label}
-              onBlur={onBlur}
-              onChangeText={onChange}
-              placeholder={field.placeholder}
-              returnKeyType={index < FIELDS.length - 1 ? 'next' : 'done'}
-              textContentType={field.textContentType}
-              value={value}
-            />
-          )}
-        />
-      ))}
+      subtitle="Créez votre espace de facturation."
+      title="Inscription">
+      <Controller
+        control={control}
+        name="firstName"
+        render={({ field: { onChange, onBlur, value } }) => (
+          <AuthTextField
+            autoCapitalize="words"
+            error={errors.firstName?.message}
+            icon="person.fill"
+            label="Prénom"
+            onBlur={onBlur}
+            onChangeText={onChange}
+            placeholder="Jean"
+            value={value}
+          />
+        )}
+      />
+      <Controller
+        control={control}
+        name="lastName"
+        render={({ field: { onChange, onBlur, value } }) => (
+          <AuthTextField
+            autoCapitalize="words"
+            error={errors.lastName?.message}
+            icon="person.fill"
+            label="Nom"
+            onBlur={onBlur}
+            onChangeText={onChange}
+            placeholder="Dupont"
+            value={value}
+          />
+        )}
+      />
+      <Controller
+        control={control}
+        name="companyName"
+        render={({ field: { onChange, onBlur, value } }) => (
+          <AuthTextField
+            autoCapitalize="words"
+            error={errors.companyName?.message}
+            icon="building.2.fill"
+            label="Nom de l'entreprise"
+            onBlur={onBlur}
+            onChangeText={onChange}
+            placeholder="Acme SARL"
+            value={value}
+          />
+        )}
+      />
+      <Controller
+        control={control}
+        name="email"
+        render={({ field: { onChange, onBlur, value } }) => (
+          <AuthTextField
+            autoComplete="email"
+            error={errors.email?.message}
+            icon="envelope.fill"
+            keyboardType="email-address"
+            label="Adresse e-mail"
+            onBlur={onBlur}
+            onChangeText={onChange}
+            placeholder="vous@entreprise.fr"
+            value={value}
+          />
+        )}
+      />
+      <Controller
+        control={control}
+        name="password"
+        render={({ field: { onChange, onBlur, value } }) => (
+          <AuthTextField
+            error={errors.password?.message}
+            icon="lock.fill"
+            isPassword
+            label="Mot de passe"
+            onBlur={onBlur}
+            onChangeText={onChange}
+            placeholder="Au moins 8 caractères"
+            value={value}
+          />
+        )}
+      />
       <Text style={authScreenStyles.footerText}>
-        En créant un compte, vous acceptez nos{' '}
-        <Text
-          accessibilityRole="link"
-          onPress={() => void openLegalPage('terms')}
-          style={authScreenStyles.footerLink}>
-          conditions d’utilisation
-        </Text>
-        {' '}et notre{' '}
-        <Text
-          accessibilityRole="link"
-          onPress={() => void openLegalPage('privacy')}
-          style={authScreenStyles.footerLink}>
+        En créant un compte, vous acceptez les{' '}
+        <Text onPress={() => openLegalPage('terms')} style={authScreenStyles.footerLink}>
+          conditions
+        </Text>{' '}
+        et la{' '}
+        <Text onPress={() => openLegalPage('privacy')} style={authScreenStyles.footerLink}>
           politique de confidentialité
         </Text>
         .

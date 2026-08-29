@@ -42,7 +42,7 @@ export function WizardScreen({
         {toolbar ? <View style={styles.toolbar}>{toolbar}</View> : null}
         <View style={styles.body}>{children}</View>
       </SafeAreaView>
-      {footer ? <StickyFooter variant="toolbar">{footer}</StickyFooter> : null}
+      {footer ? <StickyFooter>{footer}</StickyFooter> : null}
     </View>
   );
 }

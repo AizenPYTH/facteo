@@ -1,4 +1,6 @@
+import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
+import { SymbolView } from 'expo-symbols';
 import {
   useEffect,
   useRef,
@@ -12,30 +14,44 @@ import {
   FlatList,
   Linking,
   Platform,
-  StyleSheet,
+  Pressable,
   Text,
   View,
 } from 'react-native';
 
+import { ProductAnalysisBatchModal } from '@/components/ai/product-analysis-batch-modal';
 import {
   ProductAnalysisConfirmationModal,
   type ProductAnalysisDraft,
 } from '@/components/ai/product-analysis-confirmation-modal';
 import { ProductAnalysisLoadingModal } from '@/components/ai/product-analysis-loading-modal';
-import { Button } from '@/components/ui/button';
+import { FeatureIntroModal } from '@/components/feature-intros';
+import { ProductCatalogPickerModal } from '@/components/quotes/product-catalog-picker-modal';
 import { useAuth } from '@/hooks/use-auth';
-import { useThemedStyles } from '@/hooks/use-colors';
+import { useColors, useThemedStyles } from '@/hooks/use-colors';
+import { useFeatureIntro } from '@/hooks/use-feature-intro';
 import { usePlatformActionSheet } from '@/hooks/use-platform-action-sheet';
 import { useSubscription } from '@/hooks/use-subscription';
+import { radius } from '@/constants/theme/radius';
 import { spacing } from '@/constants/theme/spacing';
 import { typography } from '@/constants/theme/typography';
 import { analyzeProductImage } from '@/lib/ai/product-image-analysis';
-import { createProduct } from '@/lib/supabase/products';
+import { readLocalFileAsBytes } from '@/lib/files/read-as-bytes';
+import { downloadProductImportTemplate } from '@/lib/products/download-import-template';
+import { mapAnalysisToDraft, mapImportRowToDraft } from '@/lib/products/map-product-draft';
+import {
+  parseProductCsv,
+  parseProductSpreadsheet,
+  type ImportedProductRow,
+} from '@/lib/products/spreadsheet-import';
+import { createProduct, findProductByBarcode } from '@/lib/supabase/products';
 import { useToast } from '@/providers/toast-provider';
-import type { ProductImageAnalysis } from '@/types/ai-product';
+import type { ProductRow } from '@/types/database';
 import type { QuoteLineValue } from '@/types/quote';
 import { createEmptyQuoteLine, formatDecimalForInput } from '@/types/quote';
 import { router, type Href } from 'expo-router';
+
+import { ProductBarcodeScannerModal } from '@/components/ai/product-barcode-scanner-modal';
 
 import { QuoteLine } from './quote-line';
 
@@ -57,10 +73,16 @@ export function QuoteAddLinesStep({
   const { user } = useAuth();
   const { hasFeature } = useSubscription();
   const { showError, showSuccess } = useToast();
+  const scannerIntro = useFeatureIntro('scanner');
+  const aiIntro = useFeatureIntro('ai');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisProgress, setAnalysisProgress] = useState(0.08);
   const [analysisImageUri, setAnalysisImageUri] = useState<string | null>(null);
   const [analysisDraft, setAnalysisDraft] = useState<ProductAnalysisDraft | null>(null);
+  const [batchDrafts, setBatchDrafts] = useState<ProductAnalysisDraft[] | null>(null);
+  const [barcodeScannerVisible, setBarcodeScannerVisible] = useState(false);
+  const [catalogPickerVisible, setCatalogPickerVisible] = useState(false);
+  const [pendingBarcodeHint, setPendingBarcodeHint] = useState<string | null>(null);
   const [isSavingProduct, setIsSavingProduct] = useState(false);
   const progressTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -74,30 +96,161 @@ export function QuoteAddLinesStep({
     onAddLine(createEmptyQuoteLine());
   }
 
-  function handleScanProductWithAi() {
-    void handleSourceSelection(Platform.OS === 'web' ? 'gallery' : 'camera');
+  function ensureAiAccess(): boolean {
+    if (!hasFeature('ai_assistant')) {
+      router.push('/settings/premium' as Href);
+      return false;
+    }
+    return true;
   }
 
-  function handleAddPrestation() {
+  function handleScanBarcode() {
+    scannerIntro.runWithIntro(() => {
+      setBarcodeScannerVisible(true);
+    });
+  }
+
+  function handleOpenCatalog() {
+    setCatalogPickerVisible(true);
+  }
+
+  function handleCatalogSelect(product: ProductRow) {
+    setCatalogPickerVisible(false);
+    setAnalysisImageUri(null);
+    setAnalysisDraft(mapProductRowToDraft(product, 'Catalogue'));
+  }
+
+  /** Options secondaires — Scanner, Catalogue et Saisie libre restent exposés d'emblée (DESIGN §5.3). */
+  function handleMoreOptions() {
     openActionSheet({
-      title: 'Ajouter une prestation',
+      title: 'Autres façons d’ajouter',
       options: [
         {
-          label: 'Ajouter manuellement',
-          onPress: handleAddManualPrestation,
+          label: 'Photo / capture produit (IA)',
+          onPress: () => {
+            if (!ensureAiAccess()) return;
+            aiIntro.runWithIntro(() => {
+              void handleSourceSelection(Platform.OS === 'web' ? 'gallery' : 'camera');
+            });
+          },
         },
         {
-          label: "Scanner un produit avec l'IA",
-          onPress: handleScanProductWithAi,
+          label: 'Importer Excel / CSV',
+          onPress: () => {
+            void handleImportSpreadsheet();
+          },
+        },
+        {
+          label: 'Télécharger le modèle Excel',
+          onPress: () => {
+            void handleDownloadTemplate();
+          },
         },
       ],
     });
   }
 
-  async function handleSourceSelection(source: 'camera' | 'gallery') {
+  async function handleDownloadTemplate() {
     try {
-      if (!hasFeature('ai_assistant')) {
-        router.push('/settings/premium' as Href);
+      await downloadProductImportTemplate();
+      showSuccess('Modèle Excel prêt à partager / télécharger.');
+    } catch (error) {
+      showError(readAiErrorMessage(error));
+    }
+  }
+
+  async function handleBarcode(code: string) {
+    setBarcodeScannerVisible(false);
+    try {
+      const existing = await findProductByBarcode(code);
+      if (existing) {
+        setAnalysisImageUri(null);
+        setAnalysisDraft(mapProductRowToDraft(existing, `Code-barres ${code}`));
+        return;
+      }
+
+      Alert.alert(
+        'Produit introuvable',
+        `Aucun produit catalogue pour le code ${code}. Vous pouvez ressayer, saisir la référence, ou créer le produit via une photo.`,
+        [
+          { text: 'Annuler', style: 'cancel' },
+          {
+            text: 'Saisie libre',
+            onPress: () => {
+              setPendingBarcodeHint(code);
+              handleAddManualPrestation();
+            },
+          },
+          {
+            text: 'Photo produit',
+            onPress: () => {
+              if (!ensureAiAccess()) return;
+              setPendingBarcodeHint(code);
+              void handleSourceSelection(Platform.OS === 'web' ? 'gallery' : 'camera', code);
+            },
+          },
+        ],
+      );
+    } catch (error) {
+      showError(readAiErrorMessage(error));
+    }
+  }
+
+  async function handleImportSpreadsheet() {
+    try {
+      const picked = await DocumentPicker.getDocumentAsync({
+        type: [
+          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+          'application/vnd.ms-excel',
+          'text/csv',
+          'text/plain',
+          'public.comma-separated-values-text',
+        ],
+        copyToCacheDirectory: true,
+        multiple: false,
+      });
+
+      if (picked.canceled || !picked.assets?.[0]) {
+        return;
+      }
+
+      const asset = picked.assets[0];
+      const name = (asset.name ?? '').toLowerCase();
+      let rows: ImportedProductRow[] = [];
+
+      if (name.endsWith('.csv') || name.endsWith('.txt') || asset.mimeType?.includes('csv')) {
+        const bytes = await readLocalFileAsBytes(asset.uri);
+        const text = new TextDecoder().decode(bytes);
+        rows = parseProductCsv(text);
+      } else {
+        const bytes = await readLocalFileAsBytes(asset.uri);
+        rows = parseProductSpreadsheet(bytes);
+      }
+
+      if (rows.length === 0) {
+        showError('Aucun produit exploitable dans ce fichier.');
+        return;
+      }
+
+      const drafts = rows.map(mapImportRowToDraft);
+      if (drafts.length === 1) {
+        setAnalysisImageUri(null);
+        setAnalysisDraft(drafts[0] ?? null);
+      } else {
+        setAnalysisImageUri(null);
+        setBatchDrafts(drafts);
+      }
+    } catch (error) {
+      showError(readAiErrorMessage(error));
+    }
+  }
+
+  async function handleSourceSelection(
+    source: 'camera' | 'gallery',
+    barcodeHint?: string | null,
+  ) {
+    try {
+      if (!ensureAiAccess()) {
         return;
       }
 
@@ -115,10 +268,24 @@ export function QuoteAddLinesStep({
       const analyzed = await analyzeProductImage({
         imageBase64: selected.base64,
         mimeType: selected.mimeType,
+        barcodeHint: barcodeHint ?? pendingBarcodeHint ?? undefined,
       });
 
       setAnalysisProgress(1);
-      setAnalysisDraft(mapAnalysisToDraft(analyzed));
+      const products =
+        Array.isArray(analyzed.products) && analyzed.products.length > 0
+          ? analyzed.products
+          : [analyzed];
+      const drafts = products.map(mapAnalysisToDraft);
+
+      if (drafts.length > 1) {
+        setAnalysisDraft(null);
+        setBatchDrafts(drafts);
+      } else {
+        setBatchDrafts(null);
+        setAnalysisDraft(drafts[0] ?? null);
+      }
+      setPendingBarcodeHint(null);
     } catch (error) {
       const message = readAiErrorMessage(error);
 
@@ -146,50 +313,72 @@ export function QuoteAddLinesStep({
     setAnalysisImageUri(null);
   }
 
-  async function handleConfirmAiProduct() {
-    if (!analysisDraft || !user?.id) {
-      showError('Session invalide. Reconnectez-vous puis réessayez.');
-      return;
+  function handleCloseBatchModal() {
+    setBatchDrafts(null);
+    setAnalysisImageUri(null);
+  }
+
+  async function addDraftAsLine(draft: ProductAnalysisDraft, persistCatalog: boolean) {
+    if (!user?.id) {
+      throw new Error('Session invalide. Reconnectez-vous puis réessayez.');
     }
 
-    const title = analysisDraft.title.trim();
-    const description = analysisDraft.description.trim();
-    const reference = analysisDraft.reference.trim();
-    const unit = (analysisDraft.unit.trim() || 'pièce').toLowerCase();
-    const quantity = parseNumericInput(analysisDraft.quantity) ?? 1;
-    const vatRate = parseNumericInput(analysisDraft.vatRate) ?? 20;
-    const priceHt = resolvePriceHt(analysisDraft);
+    const title = draft.title.trim();
+    const description = draft.description.trim();
+    const reference = draft.reference.trim();
+    const unit = (draft.unit.trim() || 'pièce').toLowerCase();
+    const quantity = parseNumericInput(draft.quantity) ?? 1;
+    const vatRate = parseNumericInput(draft.vatRate);
+    const priceHt = resolvePriceHt(draft);
 
     if (!title && !description) {
-      showError('Ajoutez au moins un nom ou une description avant de créer le produit.');
+      throw new Error('Ajoutez au moins un nom ou une description.');
+    }
+
+    let productId: string | null = null;
+
+    if (persistCatalog && vatRate !== null && priceHt !== null) {
+      const product = await createProduct({
+        userId: user.id,
+        name: title || description || 'Produit importé',
+        description,
+        unitPrice: priceHt,
+        vatRate,
+        unit,
+        reference,
+        type: 'product',
+        brand: draft.brand.trim() || undefined,
+        sku: draft.sku.trim() || undefined,
+        barcodeEan: draft.ean.trim() || undefined,
+      });
+      productId = product.id;
+    }
+
+    onAddLine({
+      id: createEmptyQuoteLine().id,
+      productId,
+      description: title || description || 'Produit importé',
+      quantity: formatDecimalForInput(quantity),
+      unit,
+      unitPrice: priceHt === null ? '' : formatDecimalForInput(priceHt),
+      vatRate: vatRate === null ? '' : formatDecimalForInput(vatRate),
+      discountPercent: '0',
+    });
+  }
+
+  async function handleConfirmAiProduct(persistCatalog: boolean) {
+    if (!analysisDraft) {
       return;
     }
 
     try {
       setIsSavingProduct(true);
-      const product = await createProduct({
-        userId: user.id,
-        name: title || description || 'Produit importé IA',
-        description,
-        unitPrice: priceHt ?? 0,
-        vatRate,
-        unit,
-        reference,
-        type: 'product',
-      });
-
-      onAddLine({
-        id: createEmptyQuoteLine().id,
-        productId: product.id,
-        description: title || description || product.name,
-        quantity: formatDecimalForInput(quantity),
-        unit,
-        unitPrice: priceHt === null ? '' : formatDecimalForInput(priceHt),
-        vatRate: formatDecimalForInput(vatRate),
-        discountPercent: '0',
-      });
-
-      showSuccess('Produit créé et ajouté à votre document.');
+      await addDraftAsLine(analysisDraft, persistCatalog);
+      showSuccess(
+        persistCatalog
+          ? 'Produit ajouté au document et au catalogue.'
+          : 'Produit ajouté au document.',
+      );
       handleCloseConfirmationModal();
     } catch (error) {
       showError(readAiErrorMessage(error));
@@ -198,25 +387,120 @@ export function QuoteAddLinesStep({
     }
   }
 
-  const listHeader = (
-    <View style={styles.headerSection}>
-      <Text style={styles.description}>
-        Ajoutez vos prestations : description, quantité, prix HT et TVA.
-      </Text>
+  async function handleConfirmBatch(items: ProductAnalysisDraft[], persistCatalog: boolean) {
+    if (items.length === 0) {
+      showError('Sélectionnez au moins un produit.');
+      return;
+    }
 
-      <Button onPress={handleAddPrestation} title="Ajouter une prestation" />
-      {Platform.OS === 'web' ? (
-        <Button
-          onPress={handleScanProductWithAi}
-          title="Scanner un produit (IA)"
-          variant="ghost"
+    try {
+      setIsSavingProduct(true);
+      for (const item of items) {
+        await addDraftAsLine(item, persistCatalog);
+      }
+      showSuccess(`${items.length} produit(s) ajouté(s) au document.`);
+      handleCloseBatchModal();
+    } catch (error) {
+      showError(readAiErrorMessage(error));
+    } finally {
+      setIsSavingProduct(false);
+    }
+  }
+
+  const modals = (
+    <>
+      {actionSheetNode}
+      <FeatureIntroModal
+        config={scannerIntro.config}
+        onClose={scannerIntro.onClose}
+        onCta={scannerIntro.onCta}
+        onDontShowAgain={scannerIntro.onDontShowAgain}
+        visible={scannerIntro.visible}
+      />
+      <FeatureIntroModal
+        config={aiIntro.config}
+        onClose={aiIntro.onClose}
+        onCta={aiIntro.onCta}
+        onDontShowAgain={aiIntro.onDontShowAgain}
+        visible={aiIntro.visible}
+      />
+      <ProductAnalysisLoadingModal progress={analysisProgress} visible={isAnalyzing} />
+      <ProductBarcodeScannerModal
+        visible={barcodeScannerVisible}
+        onBarcode={(code) => {
+          void handleBarcode(code);
+        }}
+        onClose={() => setBarcodeScannerVisible(false)}
+        onFallbackPhotoSearch={() => {
+          setBarcodeScannerVisible(false);
+          if (!ensureAiAccess()) return;
+          aiIntro.runWithIntro(() => {
+            void handleSourceSelection(Platform.OS === 'web' ? 'gallery' : 'camera');
+          });
+        }}
+      />
+      <ProductCatalogPickerModal
+        onClose={() => setCatalogPickerVisible(false)}
+        onSelect={handleCatalogSelect}
+        visible={catalogPickerVisible}
+      />
+      {analysisDraft ? (
+        <ProductAnalysisConfirmationModal
+          imageUri={analysisImageUri ?? ''}
+          isSaving={isSavingProduct}
+          onChange={setAnalysisDraft}
+          onClose={handleCloseConfirmationModal}
+          onConfirm={(persistCatalog) => {
+            void handleConfirmAiProduct(persistCatalog);
+          }}
+          onScanNext={() => {
+            handleCloseConfirmationModal();
+            handleScanBarcode();
+          }}
+          value={analysisDraft}
+          visible
         />
       ) : null}
+      {batchDrafts ? (
+        <ProductAnalysisBatchModal
+          imageUri={analysisImageUri}
+          isSaving={isSavingProduct}
+          items={batchDrafts}
+          onChangeItems={setBatchDrafts}
+          onClose={handleCloseBatchModal}
+          onConfirmSelected={(items, persistCatalog) => {
+            void handleConfirmBatch(items, persistCatalog);
+          }}
+          visible
+        />
+      ) : null}
+    </>
+  );
+
+  const listHeader = (
+    <View style={styles.headerSection}>
+      <Text style={styles.description}>Ajoutez vos prestations.</Text>
+
+      <View style={styles.entryRow}>
+        <AddEntryButton icon="barcode.viewfinder" label="Scanner" onPress={handleScanBarcode} />
+        <AddEntryButton icon="square.grid.2x2" label="Catalogue" onPress={handleOpenCatalog} />
+        <AddEntryButton
+          icon="square.and.pencil"
+          label="Saisie libre"
+          onPress={handleAddManualPrestation}
+        />
+      </View>
+
+      <Pressable
+        accessibilityRole="button"
+        hitSlop={8}
+        onPress={handleMoreOptions}
+        style={styles.moreOptions}>
+        <Text style={styles.moreOptionsText}>Photo IA, import Excel…</Text>
+      </Pressable>
 
       <View style={styles.prestationsHeader}>
-        <Text style={styles.sectionLabel}>
-          Prestations ({lines.length})
-        </Text>
+        <Text style={styles.sectionLabel}>Prestations ({lines.length})</Text>
       </View>
     </View>
   );
@@ -228,25 +512,11 @@ export function QuoteAddLinesStep({
           {listHeader}
           <View style={styles.emptyPrestations}>
             <Text style={styles.emptyPrestationsText}>
-              Appuyez sur « Ajouter une prestation » pour commencer.
+              Scannez, choisissez dans le catalogue ou saisissez librement pour commencer.
             </Text>
           </View>
         </View>
-        {actionSheetNode}
-        <ProductAnalysisLoadingModal progress={analysisProgress} visible={isAnalyzing} />
-        {analysisDraft && analysisImageUri ? (
-          <ProductAnalysisConfirmationModal
-            imageUri={analysisImageUri}
-            isSaving={isSavingProduct}
-            onChange={setAnalysisDraft}
-            onClose={handleCloseConfirmationModal}
-            onConfirm={() => {
-              void handleConfirmAiProduct();
-            }}
-            value={analysisDraft}
-            visible
-          />
-        ) : null}
+        {modals}
       </>
     );
   }
@@ -272,66 +542,113 @@ export function QuoteAddLinesStep({
         )}
         showsVerticalScrollIndicator={false}
       />
-      {actionSheetNode}
-      <ProductAnalysisLoadingModal progress={analysisProgress} visible={isAnalyzing} />
-      {analysisDraft && analysisImageUri ? (
-        <ProductAnalysisConfirmationModal
-          imageUri={analysisImageUri}
-          isSaving={isSavingProduct}
-          onChange={setAnalysisDraft}
-          onClose={handleCloseConfirmationModal}
-          onConfirm={() => {
-            void handleConfirmAiProduct();
-          }}
-          value={analysisDraft}
-          visible
-        />
-      ) : null}
+      {modals}
     </>
   );
 }
 
+type AddEntryButtonProps = {
+  icon: Parameters<typeof SymbolView>[0]['name'];
+  label: string;
+  onPress: () => void;
+};
+
+/** Entrée exposée d'emblée — DESIGN §5.3 (Scanner, Catalogue, Saisie libre). */
+function AddEntryButton({ icon, label, onPress }: AddEntryButtonProps) {
+  const styles = useEntryButtonStyles();
+  const colors = useColors();
+
+  return (
+    <Pressable
+      accessibilityLabel={label}
+      accessibilityRole="button"
+      onPress={onPress}
+      style={({ pressed }) => [styles.entry, pressed && styles.entryPressed]}>
+      <SymbolView name={icon} size={20} tintColor={colors.primary} type="hierarchical" />
+      <Text maxFontSizeMultiplier={1.4} style={styles.entryLabel}>
+        {label}
+      </Text>
+    </Pressable>
+  );
+}
+
+function useEntryButtonStyles() {
+  return useThemedStyles((colors) => ({
+    entry: {
+      flex: 1,
+      alignItems: 'center',
+      gap: spacing.xs,
+      paddingVertical: spacing.md,
+      borderRadius: radius.card,
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    entryPressed: {
+      backgroundColor: colors.surfaceSecondary,
+    },
+    entryLabel: {
+      ...typography.footnoteMedium,
+      color: colors.text,
+      textAlign: 'center',
+    },
+  }));
+}
+
 function useStyles() {
   return useThemedStyles((colors) => ({
-  container: {
-    flex: 1,
-  },
-  listContent: {
-    gap: spacing.lg,
-    paddingBottom: spacing.lg,
-  },
-  headerSection: {
-    gap: spacing.lg,
-    paddingBottom: spacing.sm,
-  },
-  description: {
-    ...typography.subheadline,
-    color: colors.textSecondary,
-  },
-  sectionLabel: {
-    ...typography.footnoteMedium,
-    color: colors.textSecondary,
-    textTransform: 'uppercase',
-    letterSpacing: 0.3,
-  },
-  prestationsHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: spacing.sm,
-  },
-  emptyPrestations: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: spacing.xl,
-  },
-  emptyPrestationsText: {
-    ...typography.subheadline,
-    color: colors.textSecondary,
-    textAlign: 'center',
-  },
-}));
+    container: {
+      flex: 1,
+    },
+    listContent: {
+      gap: spacing.lg,
+      paddingBottom: spacing.lg,
+    },
+    headerSection: {
+      gap: spacing.lg,
+      paddingBottom: spacing.sm,
+    },
+    description: {
+      ...typography.subheadline,
+      color: colors.textSecondary,
+    },
+    entryRow: {
+      flexDirection: 'row',
+      gap: spacing.sm,
+    },
+    moreOptions: {
+      alignSelf: 'center',
+      minHeight: 32,
+      justifyContent: 'center',
+    },
+    moreOptionsText: {
+      ...typography.footnoteMedium,
+      color: colors.primary,
+    },
+    sectionLabel: {
+      ...typography.footnoteMedium,
+      color: colors.textSecondary,
+      textTransform: 'uppercase',
+      letterSpacing: 0.3,
+    },
+    prestationsHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: spacing.sm,
+    },
+    emptyPrestations: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingVertical: spacing.xl,
+    },
+    emptyPrestationsText: {
+      ...typography.subheadline,
+      color: colors.textSecondary,
+      textAlign: 'center',
+    },
+  }));
 }
 
 function clearProgressTimer(timerRef: MutableRefObject<ReturnType<typeof setInterval> | null>) {
@@ -405,27 +722,6 @@ async function pickImageSource(source: 'camera' | 'gallery'): Promise<{
   };
 }
 
-function mapAnalysisToDraft(analysis: ProductImageAnalysis): ProductAnalysisDraft {
-  const vatRate = analysis.vat ?? 20;
-  const priceTtc = analysis.price_ttc;
-  const priceHt = analysis.price_ht ?? (priceTtc !== null ? computePriceHtFromTtc(priceTtc, vatRate) : null);
-
-  return {
-    title: analysis.title ?? '',
-    brand: analysis.brand ?? '',
-    model: analysis.model ?? '',
-    reference: analysis.reference ?? '',
-    description: analysis.description ?? '',
-    unitPriceHt: priceHt === null ? '' : formatDecimalForInput(priceHt),
-    unitPriceTtc: priceTtc === null ? '' : formatDecimalForInput(priceTtc),
-    vatRate: formatDecimalForInput(vatRate),
-    currency: analysis.currency || 'EUR',
-    unit: analysis.unit || 'pièce',
-    quantity: formatDecimalForInput(Math.max(1, analysis.quantity || 1)),
-    confidence: Math.max(0, Math.min(1, analysis.confidence || 0)),
-  };
-}
-
 function parseNumericInput(value: string): number | null {
   const normalized = value.trim().replace(/\s/g, '').replace(',', '.');
 
@@ -450,9 +746,14 @@ function resolvePriceHt(draft: ProductAnalysisDraft): number | null {
   }
 
   const ttc = parseNumericInput(draft.unitPriceTtc);
-  const vatRate = parseNumericInput(draft.vatRate) ?? 20;
+  const vatRate = parseNumericInput(draft.vatRate);
 
   if (ttc === null) {
+    return null;
+  }
+
+  if (vatRate === null) {
+    // Without reliable VAT, do not invent HT from TTC.
     return null;
   }
 
@@ -464,7 +765,7 @@ function readAiErrorMessage(error: unknown): string {
     const message = error.message;
 
     if (message.includes('Permission refusée')) {
-      return 'Autorisez la caméra ou les fichiers pour scanner un produit avec l’IA.';
+      return 'Autorisez la caméra ou les fichiers pour scanner un produit.';
     }
 
     if (message.includes('Permission caméra bloquée')) {
@@ -487,4 +788,24 @@ function readAiErrorMessage(error: unknown): string {
   }
 
   return 'Analyse impossible pour cette image.';
+}
+
+function mapProductRowToDraft(product: ProductRow, sourceLabel: string): ProductAnalysisDraft {
+  return {
+    title: product.name,
+    brand: product.brand ?? '',
+    model: '',
+    reference: product.reference ?? '',
+    description: product.description ?? '',
+    unitPriceHt: formatDecimalForInput(product.unit_price),
+    unitPriceTtc: '',
+    vatRate: formatDecimalForInput(product.vat_rate),
+    currency: 'EUR',
+    unit: product.unit || 'pièce',
+    quantity: '1',
+    confidence: 1,
+    sku: product.sku ?? '',
+    ean: product.barcode_ean ?? '',
+    sourceUrl: sourceLabel,
+  };
 }

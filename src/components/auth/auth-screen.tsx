@@ -53,7 +53,7 @@ export function AuthScreen({
             <Image
               accessibilityIgnoresInvertColors
               accessibilityLabel="INVEQ"
-              source={require('@/assets/images/INVEQ-logo.png')}
+              source={require('@/assets/images/inveq-logo.png')}
               style={styles.logo}
             />
             <Animated.View entering={FadeInDown.delay(80).duration(motion.normal).springify()}>
@@ -104,9 +104,9 @@ function useStyles() {
     content: {
       flexGrow: 1,
       paddingHorizontal: spacing.screenPaddingHorizontal,
-      paddingTop: spacing['3xl'],
-      paddingBottom: spacing.xl,
-      gap: spacing.xl,
+      paddingTop: spacing.lg,
+      paddingBottom: spacing.lg,
+      gap: spacing.lg,
       justifyContent: 'center',
     },
     header: {

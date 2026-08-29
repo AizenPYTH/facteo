@@ -1,68 +1,47 @@
 import { SymbolView } from 'expo-symbols';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { router, type Href } from 'expo-router';
+import { Pressable, StyleSheet, Text } from 'react-native';
 
-import { usePremiumCheckout } from '@/hooks/use-premium-checkout';
 import { useColors, useThemedStyles } from '@/hooks/use-colors';
 import { radius } from '@/constants/theme/radius';
 import { spacing } from '@/constants/theme/spacing';
 import { typography } from '@/constants/theme/typography';
-import { useToast } from '@/providers/toast-provider';
 
 type PremiumUpgradeBannerProps = {
   message?: string;
   compact?: boolean;
 };
 
+/**
+ * DESIGN §5.10 : le point d'entrée renvoie toujours vers l'écran d'offre
+ * complet (`settings/premium`) — jamais de paiement déclenché depuis un
+ * bandeau inline. Ceci écarte aussi tout appel Stripe hors écran dédié sur
+ * iOS (§1).
+ */
 export function PremiumUpgradeBanner({
   message = 'Disponible avec INVEQ Premium',
   compact = false,
 }: PremiumUpgradeBannerProps) {
   const styles = useStyles(compact);
   const colors = useColors();
-  const { startCheckout, subscribe, isConfigured } = usePremiumCheckout();
-  const { showError, showSuccess } = useToast();
 
-  async function handlePress() {
-    if (!isConfigured) {
-      showError('Stripe n’est pas encore configuré.');
-      return;
-    }
-
-    try {
-      const completed = await startCheckout();
-
-      if (completed) {
-        showSuccess('INVEQ Premium est activé.');
-      }
-    } catch (error) {
-      showError(readErrorMessage(error));
-    }
+  function handlePress() {
+    router.push('/settings/premium' as Href);
   }
 
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`${message}. Débloquer Premium`}
-      disabled={subscribe.isPending}
-      onPress={() => {
-        void handlePress();
-      }}
+      accessibilityLabel={`${message}. Voir l’offre Premium`}
+      onPress={handlePress}
       style={({ pressed }) => [styles.banner, pressed && styles.pressed]}>
       <SymbolView name="lock.fill" size={compact ? 12 : 14} tintColor={colors.primary} />
       <Text numberOfLines={2} style={styles.message}>
         {message}
       </Text>
-      <Text style={styles.cta}>{subscribe.isPending ? 'Ouverture…' : 'Débloquer'}</Text>
+      <Text style={styles.cta}>Débloquer</Text>
     </Pressable>
   );
-}
-
-function readErrorMessage(error: unknown): string {
-  if (error instanceof Error) {
-    return error.message;
-  }
-
-  return 'Impossible d’ouvrir le paiement Stripe.';
 }
 
 function useStyles(compact: boolean) {

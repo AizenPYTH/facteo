@@ -1,6 +1,6 @@
-import { router, type Href } from 'expo-router';
+import { Redirect, router, type Href } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
@@ -13,7 +13,7 @@ import {
 import { InvoicesDesktopScreen } from '@/components/web/desktop/screens/invoices-desktop-screen';
 import { BottomTabInset } from '@/constants/theme';
 import { useBreakpoint } from '@/hooks/use-breakpoint';
-import { useColors, useThemedStyles } from '@/hooks/use-colors';
+import { useThemedStyles } from '@/hooks/use-colors';
 import { spacing } from '@/constants/theme/spacing';
 import { useDebouncedValue } from '@/hooks/use-debounced-value';
 import { useInfiniteInvoices } from '@/hooks/use-invoices';
@@ -30,12 +30,15 @@ export default function InvoicesScreen() {
     return <InvoicesDesktopScreen />;
   }
 
+  if (!isWeb && isTablet) {
+    return <Redirect href={'/documents?segment=invoices' as Href} />;
+  }
+
   return <InvoicesMobileScreen />;
 }
 
 function InvoicesMobileScreen() {
   const styles = useStyles();
-  const colors = useColors();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<InvoiceStatusFilter>('all');
   const debouncedSearch = useDebouncedValue(search, SEARCH_DEBOUNCE_MS);
@@ -85,9 +88,10 @@ function InvoicesMobileScreen() {
           isRefreshing={isRefetching && !isFetchingNextPage}
           isSearching={isSearching}
           onEndReached={handleEndReached}
-          onInvoicePress={(invoice) => router.push(`/invoices/${invoice.id}` as Href)}
+          onInvoicePress={(invoice) => router.push(`/documents/invoices/${invoice.id}` as Href)}
           onRefresh={handleRefresh}
           showCreateAction={!showFab}
+          statusFilter={statusFilter}
         />
       </View>
 

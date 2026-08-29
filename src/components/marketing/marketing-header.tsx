@@ -50,7 +50,7 @@ export function MarketingHeader({ isWide }: MarketingHeaderProps) {
           <Image
             accessibilityIgnoresInvertColors
             contentFit="contain"
-            source={require('@/assets/images/INVEQ-logo.png')}
+            source={require('@/assets/images/inveq-logo.png')}
             style={styles.logo}
           />
           <Text style={styles.brandName}>INVEQ</Text>
@@ -159,8 +159,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   menuButton: {
-    width: 40,
-    height: 40,
+      width: 44,
+      height: 44,
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: marketingRadius.sm,

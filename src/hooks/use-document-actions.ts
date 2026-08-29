@@ -207,6 +207,7 @@ export function useDocumentActions({
     loading,
     pdfLoading,
     emailLoading,
+    loadPreviewPdf,
     handleOpenPreview,
     handleShare,
     handlePrint,

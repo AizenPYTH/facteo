@@ -2,6 +2,7 @@ import { SymbolView } from 'expo-symbols';
 import { Pressable, StyleSheet, Text, View, type ViewStyle } from 'react-native';
 
 import { useColors, useThemedStyles } from '@/hooks/use-colors';
+import { radius } from '@/constants/theme/radius';
 import { spacing } from '@/constants/theme/spacing';
 import { typography } from '@/constants/theme/typography';
 import { formatFrenchPhoneDisplay } from '@/lib/format/phone';
@@ -21,10 +22,24 @@ export function ClientCard({ client, onPress, style, testID }: ClientCardProps) 
   const colors = useColors();
   const primaryLabel = getClientDisplayName(client);
   const secondaryLabel = getClientSecondaryLabel(client);
+  const isCompany = Boolean(client.company?.trim());
 
   const content = (
     <View style={[styles.card, style]}>
       <View style={styles.header}>
+        <View style={styles.kindIcon}>
+          <SymbolView
+            accessibilityLabel={isCompany ? 'Entreprise' : 'Particulier'}
+            name={
+              isCompany
+                ? { ios: 'building.2.fill', android: 'business', web: 'business' }
+                : { ios: 'person.fill', android: 'person', web: 'person' }
+            }
+            size={16}
+            tintColor={colors.iconTertiary}
+            type="hierarchical"
+          />
+        </View>
         <View style={styles.headerText}>
           <Text numberOfLines={2} style={styles.primaryLabel}>
             {primaryLabel}
@@ -90,6 +105,14 @@ function useStyles() {
     alignItems: 'flex-start',
     justifyContent: 'space-between',
     gap: spacing.sm,
+  },
+  kindIcon: {
+    width: 28,
+    height: 28,
+    borderRadius: radius.full,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.surfaceSecondary,
   },
   headerText: {
     flex: 1,

@@ -7,16 +7,26 @@ type QuoteFieldProps = {
   label: string;
   value: string | null;
   emphasize?: boolean;
+  valueAccessibilityLabel?: string;
 };
 
-export function QuoteField({ label, value, emphasize = false }: QuoteFieldProps) {
+export function QuoteField({
+  label,
+  value,
+  emphasize = false,
+  valueAccessibilityLabel,
+}: QuoteFieldProps) {
   const styles = useStyles();
   const displayValue = value?.trim() || '—';
 
   return (
     <View style={styles.field}>
       <Text style={styles.label}>{label}</Text>
-      <Text style={[styles.value, emphasize ? styles.valueEmphasized : null]}>{displayValue}</Text>
+      <Text
+        accessibilityLabel={valueAccessibilityLabel}
+        style={[styles.value, emphasize ? styles.valueEmphasized : null]}>
+        {displayValue}
+      </Text>
     </View>
   );
 }

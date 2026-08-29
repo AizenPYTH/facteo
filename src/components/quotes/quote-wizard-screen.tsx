@@ -1,6 +1,8 @@
 import { router, type Href } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
+import { Alert } from 'react-native';
 
+import { FeatureIntroModal } from '@/components/feature-intros';
 import { DocumentFinalizeStep } from '@/components/quotes/document-finalize-step';
 import { QuoteAddLinesStep } from '@/components/quotes/quote-add-lines-step';
 import { QuoteClientStep } from '@/components/quotes/quote-client-step';
@@ -8,7 +10,9 @@ import { QuoteScreenHeader } from '@/components/quotes/quote-screen-header';
 import { QuoteWizardProgress } from '@/components/quotes/quote-wizard-progress';
 import { WizardActionBar } from '@/components/ui/wizard-action-bar';
 import { WizardScreen } from '@/components/ui/wizard-screen';
+import { WizardTotalsSummary } from '@/components/ui/wizard-totals-summary';
 import { useCompanyProfile } from '@/hooks/use-company-profile';
+import { useFeatureIntro } from '@/hooks/use-feature-intro';
 import { useQuoteMutations } from '@/hooks/use-quote-mutations';
 import { useSettings } from '@/hooks/use-settings';
 import { addDaysFrenchDateInput, todayFrenchDateInput } from '@/lib/format/date-input';
@@ -21,7 +25,7 @@ import { mapLinesToDocumentTotals } from '@/lib/quotes/mappers';
 import { isQuoteInfoValid, areQuoteLinesValid, parseQuoteInfoValues } from '@/lib/quotes/validators';
 import { useToast } from '@/providers/toast-provider';
 import { getClientDisplayName, type Client } from '@/types/client';
-import { createEmptyQuoteLine, type QuoteLineValue } from '@/types/quote';
+import type { QuoteLineValue } from '@/types/quote';
 
 const TOTAL_STEPS = 3;
 
@@ -46,12 +50,14 @@ export function QuoteWizardScreen({
   const { showError, showSuccess } = useToast();
   const { data: companyProfile } = useCompanyProfile();
   const { data: settings } = useSettings();
+  const quoteIntro = useFeatureIntro('quote');
 
   const [step, setStep] = useState(1);
 
   useEffect(() => {
     onStepChange?.(step);
   }, [onStepChange, step]);
+
   const [state, setState] = useState<QuoteWizardState>(
     initialState ?? createEmptyQuoteWizardState(),
   );
@@ -79,18 +85,6 @@ export function QuoteWizardScreen({
       },
     }));
   }, [settings?.paymentTermsDays, settings?.quoteValidityDays, state.info.issuedAt]);
-
-  useEffect(() => {
-    if (step !== 2 || state.lines.length > 0) {
-      return;
-    }
-
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- add starter line when entering step 2
-    setState((current) => ({
-      ...current,
-      lines: [createEmptyQuoteLine()],
-    }));
-  }, [step, state.lines.length]);
 
   function handleSelectClient(client: Client) {
     setState((current) => ({
@@ -125,46 +119,41 @@ export function QuoteWizardScreen({
     setState((current) => ({ ...current, info }));
   }
 
-  function canGoNext(): boolean {
+  /**
+   * DESIGN §5.3 : un primaire désactivé affiche toujours la raison juste en
+   * dessous — jamais de « Suivant » mort et muet, à aucune étape.
+   */
+  function getDisabledReason(): string | undefined {
     switch (step) {
       case 1:
-        return Boolean(state.clientId);
-      case 2:
-        return state.lines.length > 0 && areQuoteLinesValid(state.lines);
-      case 3:
-        return (
-          Boolean(state.clientId) &&
-          areQuoteLinesValid(state.lines) &&
-          isQuoteInfoValid(state.info)
-        );
-      default:
-        return false;
-    }
-  }
-
-  function showStepError() {
-    switch (step) {
-      case 1:
-        showError('Sélectionnez un client pour continuer.');
-        break;
+        return state.clientId ? undefined : 'Sélectionnez un client pour continuer.';
       case 2:
         if (state.lines.length === 0) {
-          showError('Ajoutez au moins une prestation au devis.');
-        } else {
-          showError('Renseignez la description, la quantité et le prix de chaque prestation.');
+          return 'Ajoutez au moins une prestation pour continuer.';
         }
-        break;
+        return areQuoteLinesValid(state.lines)
+          ? undefined
+          : 'Renseignez la description, la quantité et le prix de chaque prestation.';
       case 3:
-        showError('Renseignez une date d’émission valide.');
-        break;
+        if (!state.clientId) {
+          return 'Sélectionnez un client pour continuer.';
+        }
+        if (!areQuoteLinesValid(state.lines)) {
+          return 'Vérifiez les prestations avant de continuer.';
+        }
+        return isQuoteInfoValid(state.info)
+          ? undefined
+          : 'Renseignez une date d’émission valide.';
       default:
-        showError('Le devis est incomplet.');
+        return undefined;
     }
   }
 
+  const disabledReason = getDisabledReason();
+  const canGoNext = !disabledReason;
+
   function handleNext() {
-    if (!canGoNext()) {
-      showStepError();
+    if (disabledReason) {
       return;
     }
 
@@ -179,11 +168,24 @@ export function QuoteWizardScreen({
       return;
     }
 
-    router.back();
+    Alert.alert('Abandonner le brouillon ?', 'Les informations saisies sur ce devis ne seront pas enregistrées.', [
+      { text: 'Continuer', style: 'cancel' },
+      {
+        text: 'Abandonner',
+        style: 'destructive',
+        onPress: () => {
+          if (router.canGoBack()) {
+            router.back();
+            return;
+          }
+          router.replace('/documents' as Href);
+        },
+      },
+    ]);
   }
 
   async function handleSave() {
-    if (!state.clientId || !canGoNext()) {
+    if (!canGoNext || !state.clientId) {
       showError('Le devis est incomplet.');
       return;
     }
@@ -207,7 +209,7 @@ export function QuoteWizardScreen({
       if (mode === 'create') {
         await createQuote.mutateAsync(input);
         showSuccess('Devis créé.');
-        router.replace('/quotes' as Href);
+        router.replace('/documents' as Href);
         return;
       }
 
@@ -218,7 +220,7 @@ export function QuoteWizardScreen({
 
       await updateQuote.mutateAsync({ quoteId, input });
       showSuccess('Devis modifié.');
-      router.replace(`/quotes/${quoteId}` as Href);
+      router.replace(`/documents/quotes/${quoteId}` as Href);
     } catch (error) {
       showError(getQuoteErrorMessage(readErrorMessage(error)));
     }
@@ -260,27 +262,33 @@ export function QuoteWizardScreen({
   }
 
   const primaryActionLabel =
-    step < TOTAL_STEPS
-      ? 'Suivant'
-      : mode === 'create'
-        ? 'Créer le devis'
-        : 'Enregistrer les modifications';
+    step === 1
+      ? 'Prestations'
+      : step === 2
+        ? 'Validation'
+        : mode === 'create'
+          ? 'Créer ce devis'
+          : 'Enregistrer ce devis';
 
   const isDesktop = variant === 'desktop';
+  const totalsSummary =
+    step === 2 && state.lines.length > 0 ? (
+      <WizardTotalsSummary totalHt={totals.subtotalHt} totalTtc={totals.totalTtc} />
+    ) : undefined;
 
   return (
     <WizardScreen
       footer={
-        isDesktop ? (
-          <WizardActionBar
-            backLabel={step === 1 ? 'Annuler' : 'Précédent'}
-            onBack={handleBack}
-            onPrimary={step < TOTAL_STEPS ? handleNext : handleSave}
-            primaryDisabled={step < TOTAL_STEPS ? !canGoNext() : false}
-            primaryLabel={primaryActionLabel}
-            primaryLoading={step >= TOTAL_STEPS && isSaving}
-          />
-        ) : undefined
+        <WizardActionBar
+          backLabel={step === 1 ? 'Annuler' : 'Précédent'}
+          disabledReason={step < TOTAL_STEPS ? disabledReason : undefined}
+          onBack={handleBack}
+          onPrimary={step < TOTAL_STEPS ? handleNext : handleSave}
+          primaryDisabled={step < TOTAL_STEPS ? !canGoNext : false}
+          primaryLabel={primaryActionLabel}
+          primaryLoading={step >= TOTAL_STEPS && isSaving}
+          summary={totalsSummary}
+        />
       }
       header={
         isDesktop ? undefined : (
@@ -290,20 +298,15 @@ export function QuoteWizardScreen({
           </>
         )
       }
-      toolbar={
-        isDesktop ? undefined : (
-          <WizardActionBar
-            backLabel={step === 1 ? 'Annuler' : 'Précédent'}
-            onBack={handleBack}
-            onPrimary={step < TOTAL_STEPS ? handleNext : handleSave}
-            primaryDisabled={step < TOTAL_STEPS ? !canGoNext() : false}
-            primaryLabel={primaryActionLabel}
-            primaryLoading={step >= TOTAL_STEPS && isSaving}
-          />
-        )
-      }
       variant={variant}>
       {renderStep()}
+      <FeatureIntroModal
+        config={quoteIntro.config}
+        onClose={quoteIntro.onClose}
+        onCta={quoteIntro.onCta}
+        onDontShowAgain={quoteIntro.onDontShowAgain}
+        visible={quoteIntro.visible}
+      />
     </WizardScreen>
   );
 }

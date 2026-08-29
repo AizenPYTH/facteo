@@ -15,7 +15,8 @@ import type { SubscriptionPlan } from '@/types/subscription';
 type PlanComparisonProps = {
   standardPlan: SubscriptionPlan;
   premiumPlan: SubscriptionPlan;
-  currentPlanId?: 'free' | 'premium';
+  /** Abonnement Premium actif — `subscription.effectivePlanId !== 'micro'`. */
+  isPremium?: boolean;
 };
 
 type ComparisonRow = {
@@ -35,7 +36,7 @@ const PREMIUM_ONLY_FEATURES = [
   'Futures fonctionnalités Premium',
 ] as const;
 
-export function PlanComparison({ standardPlan, premiumPlan, currentPlanId }: PlanComparisonProps) {
+export function PlanComparison({ standardPlan, premiumPlan, isPremium = false }: PlanComparisonProps) {
   const styles = useStyles();
   const colors = useColors();
 
@@ -64,23 +65,19 @@ export function PlanComparison({ standardPlan, premiumPlan, currentPlanId }: Pla
     <View style={styles.container}>
       <Text style={styles.sectionLabel}>Comparer les offres</Text>
 
-      <View style={[styles.planCard, currentPlanId === 'free' ? styles.planCardCurrent : null]}>
+      <View style={[styles.planCard, !isPremium ? styles.planCardCurrent : null]}>
         <View style={styles.planHeader}>
           <Text style={styles.planTitle}>INVEQ Standard</Text>
-          {currentPlanId === 'free' ? <PlanBadge label="Actuel" /> : null}
+          {!isPremium ? <PlanBadge label="Actuel" /> : null}
         </View>
         <Text style={styles.planSubtitle}>Gratuit · l’essentiel pour démarrer</Text>
       </View>
 
       <View
-        style={[
-          styles.planCard,
-          styles.planCardPremium,
-          currentPlanId === 'premium' ? styles.planCardCurrent : null,
-        ]}>
+        style={[styles.planCard, styles.planCardPremium, isPremium ? styles.planCardCurrent : null]}>
         <View style={styles.planHeader}>
           <Text style={[styles.planTitle, styles.planTitlePremium]}>INVEQ Premium</Text>
-          {currentPlanId === 'premium' ? (
+          {isPremium ? (
             <PlanBadge label="Actuel" premium />
           ) : (
             <SymbolView name="star.fill" size={14} tintColor={colors.primary} />

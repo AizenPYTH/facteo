@@ -1,9 +1,10 @@
-import { Pressable, StyleSheet, View, type ViewStyle } from 'react-native';
+import { Pressable, View, type ViewStyle } from 'react-native';
 
-import { useColors, useThemedStyles } from '@/hooks/use-colors';
+import { useThemedStyles } from '@/hooks/use-colors';
+import { components } from '@/constants/theme/design-system';
 import { spacing } from '@/constants/theme/spacing';
 import { formatDate } from '@/lib/format/date';
-import { formatPriceHT } from '@/lib/format/currency';
+import { formatPriceHT, formatSpokenEuros } from '@/lib/format/currency';
 import type { Quote } from '@/types/quote';
 
 import { QuoteField } from './quote-field';
@@ -12,17 +13,23 @@ import { QuoteStatusBadge } from './quote-status-badge';
 export type QuoteCardProps = {
   quote: Quote;
   onPress?: (quote: Quote) => void;
+  selected?: boolean;
   style?: ViewStyle;
   testID?: string;
 };
 
-export function QuoteCard({ quote, onPress, style, testID }: QuoteCardProps) {
+export function QuoteCard({
+  quote,
+  onPress,
+  selected = false,
+  style,
+  testID,
+}: QuoteCardProps) {
   const styles = useStyles();
-  const colors = useColors();
   const displayDate = formatDate(quote.issuedAt ?? quote.createdAt);
 
   const content = (
-    <View style={[styles.card, style]}>
+    <View style={[styles.card, quote.status === 'expired' && styles.overdue, style]}>
       <View style={styles.header}>
         <QuoteField emphasize label="Numéro" value={quote.number} />
         <QuoteStatusBadge status={quote.status} />
@@ -34,14 +41,18 @@ export function QuoteCard({ quote, onPress, style, testID }: QuoteCardProps) {
       </View>
 
       <View style={styles.row}>
-        <QuoteField label="Montant TTC" value={formatPriceHT(quote.totalTtc)} />
+        <QuoteField
+          label="Montant TTC"
+          value={formatPriceHT(quote.totalTtc)}
+          valueAccessibilityLabel={formatSpokenEuros(quote.totalTtc)}
+        />
       </View>
     </View>
   );
 
   if (!onPress) {
     return (
-      <View style={styles.wrapper} testID={testID}>
+      <View style={[styles.wrapper, selected && styles.selected]} testID={testID}>
         {content}
       </View>
     );
@@ -49,10 +60,15 @@ export function QuoteCard({ quote, onPress, style, testID }: QuoteCardProps) {
 
   return (
     <Pressable
-      accessibilityLabel={`Devis ${quote.number}`}
+      accessibilityLabel={`Devis ${quote.number}, ${formatSpokenEuros(quote.totalTtc)}`}
       accessibilityRole="button"
+      accessibilityState={{ selected }}
       onPress={() => onPress(quote)}
-      style={({ pressed }) => [styles.wrapper, pressed && styles.pressed]}
+      style={({ pressed }) => [
+        styles.wrapper,
+        selected && styles.selected,
+        pressed && styles.pressed,
+      ]}
       testID={testID}>
       {content}
     </Pressable>
@@ -64,6 +80,9 @@ function useStyles() {
   wrapper: {
     backgroundColor: colors.surface,
   },
+  selected: {
+    backgroundColor: colors.primarySubtle,
+  },
   pressed: {
     backgroundColor: colors.backgroundSecondary,
   },
@@ -71,6 +90,10 @@ function useStyles() {
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.md,
     gap: spacing.md,
+  },
+  overdue: {
+    borderLeftWidth: components.overdueAccentWidth,
+    borderLeftColor: colors.statusOverdue,
   },
   header: {
     flexDirection: 'row',

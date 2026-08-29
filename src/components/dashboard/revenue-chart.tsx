@@ -5,7 +5,7 @@ import { radius } from '@/constants/theme/radius';
 import { shadows } from '@/constants/theme/theme';
 import { spacing } from '@/constants/theme/spacing';
 import { typography } from '@/constants/theme/typography';
-import { formatCurrency } from '@/lib/format/currency';
+import { formatCurrency, formatSpokenEuros } from '@/lib/format/currency';
 import type { MonthlyRevenue } from '@/types/dashboard';
 
 import { SectionHeader } from './section-header';
@@ -30,7 +30,11 @@ export function RevenueChart({ data, premiumLocked = false }: RevenueChartProps)
 
             return (
               <View key={item.month} style={styles.barColumn}>
-                <Text style={styles.barValue}>
+                <Text
+                  accessibilityLabel={
+                    item.amount > 0 ? formatSpokenEuros(item.amount) : undefined
+                  }
+                  style={styles.barValue}>
                   {item.amount > 0 ? formatCurrency(item.amount) : '—'}
                 </Text>
                 <View style={styles.barTrack}>

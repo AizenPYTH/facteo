@@ -1,19 +1,31 @@
-import * as Linking from 'expo-linking';
 import * as Notifications from 'expo-notifications';
+import * as Linking from 'expo-linking';
 import { Platform } from 'react-native';
 
 import { supabase } from '@/lib/supabase';
 import { logSupabaseError } from '@/lib/supabase/errors';
 
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: true,
-    shouldShowBanner: true,
-    shouldShowList: true,
-  }),
-});
+let handlerConfigured = false;
+
+function ensureNotificationHandler() {
+  if (handlerConfigured || Platform.OS === 'web') {
+    return;
+  }
+  handlerConfigured = true;
+  try {
+    Notifications.setNotificationHandler({
+      handleNotification: async () => ({
+        shouldShowAlert: true,
+        shouldPlaySound: true,
+        shouldSetBadge: true,
+        shouldShowBanner: true,
+        shouldShowList: true,
+      }),
+    });
+  } catch {
+    // Never crash app startup on notification handler setup.
+  }
+}
 
 export type NotificationKind =
   | 'invoice_overdue'
@@ -48,46 +60,53 @@ export async function registerForPushNotifications(userId: string): Promise<stri
     return null;
   }
 
-  const { status: existingStatus } = await Notifications.getPermissionsAsync();
-  let finalStatus = existingStatus;
+  ensureNotificationHandler();
 
-  if (existingStatus !== 'granted') {
-    const { status } = await Notifications.requestPermissionsAsync();
-    finalStatus = status;
-  }
+  try {
+    const { status: existingStatus } = await Notifications.getPermissionsAsync();
+    let finalStatus = existingStatus;
 
-  if (finalStatus !== 'granted') {
+    if (existingStatus !== 'granted') {
+      const { status } = await Notifications.requestPermissionsAsync();
+      finalStatus = status;
+    }
+
+    if (finalStatus !== 'granted') {
+      return null;
+    }
+
+    const projectId =
+      process.env.EXPO_PUBLIC_EAS_PROJECT_ID ?? '2431d113-6d0f-465b-b268-902ab04c5f35';
+
+    const tokenResponse = await Notifications.getExpoPushTokenAsync({ projectId });
+    const expoPushToken = tokenResponse.data;
+
+    const { error } = await supabase.from('push_device_tokens').upsert(
+      {
+        user_id: userId,
+        expo_push_token: expoPushToken,
+        platform: Platform.OS,
+        is_active: true,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: 'user_id,expo_push_token' },
+    );
+
+    if (error) {
+      logSupabaseError('registerForPushNotifications', error);
+    }
+
+    return expoPushToken;
+  } catch (error) {
+    logSupabaseError('registerForPushNotifications', error);
     return null;
   }
-
-  const projectId = process.env.EXPO_PUBLIC_EAS_PROJECT_ID;
-
-  const tokenResponse = await Notifications.getExpoPushTokenAsync(
-    projectId ? { projectId } : undefined,
-  );
-  const expoPushToken = tokenResponse.data;
-
-  const { error } = await supabase.from('push_device_tokens').upsert(
-    {
-      user_id: userId,
-      expo_push_token: expoPushToken,
-      platform: Platform.OS,
-      is_active: true,
-      updated_at: new Date().toISOString(),
-    },
-    { onConflict: 'user_id,expo_push_token' },
-  );
-
-  if (error) {
-    logSupabaseError('registerForPushNotifications', error);
-  }
-
-  return expoPushToken;
 }
 
 export function addNotificationResponseListener(
   listener: (url: string) => void,
 ): Notifications.EventSubscription {
+  ensureNotificationHandler();
   return Notifications.addNotificationResponseReceivedListener((response) => {
     const url = response.notification.request.content.data?.url;
 
@@ -101,6 +120,7 @@ export async function scheduleLocalNotificationPreview(
   kind: NotificationKind,
   context: string,
 ): Promise<void> {
+  ensureNotificationHandler();
   const message = NOTIFICATION_MESSAGES[kind];
 
   await Notifications.scheduleNotificationAsync({

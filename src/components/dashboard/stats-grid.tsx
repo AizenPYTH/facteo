@@ -2,7 +2,7 @@ import { StyleSheet, View } from 'react-native';
 
 import { useColors } from '@/hooks/use-colors';
 import { spacing } from '@/constants/theme/spacing';
-import { formatCurrency } from '@/lib/format/currency';
+import { formatCurrency, formatSpokenEuros } from '@/lib/format/currency';
 import type { DashboardStats } from '@/types/dashboard';
 
 import { StatCard } from './stat-card';
@@ -21,6 +21,7 @@ export function StatsGrid({ stats }: StatsGridProps) {
         label="Chiffre d'affaires"
         style={styles.card}
         value={formatCurrency(stats.monthlyRevenue)}
+        valueAccessibilityLabel={formatSpokenEuros(stats.monthlyRevenue)}
       />
       <StatCard
         accentColor={colors.warning}

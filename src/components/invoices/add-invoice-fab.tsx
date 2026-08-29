@@ -39,7 +39,7 @@ export function AddInvoiceFab({
       return;
     }
 
-    router.push('/invoices/new' as Href);
+    router.push('/documents/invoices/new' as Href);
   }
 
   return (

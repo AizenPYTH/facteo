@@ -1,64 +1,66 @@
 /**
- * INVEQ spacing tokens — 4pt grid, mobile-first.
+ * INVEQ spacing — échelle stricte DESIGN.md §2.5 : 4 / 8 / 12 / 16 / 24 / 32.
+ * Aucune valeur hors échelle pour le nouveau code.
+ *
+ * Exception documentée : actionBarPaddingBottom = 10 (DESIGN §3.2).
  */
+
+const SCALE = {
+  4: 4,
+  8: 8,
+  12: 12,
+  16: 16,
+  24: 24,
+  32: 32,
+} as const;
 
 export const spacing = {
   0: 0,
-  0.5: 2,
-  1: 4,
-  1.5: 6,
-  2: 8,
-  2.5: 10,
-  3: 12,
-  3.5: 14,
-  4: 16,
-  5: 20,
-  6: 24,
-  7: 28,
-  8: 32,
-  9: 36,
-  10: 40,
-  11: 44,
-  12: 48,
-  14: 56,
-  16: 64,
-  20: 80,
-  24: 96,
+  ...SCALE,
 
-  xs: 4,
-  sm: 8,
-  md: 16,
-  lg: 24,
-  xl: 32,
-  '2xl': 40,
-  '3xl': 48,
-  '4xl': 64,
+  /** Alias numériques historiques → échelle (évite hors-échelle). */
+  1: SCALE[4],
+  2: SCALE[8],
+  3: SCALE[12],
+  4: SCALE[16],
+  5: SCALE[16],
+  6: SCALE[24],
+  7: SCALE[24],
+  8: SCALE[32],
+  9: SCALE[32],
+  10: SCALE[32],
 
-  screenPadding: 16,
-  screenPaddingHorizontal: 16,
-  screenPaddingVertical: 16,
-  sectionGap: 24,
-  cardPadding: 16,
-  listItemPadding: 16,
-  inputPadding: 12,
-  buttonPaddingHorizontal: 16,
-  buttonPaddingVertical: 12,
-  gutter: 16,
+  /** Alias nommés — uniquement sur l'échelle. */
+  xs: SCALE[4],
+  sm: SCALE[8],
+  md: SCALE[16],
+  lg: SCALE[24],
+  xl: SCALE[32],
+  /** @deprecated Prefer `spacing.xl` (échelle max 32). */
+  '2xl': SCALE[32],
+  /** @deprecated Prefer `spacing.xl` (échelle max 32). */
+  '3xl': SCALE[32],
+  /** @deprecated Prefer `spacing.xl` (échelle max 32). */
+  '4xl': SCALE[32],
 
-  /** @deprecated Use spacing[0.5] */
-  half: 2,
-  /** @deprecated Use spacing[1] */
-  one: 4,
-  /** @deprecated Use spacing[2] */
-  two: 8,
-  /** @deprecated Use spacing[4] */
-  three: 16,
-  /** @deprecated Use spacing[6] */
-  four: 24,
-  /** @deprecated Use spacing[8] */
-  five: 32,
-  /** @deprecated Use spacing[16] */
-  six: 64,
+  /** 12px — gap / group label spacing */
+  group: SCALE[12],
+
+  screenPadding: SCALE[16],
+  screenPaddingHorizontal: SCALE[16],
+  screenPaddingVertical: SCALE[16],
+  sectionGap: SCALE[24],
+  cardPadding: SCALE[16],
+  listItemPadding: SCALE[16],
+  inputPadding: SCALE[12],
+  buttonPaddingHorizontal: SCALE[16],
+  buttonPaddingVertical: SCALE[12],
+  gutter: SCALE[16],
+
+  /** Action bar padding — DESIGN §3.2 (`12px 16px 10px`) */
+  actionBarPaddingTop: SCALE[12],
+  actionBarPaddingBottom: 10,
+  actionBarPaddingHorizontal: SCALE[16],
 } as const;
 
 export type SpacingToken = keyof typeof spacing;
