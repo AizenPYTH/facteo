@@ -1,4 +1,4 @@
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 
 import { triggerImpactHaptic } from '@/lib/haptics';
 import { useColors, useThemedStyles } from '@/hooks/use-colors';
@@ -59,7 +59,7 @@ export function WizardActionBar({
           isDisabled && styles.primaryButtonDisabled,
         ]}>
         {primaryLoading ? (
-          <ActivityIndicator color={colors.onPrimary} size="small" />
+          <ActivityIndicator color={colors.onInk} size="small" />
         ) : (
           <Text maxFontSizeMultiplier={1.3} style={styles.primaryLabel}>
             {primaryLabel}
@@ -78,11 +78,11 @@ const useStyles = () =>
       gap: spacing.sm,
     },
     backButton: {
-      minHeight: 40,
+      minHeight: 44,
       paddingHorizontal: spacing.md,
       alignItems: 'center',
       justifyContent: 'center',
-      borderRadius: radius.button,
+      borderRadius: radius.buttonSmall,
     },
     backButtonPressed: {
       backgroundColor: colors.primarySubtle,
@@ -93,21 +93,21 @@ const useStyles = () =>
     },
     primaryButton: {
       flex: 1,
-      minHeight: 40,
+      minHeight: 46,
       borderRadius: radius.button,
       alignItems: 'center',
       justifyContent: 'center',
       paddingHorizontal: spacing.lg,
-      backgroundColor: colors.primary,
+      backgroundColor: colors.ink,
     },
     primaryButtonPressed: {
-      backgroundColor: colors.primaryPressed,
+      backgroundColor: colors.inkPressed,
     },
     primaryButtonDisabled: {
       opacity: 0.5,
     },
     primaryLabel: {
-      ...typography.subheadlineMedium,
-      color: colors.onPrimary,
+      ...typography.buttonPrimary,
+      color: colors.onInk,
     },
   }));

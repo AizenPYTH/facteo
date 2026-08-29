@@ -1,5 +1,6 @@
-import { StyleSheet, Text, TextInput, View, type TextInputProps } from 'react-native';
+import { Text, TextInput, View, type TextInputProps } from 'react-native';
 
+import { Field } from '@/components/ui/field';
 import { useColors, useThemedStyles } from '@/hooks/use-colors';
 import { spacing } from '@/constants/theme/spacing';
 import { typography } from '@/constants/theme/typography';
@@ -9,6 +10,10 @@ type TextFieldProps = TextInputProps & {
   error?: string;
 };
 
+/**
+ * Champ legacy (sans bordure autonome) — préférer `Field` (DESIGN §3.3).
+ * Conservé pour les formulaires en groupe de lignes existants.
+ */
 export function TextField({ label, error, style, accessibilityLabel, ...props }: TextFieldProps) {
   const styles = useStyles();
   const colors = useColors();
@@ -36,29 +41,32 @@ export function TextField({ label, error, style, accessibilityLabel, ...props }:
   );
 }
 
+export { Field };
+
 function useStyles() {
   return useThemedStyles((colors) => ({
-  container: {
-    gap: spacing.xs,
-  },
-  label: {
-    ...typography.footnoteMedium,
-    color: colors.textSecondary,
-  },
-  input: {
-    ...typography.body,
-    color: colors.text,
-    minHeight: 44,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: 0,
-    margin: 0,
-  },
-  inputError: {
-    color: colors.error,
-  },
-  error: {
-    ...typography.caption1,
-    color: colors.error,
-  },
-}));
+    container: {
+      gap: spacing.xs,
+    },
+    label: {
+      ...typography.caption1,
+      fontFamily: typography.caption2.fontFamily,
+      color: colors.textSecondary,
+    },
+    input: {
+      ...typography.body,
+      color: colors.text,
+      minHeight: 44,
+      paddingVertical: spacing.sm,
+      paddingHorizontal: 0,
+      margin: 0,
+    },
+    inputError: {
+      color: colors.error,
+    },
+    error: {
+      ...typography.caption1,
+      color: colors.error,
+    },
+  }));
 }
