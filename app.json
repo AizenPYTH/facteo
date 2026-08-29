@@ -12,6 +12,7 @@
       "icon": "./assets/images/icon.png",
       "bundleIdentifier": "com.inveq.app",
       "buildNumber": "48",
+      "usesAppleSignIn": true,
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }

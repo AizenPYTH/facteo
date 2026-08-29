@@ -2,12 +2,13 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { router, type Href } from 'expo-router';
 import { useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
-import { Text } from 'react-native';
+import { Text, View } from 'react-native';
 import { z } from 'zod';
 
-import { AuthScreen } from '@/components/auth/auth-screen';
 import { AuthTextField } from '@/components/auth/auth-text-field';
 import { Button } from '@/components/ui/button';
+import { FormScreen } from '@/components/ui/form-screen';
+import { NavigationHeader } from '@/components/ui/navigation-header';
 import { useAuth } from '@/hooks/use-auth';
 import { useAuthScreenStyles } from '@/hooks/use-auth-screen-styles';
 import { getAuthErrorMessage } from '@/lib/auth/errors';
@@ -46,8 +47,7 @@ export default function ForgotPasswordScreen() {
   }
 
   return (
-    <AuthScreen
-      error={formError}
+    <FormScreen
       footer={
         sent ? (
           <Button onPress={() => router.replace('/login' as Href)} title="Retour à la connexion" />
@@ -59,21 +59,25 @@ export default function ForgotPasswordScreen() {
           />
         )
       }
-      footerLink={
-        sent ? null : (
-          <Text
-            onPress={() => router.replace('/login' as Href)}
-            style={authScreenStyles.footerLink}>
-            Retour à la connexion
-          </Text>
-        )
-      }
-      subtitle={
-        sent
+      header={
+        <NavigationHeader
+          backLabel="Connexion"
+          fallbackHref={'/login' as Href}
+          title="Mot de passe oublié"
+        />
+      }>
+      <Text style={authScreenStyles.footerText}>
+        {sent
           ? 'Si un compte existe pour cette adresse, un e-mail de réinitialisation vient d’être envoyé.'
-          : 'Indiquez l’e-mail de votre compte INVEQ. Nous vous enverrons un lien de réinitialisation.'
-      }
-      title="Mot de passe oublié">
+          : 'Indiquez l’e-mail de votre compte INVEQ. Nous vous enverrons un lien pour choisir un nouveau mot de passe sur inveq.fr.'}
+      </Text>
+
+      {formError ? (
+        <View style={authScreenStyles.errorBanner}>
+          <Text style={authScreenStyles.errorBannerText}>{formError}</Text>
+        </View>
+      ) : null}
+
       {sent ? null : (
         <Controller
           control={control}
@@ -95,6 +99,6 @@ export default function ForgotPasswordScreen() {
           )}
         />
       )}
-    </AuthScreen>
+    </FormScreen>
   );
 }

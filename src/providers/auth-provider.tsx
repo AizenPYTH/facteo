@@ -13,6 +13,7 @@ import {
   type PropsWithChildren,
 } from 'react';
 
+import { MARKETING_SITE_URL } from '@/constants/marketing/site';
 import { supabase } from '@/lib/supabase';
 
 WebBrowser.maybeCompleteAuthSession();
@@ -277,10 +278,13 @@ export function AuthProvider({ children }: PropsWithChildren) {
   }, []);
 
   const resetPasswordForEmail = useCallback(async (email: string): Promise<AuthResult> => {
+    // Le formulaire de nouveau mot de passe n'existe que sur le site — sur toutes
+    // plateformes, le lien e-mail renvoie vers inveq.fr plutôt qu'un deep link
+    // natif sans écran de complétion.
     const redirectTo =
-      Platform.OS === 'web'
-        ? `${typeof window !== 'undefined' ? window.location.origin : ''}/reinitialiser-mot-de-passe`
-        : getRedirectTo();
+      Platform.OS === 'web' && typeof window !== 'undefined'
+        ? `${window.location.origin}/reinitialiser-mot-de-passe`
+        : `${MARKETING_SITE_URL}/reinitialiser-mot-de-passe`;
 
     const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), { redirectTo });
     return { error, session: null };
