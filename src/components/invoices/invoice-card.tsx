@@ -2,6 +2,7 @@ import { Pressable, StyleSheet, View, type ViewStyle } from 'react-native';
 
 import { QuoteField } from '@/components/quotes/quote-field';
 import { useColors, useThemedStyles } from '@/hooks/use-colors';
+import { components } from '@/constants/theme/design-system';
 import { spacing } from '@/constants/theme/spacing';
 import { formatDate } from '@/lib/format/date';
 import { formatPriceHT } from '@/lib/format/currency';
@@ -22,7 +23,7 @@ export function InvoiceCard({ invoice, onPress, style, testID }: InvoiceCardProp
   const displayDate = formatDate(invoice.issuedAt ?? invoice.createdAt);
 
   const content = (
-    <View style={[styles.card, style]}>
+    <View style={[styles.card, invoice.status === 'overdue' && styles.overdue, style]}>
       <View style={styles.header}>
         <QuoteField emphasize label="Numéro" value={invoice.number} />
         <InvoiceStatusBadge status={invoice.status} />
@@ -72,6 +73,10 @@ function useStyles() {
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.md,
     gap: spacing.md,
+  },
+  overdue: {
+    borderLeftWidth: components.overdueAccentWidth,
+    borderLeftColor: colors.statusOverdue,
   },
   header: {
     flexDirection: 'row',

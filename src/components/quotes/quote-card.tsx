@@ -1,6 +1,7 @@
 import { Pressable, StyleSheet, View, type ViewStyle } from 'react-native';
 
 import { useColors, useThemedStyles } from '@/hooks/use-colors';
+import { components } from '@/constants/theme/design-system';
 import { spacing } from '@/constants/theme/spacing';
 import { formatDate } from '@/lib/format/date';
 import { formatPriceHT } from '@/lib/format/currency';
@@ -22,7 +23,7 @@ export function QuoteCard({ quote, onPress, style, testID }: QuoteCardProps) {
   const displayDate = formatDate(quote.issuedAt ?? quote.createdAt);
 
   const content = (
-    <View style={[styles.card, style]}>
+    <View style={[styles.card, quote.status === 'expired' && styles.overdue, style]}>
       <View style={styles.header}>
         <QuoteField emphasize label="Numéro" value={quote.number} />
         <QuoteStatusBadge status={quote.status} />
@@ -71,6 +72,10 @@ function useStyles() {
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.md,
     gap: spacing.md,
+  },
+  overdue: {
+    borderLeftWidth: components.overdueAccentWidth,
+    borderLeftColor: colors.statusOverdue,
   },
   header: {
     flexDirection: 'row',
