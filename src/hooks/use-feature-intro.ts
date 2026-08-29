@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { getFeatureIntroConfig } from '@/lib/feature-intros/config';
 import {
+  claimFeatureIntroPresentation,
   hasSeenFeatureIntro,
   markFeatureIntroSeen,
   resetFeatureIntro,
@@ -20,6 +21,7 @@ export function useFeatureIntro(id: FeatureIntroId) {
   const [seen, setSeen] = useState<boolean | null>(null);
   const [visible, setVisible] = useState(false);
   const continueRef = useRef<(() => void) | null>(null);
+  const presentationPendingRef = useRef(false);
 
   useEffect(() => {
     let mounted = true;
@@ -52,7 +54,11 @@ export function useFeatureIntro(id: FeatureIntroId) {
   );
 
   const present = useCallback(
-    (options?: PresentOptions) => {
+    async (options?: PresentOptions) => {
+      if (presentationPendingRef.current || visible) {
+        return true;
+      }
+
       continueRef.current = options?.onContinue ?? null;
       if (options?.force) {
         setVisible(true);
@@ -67,16 +73,26 @@ export function useFeatureIntro(id: FeatureIntroId) {
         options?.onContinue?.();
         return false;
       }
-      setVisible(true);
-      return true;
+      presentationPendingRef.current = true;
+      const canPresent = await claimFeatureIntroPresentation(id);
+      presentationPendingRef.current = false;
+
+      if (canPresent) {
+        setVisible(true);
+        return true;
+      }
+
+      continueRef.current = null;
+      options?.onContinue?.();
+      return false;
     },
-    [seen],
+    [id, seen, visible],
   );
 
   /** Show intro on first use; otherwise run action immediately. */
   const runWithIntro = useCallback(
     (action: () => void) => {
-      present({ onContinue: action });
+      void present({ onContinue: action });
     },
     [present],
   );
@@ -88,14 +104,15 @@ export function useFeatureIntro(id: FeatureIntroId) {
     }
     // Defer so the host screen finishes its first paint (avoids startup jank/crashes).
     const timer = setTimeout(() => {
-      setVisible(true);
+      void present();
     }, 450);
     return () => clearTimeout(timer);
-  }, [seen]);
+  }, [present, seen]);
 
   const resetAndShow = useCallback(async () => {
     await resetFeatureIntro(id);
     setSeen(false);
+    presentationPendingRef.current = false;
     continueRef.current = null;
     setVisible(true);
   }, [id]);
@@ -111,7 +128,7 @@ export function useFeatureIntro(id: FeatureIntroId) {
     presentOnFirstVisit,
     resetAndShow,
     onClose: () => {
-      void finish({ persist: true, runContinue: true });
+      void finish({ persist: false, runContinue: true });
     },
     onDontShowAgain: () => {
       void finish({ persist: true, runContinue: true });

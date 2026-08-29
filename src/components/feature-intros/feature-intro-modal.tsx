@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import {
+  AccessibilityInfo,
   Modal,
   Pressable,
   StyleSheet,
@@ -45,10 +46,34 @@ export function FeatureIntroModal({
   const { width, height } = useWindowDimensions();
   const isTablet = Math.min(width, height) >= 600;
   const [stepIndex, setStepIndex] = useState(0);
+  const [reduceMotionEnabled, setReduceMotionEnabled] = useState(false);
+
+  useEffect(() => {
+    let mounted = true;
+    void AccessibilityInfo.isReduceMotionEnabled().then((enabled) => {
+      if (mounted) {
+        setReduceMotionEnabled(enabled);
+      }
+    });
+    const subscription = AccessibilityInfo.addEventListener(
+      'reduceMotionChanged',
+      setReduceMotionEnabled,
+    );
+
+    return () => {
+      mounted = false;
+      subscription.remove();
+    };
+  }, []);
 
   useEffect(() => {
     if (!visible) {
       setStepIndex(0);
+      return;
+    }
+
+    if (reduceMotionEnabled) {
+      setStepIndex(config.steps.length - 1);
       return;
     }
 
@@ -63,7 +88,7 @@ export function FeatureIntroModal({
       const delay = elapsed;
       timers.push(
         setTimeout(() => {
-          setStepIndex(index);
+          setStepIndex((current) => Math.max(current, index));
         }, delay),
       );
       elapsed += step.durationMs;
@@ -72,14 +97,15 @@ export function FeatureIntroModal({
     return () => {
       timers.forEach(clearTimeout);
     };
-  }, [visible, config]);
+  }, [visible, config, reduceMotionEnabled]);
 
   const step = config.steps[Math.min(stepIndex, config.steps.length - 1)];
+  const lastStepIndex = config.steps.length - 1;
 
   return (
     <FeatureIntroErrorBoundary onError={onClose}>
       <Modal
-        animationType="fade"
+        animationType={reduceMotionEnabled ? 'none' : 'fade'}
         onRequestClose={onClose}
         statusBarTranslucent
         transparent
@@ -92,7 +118,7 @@ export function FeatureIntroModal({
           />
 
           <Animated.View
-            entering={FadeIn.duration(motion.fast)}
+            entering={reduceMotionEnabled ? undefined : FadeIn.duration(motion.fast)}
             style={[styles.card, isTablet && styles.cardTablet]}>
             <View style={styles.header}>
               <Text style={styles.kicker}>Découvrir</Text>
@@ -107,33 +133,45 @@ export function FeatureIntroModal({
 
             <Text style={styles.title}>{config.title}</Text>
 
-            <FeatureIntroStage featureId={config.id} stepIndex={stepIndex} />
+            <Pressable
+              accessibilityLabel="Passer à l’étape suivante"
+              accessibilityRole="button"
+              disabled={reduceMotionEnabled || stepIndex >= lastStepIndex}
+              onPress={() => setStepIndex((current) => Math.min(current + 1, lastStepIndex))}>
+              <FeatureIntroStage
+                featureId={config.id}
+                reduceMotionEnabled={reduceMotionEnabled}
+                stepIndex={stepIndex}
+              />
+            </Pressable>
 
             {step ? (
               <Animated.View
                 key={step.key}
-                entering={FadeInDown.duration(220)}
+                entering={reduceMotionEnabled ? undefined : FadeInDown.duration(motion.exit)}
                 style={styles.copy}>
                 <Text style={styles.headline}>{step.headline}</Text>
                 <Text style={styles.body}>{step.body}</Text>
               </Animated.View>
             ) : null}
 
-            <View style={styles.dots}>
+            <View accessibilityLabel={`Étape ${stepIndex + 1} sur 3`} style={styles.progress}>
               {config.steps.map((item, index) => (
                 <View
                   key={item.key}
-                  style={[styles.dot, index === stepIndex && styles.dotActive]}
+                  style={[styles.segment, index <= stepIndex && styles.segmentActive]}
                 />
               ))}
             </View>
 
             <View style={styles.actions}>
               <Button onPress={onCta} title={config.ctaLabel} />
-              <Button onPress={onDontShowAgain} title="Ne plus afficher" variant="ghost" />
-              <Pressable accessibilityRole="button" onPress={onClose} hitSlop={8}>
-                <Text style={styles.skip}>Passer</Text>
-              </Pressable>
+              <Button onPress={onClose} title="Plus tard" variant="tertiary" />
+              <Button
+                onPress={onDontShowAgain}
+                title="Ne plus afficher"
+                variant="tertiary"
+              />
             </View>
           </Animated.View>
         </View>
@@ -196,29 +234,21 @@ function useStyles() {
       ...typography.subheadline,
       color: colors.textSecondary,
     },
-    dots: {
+    progress: {
       flexDirection: 'row',
-      justifyContent: 'center',
-      gap: 6,
+      gap: spacing.xs,
     },
-    dot: {
-      width: 7,
-      height: 7,
-      borderRadius: 4,
+    segment: {
+      flex: 1,
+      height: 4,
+      borderRadius: radius.chip,
       backgroundColor: colors.borderStrong,
     },
-    dotActive: {
+    segmentActive: {
       backgroundColor: colors.primary,
-      width: 18,
     },
     actions: {
       gap: spacing.xs,
-    },
-    skip: {
-      ...typography.footnote,
-      color: colors.textTertiary,
-      textAlign: 'center',
-      paddingVertical: spacing.xs,
     },
   }));
 }

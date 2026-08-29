@@ -24,45 +24,70 @@ import type { FeatureIntroId } from '@/lib/feature-intros/types';
 type FeatureIntroStageProps = {
   featureId: FeatureIntroId;
   stepIndex: number;
+  reduceMotionEnabled?: boolean;
 };
 
 /**
  * Mini visual simulations for each feature intro.
  * Purely decorative — no network, no real data.
  */
-export function FeatureIntroStage({ featureId, stepIndex }: FeatureIntroStageProps) {
+export function FeatureIntroStage({
+  featureId,
+  stepIndex,
+  reduceMotionEnabled = false,
+}: FeatureIntroStageProps) {
   switch (featureId) {
     case 'scanner':
-      return <ScannerStage stepIndex={stepIndex} />;
+      return (
+        <ScannerStage reduceMotionEnabled={reduceMotionEnabled} stepIndex={stepIndex} />
+      );
     case 'invoice':
-      return <InvoiceStage stepIndex={stepIndex} />;
+      return (
+        <InvoiceStage reduceMotionEnabled={reduceMotionEnabled} stepIndex={stepIndex} />
+      );
     case 'quote':
-      return <QuoteStage stepIndex={stepIndex} />;
+      return <QuoteStage reduceMotionEnabled={reduceMotionEnabled} stepIndex={stepIndex} />;
     case 'ai':
-      return <AiStage stepIndex={stepIndex} />;
+      return <AiStage reduceMotionEnabled={reduceMotionEnabled} stepIndex={stepIndex} />;
     case 'templates':
-      return <TemplatesStage stepIndex={stepIndex} />;
+      return (
+        <TemplatesStage reduceMotionEnabled={reduceMotionEnabled} stepIndex={stepIndex} />
+      );
     case 'payments':
-      return <PaymentsStage stepIndex={stepIndex} />;
+      return (
+        <PaymentsStage reduceMotionEnabled={reduceMotionEnabled} stepIndex={stepIndex} />
+      );
     case 'statistics':
-      return <StatisticsStage stepIndex={stepIndex} />;
+      return (
+        <StatisticsStage reduceMotionEnabled={reduceMotionEnabled} stepIndex={stepIndex} />
+      );
     default:
       return null;
   }
 }
 
-function ScannerStage({ stepIndex }: { stepIndex: number }) {
+type StageProps = {
+  stepIndex: number;
+  reduceMotionEnabled: boolean;
+};
+
+function ScannerStage({ stepIndex, reduceMotionEnabled }: StageProps) {
   const styles = useStageStyles();
   const colors = useColors();
   const scanY = useSharedValue(0);
 
   useEffect(() => {
+    if (reduceMotionEnabled) {
+      scanY.value = 0;
+      return;
+    }
+
     scanY.value = withRepeat(
       withTiming(1, { duration: 900, easing: Easing.inOut(Easing.quad) }),
       -1,
       true,
     );
-  }, [scanY]);
+  }, [reduceMotionEnabled, scanY]);
 
   const laserStyle = useAnimatedStyle(() => ({
     transform: [{ translateY: interpolate(scanY.value, [0, 1], [0, 88]) }],
@@ -78,12 +103,18 @@ function ScannerStage({ stepIndex }: { stepIndex: number }) {
             <View style={[styles.corner, styles.tr]} />
             <View style={[styles.corner, styles.bl]} />
             <View style={[styles.corner, styles.br]} />
-            <Animated.View style={[styles.laser, { backgroundColor: colors.primary }, laserStyle]} />
+            {reduceMotionEnabled ? null : (
+              <Animated.View
+                style={[styles.laser, { backgroundColor: colors.primary }, laserStyle]}
+              />
+            )}
           </View>
         ) : null}
 
         {stepIndex >= 1 ? (
-          <Animated.View entering={FadeInDown.duration(350)} style={styles.productCard}>
+          <Animated.View
+            entering={reduceMotionEnabled ? undefined : FadeInDown.duration(350)}
+            style={styles.productCard}>
             <Text style={styles.productTitle}>Samsung Galaxy Buds</Text>
             <Text style={styles.productMeta}>Réf. SM-R177 · EAN 8806092</Text>
             <View style={styles.productRow}>
@@ -94,7 +125,9 @@ function ScannerStage({ stepIndex }: { stepIndex: number }) {
         ) : null}
 
         {stepIndex >= 2 ? (
-          <Animated.View entering={FadeInUp.duration(400)} style={styles.invoiceLine}>
+          <Animated.View
+            entering={reduceMotionEnabled ? undefined : FadeInUp.duration(400)}
+            style={styles.invoiceLine}>
             <Text style={styles.invoiceLineLabel}>→ Ligne facture</Text>
             <Text style={styles.invoiceLineValue}>1 × 208,33 € HT</Text>
           </Animated.View>
@@ -104,24 +137,30 @@ function ScannerStage({ stepIndex }: { stepIndex: number }) {
   );
 }
 
-function InvoiceStage({ stepIndex }: { stepIndex: number }) {
+function InvoiceStage({ stepIndex, reduceMotionEnabled }: StageProps) {
   const styles = useStageStyles();
   return (
     <View style={styles.stage}>
       <View style={styles.docCard}>
         <Text style={styles.docBadge}>FACTURE</Text>
-        <Animated.View entering={FadeIn.duration(280)} style={styles.docRow}>
+        <Animated.View
+          entering={reduceMotionEnabled ? undefined : FadeIn.duration(280)}
+          style={styles.docRow}>
           <Text style={styles.docLabel}>Client</Text>
           <Text style={styles.docValue}>{stepIndex >= 0 ? 'Atelier Nord SAS' : '—'}</Text>
         </Animated.View>
         {stepIndex >= 1 ? (
-          <Animated.View entering={FadeInDown.duration(300)} style={styles.docLines}>
+          <Animated.View
+            entering={reduceMotionEnabled ? undefined : FadeInDown.duration(300)}
+            style={styles.docLines}>
             <Text style={styles.docLine}>• Prestation audit — 800 €</Text>
             <Text style={styles.docLine}>• Maintenance — 120 €</Text>
           </Animated.View>
         ) : null}
         {stepIndex >= 2 ? (
-          <Animated.View entering={FadeInUp.duration(320)} style={styles.docTotal}>
+          <Animated.View
+            entering={reduceMotionEnabled ? undefined : FadeInUp.duration(320)}
+            style={styles.docTotal}>
             <Text style={styles.docTotalLabel}>Total TTC</Text>
             <Text style={styles.docTotalValue}>1 104,00 €</Text>
           </Animated.View>
@@ -131,7 +170,7 @@ function InvoiceStage({ stepIndex }: { stepIndex: number }) {
   );
 }
 
-function QuoteStage({ stepIndex }: { stepIndex: number }) {
+function QuoteStage({ stepIndex, reduceMotionEnabled }: StageProps) {
   const styles = useStageStyles();
   return (
     <View style={styles.stage}>
@@ -139,13 +178,17 @@ function QuoteStage({ stepIndex }: { stepIndex: number }) {
         <Text style={styles.docBadge}>DEVIS</Text>
         <Text style={styles.docValue}>{stepIndex >= 0 ? 'Client : Maison Verte' : 'Client…'}</Text>
         {stepIndex >= 1 ? (
-          <Animated.View entering={FadeInDown.duration(300)} style={styles.docLines}>
+          <Animated.View
+            entering={reduceMotionEnabled ? undefined : FadeInDown.duration(300)}
+            style={styles.docLines}>
             <Text style={styles.docLine}>• Conception — 1 200 €</Text>
             <Text style={styles.docLine}>• Installation — 450 €</Text>
           </Animated.View>
         ) : null}
         {stepIndex >= 2 ? (
-          <Animated.View entering={FadeInUp.duration(350)} style={styles.convertChip}>
+          <Animated.View
+            entering={reduceMotionEnabled ? undefined : FadeInUp.duration(350)}
+            style={styles.convertChip}>
             <Text style={styles.convertText}>Devis → Facture</Text>
           </Animated.View>
         ) : null}
@@ -154,17 +197,22 @@ function QuoteStage({ stepIndex }: { stepIndex: number }) {
   );
 }
 
-function AiStage({ stepIndex }: { stepIndex: number }) {
+function AiStage({ stepIndex, reduceMotionEnabled }: StageProps) {
   const styles = useStageStyles();
   const pulse = useSharedValue(0.4);
 
   useEffect(() => {
+    if (reduceMotionEnabled) {
+      pulse.value = 1;
+      return;
+    }
+
     pulse.value = withRepeat(
       withSequence(withTiming(1, { duration: 500 }), withTiming(0.4, { duration: 500 })),
       -1,
       false,
     );
-  }, [pulse]);
+  }, [pulse, reduceMotionEnabled]);
 
   const pulseStyle = useAnimatedStyle(() => ({ opacity: pulse.value }));
 
@@ -180,7 +228,9 @@ function AiStage({ stepIndex }: { stepIndex: number }) {
           </Animated.View>
         ) : null}
         {stepIndex >= 2 ? (
-          <Animated.View entering={FadeInDown.duration(350)} style={styles.aiBubbleResult}>
+          <Animated.View
+            entering={reduceMotionEnabled ? undefined : FadeInDown.duration(350)}
+            style={styles.aiBubbleResult}>
             <Text style={styles.aiBubbleText}>Produit prêt · 3 champs détectés</Text>
           </Animated.View>
         ) : null}
@@ -189,7 +239,7 @@ function AiStage({ stepIndex }: { stepIndex: number }) {
   );
 }
 
-function TemplatesStage({ stepIndex }: { stepIndex: number }) {
+function TemplatesStage({ stepIndex, reduceMotionEnabled }: StageProps) {
   const styles = useStageStyles();
   const colors = useColors();
   return (
@@ -200,7 +250,7 @@ function TemplatesStage({ stepIndex }: { stepIndex: number }) {
           return (
             <Animated.View
               key={label}
-              entering={FadeIn.delay(index * 80)}
+              entering={reduceMotionEnabled ? undefined : FadeIn.delay(index * 80)}
               style={[
                 styles.templateCard,
                 selected && { borderColor: colors.primary, borderWidth: 2 },
@@ -212,7 +262,9 @@ function TemplatesStage({ stepIndex }: { stepIndex: number }) {
         })}
       </View>
       {stepIndex >= 2 ? (
-        <Animated.View entering={FadeInUp.duration(350)} style={styles.previewStrip}>
+        <Animated.View
+          entering={reduceMotionEnabled ? undefined : FadeInUp.duration(350)}
+          style={styles.previewStrip}>
           <Text style={styles.previewText}>Aperçu facture — Modèle B</Text>
         </Animated.View>
       ) : null}
@@ -220,7 +272,7 @@ function TemplatesStage({ stepIndex }: { stepIndex: number }) {
   );
 }
 
-function PaymentsStage({ stepIndex }: { stepIndex: number }) {
+function PaymentsStage({ stepIndex, reduceMotionEnabled }: StageProps) {
   const styles = useStageStyles();
   return (
     <View style={styles.stage}>
@@ -228,12 +280,16 @@ function PaymentsStage({ stepIndex }: { stepIndex: number }) {
         <Text style={styles.docBadge}>FACTURE #1042</Text>
         <Text style={styles.docValue}>1 104,00 € TTC</Text>
         {stepIndex >= 1 ? (
-          <Animated.View entering={FadeInDown.duration(300)} style={styles.payChip}>
+          <Animated.View
+            entering={reduceMotionEnabled ? undefined : FadeInDown.duration(300)}
+            style={styles.payChip}>
             <Text style={styles.payChipText}>Paiement CB · 1 104 €</Text>
           </Animated.View>
         ) : null}
         {stepIndex >= 2 ? (
-          <Animated.View entering={FadeInUp.duration(350)} style={styles.paidBadge}>
+          <Animated.View
+            entering={reduceMotionEnabled ? undefined : FadeInUp.duration(350)}
+            style={styles.paidBadge}>
             <Text style={styles.paidText}>Payée</Text>
           </Animated.View>
         ) : (
@@ -244,16 +300,21 @@ function PaymentsStage({ stepIndex }: { stepIndex: number }) {
   );
 }
 
-function StatisticsStage({ stepIndex }: { stepIndex: number }) {
+function StatisticsStage({ stepIndex, reduceMotionEnabled }: StageProps) {
   const styles = useStageStyles();
   const colors = useColors();
   const heights = [0.35, 0.55, 0.42, 0.78, 0.62, 0.9];
   const progress = useSharedValue(0);
 
   useEffect(() => {
+    if (reduceMotionEnabled) {
+      progress.value = 1;
+      return;
+    }
+
     progress.value = 0;
     progress.value = withDelay(80, withTiming(1, { duration: 700, easing: Easing.out(Easing.cubic) }));
-  }, [progress, stepIndex]);
+  }, [progress, reduceMotionEnabled, stepIndex]);
 
   return (
     <View style={styles.stage}>

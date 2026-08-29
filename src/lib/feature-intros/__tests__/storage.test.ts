@@ -13,7 +13,7 @@ import {
 import { getFeatureIntroConfig, listFeatureIntroConfigs } from '../config';
 
 describe('feature intro types', () => {
-  it('covers the seven requested features', () => {
+  it('keeps the six product intros and the legacy payments intro', () => {
     assert.deepEqual([...FEATURE_INTRO_IDS].sort(), [
       'ai',
       'invoice',
@@ -37,8 +37,14 @@ describe('feature intro types', () => {
 });
 
 describe('feature intro config', () => {
-  it('exposes 3 steps (~3s total) per feature', () => {
-    for (const config of listFeatureIntroConfigs()) {
+  it('exposes the six product intros without surfacing payments as a seventh', () => {
+    const configs = listFeatureIntroConfigs();
+    assert.deepEqual(
+      configs.map((config) => config.id).sort(),
+      ['ai', 'invoice', 'quote', 'scanner', 'statistics', 'templates'],
+    );
+
+    for (const config of configs) {
       assert.equal(config.steps.length, 3, config.id);
       const total = config.steps.reduce((sum, step) => sum + step.durationMs, 0);
       assert.ok(total >= 2800 && total <= 4000, `${config.id} total ${total}`);
