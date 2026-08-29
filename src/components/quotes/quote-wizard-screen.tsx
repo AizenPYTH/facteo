@@ -1,5 +1,6 @@
 import { router, type Href } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
+import { Alert } from 'react-native';
 
 import { FeatureIntroModal } from '@/components/feature-intros';
 import { DocumentFinalizeStep } from '@/components/quotes/document-finalize-step';
@@ -183,7 +184,20 @@ export function QuoteWizardScreen({
       return;
     }
 
-    router.back();
+    Alert.alert('Abandonner le brouillon ?', 'Les informations saisies sur ce devis ne seront pas enregistrées.', [
+      { text: 'Continuer', style: 'cancel' },
+      {
+        text: 'Abandonner',
+        style: 'destructive',
+        onPress: () => {
+          if (router.canGoBack()) {
+            router.back();
+            return;
+          }
+          router.replace('/quotes' as Href);
+        },
+      },
+    ]);
   }
 
   async function handleSave() {
@@ -264,27 +278,35 @@ export function QuoteWizardScreen({
   }
 
   const primaryActionLabel =
-    step < TOTAL_STEPS
-      ? 'Suivant'
-      : mode === 'create'
-        ? 'Créer le devis'
-        : 'Enregistrer les modifications';
+    step === 1
+      ? 'Prestations'
+      : step === 2
+        ? 'Validation'
+        : mode === 'create'
+          ? 'Créer ce devis'
+          : 'Enregistrer ce devis';
+
+  const disabledReason =
+    step < TOTAL_STEPS && !canGoNext()
+      ? step === 1
+        ? 'Choisissez un client pour continuer.'
+        : 'Ajoutez au moins une prestation.'
+      : undefined;
 
   const isDesktop = variant === 'desktop';
 
   return (
     <WizardScreen
       footer={
-        isDesktop ? (
-          <WizardActionBar
-            backLabel={step === 1 ? 'Annuler' : 'Précédent'}
-            onBack={handleBack}
-            onPrimary={step < TOTAL_STEPS ? handleNext : handleSave}
-            primaryDisabled={step < TOTAL_STEPS ? !canGoNext() : false}
-            primaryLabel={primaryActionLabel}
-            primaryLoading={step >= TOTAL_STEPS && isSaving}
-          />
-        ) : undefined
+        <WizardActionBar
+          backLabel={step === 1 ? 'Annuler' : 'Précédent'}
+          disabledReason={disabledReason}
+          onBack={handleBack}
+          onPrimary={step < TOTAL_STEPS ? handleNext : handleSave}
+          primaryDisabled={step < TOTAL_STEPS ? !canGoNext() : false}
+          primaryLabel={primaryActionLabel}
+          primaryLoading={step >= TOTAL_STEPS && isSaving}
+        />
       }
       header={
         isDesktop ? undefined : (
@@ -292,18 +314,6 @@ export function QuoteWizardScreen({
             <QuoteScreenHeader showBackButton={false} title={title} />
             <QuoteWizardProgress currentStep={step} />
           </>
-        )
-      }
-      toolbar={
-        isDesktop ? undefined : (
-          <WizardActionBar
-            backLabel={step === 1 ? 'Annuler' : 'Précédent'}
-            onBack={handleBack}
-            onPrimary={step < TOTAL_STEPS ? handleNext : handleSave}
-            primaryDisabled={step < TOTAL_STEPS ? !canGoNext() : false}
-            primaryLabel={primaryActionLabel}
-            primaryLoading={step >= TOTAL_STEPS && isSaving}
-          />
         )
       }
       variant={variant}>

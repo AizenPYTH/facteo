@@ -18,7 +18,7 @@ export function InvoiceScreenHeader({
   title,
   onBack,
   backLabel = 'Documents',
-  fallbackHref = '/invoices',
+  fallbackHref = '/documents',
   showBackButton,
   style,
   trailing,

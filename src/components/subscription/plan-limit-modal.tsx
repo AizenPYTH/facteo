@@ -22,7 +22,7 @@ export function PlanLimitModal({ visible, onClose }: PlanLimitModalProps) {
 
   function handleViewOffer() {
     onClose();
-    router.push('/settings/premium');
+    router.push('/settings/premium' as Href);
   }
 
   return (

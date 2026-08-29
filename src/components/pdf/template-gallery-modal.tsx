@@ -1,13 +1,5 @@
-import { SymbolView } from 'expo-symbols';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import {
-  ActivityIndicator,
-  Modal,
-  Pressable,
-  StyleSheet,
-  useWindowDimensions,
-  View,
-} from 'react-native';
+import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   runOnJS,
@@ -16,13 +8,17 @@ import Animated, {
   withSpring,
   withTiming,
 } from 'react-native-reanimated';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+    10|import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { PdfPreviewWebView } from '@/components/pdf/pdf-preview-webview';
+import { TemplatePreviewCard } from '@/components/pdf/template-preview-card';
+import { ActionBar } from '@/components/ui/action-bar';
 import { AppText } from '@/components/ui/app-text';
+import { Button } from '@/components/ui/button';
+import { StatusChip } from '@/components/ui/status-chip';
 import { useColors, useThemedStyles } from '@/hooks/use-colors';
 import { triggerImpactHaptic } from '@/lib/haptics';
-import { ensureTemplatePreviewPdf } from '@/lib/pdf/template-preview-pdf';
+    20|import { ensureTemplatePreviewPdf } from '@/lib/pdf/template-preview-pdf';
 import { spacing } from '@/constants/theme/spacing';
 import { radius } from '@/constants/theme/radius';
 import { PDF_TEMPLATES } from '@/lib/pdf/engine/templates';
@@ -32,7 +28,7 @@ type TemplateGalleryModalProps = {
   visible: boolean;
   title: string;
   selectedTemplateId: string;
-  onClose: () => void;
+    30|  onClose: () => void;
   onSelect: (templateId: string) => void;
   buildPreviewHtml: (templateId: string) => Promise<string>;
   /** Namespace for PDF preview cache (document id, settings scope, etc.). */
@@ -42,11 +38,16 @@ type TemplateGalleryModalProps = {
 const SWIPE_THRESHOLD = 56;
 const TOTAL_TEMPLATES = PDF_TEMPLATES.length;
 
-function findTemplateIndex(templateId: string): number {
+    40|function findTemplateIndex(templateId: string): number {
   const index = PDF_TEMPLATES.findIndex((template) => template.id === templateId);
   return index >= 0 ? index : 0;
 }
 
+/**
+ * Galerie de modèles — DESIGN §5.8.
+ * Aucun enregistrement au swipe : la navigation ne met à jour qu'un brouillon
+ * local (`draftId`). Seul « Utiliser ce modèle » confirme le choix au parent.
+    50| */
 export function TemplateGalleryModal({
   visible,
   title,
@@ -56,18 +57,17 @@ export function TemplateGalleryModal({
   buildPreviewHtml,
   cacheKey = 'default',
 }: TemplateGalleryModalProps) {
-  const styles = useStyles();
+    60|  const styles = useStyles();
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { width: screenWidth } = useWindowDimensions();
 
   const buildPreviewHtmlRef = useRef(buildPreviewHtml);
-  const onSelectRef = useRef(onSelect);
   const gestureLockedRef = useRef(false);
   const loadGenerationRef = useRef(0);
   const cacheKeyRef = useRef(cacheKey);
 
   const [activeIndex, setActiveIndex] = useState(() => findTemplateIndex(selectedTemplateId));
+    70|  const [draftId, setDraftId] = useState(selectedTemplateId);
   const [activePdfUri, setActivePdfUri] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [gestureLocked, setGestureLocked] = useState(false);
@@ -75,16 +75,16 @@ export function TemplateGalleryModal({
 
   const contentOpacity = useSharedValue(1);
   const contentTranslateX = useSharedValue(0);
-  const navButtonScale = useSharedValue(1);
 
-  buildPreviewHtmlRef.current = buildPreviewHtml;
-  onSelectRef.current = onSelect;
+    80|  buildPreviewHtmlRef.current = buildPreviewHtml;
   gestureLockedRef.current = gestureLocked;
   cacheKeyRef.current = cacheKey;
 
   const activeTemplate: PdfTemplateDefinition = PDF_TEMPLATES[activeIndex] ?? PDF_TEMPLATES[0]!;
+  const currentTemplate = PDF_TEMPLATES.find((template) => template.id === selectedTemplateId);
+  const hasPendingChange = draftId !== selectedTemplateId;
 
-  const loadTemplatePdf = useCallback(async (templateId: string): Promise<string | null> => {
+    90|  const loadTemplatePdf = useCallback(async (templateId: string): Promise<string | null> => {
     try {
       const timeout = new Promise<never>((_, reject) => {
         setTimeout(() => reject(new Error('Délai dépassé')), 30000);
@@ -93,7 +93,7 @@ export function TemplateGalleryModal({
       return await Promise.race([
         ensureTemplatePreviewPdf(cacheKeyRef.current, templateId, buildPreviewHtmlRef.current),
         timeout,
-      ]);
+   100|      ]);
     } catch {
       return null;
     }
@@ -103,7 +103,7 @@ export function TemplateGalleryModal({
     (index: number) => {
       const neighbors = [index - 1, index + 1].filter(
         (neighbor) => neighbor >= 0 && neighbor < TOTAL_TEMPLATES,
-      );
+   110|      );
 
       for (const neighbor of neighbors) {
         const template = PDF_TEMPLATES[neighbor];
@@ -113,7 +113,7 @@ export function TemplateGalleryModal({
       }
     },
     [loadTemplatePdf],
-  );
+   120|  );
 
   const displayTemplate = useCallback(
     async (index: number, direction: -1 | 0 | 1 = 0) => {
@@ -123,7 +123,7 @@ export function TemplateGalleryModal({
         return;
       }
 
-      const generation = ++loadGenerationRef.current;
+   130|      const generation = ++loadGenerationRef.current;
       setActiveIndex(bounded);
       setLoading(true);
       setErrorMessage(null);
@@ -133,7 +133,7 @@ export function TemplateGalleryModal({
         contentTranslateX.value = withTiming(direction * 24, { duration: 120 });
       }
 
-      const pdfUri = await loadTemplatePdf(template.id);
+   140|      const pdfUri = await loadTemplatePdf(template.id);
 
       if (generation !== loadGenerationRef.current) {
         return;
@@ -144,15 +144,16 @@ export function TemplateGalleryModal({
         setErrorMessage('Impossible de générer l’aperçu PDF.');
         contentOpacity.value = withTiming(1, { duration: 160 });
         contentTranslateX.value = withSpring(0, { damping: 20, stiffness: 260 });
-        return;
+   150|        return;
       }
 
       setActiveIndex(bounded);
       setActivePdfUri(pdfUri);
-      onSelectRef.current(template.id);
+      // Navigation seule — pas d'enregistrement au swipe (DESIGN §5.8).
+      setDraftId(template.id);
       prefetchNeighbors(bounded);
       setLoading(false);
-
+   160|
       contentTranslateX.value = direction === 0 ? 0 : direction * -16;
       contentOpacity.value = withTiming(1, { duration: 220 });
       contentTranslateX.value = withSpring(0, { damping: 20, stiffness: 260 });
@@ -162,7 +163,7 @@ export function TemplateGalleryModal({
 
   const displayTemplateRef = useRef(displayTemplate);
   displayTemplateRef.current = displayTemplate;
-
+   170|
   useEffect(() => {
     if (!visible) {
       loadGenerationRef.current += 1;
@@ -171,16 +172,17 @@ export function TemplateGalleryModal({
       setGestureLocked(false);
       setErrorMessage(null);
       return;
-    }
+   180|    }
 
     const initialIndex = findTemplateIndex(selectedTemplateId);
+    setDraftId(selectedTemplateId);
     void displayTemplateRef.current(initialIndex, 0);
   }, [cacheKey, selectedTemplateId, visible]);
 
   const goToIndex = useCallback(
     (nextIndex: number) => {
       if (gestureLockedRef.current || loading) {
-        return;
+   190|        return;
       }
 
       const direction: -1 | 0 | 1 =
@@ -191,21 +193,9 @@ export function TemplateGalleryModal({
       }
 
       void displayTemplate(nextIndex, direction);
-    },
+   200|    },
     [activeIndex, displayTemplate, loading],
   );
-
-  const goNext = useCallback(() => {
-    if (activeIndex < TOTAL_TEMPLATES - 1) {
-      goToIndex(activeIndex + 1);
-    }
-  }, [activeIndex, goToIndex]);
-
-  const goPrevious = useCallback(() => {
-    if (activeIndex > 0) {
-      goToIndex(activeIndex - 1);
-    }
-  }, [activeIndex, goToIndex]);
 
   const panGesture = Gesture.Pan()
     .activeOffsetX([-24, 24])
@@ -214,147 +204,130 @@ export function TemplateGalleryModal({
       if (gestureLockedRef.current) {
         return;
       }
-
-      if (event.translationX <= -SWIPE_THRESHOLD) {
-        runOnJS(goNext)();
+   210|
+      if (event.translationX <= -SWIPE_THRESHOLD && activeIndex < TOTAL_TEMPLATES - 1) {
+        runOnJS(goToIndex)(activeIndex + 1);
         return;
       }
 
-      if (event.translationX >= SWIPE_THRESHOLD) {
-        runOnJS(goPrevious)();
+      if (event.translationX >= SWIPE_THRESHOLD && activeIndex > 0) {
+        runOnJS(goToIndex)(activeIndex - 1);
       }
     });
 
-  const contentAnimatedStyle = useAnimatedStyle(() => ({
+   220|  const contentAnimatedStyle = useAnimatedStyle(() => ({
     opacity: contentOpacity.value,
     transform: [{ translateX: contentTranslateX.value }],
   }));
 
-  const navAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: navButtonScale.value }],
-  }));
+  function handleClose() {
+    // Annuler : le brouillon est abandonné, rien n'est transmis au parent.
+    onClose();
+  }
 
-  const progressWidth = ((activeIndex + 1) / TOTAL_TEMPLATES) * Math.min(screenWidth - spacing.lg * 2, 280);
+   230|  function handleConfirm() {
+    onSelect(draftId);
+    onClose();
+  }
 
   return (
-    <Modal animationType="fade" onRequestClose={onClose} statusBarTranslucent visible={visible}>
+    <Modal animationType="fade" onRequestClose={handleClose} statusBarTranslucent visible={visible}>
       <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
         <View style={styles.header}>
-          <Pressable accessibilityLabel="Fermer" hitSlop={12} onPress={onClose} style={styles.iconButton}>
-            <SymbolView
-              name={{ ios: 'xmark', android: 'close', web: 'close' }}
-              size={18}
-              tintColor={colors.textSecondary}
-            />
-          </Pressable>
-
+   240|          <Button onPress={handleClose} title="Annuler" variant="tertiary" />
           <View style={styles.headerCenter}>
-            <AppText variant="title">{title}</AppText>
+            <AppText numberOfLines={1} variant="title">
+              {title}
+            </AppText>
             <AppText color="secondary" variant="caption">
               Aperçu PDF · {TOTAL_TEMPLATES} modèles
             </AppText>
-          </View>
-
-          <View style={styles.iconButton} />
+   250|          </View>
+          <View style={styles.headerSpacer} />
         </View>
 
-        <View style={styles.templateMeta}>
-          <AppText style={styles.templateName} variant="title">
-            {activeTemplate.name}
-          </AppText>
-          <AppText color="secondary" variant="subtitle">
-            {activeTemplate.description}
-          </AppText>
-          <View style={styles.progressRow}>
-            <View style={styles.progressTrack}>
-              <View style={[styles.progressFill, { width: progressWidth }]} />
+        <View style={styles.body}>
+          <ScrollView
+            contentContainerStyle={styles.thumbnailColumnContent}
+            showsVerticalScrollIndicator={false}
+            style={styles.thumbnailColumn}>
+            {PDF_TEMPLATES.map((template, index) => {
+   260|              const isDraft = template.id === draftId;
+              const isCurrent = template.id === selectedTemplateId;
+
+              return (
+                <Pressable
+                  accessibilityLabel={`Modèle ${template.name}`}
+                  key={template.id}
+                  onPress={() => goToIndex(index)}
+                  style={[styles.thumbnail, isDraft && styles.thumbnailActive]}>
+                  <TemplatePreviewCard compact selected={isDraft} template={template} />
+   270|                  {isCurrent ? (
+                    <View style={styles.thumbnailCurrentDot} />
+                  ) : null}
+                </Pressable>
+              );
+            })}
+          </ScrollView>
+
+          <View style={styles.viewer}>
+   280|            <View style={styles.templateMeta}>
+              <View style={styles.templateMetaHeader}>
+                <AppText numberOfLines={1} style={styles.templateName} variant="title">
+                  {activeTemplate.name}
+                </AppText>
+                <View style={styles.badgeRow}>
+                  <StatusChip label="Sélectionné" tone="sent" />
+   290|                  {hasPendingChange && currentTemplate ? (
+                    <StatusChip
+                      label={`Modèle actuel : ${currentTemplate.name}`}
+                      tone="draft"
+                    />
+                  ) : null}
+                </View>
+              </View>
+              <AppText color="secondary" numberOfLines={2} variant="subtitle">
+   300|                {activeTemplate.description}
+              </AppText>
             </View>
-            <AppText color="secondary" style={styles.progressLabel} variant="caption">
-              {activeIndex + 1} / {TOTAL_TEMPLATES}
-            </AppText>
+
+            <GestureDetector gesture={panGesture}>
+              <Animated.View style={[styles.viewerStage, contentAnimatedStyle]}>
+                {errorMessage ? (
+                  <View style={styles.errorState}>
+                    <AppText color="secondary" variant="body">
+                      {errorMessage}
+   310|                    </AppText>
+                  </View>
+                ) : activePdfUri ? (
+                  <PdfPreviewWebView
+                    key={`${cacheKey}-${activeTemplate.id}`}
+                    onGestureActiveChange={setGestureLocked}
+                    pdfUri={activePdfUri}
+                    preferPdfJs
+                  />
+                ) : (
+   320|                  <View style={styles.viewerLoading}>
+                    <ActivityIndicator color={colors.primary} size="small" />
+                    <AppText color="secondary" variant="caption">
+                      Génération du PDF…
+                    </AppText>
+                  </View>
+                )}
+
+                {loading && activePdfUri ? (
+                  <View pointerEvents="none" style={styles.viewerLoadingOverlay}>
+   330|                    <ActivityIndicator color={colors.primary} size="small" />
+                  </View>
+                ) : null}
+              </Animated.View>
+            </GestureDetector>
           </View>
         </View>
 
-        <GestureDetector gesture={panGesture}>
-          <Animated.View style={[styles.viewerStage, contentAnimatedStyle]}>
-            {errorMessage ? (
-              <View style={styles.errorState}>
-                <AppText color="secondary" variant="body">
-                  {errorMessage}
-                </AppText>
-              </View>
-            ) : activePdfUri ? (
-              <PdfPreviewWebView
-                key={`${cacheKey}-${activeTemplate.id}`}
-                onGestureActiveChange={setGestureLocked}
-                pdfUri={activePdfUri}
-                preferPdfJs
-              />
-            ) : (
-              <View style={styles.viewerLoading}>
-                <ActivityIndicator color={colors.primary} size="small" />
-                <AppText color="secondary" variant="caption">
-                  Génération du PDF…
-                </AppText>
-              </View>
-            )}
-
-            {loading && activePdfUri ? (
-              <View pointerEvents="none" style={styles.viewerLoadingOverlay}>
-                <ActivityIndicator color={colors.primary} size="small" />
-              </View>
-            ) : null}
-          </Animated.View>
-        </GestureDetector>
-
-        <View style={styles.footer}>
-          <Animated.View style={navAnimatedStyle}>
-            <Pressable
-              accessibilityLabel="Modèle précédent"
-              disabled={activeIndex === 0 || loading}
-              onPress={goPrevious}
-              onPressIn={() => {
-                navButtonScale.value = withSpring(0.94, { damping: 18, stiffness: 320 });
-              }}
-              onPressOut={() => {
-                navButtonScale.value = withSpring(1, { damping: 18, stiffness: 320 });
-              }}
-              style={[styles.navButton, activeIndex === 0 && styles.navButtonDisabled]}>
-              <SymbolView
-                name={{ ios: 'chevron.left', android: 'chevron_left', web: 'chevron_left' }}
-                size={20}
-                tintColor={colors.primary}
-              />
-            </Pressable>
-          </Animated.View>
-
-          <AppText color="secondary" style={styles.hint} variant="caption">
-            Rendu PDF final · balayez · pincez · double-tapez
-          </AppText>
-
-          <Animated.View style={navAnimatedStyle}>
-            <Pressable
-              accessibilityLabel="Modèle suivant"
-              disabled={activeIndex === TOTAL_TEMPLATES - 1 || loading}
-              onPress={goNext}
-              onPressIn={() => {
-                navButtonScale.value = withSpring(0.94, { damping: 18, stiffness: 320 });
-              }}
-              onPressOut={() => {
-                navButtonScale.value = withSpring(1, { damping: 18, stiffness: 320 });
-              }}
-              style={[
-                styles.navButton,
-                activeIndex === TOTAL_TEMPLATES - 1 && styles.navButtonDisabled,
-              ]}>
-              <SymbolView
-                name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' }}
-                size={20}
-                tintColor={colors.primary}
-              />
-            </Pressable>
-          </Animated.View>
-        </View>
+        <ActionBar caption="Appliqué aux prochains documents. Les documents déjà émis ne changent pas.">
+          <Button onPress={handleConfirm} title="Utiliser ce modèle" />
+   340|        </ActionBar>
       </View>
     </Modal>
   );
@@ -364,66 +337,85 @@ const useStyles = () =>
   useThemedStyles((colors) => ({
     container: {
       flex: 1,
-      backgroundColor: '#EBEBF0',
-      gap: spacing.sm,
+   350|      backgroundColor: colors.backgroundGrouped,
     },
     header: {
       flexDirection: 'row',
       alignItems: 'center',
-      paddingHorizontal: spacing.lg,
+      paddingHorizontal: spacing.md,
       gap: spacing.sm,
     },
     headerCenter: {
-      flex: 1,
+   360|      flex: 1,
       alignItems: 'center',
       gap: 2,
     },
-    iconButton: {
-      width: 40,
-      height: 40,
-      alignItems: 'center',
-      justifyContent: 'center',
+    headerSpacer: {
+      minWidth: 64,
     },
-    templateMeta: {
-      paddingHorizontal: spacing.lg,
-      gap: 4,
-      alignItems: 'center',
-    },
-    templateName: {
-      textAlign: 'center',
-    },
-    progressRow: {
-      marginTop: spacing.sm,
-      width: '100%',
-      maxWidth: 280,
+    body: {
+      flex: 1,
       flexDirection: 'row',
-      alignItems: 'center',
+   370|      gap: spacing.sm,
+      paddingHorizontal: spacing.md,
+      paddingTop: spacing.sm,
+    },
+    thumbnailColumn: {
+      width: 92,
+    },
+    thumbnailColumnContent: {
+      gap: spacing.sm,
+      paddingBottom: spacing.sm,
+   380|    },
+    thumbnail: {
+      borderRadius: radius.md,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: 'transparent',
+      padding: 2,
+    },
+    thumbnailActive: {
+      borderColor: colors.primary,
+      backgroundColor: colors.primarySubtle,
+   390|    },
+    thumbnailCurrentDot: {
+      position: 'absolute',
+      top: 4,
+      right: 4,
+      width: 8,
+      height: 8,
+      borderRadius: 4,
+      backgroundColor: colors.textTertiary,
+      borderWidth: 1,
+   400|      borderColor: colors.surface,
+    },
+    viewer: {
+      flex: 1,
       gap: spacing.sm,
     },
-    progressTrack: {
-      flex: 1,
-      height: 3,
-      borderRadius: radius.full,
-      backgroundColor: colors.border,
-      overflow: 'hidden',
+    templateMeta: {
+      gap: 4,
     },
-    progressFill: {
-      height: '100%',
-      borderRadius: radius.full,
-      backgroundColor: colors.primary,
+    templateMetaHeader: {
+   410|      flexDirection: 'row',
+      alignItems: 'flex-start',
+      justifyContent: 'space-between',
+      gap: spacing.sm,
     },
-    progressLabel: {
-      minWidth: 44,
-      textAlign: 'right',
+    templateName: {
+      flexShrink: 1,
+    },
+    badgeRow: {
+   420|      flexDirection: 'row',
+      gap: spacing.xs,
+      flexWrap: 'wrap',
     },
     viewerStage: {
       flex: 1,
-      marginHorizontal: spacing.lg,
       borderRadius: radius.lg,
       overflow: 'hidden',
       backgroundColor: '#EBEBF0',
     },
-    viewerLoading: {
+   430|    viewerLoading: {
       flex: 1,
       alignItems: 'center',
       justifyContent: 'center',
@@ -433,42 +425,12 @@ const useStyles = () =>
       ...StyleSheet.absoluteFill,
       alignItems: 'center',
       justifyContent: 'center',
-      backgroundColor: 'rgba(235, 235, 240, 0.55)',
+   440|      backgroundColor: 'rgba(235, 235, 240, 0.55)',
     },
     errorState: {
       flex: 1,
       alignItems: 'center',
       justifyContent: 'center',
       padding: spacing.lg,
-    },
-    footer: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      paddingHorizontal: spacing.lg,
-      paddingTop: spacing.xs,
-      gap: spacing.md,
-    },
-    navButton: {
-      width: 48,
-      height: 48,
-      borderRadius: radius.full,
-      alignItems: 'center',
-      justifyContent: 'center',
-      backgroundColor: colors.surface,
-      borderWidth: StyleSheet.hairlineWidth,
-      borderColor: colors.border,
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.1,
-      shadowRadius: 8,
-      elevation: 3,
-    },
-    navButtonDisabled: {
-      opacity: 0.35,
-    },
-    hint: {
-      flex: 1,
-      textAlign: 'center',
     },
   }));

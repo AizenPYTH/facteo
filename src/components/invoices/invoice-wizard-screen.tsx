@@ -1,5 +1,6 @@
 import { router, type Href } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
+import { Alert } from 'react-native';
 
 import { InvoiceScreenHeader } from '@/components/invoices/invoice-screen-header';
 import { FeatureIntroModal } from '@/components/feature-intros';
@@ -228,7 +229,24 @@ export function InvoiceWizardScreen({
       return;
     }
 
-    router.back();
+    Alert.alert(
+      'Abandonner le brouillon ?',
+      'Les informations saisies sur cette facture ne seront pas enregistrées.',
+      [
+        { text: 'Continuer', style: 'cancel' },
+        {
+          text: 'Abandonner',
+          style: 'destructive',
+          onPress: () => {
+            if (router.canGoBack()) {
+              router.back();
+              return;
+            }
+            router.replace('/invoices' as Href);
+          },
+        },
+      ],
+    );
   }
 
   async function handleSave() {
@@ -318,27 +336,35 @@ export function InvoiceWizardScreen({
   }
 
   const primaryActionLabel =
-    step < TOTAL_STEPS
-      ? 'Suivant'
-      : mode === 'create'
-        ? 'Créer la facture'
-        : 'Enregistrer les modifications';
+    step === 1
+      ? 'Prestations'
+      : step === 2
+        ? 'Validation'
+        : mode === 'create'
+          ? 'Créer cette facture'
+          : 'Enregistrer cette facture';
+
+  const disabledReason =
+    step < TOTAL_STEPS && !canGoNext()
+      ? step === 1
+        ? 'Choisissez un client pour continuer.'
+        : 'Ajoutez au moins une prestation.'
+      : undefined;
 
   const isDesktop = variant === 'desktop';
 
   return (
     <WizardScreen
       footer={
-        isDesktop ? (
-          <WizardActionBar
-            backLabel={step === 1 ? 'Annuler' : 'Précédent'}
-            onBack={handleBack}
-            onPrimary={step < TOTAL_STEPS ? handleNext : handleSave}
-            primaryDisabled={step < TOTAL_STEPS ? !canGoNext() : false}
-            primaryLabel={primaryActionLabel}
-            primaryLoading={step >= TOTAL_STEPS && isSaving}
-          />
-        ) : undefined
+        <WizardActionBar
+          backLabel={step === 1 ? 'Annuler' : 'Précédent'}
+          disabledReason={disabledReason}
+          onBack={handleBack}
+          onPrimary={step < TOTAL_STEPS ? handleNext : handleSave}
+          primaryDisabled={step < TOTAL_STEPS ? !canGoNext() : false}
+          primaryLabel={primaryActionLabel}
+          primaryLoading={step >= TOTAL_STEPS && isSaving}
+        />
       }
       header={
         isDesktop ? undefined : (
@@ -346,18 +372,6 @@ export function InvoiceWizardScreen({
             <InvoiceScreenHeader showBackButton={false} title={title} />
             <QuoteWizardProgress currentStep={step} />
           </>
-        )
-      }
-      toolbar={
-        isDesktop ? undefined : (
-          <WizardActionBar
-            backLabel={step === 1 ? 'Annuler' : 'Précédent'}
-            onBack={handleBack}
-            onPrimary={step < TOTAL_STEPS ? handleNext : handleSave}
-            primaryDisabled={step < TOTAL_STEPS ? !canGoNext() : false}
-            primaryLabel={primaryActionLabel}
-            primaryLoading={step >= TOTAL_STEPS && isSaving}
-          />
         )
       }
       variant={variant}>
