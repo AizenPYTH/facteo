@@ -43,6 +43,8 @@ export function DocumentFinalizeStep({
   const expirationLabel =
     documentType === 'quote' ? "Date d'expiration" : "Date d'échéance";
   const secondaryDate = secondaryDateValue ?? info.validUntil;
+  /** DESIGN §5.3 : nommer le document (« cette facture » / « ce devis »), jamais générique. */
+  const documentDemonstrative = documentType === 'quote' ? 'ce devis' : 'cette facture';
 
   function updateField<K extends keyof QuoteInfoValues>(field: K, value: QuoteInfoValues[K]) {
     onInfoChange({ ...info, [field]: value });
@@ -55,7 +57,7 @@ export function DocumentFinalizeStep({
       keyboardShouldPersistTaps="handled"
       showsVerticalScrollIndicator={false}>
       <Text style={styles.description}>
-        Vérifiez les informations essentielles avant d’enregistrer.
+        Vérifiez les informations essentielles de {documentDemonstrative} avant d’enregistrer.
       </Text>
 
       <View style={styles.card}>

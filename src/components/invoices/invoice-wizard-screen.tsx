@@ -282,6 +282,7 @@ export function InvoiceWizardScreen({
       case 1:
         return (
           <QuoteClientStep
+            documentType="invoice"
             onSelectClient={handleSelectClient}
             selectedClientId={state.clientId}
           />

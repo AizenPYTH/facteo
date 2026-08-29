@@ -43,14 +43,17 @@ export default function DocumentsScreen() {
   const [segment, setSegment] = useState<DocumentsSegment>(
     segmentParam === 'quotes' ? 'quotes' : 'invoices',
   );
-  const invoicesIntro = useFeatureIntro('invoice');
-  const quotesIntro = useFeatureIntro('quote');
-
-  useEffect(() => {
+  // Suit le paramètre `segment` (ex. raccourcis tableau de bord) sans effet —
+  // ajustement pendant le rendu, cf. https://react.dev/learn/you-might-not-need-an-effect.
+  const [lastSegmentParam, setLastSegmentParam] = useState(segmentParam);
+  if (segmentParam !== lastSegmentParam) {
+    setLastSegmentParam(segmentParam);
     if (segmentParam === 'quotes' || segmentParam === 'invoices') {
       setSegment(segmentParam);
     }
-  }, [segmentParam]);
+  }
+  const invoicesIntro = useFeatureIntro('invoice');
+  const quotesIntro = useFeatureIntro('quote');
 
   useEffect(() => {
     return invoicesIntro.presentOnFirstVisit();
