@@ -1,17 +1,16 @@
 import { router, type Href } from 'expo-router';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
   DashboardHeader,
   DashboardWelcome,
   ExtendedStatsGrid,
-  QuickActions,
+  OutstandingHero,
   RecentActivitySection,
   RecentInvoicesSection,
   RevenueChart,
-  SectionHeader,
-  StatsGrid,
+  TodoNowSection,
   TopClientsSection,
   TopPrestationsSection,
 } from '@/components/dashboard';
@@ -73,7 +72,12 @@ function DashboardMobileScreen() {
         ) : (
           <>
             {hasNoActivity ? <DashboardWelcome /> : null}
-            <StatsGrid stats={stats} />
+            <OutstandingHero stats={stats} />
+            <TodoNowSection recentInvoices={recentInvoices} stats={stats} />
+            <RecentInvoicesSection
+              invoices={recentInvoices}
+              onInvoicePress={(invoice) => router.push(`/invoices/${invoice.id}` as Href)}
+            />
             <PremiumGatedSection
               bannerMessage="Statistiques avancées — INVEQ Premium"
               locked={advancedStatsLocked}>
@@ -91,16 +95,6 @@ function DashboardMobileScreen() {
             </PremiumGatedSection>
           </>
         )}
-
-        <View style={styles.section}>
-          <SectionHeader title="Actions rapides" />
-          <QuickActions />
-        </View>
-
-        <RecentInvoicesSection
-          invoices={recentInvoices}
-          onInvoicePress={(invoice) => router.push(`/invoices/${invoice.id}` as Href)}
-        />
       </ScrollView>
       <FeatureIntroModal
         config={statsIntro.config}
@@ -115,17 +109,14 @@ function DashboardMobileScreen() {
 
 function useStyles() {
   return useThemedStyles((colors) => ({
-  safeArea: {
-    flex: 1,
-    backgroundColor: colors.backgroundGrouped,
-  },
-  content: {
-    paddingHorizontal: spacing.screenPaddingHorizontal,
-    paddingTop: spacing.md,
-    gap: spacing.sectionGap,
-  },
-  section: {
-    gap: spacing.md,
-  },
-}));
+    safeArea: {
+      flex: 1,
+      backgroundColor: colors.backgroundGrouped,
+    },
+    content: {
+      paddingHorizontal: spacing.screenPaddingHorizontal,
+      paddingTop: spacing.md,
+      gap: spacing.sectionGap,
+    },
+  }));
 }

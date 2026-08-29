@@ -32,6 +32,10 @@ export type DashboardStats = {
   todayRevenue: number;
   outstandingInvoices: number;
   outstandingAmount: number;
+  /** DESIGN §5.2 — segments du reste à encaisser */
+  overdueAmount: number;
+  dueSoonAmount: number;
+  upcomingAmount: number;
   lateInvoices: number;
   pendingQuotes: number;
   averagePaymentDelayDays: number;
@@ -73,6 +77,9 @@ export function createEmptyDashboardStats(): DashboardStats {
     todayRevenue: 0,
     outstandingInvoices: 0,
     outstandingAmount: 0,
+    overdueAmount: 0,
+    dueSoonAmount: 0,
+    upcomingAmount: 0,
     lateInvoices: 0,
     pendingQuotes: 0,
     averagePaymentDelayDays: 0,
