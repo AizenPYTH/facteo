@@ -88,6 +88,7 @@ function InvoicesMobileScreen() {
           onInvoicePress={(invoice) => router.push(`/invoices/${invoice.id}` as Href)}
           onRefresh={handleRefresh}
           showCreateAction={!showFab}
+          statusFilter={statusFilter}
         />
       </View>
 

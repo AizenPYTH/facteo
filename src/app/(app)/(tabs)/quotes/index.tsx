@@ -87,6 +87,7 @@ function QuotesMobileScreen() {
           onQuotePress={(quote) => router.push(`/quotes/${quote.id}` as Href)}
           onRefresh={handleRefresh}
           quotes={quotes}
+          statusFilter={statusFilter}
         />
       </View>
 

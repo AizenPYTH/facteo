@@ -1,12 +1,14 @@
-import { NavigationHeader } from '@/components/ui/navigation-header';
+import type { ReactNode } from 'react';
+import type { Href } from 'expo-router';
 import type { ViewStyle } from 'react-native';
 
-import type { ReactNode } from 'react';
+import { NavigationHeader } from '@/components/ui/navigation-header';
 
 type InvoiceScreenHeaderProps = {
   title: string;
   onBack?: () => void;
   backLabel?: string;
+  fallbackHref?: Href;
   showBackButton?: boolean;
   style?: ViewStyle;
   trailing?: ReactNode;
@@ -15,7 +17,8 @@ type InvoiceScreenHeaderProps = {
 export function InvoiceScreenHeader({
   title,
   onBack,
-  backLabel,
+  backLabel = 'Documents',
+  fallbackHref = '/invoices',
   showBackButton,
   style,
   trailing,
@@ -23,6 +26,7 @@ export function InvoiceScreenHeader({
   return (
     <NavigationHeader
       backLabel={backLabel}
+      fallbackHref={fallbackHref}
       onBack={onBack}
       showBackButton={showBackButton}
       style={style}

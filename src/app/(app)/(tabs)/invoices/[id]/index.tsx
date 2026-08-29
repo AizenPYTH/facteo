@@ -1,9 +1,8 @@
 import { router, type Href } from 'expo-router';
 import { useFocusEffect, useLocalSearchParams } from 'expo-router';
-import * as Linking from 'expo-linking';
 import { SymbolView } from 'expo-symbols';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, Share, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { DocumentActionsSheet } from '@/components/documents/document-actions-sheet';
@@ -18,11 +17,13 @@ import { FeatureIntroModal } from '@/components/feature-intros';
 import { PdfPreviewModal } from '@/components/pdf/pdf-preview-modal';
 import { TemplateGalleryModal } from '@/components/pdf/template-gallery-modal';
 import { DocumentClientSignatureBlock } from '@/components/signatures/document-client-signature-block';
+import { ActionBar } from '@/components/ui/action-bar';
+import { Button } from '@/components/ui/button';
 import { LoadingView } from '@/components/ui/loading-view';
 import { useDocumentActions } from '@/hooks/use-document-actions';
 import { useThemedStyles, useColors } from '@/hooks/use-colors';
+import { components } from '@/constants/theme/design-system';
 import { spacing } from '@/constants/theme/spacing';
-import { typography } from '@/constants/theme/typography';
 import { useDesktopListRedirect } from '@/hooks/use-desktop-list-redirect';
 import { useBreakpoint } from '@/hooks/use-breakpoint';
 import { useFeatureIntro } from '@/hooks/use-feature-intro';
@@ -45,6 +46,8 @@ import {
 } from '@/types/invoice';
 import { useToast } from '@/providers/toast-provider';
 
+const DOCUMENTS_FALLBACK = '/invoices' as Href;
+
 export default function InvoiceDetailScreen() {
   const styles = useStyles();
   const colors = useColors();
@@ -63,7 +66,7 @@ export default function InvoiceDetailScreen() {
     updateInvoiceStatus,
   } = useInvoiceMutations();
   const { hasFeature } = useSubscription();
-  const { isConfigured, createLink, openPaymentLink } = useStripePayment(invoiceId ?? '');
+  const { isConfigured, createLink } = useStripePayment(invoiceId ?? '');
   const { showError, showSuccess } = useToast();
 
   const [actionsVisible, setActionsVisible] = useState(false);
@@ -71,6 +74,7 @@ export default function InvoiceDetailScreen() {
   const [cancelVisible, setCancelVisible] = useState(false);
   const [paymentVisible, setPaymentVisible] = useState(false);
   const [signModalVisible, setSignModalVisible] = useState(false);
+  const [paymentLinkLoading, setPaymentLinkLoading] = useState(false);
   const paymentsIntro = useFeatureIntro('payments');
 
   function openPaymentFlow() {
@@ -107,7 +111,7 @@ export default function InvoiceDetailScreen() {
   useEffect(() => {
     if (isFetched && !invoice && invoiceId) {
       showError('Facture introuvable');
-      router.back();
+      router.replace(DOCUMENTS_FALLBACK);
     }
   }, [isFetched, invoice, invoiceId, showError]);
 
@@ -212,14 +216,15 @@ export default function InvoiceDetailScreen() {
     }
   }
 
-  async function handleStripePayment() {
+  /** Lien de paiement — partage pour le client, jamais le checkout vendeur. */
+  async function handlePaymentLink() {
     if (!hasFeature('stripe_payments')) {
       router.push('/settings/premium' as Href);
       return;
     }
 
     if (!isConfigured) {
-      showError('Le paiement en ligne n’est pas encore configuré.');
+      showError('Le lien de paiement n’est pas encore configuré.');
       return;
     }
 
@@ -227,19 +232,49 @@ export default function InvoiceDetailScreen() {
       return;
     }
 
+    setPaymentLinkLoading(true);
     try {
-      if (invoice.stripePaymentLink) {
-        await openPaymentLink(invoice.stripePaymentLink);
-        return;
-      }
+      const url =
+        invoice.stripePaymentLink ??
+        (await createLink.mutateAsync(invoice.amountDue)).paymentLinkUrl;
 
-      const result = await createLink.mutateAsync(invoice.amountDue);
-      await Linking.openURL(result.paymentLinkUrl);
-      showSuccess('Redirection vers Stripe...');
+      await Share.share({
+        message: `Lien de paiement pour la facture ${invoice.number} : ${url}`,
+        url,
+      });
+      showSuccess('Lien prêt à être partagé avec votre client.');
     } catch {
-      showError('Impossible d’ouvrir le paiement en ligne.');
+      showError('Impossible de préparer le lien de paiement.');
+    } finally {
+      setPaymentLinkLoading(false);
     }
   }
+
+  const primaryAction = useMemo(() => {
+    if (!invoice) {
+      return null;
+    }
+
+    if (invoice.status === 'draft') {
+      return {
+        label: 'Envoyer',
+        onPress: () => void documentActions.handleSendEmail(),
+        loading: documentActions.emailLoading,
+        caption: 'La facture sera envoyée par e-mail à votre client.',
+      };
+    }
+
+    if (invoice.status === 'overdue') {
+      return {
+        label: 'Relancer',
+        onPress: () => void documentActions.handleSendEmail(),
+        loading: documentActions.emailLoading,
+        caption: 'Un e-mail de relance sera envoyé au client.',
+      };
+    }
+
+    return null;
+  }, [documentActions.emailLoading, documentActions, invoice]);
 
   const actionSections = useMemo(() => {
     if (!invoice) {
@@ -311,7 +346,11 @@ export default function InvoiceDetailScreen() {
             {
               id: 'mark-paid',
               label: 'Marquer comme payée',
-              icon: { ios: 'checkmark.circle.fill', android: 'check_circle', web: 'check_circle' } as const,
+              icon: {
+                ios: 'checkmark.circle.fill',
+                android: 'check_circle',
+                web: 'check_circle',
+              } as const,
               onPress: () => void handleMarkAsPaid(),
             },
           ]
@@ -321,7 +360,11 @@ export default function InvoiceDetailScreen() {
             {
               id: 'partial-pay',
               label: 'Paiement partiel',
-              icon: { ios: 'eurosign.circle.fill', android: 'payments', web: 'payments' } as const,
+              icon: {
+                ios: 'eurosign.circle.fill',
+                android: 'payments',
+                web: 'payments',
+              } as const,
               onPress: () => openPaymentFlow(),
             },
           ]
@@ -329,10 +372,13 @@ export default function InvoiceDetailScreen() {
       ...(invoice.amountDue > 0
         ? [
             {
-              id: 'stripe',
-              label: hasFeature('stripe_payments') ? 'Payer en ligne' : 'Payer en ligne (Premium)',
-              icon: { ios: 'creditcard.fill', android: 'credit_card', web: 'credit_card' } as const,
-              onPress: () => void handleStripePayment(),
+              id: 'payment-link',
+              label: hasFeature('stripe_payments')
+                ? 'Lien de paiement'
+                : 'Lien de paiement (Premium)',
+              icon: { ios: 'link', android: 'link', web: 'link' } as const,
+              onPress: () => void handlePaymentLink(),
+              loading: paymentLinkLoading || createLink.isPending,
             },
           ]
         : []),
@@ -369,11 +415,31 @@ export default function InvoiceDetailScreen() {
     ];
 
     return [primary, workflow, manage].filter((section) => section.length > 0);
-  }, [
-    documentActions,
-    hasFeature,
-    invoice,
-  ]);
+  }, [createLink.isPending, documentActions, hasFeature, invoice, paymentLinkLoading]);
+
+  const header = (
+    <InvoiceScreenHeader
+      backLabel="Documents"
+      fallbackHref={DOCUMENTS_FALLBACK}
+      title={invoice?.number ?? 'Facture'}
+      trailing={
+        invoice ? (
+          <Pressable
+            accessibilityLabel="Plus d’actions"
+            accessibilityRole="button"
+            hitSlop={8}
+            onPress={() => setActionsVisible(true)}
+            style={({ pressed }) => [styles.actionsButton, pressed && styles.pressed]}>
+            <SymbolView
+              name={{ ios: 'ellipsis.circle', android: 'more_horiz', web: 'more_horiz' }}
+              size={26}
+              tintColor={colors.primary}
+            />
+          </Pressable>
+        ) : null
+      }
+    />
+  );
 
   if (isWeb && (isDesktop || isTablet)) {
     return null;
@@ -382,33 +448,18 @@ export default function InvoiceDetailScreen() {
   if (isSwitching || isLoading || !invoice) {
     return (
       <SafeAreaView edges={['top', 'bottom']} style={styles.safeArea}>
+        {header}
         <LoadingView message="Chargement de la facture..." />
       </SafeAreaView>
     );
   }
 
+  const showPaymentLink =
+    invoice.amountDue > 0 && invoice.status !== 'paid' && invoice.status !== 'canceled';
+
   return (
-    <SafeAreaView edges={['top', 'bottom']} style={styles.safeArea}>
-      <View style={styles.header}>
-        <InvoiceScreenHeader
-          title={invoice.number}
-          trailing={
-            <Pressable
-              accessibilityLabel="Actions"
-              accessibilityRole="button"
-              hitSlop={8}
-              onPress={() => setActionsVisible(true)}
-              style={({ pressed }) => [styles.actionsButton, pressed && styles.pressed]}>
-              <SymbolView
-                name={{ ios: 'ellipsis.circle', android: 'more_horiz', web: 'more_horiz' }}
-                size={26}
-                tintColor={colors.primary}
-              />
-              <Text style={styles.actionsLabel}>Actions</Text>
-            </Pressable>
-          }
-        />
-      </View>
+    <SafeAreaView edges={['top']} style={styles.safeArea}>
+      <View style={styles.header}>{header}</View>
 
       <ScrollView
         contentContainerStyle={styles.content}
@@ -431,6 +482,28 @@ export default function InvoiceDetailScreen() {
 
         <SentDocumentsSection documents={sentDocuments} loading={sentDocumentsLoading} />
       </ScrollView>
+
+      {primaryAction || showPaymentLink ? (
+        <ActionBar caption={primaryAction?.caption}>
+          {primaryAction ? (
+            <Button
+              loading={primaryAction.loading}
+              onPress={primaryAction.onPress}
+              title={primaryAction.label}
+            />
+          ) : null}
+          {showPaymentLink ? (
+            <Button
+              loading={paymentLinkLoading || createLink.isPending}
+              onPress={() => void handlePaymentLink()}
+              title={
+                hasFeature('stripe_payments') ? 'Lien de paiement' : 'Lien de paiement (Premium)'
+              }
+              variant={primaryAction ? 'secondary' : 'primary'}
+            />
+          ) : null}
+        </ActionBar>
+      ) : null}
 
       <DocumentActionsSheet
         onClose={() => setActionsVisible(false)}
@@ -515,18 +588,13 @@ function useStyles() {
       gap: spacing.lg,
     },
     actionsButton: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 4,
-      minHeight: 44,
-      paddingHorizontal: spacing.xs,
-    },
-    actionsLabel: {
-      ...typography.subheadlineMedium,
-      color: colors.primary,
+      minWidth: components.touchTarget,
+      minHeight: components.touchTarget,
+      alignItems: 'center' as const,
+      justifyContent: 'center' as const,
     },
     pressed: {
-      opacity: 0.75,
+      opacity: 0.7,
     },
   }));
 }
