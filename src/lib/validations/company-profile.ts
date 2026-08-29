@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+import { isValidSiret, normalizeRegistrationDigits } from '@/lib/company-search';
+
 const optionalText = z.string().trim();
 
 function normalizeDigits(value: string): string {
@@ -23,9 +25,10 @@ export const companyProfileSchema = z.object({
   ),
   city: optionalText,
   country: optionalText,
+  /** Même règle Luhn que les clients — DESIGN §5.5. */
   siret: optionalText.refine(
-    (value) => !value || /^\d{14}$/.test(normalizeDigits(value)),
-    'Le SIRET doit contenir 14 chiffres',
+    (value) => !value || isValidSiret(normalizeRegistrationDigits(value)),
+    'SIRET invalide.',
   ),
   vatNumber: optionalText.refine(
     (value) => !value || /^[A-Z]{2}[A-Z0-9]{2,13}$/i.test(normalizeDigits(value)),
