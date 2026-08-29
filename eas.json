@@ -38,7 +38,9 @@
         "EXPO_PUBLIC_SUPABASE_URL": "https://eogyopufctnqasjhsthp.supabase.co",
         "EXPO_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_g3hjZwok18GG7pRCEuARhQ_C7qhP0EI",
         "EXPO_PUBLIC_COMPANY_SEARCH_API_URL": "https://recherche-entreprises.api.gouv.fr",
-        "EXPO_PUBLIC_COMPANY_SEARCH_PROVIDER": "recherche-entreprises"
+        "EXPO_PUBLIC_COMPANY_SEARCH_PROVIDER": "recherche-entreprises",
+        "EXPO_APPLE_TEAM_ID": "JL38W3GZD4",
+        "EXPO_APPLE_TEAM_TYPE": "INDIVIDUAL"
       }
     }
   },

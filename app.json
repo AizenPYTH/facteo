@@ -13,6 +13,9 @@
       "bundleIdentifier": "com.inveq.app",
       "buildNumber": "50",
       "usesAppleSignIn": true,
+      "entitlements": {
+        "com.apple.developer.applesignin": ["Default"]
+      },
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
