@@ -231,7 +231,7 @@ export function DocumentFinalizePanel({
   }
 
   return (
-    <SurfaceCard elevated style={styles.panel}>
+    <SurfaceCard style={styles.panel}>
       <View style={styles.header}>
         <View style={styles.headerText}>
           <AppText variant="title">Finaliser le document</AppText>

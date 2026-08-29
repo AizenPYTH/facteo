@@ -1,21 +1,24 @@
 import type { ReactNode } from 'react';
-import { router } from 'expo-router';
+import { type Href } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { Pressable, Text, View, type ViewStyle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AppText } from '@/components/ui/app-text';
+import { useSafeBack } from '@/hooks/use-safe-back';
 import { triggerImpactHaptic } from '@/lib/haptics';
 import { useColors, useThemedStyles } from '@/hooks/use-colors';
+import { components } from '@/constants/theme/design-system';
 import { spacing } from '@/constants/theme/spacing';
 import { typography } from '@/constants/theme/typography';
-
-const MIN_TOUCH_SIZE = 44;
 
 type NavigationHeaderProps = {
   title: string;
   onBack?: () => void;
+  /** Destination nommée — DESIGN §4 (« Documents », « Clients », « Réglages »). */
   backLabel?: string;
+  /** Repli si canGoBack() est faux. */
+  fallbackHref?: Href;
   showBackButton?: boolean;
   style?: ViewStyle;
   /** Activez si l'écran n'utilise pas SafeAreaView. */
@@ -27,6 +30,7 @@ export function NavigationHeader({
   title,
   onBack,
   backLabel = 'Retour',
+  fallbackHref = '/',
   showBackButton = true,
   style,
   useSafeTopInset = false,
@@ -35,6 +39,7 @@ export function NavigationHeader({
   const styles = useStyles();
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const safeBack = useSafeBack(fallbackHref);
 
   function handleBack() {
     void triggerImpactHaptic();
@@ -44,7 +49,7 @@ export function NavigationHeader({
       return;
     }
 
-    router.back();
+    safeBack();
   }
 
   const topPadding = useSafeTopInset ? Math.max(insets.top, spacing.sm) : spacing.sm;
@@ -54,7 +59,7 @@ export function NavigationHeader({
       <View style={styles.topRow}>
         {showBackButton ? (
           <Pressable
-            accessibilityLabel={backLabel}
+            accessibilityLabel={`Retour vers ${backLabel}`}
             accessibilityRole="button"
             hitSlop={8}
             onPress={handleBack}
@@ -65,7 +70,9 @@ export function NavigationHeader({
               tintColor={colors.primary}
               type="hierarchical"
             />
-            <Text style={styles.backLabel}>{backLabel}</Text>
+            <Text maxFontSizeMultiplier={1.4} style={styles.backLabel}>
+              {backLabel}
+            </Text>
           </Pressable>
         ) : (
           <View style={styles.backButtonPlaceholder} />
@@ -98,7 +105,9 @@ export function ModalHeader({
 
   return (
     <View style={[styles.modalHeader, { paddingTop: insets.top + spacing.sm }, style]}>
-      <Text style={styles.modalTitle}>{title}</Text>
+      <Text maxFontSizeMultiplier={1.4} style={styles.modalTitle}>
+        {title}
+      </Text>
       <Pressable
         accessibilityLabel={closeLabel}
         accessibilityRole="button"
@@ -118,57 +127,57 @@ export function ModalHeader({
 
 function useStyles() {
   return useThemedStyles((colors) => ({
-  container: {
-    paddingHorizontal: spacing.screenPaddingHorizontal,
-    paddingBottom: spacing.md,
-    gap: spacing.sm,
-  },
-  topRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: spacing.sm,
-  },
-  trailing: {
-    minHeight: MIN_TOUCH_SIZE,
-    justifyContent: 'center',
-  },
-  backButton: {
-    minHeight: MIN_TOUCH_SIZE,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    alignSelf: 'flex-start',
-    paddingRight: spacing.sm,
-  },
-  backButtonPlaceholder: {
-    minHeight: MIN_TOUCH_SIZE,
-  },
-  backLabel: {
-    ...typography.subheadlineMedium,
-    color: colors.primary,
-  },
-  pressed: {
-    opacity: 0.7,
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: spacing.md,
-    paddingHorizontal: spacing.screenPaddingHorizontal,
-    paddingBottom: spacing.md,
-  },
-  modalTitle: {
-    ...typography.title3,
-    color: colors.text,
-    flex: 1,
-  },
-  closeButton: {
-    minWidth: MIN_TOUCH_SIZE,
-    minHeight: MIN_TOUCH_SIZE,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-}));
+    container: {
+      paddingHorizontal: spacing.screenPaddingHorizontal,
+      paddingBottom: spacing.md,
+      gap: spacing.sm,
+    },
+    topRow: {
+      flexDirection: 'row' as const,
+      alignItems: 'center' as const,
+      justifyContent: 'space-between' as const,
+      gap: spacing.sm,
+    },
+    trailing: {
+      minHeight: components.touchTarget,
+      justifyContent: 'center' as const,
+    },
+    backButton: {
+      minHeight: components.touchTarget,
+      flexDirection: 'row' as const,
+      alignItems: 'center' as const,
+      gap: spacing.xs,
+      alignSelf: 'flex-start' as const,
+      paddingRight: spacing.sm,
+    },
+    backButtonPlaceholder: {
+      minHeight: components.touchTarget,
+    },
+    backLabel: {
+      ...typography.subheadlineMedium,
+      color: colors.primary,
+    },
+    pressed: {
+      opacity: 0.7,
+    },
+    modalHeader: {
+      flexDirection: 'row' as const,
+      alignItems: 'center' as const,
+      justifyContent: 'space-between' as const,
+      gap: spacing.md,
+      paddingHorizontal: spacing.screenPaddingHorizontal,
+      paddingBottom: spacing.md,
+    },
+    modalTitle: {
+      ...typography.title3,
+      color: colors.text,
+      flex: 1,
+    },
+    closeButton: {
+      minWidth: components.touchTarget,
+      minHeight: components.touchTarget,
+      alignItems: 'center' as const,
+      justifyContent: 'center' as const,
+    },
+  }));
 }

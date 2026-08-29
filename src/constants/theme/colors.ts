@@ -67,6 +67,9 @@ export const colors = {
   statusOverdueBg: '#FBEAE6',
   statusDraft: '#61656F',
   statusDraftBg: '#EFF1F5',
+  /** Neutre — document annulé / refusé (mêmes valeurs que brouillon, ton nommé à part) */
+  statusCanceled: '#61656F',
+  statusCanceledBg: '#EFF1F5',
 
   success: '#1C6B4A',
   successSubtle: '#E7F2EC',
@@ -152,6 +155,8 @@ export const colorsDark = {
   statusOverdueBg: 'rgba(232, 144, 127, 0.15)',
   statusDraft: '#9AA0B0',
   statusDraftBg: '#262A34',
+  statusCanceled: '#9AA0B0',
+  statusCanceledBg: '#262A34',
 
   success: '#7FD2A4',
   successSubtle: 'rgba(127, 210, 164, 0.15)',

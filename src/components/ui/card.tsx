@@ -10,11 +10,6 @@ type CardProps = {
   children: ReactNode;
   onPress?: () => void;
   selected?: boolean;
-  /**
-   * @deprecated DESIGN §2.5 : repos = bordure seule, pas d'ombre.
-   * Conservé no-op pour les call sites existants.
-   */
-  elevated?: boolean;
   style?: StyleProp<ViewStyle>;
   testID?: string;
   accessibilityLabel?: string;
@@ -28,7 +23,6 @@ export function Card({
   children,
   onPress,
   selected = false,
-  elevated: _elevated = false,
   style,
   testID,
   accessibilityLabel,

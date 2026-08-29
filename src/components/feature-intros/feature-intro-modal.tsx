@@ -129,7 +129,7 @@ export function FeatureIntroModal({
             </View>
 
             <View style={styles.actions}>
-              <Button onPress={onCta} title={config.ctaLabel} elevated />
+              <Button onPress={onCta} title={config.ctaLabel} />
               <Button onPress={onDontShowAgain} title="Ne plus afficher" variant="ghost" />
               <Pressable accessibilityRole="button" onPress={onClose} hitSlop={8}>
                 <Text style={styles.skip}>Passer</Text>

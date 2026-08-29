@@ -126,7 +126,6 @@ export default function RegisterScreen() {
       error={formError}
       footer={
         <Button
-          elevated
           loading={isSubmitting}
           onPress={handleSubmit(onSubmit)}
           title="Créer un compte"

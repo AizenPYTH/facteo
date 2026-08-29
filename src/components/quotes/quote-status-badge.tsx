@@ -1,6 +1,5 @@
 import { StatusChip, type StatusTone } from '@/components/ui/status-chip';
-import type { QuoteStatus } from '@/types/quote';
-import { QUOTE_STATUS_LABELS } from '@/types/quote';
+import { QUOTE_STATUS_LABELS, type QuoteStatus } from '@/types/quote';
 
 type QuoteStatusBadgeProps = {
   status: QuoteStatus;
@@ -10,7 +9,7 @@ const TONE_BY_STATUS: Record<QuoteStatus, StatusTone> = {
   draft: 'draft',
   sent: 'sent',
   accepted: 'paid',
-  rejected: 'overdue',
+  rejected: 'canceled',
   expired: 'pending',
   converted: 'sent',
 };

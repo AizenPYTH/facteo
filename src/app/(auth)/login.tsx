@@ -43,10 +43,9 @@ export default function LoginScreen() {
       error={formError}
       footer={
         <Button
-          elevated
           loading={isSubmitting}
           onPress={handleSubmit(onSubmit)}
-          title="Connexion"
+          title="Se connecter"
         />
       }
       footerLink={

@@ -104,9 +104,9 @@ function useStyles() {
     content: {
       flexGrow: 1,
       paddingHorizontal: spacing.screenPaddingHorizontal,
-      paddingTop: spacing['3xl'],
-      paddingBottom: spacing.xl,
-      gap: spacing.xl,
+      paddingTop: spacing.lg,
+      paddingBottom: spacing.lg,
+      gap: spacing.lg,
       justifyContent: 'center',
     },
     header: {

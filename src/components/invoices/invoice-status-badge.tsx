@@ -11,7 +11,7 @@ const TONE_BY_STATUS: Record<InvoiceStatus, StatusTone> = {
   partially_paid: 'pending',
   paid: 'paid',
   overdue: 'overdue',
-  canceled: 'overdue',
+  canceled: 'canceled',
 };
 
 export function InvoiceStatusBadge({ status }: InvoiceStatusBadgeProps) {

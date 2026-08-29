@@ -5,7 +5,8 @@ import { radius } from '@/constants/theme/radius';
 import { spacing } from '@/constants/theme/spacing';
 import { typography } from '@/constants/theme/typography';
 
-export type StatusTone = 'paid' | 'sent' | 'pending' | 'overdue' | 'draft';
+/** Six tones — DESIGN §2.3 + ton neutre annulé/refusé (arbitrage). */
+export type StatusTone = 'paid' | 'sent' | 'pending' | 'overdue' | 'draft' | 'canceled';
 
 type StatusChipProps = {
   label: string;
@@ -15,7 +16,7 @@ type StatusChipProps = {
 
 /**
  * Puce de statut — DESIGN §3.5
- * r 6, 11/600, teinte de fond du statut. Le statut n'est jamais porté par la seule couleur.
+ * r 6, 11/600, teinte de fond. Le statut n'est jamais porté par la seule couleur.
  */
 export function StatusChip({ label, tone, style }: StatusChipProps) {
   const styles = useStyles();
@@ -43,6 +44,7 @@ export function statusToneFromColors(colors: AppColors): Record<
     pending: { text: colors.statusPending, background: colors.statusPendingBg },
     overdue: { text: colors.statusOverdue, background: colors.statusOverdueBg },
     draft: { text: colors.statusDraft, background: colors.statusDraftBg },
+    canceled: { text: colors.statusCanceled, background: colors.statusCanceledBg },
   };
 }
 

@@ -29,11 +29,6 @@ type ButtonProps = Omit<PressableProps, 'children'> & {
   title?: string;
   loading?: boolean;
   variant?: ButtonVariant;
-  /**
-   * @deprecated DESIGN §2.5 n'autorise pas d'ombre sur le primaire.
-   * Conservé no-op pour ne pas casser les call sites.
-   */
-  elevated?: boolean;
   /** Contenu pour `variant="icon"` (icône). */
   children?: ReactNode;
   style?: StyleProp<ViewStyle>;
@@ -47,7 +42,6 @@ export function Button({
   title,
   loading = false,
   variant = 'primary',
-  elevated: _elevated = false,
   disabled,
   accessibilityLabel,
   style,
@@ -196,7 +190,10 @@ function useStyles() {
   }));
 }
 
-/** Helper visuel pour s'assurer qu'un seul primaire est rendu (documentation). */
 export function ButtonRow({ children, style }: { children: ReactNode; style?: StyleProp<ViewStyle> }) {
-  return <View style={[{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }, style]}>{children}</View>;
+  return (
+    <View style={[{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }, style]}>
+      {children}
+    </View>
+  );
 }
