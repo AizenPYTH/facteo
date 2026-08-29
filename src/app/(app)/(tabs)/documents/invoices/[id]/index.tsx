@@ -124,6 +124,7 @@ export default function InvoiceDetailScreen() {
     documentNumber: invoice?.number ?? '',
     documentType: 'invoice',
   });
+  const { loadPreviewPdf } = documentActions;
 
   useEffect(() => {
     if (isFetched && !invoice && invoiceId) {
@@ -149,10 +150,10 @@ export default function InvoiceDetailScreen() {
       return;
     }
 
-    void documentActions.loadPreviewPdf().catch(() => {
+    void loadPreviewPdf().catch(() => {
       showError('Impossible de préparer l’aperçu PDF.');
     });
-  }, [documentActions.loadPreviewPdf, invoice, showError, showPermanentPdf]);
+  }, [invoice, loadPreviewPdf, showError, showPermanentPdf]);
 
   useFocusEffect(
     useCallback(() => {

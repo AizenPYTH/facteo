@@ -1,6 +1,6 @@
-import { Pressable, StyleSheet, View, type ViewStyle } from 'react-native';
+import { Pressable, View, type ViewStyle } from 'react-native';
 
-import { useColors, useThemedStyles } from '@/hooks/use-colors';
+import { useThemedStyles } from '@/hooks/use-colors';
 import { components } from '@/constants/theme/design-system';
 import { spacing } from '@/constants/theme/spacing';
 import { formatDate } from '@/lib/format/date';
@@ -26,7 +26,6 @@ export function QuoteCard({
   testID,
 }: QuoteCardProps) {
   const styles = useStyles();
-  const colors = useColors();
   const displayDate = formatDate(quote.issuedAt ?? quote.createdAt);
 
   const content = (

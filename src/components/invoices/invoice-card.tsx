@@ -1,7 +1,7 @@
-import { Pressable, StyleSheet, View, type ViewStyle } from 'react-native';
+import { Pressable, View, type ViewStyle } from 'react-native';
 
 import { QuoteField } from '@/components/quotes/quote-field';
-import { useColors, useThemedStyles } from '@/hooks/use-colors';
+import { useThemedStyles } from '@/hooks/use-colors';
 import { components } from '@/constants/theme/design-system';
 import { spacing } from '@/constants/theme/spacing';
 import { formatDate } from '@/lib/format/date';
@@ -26,7 +26,6 @@ export function InvoiceCard({
   testID,
 }: InvoiceCardProps) {
   const styles = useStyles();
-  const colors = useColors();
   const displayDate = formatDate(invoice.issuedAt ?? invoice.createdAt);
 
   const content = (

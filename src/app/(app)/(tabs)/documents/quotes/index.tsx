@@ -1,6 +1,6 @@
 import { Redirect, router, type Href } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
@@ -13,7 +13,7 @@ import {
 import { QuotesDesktopScreen } from '@/components/web/desktop/screens/quotes-desktop-screen';
 import { BottomTabInset } from '@/constants/theme';
 import { useBreakpoint } from '@/hooks/use-breakpoint';
-import { useColors, useThemedStyles } from '@/hooks/use-colors';
+import { useThemedStyles } from '@/hooks/use-colors';
 import { spacing } from '@/constants/theme/spacing';
 import { useDebouncedValue } from '@/hooks/use-debounced-value';
 import { useInfiniteQuotes } from '@/hooks/use-quotes';
@@ -39,7 +39,6 @@ export default function QuotesScreen() {
 
 function QuotesMobileScreen() {
   const styles = useStyles();
-  const colors = useColors();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<QuoteStatusFilter>('all');
   const debouncedSearch = useDebouncedValue(search, SEARCH_DEBOUNCE_MS);

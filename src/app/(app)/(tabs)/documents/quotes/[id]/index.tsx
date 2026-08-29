@@ -115,6 +115,7 @@ export default function QuoteDetailScreen() {
     documentNumber: quote?.number ?? '',
     documentType: 'quote',
   });
+  const { loadPreviewPdf } = documentActions;
 
   useFocusEffect(
     useCallback(() => {
@@ -134,10 +135,10 @@ export default function QuoteDetailScreen() {
       return;
     }
 
-    void documentActions.loadPreviewPdf().catch(() => {
+    void loadPreviewPdf().catch(() => {
       showError('Impossible de préparer l’aperçu PDF.');
     });
-  }, [documentActions.loadPreviewPdf, quote, showError, showPermanentPdf]);
+  }, [loadPreviewPdf, quote, showError, showPermanentPdf]);
 
   async function commitStatusChange(status: QuoteStatus) {
     if (!quoteId) {

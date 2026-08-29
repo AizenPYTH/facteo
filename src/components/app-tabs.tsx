@@ -16,8 +16,7 @@ import { AppText } from '@/components/ui/app-text';
 import { IPAD_NAVIGATION_RAIL_WIDTH } from '@/components/tablet/ipad-split-shell';
 import { spacing } from '@/constants/theme/spacing';
 import { useBreakpoint } from '@/hooks/use-breakpoint';
-import { useColors } from '@/hooks/use-colors';
-import { useThemedStyles } from '@/hooks/use-colors';
+import { useColors, useThemedStyles } from '@/hooks/use-colors';
 
 /**
  * Cinq positions — DESIGN §4 :
