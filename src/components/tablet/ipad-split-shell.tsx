@@ -90,7 +90,11 @@ const useStyles = () =>
       marginLeft: 0,
     },
     scrim: {
-      ...StyleSheet.absoluteFillObject,
+      position: 'absolute' as const,
+      top: 0,
+      right: 0,
+      bottom: 0,
+      left: 0,
       backgroundColor: 'rgba(27,29,36,.42)',
     },
     portraitList: {
