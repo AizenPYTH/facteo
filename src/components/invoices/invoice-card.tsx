@@ -13,11 +13,18 @@ import { InvoiceStatusBadge } from './invoice-status-badge';
 export type InvoiceCardProps = {
   invoice: Invoice;
   onPress?: (invoice: Invoice) => void;
+  selected?: boolean;
   style?: ViewStyle;
   testID?: string;
 };
 
-export function InvoiceCard({ invoice, onPress, style, testID }: InvoiceCardProps) {
+export function InvoiceCard({
+  invoice,
+  onPress,
+  selected = false,
+  style,
+  testID,
+}: InvoiceCardProps) {
   const styles = useStyles();
   const colors = useColors();
   const displayDate = formatDate(invoice.issuedAt ?? invoice.createdAt);
@@ -43,7 +50,7 @@ export function InvoiceCard({ invoice, onPress, style, testID }: InvoiceCardProp
 
   if (!onPress) {
     return (
-      <View style={styles.wrapper} testID={testID}>
+      <View style={[styles.wrapper, selected && styles.selected]} testID={testID}>
         {content}
       </View>
     );
@@ -53,8 +60,13 @@ export function InvoiceCard({ invoice, onPress, style, testID }: InvoiceCardProp
     <Pressable
       accessibilityLabel={`Facture ${invoice.number}`}
       accessibilityRole="button"
+      accessibilityState={{ selected }}
       onPress={() => onPress(invoice)}
-      style={({ pressed }) => [styles.wrapper, pressed && styles.pressed]}
+      style={({ pressed }) => [
+        styles.wrapper,
+        selected && styles.selected,
+        pressed && styles.pressed,
+      ]}
       testID={testID}>
       {content}
     </Pressable>
@@ -65,6 +77,9 @@ function useStyles() {
   return useThemedStyles((colors) => ({
   wrapper: {
     backgroundColor: colors.surface,
+  },
+  selected: {
+    backgroundColor: colors.primarySubtle,
   },
   pressed: {
     backgroundColor: colors.backgroundSecondary,

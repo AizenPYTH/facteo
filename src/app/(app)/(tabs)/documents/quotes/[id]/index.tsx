@@ -19,6 +19,14 @@ import { AppText } from '@/components/ui/app-text';
 import { PdfPreviewModal } from '@/components/pdf/pdf-preview-modal';
 import { TemplateGalleryModal } from '@/components/pdf/template-gallery-modal';
 import { DocumentClientSignatureBlock } from '@/components/signatures/document-client-signature-block';
+import {
+  IPAD_LIST_WIDTH,
+  IPAD_NAVIGATION_RAIL_WIDTH,
+  IPAD_PDF_PREVIEW_WIDTH,
+  IpadSplitShell,
+} from '@/components/tablet/ipad-split-shell';
+import { TabletDocumentsList } from '@/components/tablet/tablet-documents-list';
+import { TabletPdfPreviewPanel } from '@/components/tablet/tablet-pdf-preview-panel';
 import { ActionBar } from '@/components/ui/action-bar';
 import { Button } from '@/components/ui/button';
 import { LoadingView } from '@/components/ui/loading-view';
@@ -53,10 +61,15 @@ const DOCUMENTS_FALLBACK = '/documents' as Href;
 export default function QuoteDetailScreen() {
   const styles = useStyles();
   const colors = useColors();
-  const { isWeb, isDesktop, isTablet } = useBreakpoint();
+  const { width, height, isWeb, isDesktop, isTablet } = useBreakpoint();
   const { id } = useLocalSearchParams<{ id: string }>();
   useDesktopListRedirect('/documents/quotes');
   const quoteId = Array.isArray(id) ? id[0] : id;
+  const isNativeTablet = !isWeb && isTablet;
+  const isTabletLandscape = isNativeTablet && width > height;
+  const tabletDocumentWidth = width - IPAD_NAVIGATION_RAIL_WIDTH - IPAD_LIST_WIDTH;
+  const showPermanentPdf =
+    isTabletLandscape && tabletDocumentWidth >= IPAD_PDF_PREVIEW_WIDTH * 2;
   const { user } = useAuth();
   const { scope, isSwitching } = useTenant();
   const { data: quote, isLoading, isFetched, refetch } = useQuote(quoteId ?? '');
@@ -76,6 +89,7 @@ export default function QuoteDetailScreen() {
   const [convertVisible, setConvertVisible] = useState(false);
   const [pendingStatus, setPendingStatus] = useState<QuoteStatus | null>(null);
   const [signModalVisible, setSignModalVisible] = useState(false);
+  const [tabletListVisible, setTabletListVisible] = useState(false);
 
   const { data: sentDocuments = [], isLoading: sentDocumentsLoading } = useSentDocuments(
     'quote',
@@ -114,6 +128,16 @@ export default function QuoteDetailScreen() {
       router.replace(DOCUMENTS_FALLBACK);
     }
   }, [isFetched, quote, quoteId, showError]);
+
+  useEffect(() => {
+    if (!showPermanentPdf || !quote) {
+      return;
+    }
+
+    void documentActions.loadPreviewPdf().catch(() => {
+      showError('Impossible de préparer l’aperçu PDF.');
+    });
+  }, [documentActions.loadPreviewPdf, quote, showError, showPermanentPdf]);
 
   async function commitStatusChange(status: QuoteStatus) {
     if (!quoteId) {
@@ -374,6 +398,41 @@ export default function QuoteDetailScreen() {
   }
 
   if (isSwitching || isLoading || !quote) {
+    if (isNativeTablet) {
+      return (
+        <IpadSplitShell
+          document={
+            <SafeAreaView
+              edges={['top', 'bottom', 'right']}
+              style={styles.safeArea}>
+              <View style={styles.header}>
+                <QuoteScreenHeader
+                  backLabel="Documents"
+                  fallbackHref={DOCUMENTS_FALLBACK}
+                  onBack={() => setTabletListVisible(true)}
+                  showBackButton={!isTabletLandscape}
+                  title="Devis"
+                />
+              </View>
+              <LoadingView message="Chargement du devis..." />
+            </SafeAreaView>
+          }
+          list={
+            <TabletDocumentsList
+              initialSegment="quotes"
+              onDismiss={
+                isTabletLandscape ? undefined : () => setTabletListVisible(false)
+              }
+              selectedId={quoteId}
+              selectedType="quote"
+            />
+          }
+          listVisible={tabletListVisible}
+          onDismissList={() => setTabletListVisible(false)}
+        />
+      );
+    }
+
     return (
       <SafeAreaView edges={['top', 'bottom']} style={styles.safeArea}>
         <View style={styles.header}>{header}</View>
@@ -384,91 +443,65 @@ export default function QuoteDetailScreen() {
 
   const template = resolvePdfTemplate(documentActions.templateId);
   const hasActionBar = Boolean(primaryAction) || secondaryActions.length > 0;
-
-  return (
-    <SafeAreaView edges={['top']} style={styles.safeArea}>
-      <View style={styles.header}>{header}</View>
-
-      <ScrollView
-        contentContainerStyle={styles.content}
-        keyboardDismissMode="on-drag"
-        showsVerticalScrollIndicator={false}>
-        <QuoteTypeChip />
-
-        <QuoteDetailView quote={quote} />
-
-        <View style={styles.previewCard}>
-          <Pressable
-            onPress={() => void documentActions.handleOpenPreview()}
-            style={({ pressed }) => [styles.previewRow, pressed && styles.pressed]}>
-            <View style={[styles.previewAccent, { backgroundColor: template.theme.primary }]} />
-            <View style={styles.previewContent}>
-              <AppText medium variant="body">
-                Aperçu PDF
-              </AppText>
-              <AppText color="secondary" variant="caption">
-                {quote.number} · modèle {template.name}
-              </AppText>
-            </View>
-            {documentActions.loading || documentActions.pdfLoading ? (
-              <ActivityIndicator color={colors.primary} />
-            ) : (
-              <SymbolView
-                name={{ ios: 'doc.richtext', android: 'description', web: 'description' }}
-                size={26}
-                tintColor={colors.primary}
-              />
-            )}
-          </Pressable>
-          <View style={styles.previewActions}>
-            <Button
-              onPress={() => void documentActions.handleOpenPreview()}
-              style={styles.previewActionButton}
-              title="Ouvrir"
-              variant="secondary"
-            />
-            <Button
-              loading={documentActions.loading}
-              onPress={() => void documentActions.handleShare()}
-              style={styles.previewActionButton}
-              title="Partager"
-              variant="secondary"
-            />
-          </View>
+  const previewCard = (
+    <View style={styles.previewCard}>
+      <Pressable
+        onPress={() => void documentActions.handleOpenPreview()}
+        style={({ pressed }) => [styles.previewRow, pressed && styles.pressed]}>
+        <View style={[styles.previewAccent, { backgroundColor: template.theme.primary }]} />
+        <View style={styles.previewContent}>
+          <AppText medium variant="body">
+            Aperçu PDF
+          </AppText>
+          <AppText color="secondary" variant="caption">
+            {quote.number} · modèle {template.name}
+          </AppText>
         </View>
-
-        <DocumentClientSignatureBlock
-          documentId={quote.id}
-          documentLabel={`le devis ${quote.number}`}
-          documentType="quote"
-          onSignModalVisibleChange={setSignModalVisible}
-          showSignAction={false}
-          signModalVisible={signModalVisible}
+        {documentActions.loading || documentActions.pdfLoading ? (
+          <ActivityIndicator color={colors.primary} />
+        ) : (
+          <SymbolView
+            name={{ ios: 'doc.richtext', android: 'description', web: 'description' }}
+            size={26}
+            tintColor={colors.primary}
+          />
+        )}
+      </Pressable>
+      <View style={styles.previewActions}>
+        <Button
+          onPress={() => void documentActions.handleOpenPreview()}
+          style={styles.previewActionButton}
+          title="Ouvrir"
+          variant="secondary"
         />
+        <Button
+          loading={documentActions.loading}
+          onPress={() => void documentActions.handleShare()}
+          style={styles.previewActionButton}
+          title="Partager"
+          variant="secondary"
+        />
+      </View>
+    </View>
+  );
 
-        <SentDocumentsSection documents={sentDocuments} loading={sentDocumentsLoading} />
-      </ScrollView>
+  const moreActionsButton = (
+    <Pressable
+      accessibilityLabel="Plus d’actions"
+      accessibilityRole="button"
+      hitSlop={8}
+      onPress={() => setActionsVisible(true)}
+      style={({ pressed }) => [styles.actionsButton, pressed && styles.pressed]}>
+      <SymbolView
+        name={{ ios: 'ellipsis.circle', android: 'more_horiz', web: 'more_horiz' }}
+        size={26}
+        tintColor={colors.primary}
+      />
+    </Pressable>
+  );
 
-      {hasActionBar ? (
-        <ActionBar caption={primaryAction?.caption}>
-          {primaryAction ? (
-            <Button
-              loading={primaryAction.loading}
-              onPress={primaryAction.onPress}
-              title={primaryAction.label}
-            />
-          ) : null}
-          {secondaryActions.map((action) => (
-            <Button
-              key={action.id}
-              onPress={action.onPress}
-              title={action.label}
-              variant="secondary"
-            />
-          ))}
-        </ActionBar>
-      ) : null}
-
+  const overlays = (
+    <>
       <DocumentActionsSheet
         onClose={() => setActionsVisible(false)}
         sections={actionSections}
@@ -531,6 +564,168 @@ export default function QuoteDetailScreen() {
         quoteNumber={quote.number}
         visible={deleteVisible}
       />
+    </>
+  );
+
+  if (isNativeTablet) {
+    const tabletHeaderActions = (
+      <View style={styles.tabletHeaderActions}>
+        {primaryAction ? (
+          <Button
+            loading={primaryAction.loading}
+            onPress={primaryAction.onPress}
+            style={styles.tabletHeaderAction}
+            title={primaryAction.label}
+          />
+        ) : null}
+        {secondaryActions.map((action) => (
+          <Button
+            key={action.id}
+            onPress={action.onPress}
+            style={styles.tabletHeaderAction}
+            title={action.label}
+            variant="secondary"
+          />
+        ))}
+        {moreActionsButton}
+      </View>
+    );
+
+    return (
+      <>
+        <IpadSplitShell
+          document={
+            <SafeAreaView
+              edges={['top', 'bottom', 'right']}
+              style={styles.safeArea}>
+              <View style={styles.tabletHeader}>
+                <QuoteScreenHeader
+                  backLabel="Documents"
+                  fallbackHref={DOCUMENTS_FALLBACK}
+                  onBack={() => setTabletListVisible(true)}
+                  showBackButton={!isTabletLandscape}
+                  title={quote.number}
+                  trailing={tabletHeaderActions}
+                />
+                {primaryAction?.caption ? (
+                  <AppText
+                    color="tertiary"
+                    style={styles.tabletHeaderCaption}
+                    variant="caption">
+                    {primaryAction.caption}
+                  </AppText>
+                ) : null}
+              </View>
+
+              <View style={styles.tabletBody}>
+                <ScrollView
+                  contentContainerStyle={[styles.content, styles.tabletContent]}
+                  keyboardDismissMode="on-drag"
+                  showsVerticalScrollIndicator={false}
+                  style={styles.tabletScroll}>
+                  <QuoteTypeChip />
+                  <QuoteDetailView quote={quote} />
+
+                  {!showPermanentPdf ? previewCard : null}
+
+                  <DocumentClientSignatureBlock
+                    documentId={quote.id}
+                    documentLabel={`le devis ${quote.number}`}
+                    documentType="quote"
+                    onSignModalVisibleChange={setSignModalVisible}
+                    showSignAction={false}
+                    signModalVisible={signModalVisible}
+                  />
+
+                  <SentDocumentsSection
+                    documents={sentDocuments}
+                    loading={sentDocumentsLoading}
+                  />
+                </ScrollView>
+
+                {showPermanentPdf ? (
+                  <TabletPdfPreviewPanel
+                    loading={documentActions.pdfLoading}
+                    onOpen={() => void documentActions.handleOpenPreview()}
+                    onRetry={() => {
+                      void documentActions.loadPreviewPdf().catch(() => {
+                        showError('Impossible de préparer l’aperçu PDF.');
+                      });
+                    }}
+                    onShare={() => void documentActions.handleShare()}
+                    pdfUri={documentActions.previewPdfUri}
+                    shareLoading={documentActions.loading}
+                    title={quote.number}
+                  />
+                ) : null}
+              </View>
+            </SafeAreaView>
+          }
+          list={
+            <TabletDocumentsList
+              initialSegment="quotes"
+              onDismiss={
+                isTabletLandscape ? undefined : () => setTabletListVisible(false)
+              }
+              selectedId={quote.id}
+              selectedType="quote"
+            />
+          }
+          listVisible={tabletListVisible}
+          onDismissList={() => setTabletListVisible(false)}
+        />
+        {overlays}
+      </>
+    );
+  }
+
+  return (
+    <SafeAreaView edges={['top']} style={styles.safeArea}>
+      <View style={styles.header}>{header}</View>
+
+      <ScrollView
+        contentContainerStyle={styles.content}
+        keyboardDismissMode="on-drag"
+        showsVerticalScrollIndicator={false}>
+        <QuoteTypeChip />
+
+        <QuoteDetailView quote={quote} />
+
+        {previewCard}
+
+        <DocumentClientSignatureBlock
+          documentId={quote.id}
+          documentLabel={`le devis ${quote.number}`}
+          documentType="quote"
+          onSignModalVisibleChange={setSignModalVisible}
+          showSignAction={false}
+          signModalVisible={signModalVisible}
+        />
+
+        <SentDocumentsSection documents={sentDocuments} loading={sentDocumentsLoading} />
+      </ScrollView>
+
+      {hasActionBar ? (
+        <ActionBar caption={primaryAction?.caption}>
+          {primaryAction ? (
+            <Button
+              loading={primaryAction.loading}
+              onPress={primaryAction.onPress}
+              title={primaryAction.label}
+            />
+          ) : null}
+          {secondaryActions.map((action) => (
+            <Button
+              key={action.id}
+              onPress={action.onPress}
+              title={action.label}
+              variant="secondary"
+            />
+          ))}
+        </ActionBar>
+      ) : null}
+
+      {overlays}
     </SafeAreaView>
   );
 }
@@ -552,6 +747,40 @@ function useStyles() {
     header: {
       paddingHorizontal: spacing.screenPaddingHorizontal,
       paddingTop: spacing.sm,
+    },
+    tabletHeader: {
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+      backgroundColor: colors.surface,
+    },
+    tabletHeaderActions: {
+      flexDirection: 'row' as const,
+      alignItems: 'center' as const,
+      justifyContent: 'flex-end' as const,
+      flexWrap: 'wrap' as const,
+      gap: spacing.sm,
+    },
+    tabletHeaderAction: {
+      minWidth: 120,
+    },
+    tabletHeaderCaption: {
+      paddingHorizontal: spacing.screenPaddingHorizontal,
+      paddingBottom: spacing.sm,
+      textAlign: 'right' as const,
+    },
+    tabletBody: {
+      flex: 1,
+      minWidth: 0,
+      minHeight: 0,
+      flexDirection: 'row' as const,
+    },
+    tabletScroll: {
+      flex: 1,
+      minWidth: 0,
+    },
+    tabletContent: {
+      flexGrow: 1,
+      paddingTop: spacing.md,
     },
     content: {
       paddingHorizontal: spacing.screenPaddingHorizontal,

@@ -1,4 +1,4 @@
-import { router, type Href } from 'expo-router';
+import { Redirect, router, type Href } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -28,6 +28,10 @@ export default function InvoicesScreen() {
 
   if (isWeb && (isDesktop || isTablet)) {
     return <InvoicesDesktopScreen />;
+  }
+
+  if (!isWeb && isTablet) {
+    return <Redirect href={'/documents?segment=invoices' as Href} />;
   }
 
   return <InvoicesMobileScreen />;

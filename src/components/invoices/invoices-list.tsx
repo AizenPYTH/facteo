@@ -31,6 +31,7 @@ export type InvoicesListProps = {
   onRefresh?: () => void;
   onEndReached?: () => void;
   contentContainerStyle?: ViewStyle;
+  selectedId?: string | null;
   testID?: string;
 };
 
@@ -46,13 +47,18 @@ export function InvoicesList({
   onEndReached,
   onInvoicePress,
   contentContainerStyle,
+  selectedId,
   testID,
 }: InvoicesListProps) {
   const styles = useStyles();
   const colors = useColors();
   const renderItem: ListRenderItem<Invoice> = ({ item, index }) => (
     <View>
-      <InvoiceCard invoice={item} onPress={onInvoicePress} />
+      <InvoiceCard
+        invoice={item}
+        onPress={onInvoicePress}
+        selected={item.id === selectedId}
+      />
       {index < invoices.length - 1 ? <View style={styles.separator} /> : null}
     </View>
   );

@@ -17,6 +17,14 @@ import { FeatureIntroModal } from '@/components/feature-intros';
 import { PdfPreviewModal } from '@/components/pdf/pdf-preview-modal';
 import { TemplateGalleryModal } from '@/components/pdf/template-gallery-modal';
 import { DocumentClientSignatureBlock } from '@/components/signatures/document-client-signature-block';
+import {
+  IPAD_LIST_WIDTH,
+  IPAD_NAVIGATION_RAIL_WIDTH,
+  IPAD_PDF_PREVIEW_WIDTH,
+  IpadSplitShell,
+} from '@/components/tablet/ipad-split-shell';
+import { TabletDocumentsList } from '@/components/tablet/tablet-documents-list';
+import { TabletPdfPreviewPanel } from '@/components/tablet/tablet-pdf-preview-panel';
 import { ActionBar } from '@/components/ui/action-bar';
 import { AppText } from '@/components/ui/app-text';
 import { Button } from '@/components/ui/button';
@@ -54,10 +62,15 @@ const DOCUMENTS_FALLBACK = '/documents' as Href;
 export default function InvoiceDetailScreen() {
   const styles = useStyles();
   const colors = useColors();
-  const { isWeb, isDesktop, isTablet } = useBreakpoint();
+  const { width, height, isWeb, isDesktop, isTablet } = useBreakpoint();
   const { id, payment } = useLocalSearchParams<{ id: string; payment?: string }>();
   useDesktopListRedirect('/documents/invoices');
   const invoiceId = Array.isArray(id) ? id[0] : id;
+  const isNativeTablet = !isWeb && isTablet;
+  const isTabletLandscape = isNativeTablet && width > height;
+  const tabletDocumentWidth = width - IPAD_NAVIGATION_RAIL_WIDTH - IPAD_LIST_WIDTH;
+  const showPermanentPdf =
+    isTabletLandscape && tabletDocumentWidth >= IPAD_PDF_PREVIEW_WIDTH * 2;
   const { user } = useAuth();
   const { scope, isSwitching } = useTenant();
   const { data: invoice, isLoading, isFetched, refetch } = useInvoice(invoiceId ?? '');
@@ -78,6 +91,7 @@ export default function InvoiceDetailScreen() {
   const [paymentVisible, setPaymentVisible] = useState(false);
   const [signModalVisible, setSignModalVisible] = useState(false);
   const [paymentLinkLoading, setPaymentLinkLoading] = useState(false);
+  const [tabletListVisible, setTabletListVisible] = useState(false);
   const paymentsIntro = useFeatureIntro('payments');
 
   function openPaymentFlow() {
@@ -129,6 +143,16 @@ export default function InvoiceDetailScreen() {
       showError('Paiement annulé.');
     }
   }, [payment, refetch, showError, showSuccess]);
+
+  useEffect(() => {
+    if (!showPermanentPdf || !invoice) {
+      return;
+    }
+
+    void documentActions.loadPreviewPdf().catch(() => {
+      showError('Impossible de préparer l’aperçu PDF.');
+    });
+  }, [documentActions.loadPreviewPdf, invoice, showError, showPermanentPdf]);
 
   useFocusEffect(
     useCallback(() => {
@@ -449,6 +473,41 @@ export default function InvoiceDetailScreen() {
   }
 
   if (isSwitching || isLoading || !invoice) {
+    if (isNativeTablet) {
+      return (
+        <IpadSplitShell
+          document={
+            <SafeAreaView
+              edges={['top', 'bottom', 'right']}
+              style={styles.safeArea}>
+              <View style={styles.header}>
+                <InvoiceScreenHeader
+                  backLabel="Documents"
+                  fallbackHref={DOCUMENTS_FALLBACK}
+                  onBack={() => setTabletListVisible(true)}
+                  showBackButton={!isTabletLandscape}
+                  title="Facture"
+                />
+              </View>
+              <LoadingView message="Chargement de la facture..." />
+            </SafeAreaView>
+          }
+          list={
+            <TabletDocumentsList
+              initialSegment="invoices"
+              onDismiss={
+                isTabletLandscape ? undefined : () => setTabletListVisible(false)
+              }
+              selectedId={invoiceId}
+              selectedType="invoice"
+            />
+          }
+          listVisible={tabletListVisible}
+          onDismissList={() => setTabletListVisible(false)}
+        />
+      );
+    }
+
     return (
       <SafeAreaView edges={['top', 'bottom']} style={styles.safeArea}>
         {header}
@@ -460,95 +519,65 @@ export default function InvoiceDetailScreen() {
   const showPaymentLink =
     invoice.amountDue > 0 && invoice.status !== 'paid' && invoice.status !== 'canceled';
   const template = resolvePdfTemplate(documentActions.templateId);
-
-  return (
-    <SafeAreaView edges={['top']} style={styles.safeArea}>
-      <View style={styles.header}>{header}</View>
-
-      <ScrollView
-        contentContainerStyle={styles.content}
-        keyboardDismissMode="on-drag"
-        showsVerticalScrollIndicator={false}>
-        <InvoiceDetailView
-          canAddPayment={false}
-          invoice={invoice}
-          onAddPayment={() => openPaymentFlow()}
-        />
-
-        <View style={styles.previewCard}>
-          <Pressable
-            onPress={() => void documentActions.handleOpenPreview()}
-            style={({ pressed }) => [styles.previewRow, pressed && styles.pressed]}>
-            <View style={[styles.previewAccent, { backgroundColor: template.theme.primary }]} />
-            <View style={styles.previewContent}>
-              <AppText medium variant="body">
-                Aperçu PDF
-              </AppText>
-              <AppText color="secondary" variant="caption">
-                {invoice.number} · modèle {template.name}
-              </AppText>
-            </View>
-            {documentActions.loading || documentActions.pdfLoading ? (
-              <ActivityIndicator color={colors.primary} />
-            ) : (
-              <SymbolView
-                name={{ ios: 'doc.richtext', android: 'description', web: 'description' }}
-                size={26}
-                tintColor={colors.primary}
-              />
-            )}
-          </Pressable>
-          <View style={styles.previewActions}>
-            <Button
-              onPress={() => void documentActions.handleOpenPreview()}
-              style={styles.previewActionButton}
-              title="Ouvrir"
-              variant="secondary"
-            />
-            <Button
-              loading={documentActions.loading}
-              onPress={() => void documentActions.handleShare()}
-              style={styles.previewActionButton}
-              title="Partager"
-              variant="secondary"
-            />
-          </View>
+  const previewCard = (
+    <View style={styles.previewCard}>
+      <Pressable
+        onPress={() => void documentActions.handleOpenPreview()}
+        style={({ pressed }) => [styles.previewRow, pressed && styles.pressed]}>
+        <View style={[styles.previewAccent, { backgroundColor: template.theme.primary }]} />
+        <View style={styles.previewContent}>
+          <AppText medium variant="body">
+            Aperçu PDF
+          </AppText>
+          <AppText color="secondary" variant="caption">
+            {invoice.number} · modèle {template.name}
+          </AppText>
         </View>
-
-        <DocumentClientSignatureBlock
-          documentId={invoice.id}
-          documentLabel={`la facture ${invoice.number}`}
-          documentType="invoice"
-          onSignModalVisibleChange={setSignModalVisible}
-          showSignAction={false}
-          signModalVisible={signModalVisible}
+        {documentActions.loading || documentActions.pdfLoading ? (
+          <ActivityIndicator color={colors.primary} />
+        ) : (
+          <SymbolView
+            name={{ ios: 'doc.richtext', android: 'description', web: 'description' }}
+            size={26}
+            tintColor={colors.primary}
+          />
+        )}
+      </Pressable>
+      <View style={styles.previewActions}>
+        <Button
+          onPress={() => void documentActions.handleOpenPreview()}
+          style={styles.previewActionButton}
+          title="Ouvrir"
+          variant="secondary"
         />
+        <Button
+          loading={documentActions.loading}
+          onPress={() => void documentActions.handleShare()}
+          style={styles.previewActionButton}
+          title="Partager"
+          variant="secondary"
+        />
+      </View>
+    </View>
+  );
 
-        <SentDocumentsSection documents={sentDocuments} loading={sentDocumentsLoading} />
-      </ScrollView>
+  const moreActionsButton = (
+    <Pressable
+      accessibilityLabel="Plus d’actions"
+      accessibilityRole="button"
+      hitSlop={8}
+      onPress={() => setActionsVisible(true)}
+      style={({ pressed }) => [styles.actionsButton, pressed && styles.pressed]}>
+      <SymbolView
+        name={{ ios: 'ellipsis.circle', android: 'more_horiz', web: 'more_horiz' }}
+        size={26}
+        tintColor={colors.primary}
+      />
+    </Pressable>
+  );
 
-      {primaryAction || showPaymentLink ? (
-        <ActionBar caption={primaryAction?.caption}>
-          {primaryAction ? (
-            <Button
-              loading={primaryAction.loading}
-              onPress={primaryAction.onPress}
-              title={primaryAction.label}
-            />
-          ) : null}
-          {showPaymentLink ? (
-            <Button
-              loading={paymentLinkLoading || createLink.isPending}
-              onPress={() => void handlePaymentLink()}
-              title={
-                hasFeature('stripe_payments') ? 'Lien de paiement' : 'Lien de paiement (Premium)'
-              }
-              variant={primaryAction ? 'secondary' : 'primary'}
-            />
-          ) : null}
-        </ActionBar>
-      ) : null}
-
+  const overlays = (
+    <>
       <DocumentActionsSheet
         onClose={() => setActionsVisible(false)}
         sections={actionSections}
@@ -604,6 +633,177 @@ export default function InvoiceDetailScreen() {
         onDontShowAgain={paymentsIntro.onDontShowAgain}
         visible={paymentsIntro.visible}
       />
+    </>
+  );
+
+  if (isNativeTablet) {
+    const tabletHeaderActions = (
+      <View style={styles.tabletHeaderActions}>
+        {primaryAction ? (
+          <Button
+            loading={primaryAction.loading}
+            onPress={primaryAction.onPress}
+            style={styles.tabletHeaderAction}
+            title={primaryAction.label}
+          />
+        ) : null}
+        {showPaymentLink ? (
+          <Button
+            loading={paymentLinkLoading || createLink.isPending}
+            onPress={() => void handlePaymentLink()}
+            style={styles.tabletHeaderAction}
+            title={
+              hasFeature('stripe_payments') ? 'Lien de paiement' : 'Lien de paiement (Premium)'
+            }
+            variant={primaryAction ? 'secondary' : 'primary'}
+          />
+        ) : null}
+        {moreActionsButton}
+      </View>
+    );
+
+    return (
+      <>
+        <IpadSplitShell
+          document={
+            <SafeAreaView
+              edges={['top', 'bottom', 'right']}
+              style={styles.safeArea}>
+              <View style={styles.tabletHeader}>
+                <InvoiceScreenHeader
+                  backLabel="Documents"
+                  fallbackHref={DOCUMENTS_FALLBACK}
+                  onBack={() => setTabletListVisible(true)}
+                  showBackButton={!isTabletLandscape}
+                  title={invoice.number}
+                  trailing={tabletHeaderActions}
+                />
+                {primaryAction?.caption ? (
+                  <AppText
+                    color="tertiary"
+                    style={styles.tabletHeaderCaption}
+                    variant="caption">
+                    {primaryAction.caption}
+                  </AppText>
+                ) : null}
+              </View>
+
+              <View style={styles.tabletBody}>
+                <ScrollView
+                  contentContainerStyle={[styles.content, styles.tabletContent]}
+                  keyboardDismissMode="on-drag"
+                  showsVerticalScrollIndicator={false}
+                  style={styles.tabletScroll}>
+                  <InvoiceDetailView
+                    canAddPayment={false}
+                    invoice={invoice}
+                    onAddPayment={() => openPaymentFlow()}
+                  />
+
+                  {!showPermanentPdf ? previewCard : null}
+
+                  <DocumentClientSignatureBlock
+                    documentId={invoice.id}
+                    documentLabel={`la facture ${invoice.number}`}
+                    documentType="invoice"
+                    onSignModalVisibleChange={setSignModalVisible}
+                    showSignAction={false}
+                    signModalVisible={signModalVisible}
+                  />
+
+                  <SentDocumentsSection
+                    documents={sentDocuments}
+                    loading={sentDocumentsLoading}
+                  />
+                </ScrollView>
+
+                {showPermanentPdf ? (
+                  <TabletPdfPreviewPanel
+                    loading={documentActions.pdfLoading}
+                    onOpen={() => void documentActions.handleOpenPreview()}
+                    onRetry={() => {
+                      void documentActions.loadPreviewPdf().catch(() => {
+                        showError('Impossible de préparer l’aperçu PDF.');
+                      });
+                    }}
+                    onShare={() => void documentActions.handleShare()}
+                    pdfUri={documentActions.previewPdfUri}
+                    shareLoading={documentActions.loading}
+                    title={invoice.number}
+                  />
+                ) : null}
+              </View>
+            </SafeAreaView>
+          }
+          list={
+            <TabletDocumentsList
+              initialSegment="invoices"
+              onDismiss={
+                isTabletLandscape ? undefined : () => setTabletListVisible(false)
+              }
+              selectedId={invoice.id}
+              selectedType="invoice"
+            />
+          }
+          listVisible={tabletListVisible}
+          onDismissList={() => setTabletListVisible(false)}
+        />
+        {overlays}
+      </>
+    );
+  }
+
+  return (
+    <SafeAreaView edges={['top']} style={styles.safeArea}>
+      <View style={styles.header}>{header}</View>
+
+      <ScrollView
+        contentContainerStyle={styles.content}
+        keyboardDismissMode="on-drag"
+        showsVerticalScrollIndicator={false}>
+        <InvoiceDetailView
+          canAddPayment={false}
+          invoice={invoice}
+          onAddPayment={() => openPaymentFlow()}
+        />
+
+        {previewCard}
+
+        <DocumentClientSignatureBlock
+          documentId={invoice.id}
+          documentLabel={`la facture ${invoice.number}`}
+          documentType="invoice"
+          onSignModalVisibleChange={setSignModalVisible}
+          showSignAction={false}
+          signModalVisible={signModalVisible}
+        />
+
+        <SentDocumentsSection documents={sentDocuments} loading={sentDocumentsLoading} />
+      </ScrollView>
+
+      {primaryAction || showPaymentLink ? (
+        <ActionBar caption={primaryAction?.caption}>
+          {primaryAction ? (
+            <Button
+              loading={primaryAction.loading}
+              onPress={primaryAction.onPress}
+              title={primaryAction.label}
+            />
+          ) : null}
+          {showPaymentLink ? (
+            <Button
+              loading={paymentLinkLoading || createLink.isPending}
+              onPress={() => void handlePaymentLink()}
+              title={
+                hasFeature('stripe_payments') ? 'Lien de paiement' : 'Lien de paiement (Premium)'
+              }
+              variant={primaryAction ? 'secondary' : 'primary'}
+            />
+          ) : null}
+        </ActionBar>
+      ) : null}
+
+      {overlays}
     </SafeAreaView>
   );
 }
@@ -625,6 +825,40 @@ function useStyles() {
     header: {
       paddingHorizontal: spacing.screenPaddingHorizontal,
       paddingTop: spacing.sm,
+    },
+    tabletHeader: {
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+      backgroundColor: colors.surface,
+    },
+    tabletHeaderActions: {
+      flexDirection: 'row' as const,
+      alignItems: 'center' as const,
+      justifyContent: 'flex-end' as const,
+      flexWrap: 'wrap' as const,
+      gap: spacing.sm,
+    },
+    tabletHeaderAction: {
+      minWidth: 120,
+    },
+    tabletHeaderCaption: {
+      paddingHorizontal: spacing.screenPaddingHorizontal,
+      paddingBottom: spacing.sm,
+      textAlign: 'right' as const,
+    },
+    tabletBody: {
+      flex: 1,
+      minWidth: 0,
+      minHeight: 0,
+      flexDirection: 'row' as const,
+    },
+    tabletScroll: {
+      flex: 1,
+      minWidth: 0,
+    },
+    tabletContent: {
+      flexGrow: 1,
+      paddingTop: spacing.md,
     },
     content: {
       paddingHorizontal: spacing.screenPaddingHorizontal,

@@ -17,10 +17,17 @@ import {
 } from '@/components/quotes';
 import { FeatureIntroModal } from '@/components/feature-intros';
 import { AppText } from '@/components/ui/app-text';
+import { Button } from '@/components/ui/button';
 import { SegmentedControl } from '@/components/ui/segmented-control';
+import { IpadSplitShell } from '@/components/tablet/ipad-split-shell';
+import {
+  TabletDocumentsList,
+  type TabletDocumentsSegment,
+} from '@/components/tablet/tablet-documents-list';
 import { BottomTabInset } from '@/constants/theme';
 import { useThemedStyles } from '@/hooks/use-colors';
 import { spacing } from '@/constants/theme/spacing';
+import { useBreakpoint } from '@/hooks/use-breakpoint';
 import { useDebouncedValue } from '@/hooks/use-debounced-value';
 import { useFeatureIntro } from '@/hooks/use-feature-intro';
 import { useInfiniteInvoices } from '@/hooks/use-invoices';
@@ -38,6 +45,53 @@ type DocumentsSegment = 'invoices' | 'quotes';
  * Documents — Factures | Devis (DESIGN §4).
  */
 export default function DocumentsScreen() {
+  const { isTablet, isWeb } = useBreakpoint();
+
+  if (!isWeb && isTablet) {
+    return <TabletDocumentsScreen />;
+  }
+
+  return <DocumentsMobileScreen />;
+}
+
+function TabletDocumentsScreen() {
+  const styles = useStyles();
+  const { width, height } = useBreakpoint();
+  const { segment } = useLocalSearchParams<{ segment?: string }>();
+  const [listVisible, setListVisible] = useState(true);
+  const initialSegment: TabletDocumentsSegment =
+    segment === 'quotes' ? 'quotes' : 'invoices';
+  const isLandscape = width > height;
+
+  return (
+    <IpadSplitShell
+      document={
+        <SafeAreaView edges={['top', 'bottom', 'right']} style={styles.tabletEmpty}>
+          {!isLandscape ? (
+            <Button
+              onPress={() => setListVisible(true)}
+              title="Afficher les documents"
+              variant="secondary"
+            />
+          ) : null}
+          <AppText color="secondary" variant="body">
+            Sélectionnez une facture ou un devis.
+          </AppText>
+        </SafeAreaView>
+      }
+      list={
+        <TabletDocumentsList
+          initialSegment={initialSegment}
+          onDismiss={isLandscape ? undefined : () => setListVisible(false)}
+        />
+      }
+      listVisible={listVisible}
+      onDismissList={() => setListVisible(false)}
+    />
+  );
+}
+
+function DocumentsMobileScreen() {
   const styles = useStyles();
   const { segment: segmentParam } = useLocalSearchParams<{ segment?: string }>();
   const [segment, setSegment] = useState<DocumentsSegment>(
@@ -241,6 +295,14 @@ function useStyles() {
     },
     listContainer: {
       flex: 1,
+    },
+    tabletEmpty: {
+      flex: 1,
+      alignItems: 'center' as const,
+      justifyContent: 'center' as const,
+      gap: spacing.md,
+      padding: spacing.xl,
+      backgroundColor: colors.backgroundGrouped,
     },
   }));
 }

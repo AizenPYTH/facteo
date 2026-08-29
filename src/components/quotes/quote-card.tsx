@@ -13,11 +13,18 @@ import { QuoteStatusBadge } from './quote-status-badge';
 export type QuoteCardProps = {
   quote: Quote;
   onPress?: (quote: Quote) => void;
+  selected?: boolean;
   style?: ViewStyle;
   testID?: string;
 };
 
-export function QuoteCard({ quote, onPress, style, testID }: QuoteCardProps) {
+export function QuoteCard({
+  quote,
+  onPress,
+  selected = false,
+  style,
+  testID,
+}: QuoteCardProps) {
   const styles = useStyles();
   const colors = useColors();
   const displayDate = formatDate(quote.issuedAt ?? quote.createdAt);
@@ -42,7 +49,7 @@ export function QuoteCard({ quote, onPress, style, testID }: QuoteCardProps) {
 
   if (!onPress) {
     return (
-      <View style={styles.wrapper} testID={testID}>
+      <View style={[styles.wrapper, selected && styles.selected]} testID={testID}>
         {content}
       </View>
     );
@@ -52,8 +59,13 @@ export function QuoteCard({ quote, onPress, style, testID }: QuoteCardProps) {
     <Pressable
       accessibilityLabel={`Devis ${quote.number}`}
       accessibilityRole="button"
+      accessibilityState={{ selected }}
       onPress={() => onPress(quote)}
-      style={({ pressed }) => [styles.wrapper, pressed && styles.pressed]}
+      style={({ pressed }) => [
+        styles.wrapper,
+        selected && styles.selected,
+        pressed && styles.pressed,
+      ]}
       testID={testID}>
       {content}
     </Pressable>
@@ -64,6 +76,9 @@ function useStyles() {
   return useThemedStyles((colors) => ({
   wrapper: {
     backgroundColor: colors.surface,
+  },
+  selected: {
+    backgroundColor: colors.primarySubtle,
   },
   pressed: {
     backgroundColor: colors.backgroundSecondary,

@@ -30,6 +30,7 @@ export type QuotesListProps = {
   onRefresh?: () => void;
   onEndReached?: () => void;
   contentContainerStyle?: ViewStyle;
+  selectedId?: string | null;
   testID?: string;
 };
 
@@ -44,13 +45,18 @@ export function QuotesList({
   onEndReached,
   onQuotePress,
   contentContainerStyle,
+  selectedId,
   testID,
 }: QuotesListProps) {
   const styles = useStyles();
   const colors = useColors();
   const renderItem: ListRenderItem<Quote> = ({ item, index }) => (
     <View>
-      <QuoteCard onPress={onQuotePress} quote={item} />
+      <QuoteCard
+        onPress={onQuotePress}
+        quote={item}
+        selected={item.id === selectedId}
+      />
       {index < quotes.length - 1 ? <View style={styles.separator} /> : null}
     </View>
   );
