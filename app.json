@@ -38,6 +38,7 @@
     "plugins": [
       "expo-apple-authentication",
       "expo-router",
+      "expo-iap",
       [
         "expo-splash-screen",
         {

@@ -12,6 +12,7 @@ import {
   PREMIUM_PRICE_LABEL,
   PREMIUM_PRICE_PERIOD_LABEL,
 } from '@/constants/subscription-pricing';
+import { APPLE_PREMIUM_PRODUCT_ID } from '@/constants/iap';
 import { radius } from '@/constants/theme/radius';
 import { spacing } from '@/constants/theme/spacing';
 import { typography } from '@/constants/theme/typography';
@@ -43,14 +44,17 @@ type DurationOption = {
  * qu'un plan annuel (avec son propre `appStoreProductId`) existera côté
  * catalogue — voir OPEN ITEMS.
  */
-function buildDurationOptions(premiumPlan: SubscriptionPlan): DurationOption[] {
+function buildDurationOptions(
+  premiumPlan: SubscriptionPlan,
+  priceLabel: string,
+): DurationOption[] {
   return [
     {
       id: 'monthly',
       label: 'Mensuel',
-      priceLabel: PREMIUM_PRICE_LABEL,
+      priceLabel,
       periodLabel: PREMIUM_PRICE_PERIOD_LABEL,
-      appStoreProductId: premiumPlan.appStoreProductId,
+      appStoreProductId: premiumPlan.appStoreProductId ?? APPLE_PREMIUM_PRODUCT_ID,
     },
   ];
 }
@@ -67,10 +71,22 @@ export default function PremiumScreen() {
 
   const standardPlan = plansQuery.data?.find((plan) => plan.id === 'free');
   const premiumPlan = plansQuery.data?.find((plan) => plan.id === 'premium');
+  const appStoreProductId =
+    premiumPlan?.appStoreProductId ?? APPLE_PREMIUM_PRODUCT_ID;
+  const appleStoreProduct = appleIap.products.data?.find(
+    (product) => product.productId === appStoreProductId,
+  );
+  const premiumPriceLabel =
+    IS_APPLE_IAP_PLATFORM && appleStoreProduct?.displayPrice
+      ? appleStoreProduct.displayPrice
+      : PREMIUM_PRICE_LABEL;
 
   const durationOptions = useMemo(
-    () => (premiumPlan ? buildDurationOptions(premiumPlan) : []),
-    [premiumPlan],
+    () =>
+      premiumPlan
+        ? buildDurationOptions(premiumPlan, premiumPriceLabel)
+        : [],
+    [premiumPlan, premiumPriceLabel],
   );
 
   async function handleStripeSubscribe() {
@@ -138,7 +154,7 @@ export default function PremiumScreen() {
           ) : (
             <>
               <Text style={styles.heroPrice}>
-                {PREMIUM_PRICE_LABEL}
+                {premiumPriceLabel}
                 <Text style={styles.heroPeriod}>{PREMIUM_PRICE_PERIOD_LABEL}</Text>
               </Text>
               <Text style={styles.heroSubtitle}>
@@ -160,8 +176,9 @@ export default function PremiumScreen() {
 
         {!isPremium && IS_APPLE_IAP_PLATFORM ? (
           <AppleOffer
-            appStoreProductId={premiumPlan.appStoreProductId}
+            appStoreProductId={appStoreProductId}
             durationOptions={durationOptions}
+            isConfigured={appleIap.isConfigured}
             onPurchase={handleApplePurchase}
             purchasing={appleIap.purchase.isPending}
           />
@@ -235,6 +252,7 @@ function CurrentPlanState({ subscription }: { subscription: UserSubscription }) 
 type AppleOfferProps = {
   appStoreProductId: string | null;
   durationOptions: DurationOption[];
+  isConfigured: boolean;
   onPurchase: (appStoreProductId: string | null) => void;
   purchasing: boolean;
 };
@@ -242,6 +260,7 @@ type AppleOfferProps = {
 function AppleOffer({
   appStoreProductId,
   durationOptions,
+  isConfigured,
   onPurchase,
   purchasing,
 }: AppleOfferProps) {
@@ -251,7 +270,7 @@ function AppleOffer({
   );
   const active = durationOptions.find((option) => option.id === selectedId) ?? durationOptions[0];
   const resolvedProductId = active?.appStoreProductId ?? appStoreProductId;
-  const isMissingProduct = !resolvedProductId;
+  const isUnavailable = !resolvedProductId || !isConfigured;
 
   return (
     <View style={styles.container}>
@@ -266,12 +285,12 @@ function AppleOffer({
 
       <View style={styles.actions}>
         <Button
-          disabled={isMissingProduct}
+          disabled={isUnavailable}
           loading={purchasing}
           onPress={() => onPurchase(resolvedProductId)}
           title={`Continuer avec l’App Store — ${active?.priceLabel ?? PREMIUM_PRICE_LABEL}${active?.periodLabel ?? PREMIUM_PRICE_PERIOD_LABEL}`}
         />
-        {isMissingProduct ? (
+        {isUnavailable ? (
           <Text style={styles.disabledReason}>
             Offre App Store non configurée pour le moment. Contactez le support.
           </Text>
