@@ -9,12 +9,12 @@ const ACTIONS = [
   {
     label: 'Nouveau devis',
     icon: { ios: 'doc.text', android: 'description', web: 'description' },
-    href: '/quotes/new' as Href,
+    href: '/documents/quotes/new' as Href,
   },
   {
     label: 'Nouvelle facture',
     icon: { ios: 'doc.plaintext', android: 'receipt', web: 'receipt' },
-    href: '/invoices/new' as Href,
+    href: '/documents/invoices/new' as Href,
   },
   {
     label: 'Nouveau client',

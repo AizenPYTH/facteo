@@ -45,7 +45,7 @@ export function InvoiceDetailView({
           {invoice.quoteId ? (
             <Pressable
               accessibilityRole="button"
-              onPress={() => router.push(`/quotes/${invoice.quoteId}` as Href)}>
+              onPress={() => router.push(`/documents/quotes/${invoice.quoteId}` as Href)}>
               <QuoteField emphasize label="Devis d’origine" value="Voir le devis source" />
             </Pressable>
           ) : null}

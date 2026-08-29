@@ -55,7 +55,7 @@ export default function QuoteDetailScreen() {
   const colors = useColors();
   const { isWeb, isDesktop, isTablet } = useBreakpoint();
   const { id } = useLocalSearchParams<{ id: string }>();
-  useDesktopListRedirect('/quotes');
+  useDesktopListRedirect('/documents/quotes');
   const quoteId = Array.isArray(id) ? id[0] : id;
   const { user } = useAuth();
   const { scope, isSwitching } = useTenant();
@@ -137,7 +137,7 @@ export default function QuoteDetailScreen() {
     try {
       const duplicated = await duplicateQuote.mutateAsync(quoteId);
       showSuccess('Devis dupliqué.');
-      router.push(`/quotes/${duplicated.id}` as Href);
+      router.push(`/documents/quotes/${duplicated.id}` as Href);
     } catch (error) {
       showError(getQuoteErrorMessage(readErrorMessage(error)));
     }
@@ -153,7 +153,7 @@ export default function QuoteDetailScreen() {
       const invoice = await convertToInvoice.mutateAsync(quoteId);
       setConvertVisible(false);
       showSuccess('Facture créée en brouillon.');
-      router.push(`/invoices/${invoice.id}` as Href);
+      router.push(`/documents/invoices/${invoice.id}` as Href);
     } catch (error) {
       showError(getQuoteErrorMessage(readErrorMessage(error)));
     }
@@ -209,7 +209,7 @@ export default function QuoteDetailScreen() {
     if (quote.status === 'converted' && quote.convertedInvoiceId) {
       return {
         label: 'Voir la facture',
-        onPress: () => router.push(`/invoices/${quote.convertedInvoiceId}` as Href),
+        onPress: () => router.push(`/documents/invoices/${quote.convertedInvoiceId}` as Href),
         loading: false,
         caption: undefined,
       };
@@ -309,7 +309,7 @@ export default function QuoteDetailScreen() {
               id: 'edit',
               label: 'Modifier',
               icon: { ios: 'square.and.pencil', android: 'edit', web: 'edit' } as const,
-              onPress: () => router.push(`/quotes/${quote.id}/edit` as Href),
+              onPress: () => router.push(`/documents/quotes/${quote.id}/edit` as Href),
             },
           ]
         : []),
@@ -325,7 +325,7 @@ export default function QuoteDetailScreen() {
               id: 'view-invoice',
               label: 'Voir la facture',
               icon: { ios: 'doc.text.fill', android: 'receipt_long', web: 'receipt_long' } as const,
-              onPress: () => router.push(`/invoices/${quote.convertedInvoiceId}` as Href),
+              onPress: () => router.push(`/documents/invoices/${quote.convertedInvoiceId}` as Href),
             },
           ]
         : []),

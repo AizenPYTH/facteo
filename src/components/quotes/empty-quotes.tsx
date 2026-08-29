@@ -69,9 +69,9 @@ export function EmptyQuotes({
       }}
       onAction={
         canCreate
-          ? () => router.push('/quotes/new' as Href)
+          ? () => router.push('/documents/quotes/new' as Href)
           : statusFilter !== 'all' && !isSearching
-            ? () => router.replace('/quotes' as Href)
+            ? () => router.replace('/documents/quotes' as Href)
             : undefined
       }
       style={style}

@@ -84,7 +84,7 @@ function QuotesMobileScreen() {
           isRefreshing={isRefetching && !isFetchingNextPage}
           isSearching={isSearching}
           onEndReached={handleEndReached}
-          onQuotePress={(quote) => router.push(`/quotes/${quote.id}` as Href)}
+          onQuotePress={(quote) => router.push(`/documents/quotes/${quote.id}` as Href)}
           onRefresh={handleRefresh}
           quotes={quotes}
           statusFilter={statusFilter}

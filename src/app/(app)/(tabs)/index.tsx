@@ -76,7 +76,7 @@ function DashboardMobileScreen() {
             <TodoNowSection recentInvoices={recentInvoices} stats={stats} />
             <RecentInvoicesSection
               invoices={recentInvoices}
-              onInvoicePress={(invoice) => router.push(`/invoices/${invoice.id}` as Href)}
+              onInvoicePress={(invoice) => router.push(`/documents/invoices/${invoice.id}` as Href)}
             />
             <PremiumGatedSection
               bannerMessage="Statistiques avancées — INVEQ Premium"

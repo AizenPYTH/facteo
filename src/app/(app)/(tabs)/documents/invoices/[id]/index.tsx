@@ -53,7 +53,7 @@ export default function InvoiceDetailScreen() {
   const colors = useColors();
   const { isWeb, isDesktop, isTablet } = useBreakpoint();
   const { id, payment } = useLocalSearchParams<{ id: string; payment?: string }>();
-  useDesktopListRedirect('/invoices');
+  useDesktopListRedirect('/documents/invoices');
   const invoiceId = Array.isArray(id) ? id[0] : id;
   const { user } = useAuth();
   const { scope, isSwitching } = useTenant();
@@ -196,7 +196,7 @@ export default function InvoiceDetailScreen() {
     try {
       const duplicated = await duplicateInvoice.mutateAsync(invoiceId);
       showSuccess('Facture dupliquée.');
-      router.push(`/invoices/${duplicated.id}` as Href);
+      router.push(`/documents/invoices/${duplicated.id}` as Href);
     } catch (error) {
       showError(getInvoiceErrorMessage(readErrorMessage(error)));
     }
@@ -391,7 +391,7 @@ export default function InvoiceDetailScreen() {
               id: 'edit',
               label: 'Modifier',
               icon: { ios: 'square.and.pencil', android: 'edit', web: 'edit' } as const,
-              onPress: () => router.push(`/invoices/${invoice.id}/edit` as Href),
+              onPress: () => router.push(`/documents/invoices/${invoice.id}/edit` as Href),
             },
           ]
         : []),

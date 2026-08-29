@@ -85,7 +85,7 @@ function InvoicesMobileScreen() {
           isRefreshing={isRefetching && !isFetchingNextPage}
           isSearching={isSearching}
           onEndReached={handleEndReached}
-          onInvoicePress={(invoice) => router.push(`/invoices/${invoice.id}` as Href)}
+          onInvoicePress={(invoice) => router.push(`/documents/invoices/${invoice.id}` as Href)}
           onRefresh={handleRefresh}
           showCreateAction={!showFab}
           statusFilter={statusFilter}

@@ -159,7 +159,7 @@ export function InvoicesDesktopScreen() {
 
   function handleSelect(invoiceId: string) {
     setSelectedId(invoiceId);
-    router.replace(`/invoices?selected=${encodeURIComponent(invoiceId)}` as Href);
+    router.replace(`/documents/invoices?selected=${encodeURIComponent(invoiceId)}` as Href);
   }
 
   async function handleDuplicate() {
@@ -178,7 +178,7 @@ export function InvoicesDesktopScreen() {
       <DesktopTopHeader
         actions={
           <Button
-            onPress={() => router.push('/invoices/new' as Href)}
+            onPress={() => router.push('/documents/invoices/new' as Href)}
             title="Nouvelle facture"
           />
         }
@@ -280,7 +280,7 @@ export function InvoicesDesktopScreen() {
             onDuplicate={() => void handleDuplicate()}
             onEdit={
               selectedInvoice
-                ? () => router.push(`/invoices/${selectedInvoice.id}/edit` as Href)
+                ? () => router.push(`/documents/invoices/${selectedInvoice.id}/edit` as Href)
                 : undefined
             }
             onPayment={() => setPaymentVisible(true)}

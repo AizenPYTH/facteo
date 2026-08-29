@@ -1,4 +1,4 @@
-import { router, type Href } from 'expo-router';
+import { router, useLocalSearchParams, type Href } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -39,9 +39,18 @@ type DocumentsSegment = 'invoices' | 'quotes';
  */
 export default function DocumentsScreen() {
   const styles = useStyles();
-  const [segment, setSegment] = useState<DocumentsSegment>('invoices');
+  const { segment: segmentParam } = useLocalSearchParams<{ segment?: string }>();
+  const [segment, setSegment] = useState<DocumentsSegment>(
+    segmentParam === 'quotes' ? 'quotes' : 'invoices',
+  );
   const invoicesIntro = useFeatureIntro('invoice');
   const quotesIntro = useFeatureIntro('quote');
+
+  useEffect(() => {
+    if (segmentParam === 'quotes' || segmentParam === 'invoices') {
+      setSegment(segmentParam);
+    }
+  }, [segmentParam]);
 
   useEffect(() => {
     return invoicesIntro.presentOnFirstVisit();
@@ -138,7 +147,7 @@ function InvoicesPane() {
           isRefreshing={isRefetching && !isFetchingNextPage}
           isSearching={isSearching}
           onEndReached={handleEndReached}
-          onInvoicePress={(invoice) => router.push(`/invoices/${invoice.id}` as Href)}
+          onInvoicePress={(invoice) => router.push(`/documents/invoices/${invoice.id}` as Href)}
           onRefresh={handleRefresh}
           showCreateAction={!showFab}
           statusFilter={statusFilter}
@@ -197,7 +206,7 @@ function QuotesPane() {
           isRefreshing={isRefetching && !isFetchingNextPage}
           isSearching={isSearching}
           onEndReached={handleEndReached}
-          onQuotePress={(quote) => router.push(`/quotes/${quote.id}` as Href)}
+          onQuotePress={(quote) => router.push(`/documents/quotes/${quote.id}` as Href)}
           onRefresh={handleRefresh}
           quotes={quotes}
           statusFilter={statusFilter}

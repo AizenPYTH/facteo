@@ -52,7 +52,7 @@ export default function CreateTabScreen() {
 
             <Pressable
               accessibilityRole="button"
-              onPress={() => closeAndGo('/invoices/new' as Href)}
+              onPress={() => closeAndGo('/documents/invoices/new' as Href)}
               style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}>
               <AppText medium variant="body">
                 Facture
@@ -60,7 +60,7 @@ export default function CreateTabScreen() {
             </Pressable>
             <Pressable
               accessibilityRole="button"
-              onPress={() => closeAndGo('/quotes/new' as Href)}
+              onPress={() => closeAndGo('/documents/quotes/new' as Href)}
               style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}>
               <AppText medium variant="body">
                 Devis

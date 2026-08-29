@@ -142,11 +142,11 @@ export function ClientsDesktopScreen() {
                           variant="ghost"
                         />
                         <Button
-                          onPress={() => router.push('/invoices/new' as Href)}
+                          onPress={() => router.push('/documents/invoices/new' as Href)}
                           title="Nouvelle facture"
                         />
                         <Button
-                          onPress={() => router.push('/quotes/new' as Href)}
+                          onPress={() => router.push('/documents/quotes/new' as Href)}
                           title="Nouveau devis"
                           variant="ghost"
                         />
@@ -164,7 +164,7 @@ export function ClientsDesktopScreen() {
                         date: invoice.issuedAt ?? invoice.createdAt,
                       }))}
                       onPress={(id) =>
-                        router.push(`/invoices?selected=${encodeURIComponent(id)}` as Href)
+                        router.push(`/documents/invoices?selected=${encodeURIComponent(id)}` as Href)
                       }
                     />
                   ) : null}
@@ -179,7 +179,7 @@ export function ClientsDesktopScreen() {
                         date: quote.issuedAt ?? quote.createdAt,
                       }))}
                       onPress={(id) =>
-                        router.push(`/quotes?selected=${encodeURIComponent(id)}` as Href)
+                        router.push(`/documents/quotes?selected=${encodeURIComponent(id)}` as Href)
                       }
                     />
                   ) : null}

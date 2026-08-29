@@ -71,9 +71,9 @@ export function EmptyInvoices({
       }}
       onAction={
         canCreate
-          ? () => router.push('/invoices/new' as Href)
+          ? () => router.push('/documents/invoices/new' as Href)
           : statusFilter !== 'all' && !isSearching
-            ? () => router.replace('/invoices' as Href)
+            ? () => router.replace('/documents/invoices' as Href)
             : undefined
       }
       style={style}

@@ -42,7 +42,7 @@ export function TodoNowSection({ stats, recentInvoices }: TodoNowSectionProps) {
       meta: 'Action prioritaire',
       value: overdueInvoice ? formatCurrency(overdueInvoice.amount) : undefined,
       overdue: true,
-      href: '/invoices' as Href,
+      href: '/documents' as Href,
     });
   }
 
@@ -54,7 +54,7 @@ export function TodoNowSection({ stats, recentInvoices }: TodoNowSectionProps) {
           ? 'Suivre un devis envoyé'
           : `Suivre ${stats.pendingQuotes} devis envoyés`,
       meta: 'En attente de réponse',
-      href: '/quotes' as Href,
+      href: '/documents?segment=quotes' as Href,
     });
   }
 

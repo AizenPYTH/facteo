@@ -39,7 +39,7 @@ export function AddQuoteFab({
       return;
     }
 
-    router.push('/quotes/new' as Href);
+    router.push('/documents/quotes/new' as Href);
   }
 
   return (
