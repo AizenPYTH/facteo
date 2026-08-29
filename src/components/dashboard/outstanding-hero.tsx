@@ -4,7 +4,7 @@ import { useThemedStyles } from '@/hooks/use-colors';
 import { radius } from '@/constants/theme/radius';
 import { spacing } from '@/constants/theme/spacing';
 import { typography } from '@/constants/theme/typography';
-import { formatCurrency } from '@/lib/format/currency';
+import { formatCurrency, formatSpokenEuros } from '@/lib/format/currency';
 import type { DashboardStats } from '@/types/dashboard';
 
 type OutstandingHeroProps = {
@@ -25,12 +25,9 @@ export function OutstandingHero({ stats }: OutstandingHeroProps) {
 
   return (
     <View style={styles.container}>
-      <Text maxFontSizeMultiplier={1.3} style={styles.label}>
-        Reste à encaisser
-      </Text>
+      <Text style={styles.label}>Reste à encaisser</Text>
       <Text
-        accessibilityLabel={`${formatCurrency(total)} à encaisser`}
-        maxFontSizeMultiplier={1.4}
+        accessibilityLabel={`${formatSpokenEuros(total)} à encaisser`}
         style={styles.amount}>
         {formatCurrency(total)}
       </Text>
@@ -80,10 +77,8 @@ function LegendDot({
   return (
     <View style={styles.legendItem}>
       <View style={[styles.dot, styles[colorKey]]} />
-      <Text maxFontSizeMultiplier={1.4} style={styles.legendText}>
-        {label}
-      </Text>
-      <Text maxFontSizeMultiplier={1.3} style={styles.legendValue}>
+      <Text style={styles.legendText}>{label}</Text>
+      <Text accessibilityLabel={formatSpokenEuros(value)} style={styles.legendValue}>
         {formatCurrency(value)}
       </Text>
     </View>

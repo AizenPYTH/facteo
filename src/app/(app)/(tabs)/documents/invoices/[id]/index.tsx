@@ -37,6 +37,7 @@ import { spacing } from '@/constants/theme/spacing';
 import { useDesktopListRedirect } from '@/hooks/use-desktop-list-redirect';
 import { useBreakpoint } from '@/hooks/use-breakpoint';
 import { useFeatureIntro } from '@/hooks/use-feature-intro';
+import { useIsLargeContentSize } from '@/hooks/use-is-large-content-size';
 import { useInvoice } from '@/hooks/use-invoices';
 import { useInvoiceMutations } from '@/hooks/use-invoice-mutations';
 import { getInvoiceErrorMessage } from '@/lib/invoices/errors';
@@ -62,6 +63,7 @@ const DOCUMENTS_FALLBACK = '/documents' as Href;
 export default function InvoiceDetailScreen() {
   const styles = useStyles();
   const colors = useColors();
+  const isLargeContentSize = useIsLargeContentSize();
   const { width, height, isWeb, isDesktop, isTablet } = useBreakpoint();
   const { id, payment } = useLocalSearchParams<{ id: string; payment?: string }>();
   useDesktopListRedirect('/documents/invoices');
@@ -523,6 +525,8 @@ export default function InvoiceDetailScreen() {
   const previewCard = (
     <View style={styles.previewCard}>
       <Pressable
+        accessibilityLabel={`Ouvrir l’aperçu PDF de la facture ${invoice.number}`}
+        accessibilityRole="button"
         onPress={() => void documentActions.handleOpenPreview()}
         style={({ pressed }) => [styles.previewRow, pressed && styles.pressed]}>
         <View style={[styles.previewAccent, { backgroundColor: template.theme.primary }]} />
@@ -544,17 +548,25 @@ export default function InvoiceDetailScreen() {
           />
         )}
       </Pressable>
-      <View style={styles.previewActions}>
+      <View style={[styles.previewActions, isLargeContentSize && styles.actionsColumn]}>
         <Button
+          accessibilityLabel="Ouvrir l’aperçu PDF"
           onPress={() => void documentActions.handleOpenPreview()}
-          style={styles.previewActionButton}
+          style={[
+            styles.previewActionButton,
+            isLargeContentSize && styles.previewActionButtonLarge,
+          ]}
           title="Ouvrir"
           variant="secondary"
         />
         <Button
+          accessibilityLabel="Partager le PDF"
           loading={documentActions.loading}
           onPress={() => void documentActions.handleShare()}
-          style={styles.previewActionButton}
+          style={[
+            styles.previewActionButton,
+            isLargeContentSize && styles.previewActionButtonLarge,
+          ]}
           title="Partager"
           variant="secondary"
         />
@@ -639,7 +651,11 @@ export default function InvoiceDetailScreen() {
 
   if (isNativeTablet) {
     const tabletHeaderActions = (
-      <View style={styles.tabletHeaderActions}>
+      <View
+        style={[
+          styles.tabletHeaderActions,
+          isLargeContentSize && styles.tabletHeaderActionsLarge,
+        ]}>
         {primaryAction ? (
           <Button
             loading={primaryAction.loading}
@@ -839,6 +855,10 @@ function useStyles() {
       flexWrap: 'wrap' as const,
       gap: spacing.sm,
     },
+    tabletHeaderActionsLarge: {
+      flexDirection: 'column' as const,
+      alignItems: 'stretch' as const,
+    },
     tabletHeaderAction: {
       minWidth: 120,
     },
@@ -892,8 +912,15 @@ function useStyles() {
       flexDirection: 'row' as const,
       gap: spacing.sm,
     },
+    actionsColumn: {
+      flexDirection: 'column' as const,
+    },
     previewActionButton: {
       flex: 1,
+    },
+    previewActionButtonLarge: {
+      flex: 0,
+      width: '100%' as const,
     },
     actionsButton: {
       minWidth: components.touchTarget,

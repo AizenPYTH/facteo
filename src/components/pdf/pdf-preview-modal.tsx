@@ -10,6 +10,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { PdfPreviewWebView } from '@/components/pdf/pdf-preview-webview';
 import { useColors, useThemedStyles } from '@/hooks/use-colors';
+import { useIsLargeContentSize } from '@/hooks/use-is-large-content-size';
 import { spacing } from '@/constants/theme/spacing';
 import { textHierarchy } from '@/constants/theme/typography';
 
@@ -45,6 +46,7 @@ export function PdfPreviewModal({
   const insets = useSafeAreaInsets();
   const styles = useStyles();
   const colors = useColors();
+  const isLargeContentSize = useIsLargeContentSize();
 
   return (
     <Modal
@@ -70,9 +72,7 @@ export function PdfPreviewModal({
           </Pressable>
 
           <View style={styles.titleBlock}>
-            <Text numberOfLines={1} style={styles.title}>
-              {title}
-            </Text>
+            <Text style={styles.title}>{title}</Text>
             {pageCount && pageCount > 0 ? (
               <Text style={styles.subtitle}>
                 {pageCount} page{pageCount > 1 ? 's' : ''}
@@ -98,11 +98,17 @@ export function PdfPreviewModal({
           )}
         </View>
 
-        <View style={[styles.actions, { paddingBottom: Math.max(insets.bottom, spacing.md) }]}>
+        <View
+          style={[
+            styles.actions,
+            isLargeContentSize && styles.actionsLarge,
+            { paddingBottom: Math.max(insets.bottom, spacing.md) },
+          ]}>
           {onPrint ? (
             <ActionButton
               icon={{ ios: 'printer', android: 'print', web: 'print' }}
               label="Imprimer"
+              large={isLargeContentSize}
               onPress={onPrint}
             />
           ) : null}
@@ -110,6 +116,7 @@ export function PdfPreviewModal({
             <ActionButton
               icon={{ ios: 'square.and.arrow.down', android: 'download', web: 'download' }}
               label="Enregistrer"
+              large={isLargeContentSize}
               loading={loading}
               onPress={onSave}
             />
@@ -118,6 +125,7 @@ export function PdfPreviewModal({
             <ActionButton
               icon={{ ios: 'envelope', android: 'mail', web: 'mail' }}
               label="E-mail"
+              large={isLargeContentSize}
               onPress={onEmail}
             />
           ) : null}
@@ -125,6 +133,7 @@ export function PdfPreviewModal({
             highlight
             icon={{ ios: 'square.and.arrow.up', android: 'share', web: 'share' }}
             label="Partager"
+            large={isLargeContentSize}
             loading={loading}
             onPress={onShare}
           />
@@ -145,20 +154,30 @@ type ActionButtonProps = {
   onPress: () => void;
   loading?: boolean;
   highlight?: boolean;
+  large?: boolean;
   icon: ActionIcon;
 };
 
-function ActionButton({ label, onPress, loading = false, highlight = false, icon }: ActionButtonProps) {
+function ActionButton({
+  label,
+  onPress,
+  loading = false,
+  highlight = false,
+  large = false,
+  icon,
+}: ActionButtonProps) {
   const styles = useStyles();
   const colors = useColors();
 
   return (
     <Pressable
+      accessibilityLabel={label}
       accessibilityRole="button"
       disabled={loading}
       onPress={onPress}
       style={({ pressed }) => [
         styles.actionButton,
+        large && styles.actionButtonLarge,
         highlight && styles.actionButtonHighlight,
         pressed && styles.pressed,
         loading && styles.actionButtonDisabled,
@@ -191,9 +210,9 @@ function useStyles() {
       backgroundColor: colors.surface,
     },
     closeButton: {
-      width: 36,
-      height: 36,
-      borderRadius: 18,
+      width: 44,
+      height: 44,
+      borderRadius: 22,
       alignItems: 'center',
       justifyContent: 'center',
       backgroundColor: colors.backgroundSecondary,
@@ -204,7 +223,7 @@ function useStyles() {
       gap: 2,
     },
     toolbarSpacer: {
-      width: 36,
+      width: 44,
     },
     title: {
       ...textHierarchy.body,
@@ -241,6 +260,9 @@ function useStyles() {
       borderTopWidth: 0.5,
       borderTopColor: colors.separator,
     },
+    actionsLarge: {
+      flexDirection: 'column',
+    },
     actionButton: {
       flex: 1,
       minHeight: 52,
@@ -254,6 +276,10 @@ function useStyles() {
     },
     actionButtonHighlight: {
       backgroundColor: colors.primary,
+    },
+    actionButtonLarge: {
+      flex: 0,
+      width: '100%',
     },
     actionButtonDisabled: {
       opacity: 0.6,

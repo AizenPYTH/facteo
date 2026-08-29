@@ -70,16 +70,14 @@ export function NavigationHeader({
               tintColor={colors.primary}
               type="hierarchical"
             />
-            <Text maxFontSizeMultiplier={1.4} style={styles.backLabel}>
-              {backLabel}
-            </Text>
+            <Text style={styles.backLabel}>{backLabel}</Text>
           </Pressable>
         ) : (
           <View style={styles.backButtonPlaceholder} />
         )}
         {trailing ? <View style={styles.trailing}>{trailing}</View> : null}
       </View>
-      <AppText accessibilityRole="header" numberOfLines={2} variant="display">
+      <AppText accessibilityRole="header" variant="display">
         {title}
       </AppText>
     </View>
@@ -105,9 +103,7 @@ export function ModalHeader({
 
   return (
     <View style={[styles.modalHeader, { paddingTop: insets.top + spacing.sm }, style]}>
-      <Text maxFontSizeMultiplier={1.4} style={styles.modalTitle}>
-        {title}
-      </Text>
+      <Text style={styles.modalTitle}>{title}</Text>
       <Pressable
         accessibilityLabel={closeLabel}
         accessibilityRole="button"

@@ -8,7 +8,7 @@ import { useColors, useThemedStyles } from '@/hooks/use-colors';
 import { radius } from '@/constants/theme/radius';
 import { spacing } from '@/constants/theme/spacing';
 import { typography } from '@/constants/theme/typography';
-import { formatPriceHT } from '@/lib/format/currency';
+import { formatPriceHT, formatSpokenEuros } from '@/lib/format/currency';
 import { mapLineValueToTotals } from '@/lib/quotes/mappers';
 import type { DocumentTotals } from '@/lib/calculations/totals';
 import type { QuoteInfoValues, QuoteLineValue } from '@/types/quote';
@@ -105,11 +105,17 @@ export function DocumentFinalizeStep({
                 <Text style={styles.lineTitle}>
                   {index + 1}. {line.description || 'Sans description'}
                 </Text>
-                <Text style={styles.lineMeta}>
+                <Text
+                  accessibilityLabel={`${line.quantity} ${line.unit}, ${formatSpokenEuros(lineTotals.lineTotalHt)} hors taxes`}
+                  style={styles.lineMeta}>
                   {line.quantity} {line.unit} · {formatPriceHT(lineTotals.lineTotalHt)} HT
                 </Text>
               </View>
-              <Text style={styles.lineAmount}>{formatPriceHT(lineTotals.lineTotalTtc)}</Text>
+              <Text
+                accessibilityLabel={formatSpokenEuros(lineTotals.lineTotalTtc)}
+                style={styles.lineAmount}>
+                {formatPriceHT(lineTotals.lineTotalTtc)}
+              </Text>
             </View>
           );
         })}

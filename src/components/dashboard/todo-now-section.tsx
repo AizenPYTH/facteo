@@ -7,7 +7,7 @@ import { useThemedStyles } from '@/hooks/use-colors';
 import { radius } from '@/constants/theme/radius';
 import { spacing } from '@/constants/theme/spacing';
 import { typography } from '@/constants/theme/typography';
-import { formatCurrency } from '@/lib/format/currency';
+import { formatCurrency, formatSpokenEuros } from '@/lib/format/currency';
 import type { DashboardStats, Invoice } from '@/types/dashboard';
 
 type TodoNowSectionProps = {
@@ -26,6 +26,7 @@ export function TodoNowSection({ stats, recentInvoices }: TodoNowSectionProps) {
     title: string;
     meta: string;
     value?: string;
+    valueAccessibilityLabel?: string;
     overdue?: boolean;
     href: Href;
   }[] = [];
@@ -41,6 +42,9 @@ export function TodoNowSection({ stats, recentInvoices }: TodoNowSectionProps) {
           : `Relancer ${stats.lateInvoices} factures en retard`,
       meta: 'Action prioritaire',
       value: overdueInvoice ? formatCurrency(overdueInvoice.amount) : undefined,
+      valueAccessibilityLabel: overdueInvoice
+        ? formatSpokenEuros(overdueInvoice.amount)
+        : undefined,
       overdue: true,
       href: '/documents' as Href,
     });
@@ -80,6 +84,7 @@ export function TodoNowSection({ stats, recentInvoices }: TodoNowSectionProps) {
                 row.overdue ? <StatusChip label="En retard" tone="overdue" /> : undefined
               }
               value={row.value}
+              valueAccessibilityLabel={row.valueAccessibilityLabel}
             />
             {index < rows.length - 1 ? <View style={styles.separator} /> : null}
           </View>

@@ -8,7 +8,7 @@ import { components } from '@/constants/theme/design-system';
 import { radius } from '@/constants/theme/radius';
 import { spacing } from '@/constants/theme/spacing';
 import { typography } from '@/constants/theme/typography';
-import { formatPriceHT } from '@/lib/format/currency';
+import { formatPriceHT, formatSpokenEuros } from '@/lib/format/currency';
 import { mapQuoteLineValueToTotals } from '@/lib/quotes/mappers';
 import type { QuoteLineValue } from '@/types/quote';
 
@@ -109,7 +109,9 @@ export function QuoteLine({ index, value, onChange, onRemove }: QuoteLineProps) 
       </View>
 
       <View style={styles.totals}>
-        <Text style={styles.totalsLabel}>
+        <Text
+          accessibilityLabel={`Prestation, ${formatSpokenEuros(lineTotals.lineTotalHt)} hors taxes, ${formatSpokenEuros(lineTotals.lineTotalTtc)} toutes taxes comprises`}
+          style={styles.totalsLabel}>
           Prestation : {formatPriceHT(lineTotals.lineTotalHt)} HT ·{' '}
           {formatPriceHT(lineTotals.lineTotalTtc)} TTC
         </Text>

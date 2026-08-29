@@ -40,6 +40,7 @@ import { requireScope } from '@/lib/tenant/scope';
 import { useDesktopListRedirect } from '@/hooks/use-desktop-list-redirect';
 import { useBreakpoint } from '@/hooks/use-breakpoint';
 import { useDocumentActions } from '@/hooks/use-document-actions';
+import { useIsLargeContentSize } from '@/hooks/use-is-large-content-size';
 import { useQuoteMutations } from '@/hooks/use-quote-mutations';
 import { useQuote } from '@/hooks/use-quote';
 import { useSentDocuments } from '@/hooks/use-sent-documents';
@@ -61,6 +62,7 @@ const DOCUMENTS_FALLBACK = '/documents' as Href;
 export default function QuoteDetailScreen() {
   const styles = useStyles();
   const colors = useColors();
+  const isLargeContentSize = useIsLargeContentSize();
   const { width, height, isWeb, isDesktop, isTablet } = useBreakpoint();
   const { id } = useLocalSearchParams<{ id: string }>();
   useDesktopListRedirect('/documents/quotes');
@@ -447,6 +449,8 @@ export default function QuoteDetailScreen() {
   const previewCard = (
     <View style={styles.previewCard}>
       <Pressable
+        accessibilityLabel={`Ouvrir l’aperçu PDF du devis ${quote.number}`}
+        accessibilityRole="button"
         onPress={() => void documentActions.handleOpenPreview()}
         style={({ pressed }) => [styles.previewRow, pressed && styles.pressed]}>
         <View style={[styles.previewAccent, { backgroundColor: template.theme.primary }]} />
@@ -468,17 +472,25 @@ export default function QuoteDetailScreen() {
           />
         )}
       </Pressable>
-      <View style={styles.previewActions}>
+      <View style={[styles.previewActions, isLargeContentSize && styles.actionsColumn]}>
         <Button
+          accessibilityLabel="Ouvrir l’aperçu PDF"
           onPress={() => void documentActions.handleOpenPreview()}
-          style={styles.previewActionButton}
+          style={[
+            styles.previewActionButton,
+            isLargeContentSize && styles.previewActionButtonLarge,
+          ]}
           title="Ouvrir"
           variant="secondary"
         />
         <Button
+          accessibilityLabel="Partager le PDF"
           loading={documentActions.loading}
           onPress={() => void documentActions.handleShare()}
-          style={styles.previewActionButton}
+          style={[
+            styles.previewActionButton,
+            isLargeContentSize && styles.previewActionButtonLarge,
+          ]}
           title="Partager"
           variant="secondary"
         />
@@ -570,7 +582,11 @@ export default function QuoteDetailScreen() {
 
   if (isNativeTablet) {
     const tabletHeaderActions = (
-      <View style={styles.tabletHeaderActions}>
+      <View
+        style={[
+          styles.tabletHeaderActions,
+          isLargeContentSize && styles.tabletHeaderActionsLarge,
+        ]}>
         {primaryAction ? (
           <Button
             loading={primaryAction.loading}
@@ -761,6 +777,10 @@ function useStyles() {
       flexWrap: 'wrap' as const,
       gap: spacing.sm,
     },
+    tabletHeaderActionsLarge: {
+      flexDirection: 'column' as const,
+      alignItems: 'stretch' as const,
+    },
     tabletHeaderAction: {
       minWidth: 120,
     },
@@ -814,8 +834,15 @@ function useStyles() {
       flexDirection: 'row' as const,
       gap: spacing.sm,
     },
+    actionsColumn: {
+      flexDirection: 'column' as const,
+    },
     previewActionButton: {
       flex: 1,
+    },
+    previewActionButtonLarge: {
+      flex: 0,
+      width: '100%' as const,
     },
     actionsButton: {
       minWidth: components.touchTarget,

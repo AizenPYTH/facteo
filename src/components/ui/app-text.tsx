@@ -39,7 +39,6 @@ export function AppText({
 
   return (
     <Text
-      maxFontSizeMultiplier={1.5}
       style={[
         baseStyle,
         { color: colors[colorMap[color]] },

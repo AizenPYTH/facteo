@@ -20,6 +20,7 @@ type ListRowProps = {
   onPress?: () => void;
   style?: StyleProp<ViewStyle>;
   accessibilityLabel?: string;
+  valueAccessibilityLabel?: string;
 };
 
 /**
@@ -37,27 +38,27 @@ export function ListRow({
   onPress,
   style,
   accessibilityLabel,
+  valueAccessibilityLabel,
 }: ListRowProps) {
   const styles = useStyles();
   const colors = useColors();
+  const resolvedAccessibilityLabel =
+    accessibilityLabel ??
+    [title, meta, valueAccessibilityLabel ?? value].filter(Boolean).join(', ');
 
   const content = (
     <View style={[styles.row, overdue && styles.overdue, style]}>
       {leading ? <View style={styles.leading}>{leading}</View> : null}
 
       <View style={styles.body}>
-        <Text maxFontSizeMultiplier={1.5} numberOfLines={1} style={styles.title}>
-          {title}
-        </Text>
+        <Text style={styles.title}>{title}</Text>
         {meta ? (
-          <Text maxFontSizeMultiplier={1.5} numberOfLines={1} style={styles.meta}>
-            {meta}
-          </Text>
+          <Text style={styles.meta}>{meta}</Text>
         ) : null}
       </View>
 
       {value ? (
-        <Text maxFontSizeMultiplier={1.4} style={styles.value}>
+        <Text accessibilityLabel={valueAccessibilityLabel} style={styles.value}>
           {value}
         </Text>
       ) : null}
@@ -80,7 +81,7 @@ export function ListRow({
 
   return (
     <Pressable
-      accessibilityLabel={accessibilityLabel ?? title}
+      accessibilityLabel={resolvedAccessibilityLabel}
       accessibilityRole="button"
       onPress={onPress}
       style={({ pressed }) => [pressed && styles.pressed]}>

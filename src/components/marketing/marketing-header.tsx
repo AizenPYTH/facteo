@@ -159,8 +159,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   menuButton: {
-    width: 40,
-    height: 40,
+      width: 44,
+      height: 44,
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: marketingRadius.sm,

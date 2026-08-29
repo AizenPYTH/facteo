@@ -9,7 +9,7 @@ import { radius } from '@/constants/theme/radius';
 import { spacing } from '@/constants/theme/spacing';
 import { typography } from '@/constants/theme/typography';
 import { formatDate } from '@/lib/format/date';
-import { formatPriceHT } from '@/lib/format/currency';
+import { formatPriceHT, formatSpokenEuros } from '@/lib/format/currency';
 import { mapInvoiceLineValueToTotals, mapInvoiceLinesToDocumentTotals } from '@/lib/invoices/mappers';
 import type { InvoiceDetail } from '@/types/invoice';
 
@@ -72,14 +72,18 @@ export function InvoiceDetailView({
               <View key={line.id} style={index > 0 ? styles.lineSeparator : undefined}>
                 <Text style={styles.lineTitle}>Prestation {index + 1}</Text>
                 <Text style={styles.lineDescription}>{line.description}</Text>
-                <Text style={styles.lineMeta}>
+                <Text
+                  accessibilityLabel={`${line.quantity} ${line.unit}, ${formatSpokenEuros(Number(line.unitPrice.replace(',', '.')) || 0)} hors taxes`}
+                  style={styles.lineMeta}>
                   {line.quantity} {line.unit} ×{' '}
                   {formatPriceHT(Number(line.unitPrice.replace(',', '.')) || 0)} HT
                   {Number(line.discountPercent.replace(',', '.')) > 0
                     ? ` · Remise ${line.discountPercent} %`
                     : ''}
                 </Text>
-                <Text style={styles.lineAmount}>
+                <Text
+                  accessibilityLabel={`${formatSpokenEuros(lineTotals.lineTotalHt)} hors taxes, TVA ${line.vatRate} pour cent, ${formatSpokenEuros(lineTotals.lineTotalTtc)} toutes taxes comprises`}
+                  style={styles.lineAmount}>
                   {formatPriceHT(lineTotals.lineTotalHt)} HT · TVA {line.vatRate} % ·{' '}
                   {formatPriceHT(lineTotals.lineTotalTtc)} TTC
                 </Text>
@@ -99,15 +103,27 @@ export function InvoiceDetailView({
         <View style={styles.card}>
           <View style={styles.paymentRow}>
             <Text style={styles.paymentLabel}>Total TTC</Text>
-            <Text style={styles.paymentValue}>{formatPriceHT(invoice.totalTtc)}</Text>
+            <Text
+              accessibilityLabel={formatSpokenEuros(invoice.totalTtc)}
+              style={styles.paymentValue}>
+              {formatPriceHT(invoice.totalTtc)}
+            </Text>
           </View>
           <View style={styles.paymentRow}>
             <Text style={styles.paymentLabel}>Déjà payé</Text>
-            <Text style={styles.paymentValue}>{formatPriceHT(invoice.amountPaid)}</Text>
+            <Text
+              accessibilityLabel={formatSpokenEuros(invoice.amountPaid)}
+              style={styles.paymentValue}>
+              {formatPriceHT(invoice.amountPaid)}
+            </Text>
           </View>
           <View style={styles.paymentRow}>
             <Text style={styles.paymentLabelDue}>Reste à payer</Text>
-            <Text style={styles.paymentValueDue}>{formatPriceHT(invoice.amountDue)}</Text>
+            <Text
+              accessibilityLabel={formatSpokenEuros(invoice.amountDue)}
+              style={styles.paymentValueDue}>
+              {formatPriceHT(invoice.amountDue)}
+            </Text>
           </View>
 
           {invoice.payments.length > 0 ? (
@@ -118,7 +134,11 @@ export function InvoiceDetailView({
                   style={index > 0 ? styles.paymentItemSeparator : undefined}>
                   <View style={styles.paymentItemHeader}>
                     <Text style={styles.paymentItemDate}>{formatDate(payment.paidAt)}</Text>
-                    <Text style={styles.paymentItemAmount}>{formatPriceHT(payment.amount)}</Text>
+                    <Text
+                      accessibilityLabel={formatSpokenEuros(payment.amount)}
+                      style={styles.paymentItemAmount}>
+                      {formatPriceHT(payment.amount)}
+                    </Text>
                   </View>
                   {payment.paymentMethod ? (
                     <Text style={styles.paymentItemMeta}>Mode : {payment.paymentMethod}</Text>

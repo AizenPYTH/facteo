@@ -5,7 +5,7 @@ import { useThemedStyles } from '@/hooks/use-colors';
 import { components } from '@/constants/theme/design-system';
 import { spacing } from '@/constants/theme/spacing';
 import { formatDate } from '@/lib/format/date';
-import { formatPriceHT } from '@/lib/format/currency';
+import { formatPriceHT, formatSpokenEuros } from '@/lib/format/currency';
 import type { Invoice } from '@/types/invoice';
 
 import { InvoiceStatusBadge } from './invoice-status-badge';
@@ -41,7 +41,11 @@ export function InvoiceCard({
       </View>
 
       <View style={styles.row}>
-        <QuoteField label="Montant TTC" value={formatPriceHT(invoice.totalTtc)} />
+        <QuoteField
+          label="Montant TTC"
+          value={formatPriceHT(invoice.totalTtc)}
+          valueAccessibilityLabel={formatSpokenEuros(invoice.totalTtc)}
+        />
         {invoice.dueAt ? <QuoteField label="Échéance" value={formatDate(invoice.dueAt)} /> : null}
       </View>
     </View>
@@ -57,7 +61,7 @@ export function InvoiceCard({
 
   return (
     <Pressable
-      accessibilityLabel={`Facture ${invoice.number}`}
+      accessibilityLabel={`Facture ${invoice.number}, ${formatSpokenEuros(invoice.totalTtc)}`}
       accessibilityRole="button"
       accessibilityState={{ selected }}
       onPress={() => onPress(invoice)}

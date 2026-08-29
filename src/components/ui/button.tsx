@@ -92,9 +92,7 @@ export function Button({
       ) : isIcon ? (
         children
       ) : (
-        <Text
-          maxFontSizeMultiplier={1.5}
-          style={[styles.label, styles[`${resolved}Label` as const]]}>
+        <Text style={[styles.label, styles[`${resolved}Label` as const]]}>
           {title}
         </Text>
       )}
@@ -185,6 +183,7 @@ function useStyles() {
       opacity: 0.5,
     },
     label: {
+      flexShrink: 1,
       textAlign: 'center' as const,
     },
   }));

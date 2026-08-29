@@ -3,6 +3,7 @@ import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 
 import { triggerImpactHaptic } from '@/lib/haptics';
 import { useColors, useThemedStyles } from '@/hooks/use-colors';
+import { useIsLargeContentSize } from '@/hooks/use-is-large-content-size';
 import { radius } from '@/constants/theme/radius';
 import { spacing } from '@/constants/theme/spacing';
 import { typography } from '@/constants/theme/typography';
@@ -35,13 +36,14 @@ export function WizardActionBar({
 }: WizardActionBarProps) {
   const styles = useStyles();
   const colors = useColors();
+  const isLargeContentSize = useIsLargeContentSize();
   const isDisabled = primaryDisabled || primaryLoading;
 
   return (
     <View style={styles.container}>
       {summary ? <View style={styles.summary}>{summary}</View> : null}
 
-      <View style={styles.row}>
+      <View style={[styles.row, isLargeContentSize && styles.column]}>
         <Pressable
           accessibilityLabel={backLabel}
           accessibilityRole="button"
@@ -49,10 +51,12 @@ export function WizardActionBar({
             void triggerImpactHaptic();
             onBack();
           }}
-          style={({ pressed }) => [styles.backButton, pressed && styles.backButtonPressed]}>
-          <Text maxFontSizeMultiplier={1.3} style={styles.backLabel}>
-            {backLabel}
-          </Text>
+          style={({ pressed }) => [
+            styles.backButton,
+            isLargeContentSize && styles.largeButton,
+            pressed && styles.backButtonPressed,
+          ]}>
+          <Text style={styles.backLabel}>{backLabel}</Text>
         </Pressable>
 
         <Pressable
@@ -68,23 +72,20 @@ export function WizardActionBar({
           }}
           style={({ pressed }) => [
             styles.primaryButton,
+            isLargeContentSize && styles.largePrimaryButton,
             pressed && !isDisabled && styles.primaryButtonPressed,
             isDisabled && styles.primaryButtonDisabled,
           ]}>
           {primaryLoading ? (
             <ActivityIndicator color={colors.onInk} size="small" />
           ) : (
-            <Text maxFontSizeMultiplier={1.3} style={styles.primaryLabel}>
-              {primaryLabel}
-            </Text>
+            <Text style={styles.primaryLabel}>{primaryLabel}</Text>
           )}
         </Pressable>
       </View>
 
       {primaryDisabled && disabledReason ? (
-        <Text maxFontSizeMultiplier={1.5} style={styles.disabledReason}>
-          {disabledReason}
-        </Text>
+        <Text style={styles.disabledReason}>{disabledReason}</Text>
       ) : null}
     </View>
   );
@@ -103,12 +104,20 @@ const useStyles = () =>
       alignItems: 'center',
       gap: spacing.sm,
     },
+    column: {
+      flexDirection: 'column',
+      alignItems: 'stretch',
+    },
     backButton: {
       minHeight: 44,
       paddingHorizontal: spacing.md,
       alignItems: 'center',
       justifyContent: 'center',
       borderRadius: radius.buttonSmall,
+    },
+    largeButton: {
+      alignSelf: 'stretch',
+      width: '100%',
     },
     backButtonPressed: {
       backgroundColor: colors.primarySubtle,
@@ -125,6 +134,10 @@ const useStyles = () =>
       justifyContent: 'center',
       paddingHorizontal: spacing.lg,
       backgroundColor: colors.ink,
+    },
+    largePrimaryButton: {
+      flex: 0,
+      width: '100%',
     },
     primaryButtonPressed: {
       backgroundColor: colors.inkPressed,

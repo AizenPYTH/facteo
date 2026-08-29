@@ -1,9 +1,10 @@
-import type { ReactNode } from 'react';
+import { Children, type ReactNode } from 'react';
 import { Platform, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
 import { KeyboardStickyView } from 'react-native-keyboard-controller';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useColors, useThemedStyles } from '@/hooks/use-colors';
+import { useIsLargeContentSize } from '@/hooks/use-is-large-content-size';
 import { spacing } from '@/constants/theme/spacing';
 import { shadows } from '@/constants/theme/theme';
 import { typography } from '@/constants/theme/typography';
@@ -34,6 +35,7 @@ export function ActionBar({
   const styles = useStyles();
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const isLargeContentSize = useIsLargeContentSize();
   const paddingBottom = Math.max(insets.bottom, spacing.actionBarPaddingBottom);
 
   return (
@@ -50,11 +52,17 @@ export function ActionBar({
           style,
         ]}>
         {summary ? <View style={styles.summary}>{summary}</View> : null}
-        {children}
+        <View style={[styles.actions, isLargeContentSize && styles.actionsLarge]}>
+          {Children.map(children, (child) =>
+            child ? (
+              <View style={[styles.action, isLargeContentSize && styles.actionLarge]}>
+                {child}
+              </View>
+            ) : null,
+          )}
+        </View>
         {caption ? (
-          <Text maxFontSizeMultiplier={1.5} style={styles.caption}>
-            {caption}
-          </Text>
+          <Text style={styles.caption}>{caption}</Text>
         ) : null}
       </View>
     </KeyboardStickyView>
@@ -63,9 +71,10 @@ export function ActionBar({
 
 export function useActionBarInset(): number {
   const insets = useSafeAreaInsets();
+  const isLargeContentSize = useIsLargeContentSize();
   const paddingBottom = Math.max(insets.bottom, spacing.actionBarPaddingBottom);
   return (
-    componentsMinHeight() +
+    componentsMinHeight() * (isLargeContentSize ? 2 : 1) +
     spacing.actionBarPaddingTop +
     paddingBottom +
     StyleSheet.hairlineWidth
@@ -90,6 +99,22 @@ function useStyles() {
     },
     summary: {
       gap: spacing.xs,
+    },
+    actions: {
+      flexDirection: 'row' as const,
+      alignItems: 'stretch' as const,
+      gap: spacing.sm,
+    },
+    actionsLarge: {
+      flexDirection: 'column' as const,
+    },
+    action: {
+      flex: 1,
+      minWidth: 0,
+    },
+    actionLarge: {
+      flex: 0,
+      width: '100%' as const,
     },
     caption: {
       ...typography.caption1,

@@ -27,12 +27,20 @@ export function ProductImageSourceSheet({
   return (
     <Modal animationType="fade" onRequestClose={onClose} transparent visible={visible}>
       <View style={styles.overlay}>
-        <Pressable onPress={onClose} style={StyleSheet.absoluteFill} />
+        <Pressable
+          accessibilityLabel="Fermer"
+          accessibilityRole="button"
+          onPress={onClose}
+          style={StyleSheet.absoluteFill}
+        />
         <View style={[styles.sheet, { paddingBottom: Math.max(insets.bottom, spacing.md) }]}>
           <Text style={styles.title}>Ajouter avec l’IA</Text>
           <Text style={styles.subtitle}>Choisissez une source d’image pour analyser le produit.</Text>
 
-          <Pressable onPress={onCameraPress} style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}>
+          <Pressable
+            accessibilityRole="button"
+            onPress={onCameraPress}
+            style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}>
             <SymbolView
               name={{ ios: 'camera.fill', android: 'photo_camera', web: 'camera' }}
               size={20}
@@ -43,6 +51,7 @@ export function ProductImageSourceSheet({
           </Pressable>
 
           <Pressable
+            accessibilityRole="button"
             onPress={onGalleryPress}
             style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}>
             <SymbolView
@@ -54,7 +63,10 @@ export function ProductImageSourceSheet({
             <Text style={styles.rowLabel}>Choisir une photo</Text>
           </Pressable>
 
-          <Pressable onPress={onClose} style={({ pressed }) => [styles.cancel, pressed && styles.rowPressed]}>
+          <Pressable
+            accessibilityRole="button"
+            onPress={onClose}
+            style={({ pressed }) => [styles.cancel, pressed && styles.rowPressed]}>
             <Text style={styles.cancelLabel}>Annuler</Text>
           </Pressable>
         </View>

@@ -5,7 +5,7 @@ import { radius } from '@/constants/theme/radius';
 import { spacing } from '@/constants/theme/spacing';
 import { typography } from '@/constants/theme/typography';
 import { formatDate } from '@/lib/format/date';
-import { formatPriceHT } from '@/lib/format/currency';
+import { formatPriceHT, formatSpokenEuros } from '@/lib/format/currency';
 import { mapLinesToDocumentTotals, mapLineValueToTotals } from '@/lib/quotes/mappers';
 import type { QuoteDetail } from '@/types/quote';
 
@@ -59,13 +59,17 @@ export function QuoteDetailView({ quote, style }: QuoteDetailViewProps) {
               <View key={line.id} style={index > 0 ? styles.lineSeparator : undefined}>
                 <Text style={styles.lineTitle}>Prestation {index + 1}</Text>
                 <Text style={styles.lineDescription}>{line.description}</Text>
-                <Text style={styles.lineMeta}>
+                <Text
+                  accessibilityLabel={`${line.quantity} ${line.unit}, ${formatSpokenEuros(Number(line.unitPrice.replace(',', '.')) || 0)} hors taxes`}
+                  style={styles.lineMeta}>
                   {line.quantity} {line.unit} × {formatPriceHT(Number(line.unitPrice.replace(',', '.')) || 0)} HT
                   {Number(line.discountPercent.replace(',', '.')) > 0
                     ? ` · Remise ${line.discountPercent} %`
                     : ''}
                 </Text>
-                <Text style={styles.lineAmount}>
+                <Text
+                  accessibilityLabel={`${formatSpokenEuros(lineTotals.lineTotalHt)} hors taxes, TVA ${line.vatRate} pour cent, ${formatSpokenEuros(lineTotals.lineTotalTtc)} toutes taxes comprises`}
+                  style={styles.lineAmount}>
                   {formatPriceHT(lineTotals.lineTotalHt)} HT · TVA {line.vatRate} % ·{' '}
                   {formatPriceHT(lineTotals.lineTotalTtc)} TTC
                 </Text>

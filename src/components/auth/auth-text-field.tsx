@@ -136,7 +136,10 @@ function useStyles() {
       margin: 0,
     },
     trailingButton: {
-      padding: spacing.xs,
+      width: components.touchTarget,
+      minHeight: components.touchTarget,
+      alignItems: 'center',
+      justifyContent: 'center',
     },
     error: {
       ...typography.caption1,

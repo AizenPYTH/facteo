@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { IPAD_PDF_PREVIEW_WIDTH } from '@/components/tablet/ipad-split-shell';
 import { spacing } from '@/constants/theme/spacing';
 import { useColors, useThemedStyles } from '@/hooks/use-colors';
+import { useIsLargeContentSize } from '@/hooks/use-is-large-content-size';
 
 type TabletPdfPreviewPanelProps = {
   title: string;
@@ -28,11 +29,12 @@ export function TabletPdfPreviewPanel({
 }: TabletPdfPreviewPanelProps) {
   const styles = useStyles();
   const colors = useColors();
+  const isLargeContentSize = useIsLargeContentSize();
 
   return (
     <View style={styles.panel}>
       <View style={styles.header}>
-        <AppText medium numberOfLines={1} variant="body">
+        <AppText medium variant="body">
           {title}
         </AppText>
         <AppText color="secondary" variant="caption">
@@ -60,12 +62,19 @@ export function TabletPdfPreviewPanel({
         )}
       </View>
 
-      <View style={styles.actions}>
-        <Button onPress={onOpen} style={styles.action} title="Ouvrir" variant="secondary" />
+      <View style={[styles.actions, isLargeContentSize && styles.actionsLarge]}>
         <Button
+          accessibilityLabel="Ouvrir l’aperçu PDF"
+          onPress={onOpen}
+          style={[styles.action, isLargeContentSize && styles.actionLarge]}
+          title="Ouvrir"
+          variant="secondary"
+        />
+        <Button
+          accessibilityLabel="Partager le PDF"
           loading={shareLoading}
           onPress={onShare}
-          style={styles.action}
+          style={[styles.action, isLargeContentSize && styles.actionLarge]}
           title="Partager"
           variant="secondary"
         />
@@ -110,7 +119,14 @@ const useStyles = () =>
       borderTopWidth: StyleSheet.hairlineWidth,
       borderTopColor: colors.border,
     },
+    actionsLarge: {
+      flexDirection: 'column' as const,
+    },
     action: {
       flex: 1,
+    },
+    actionLarge: {
+      flex: 0,
+      width: '100%' as const,
     },
   }));

@@ -10,7 +10,7 @@ import { useColors, useThemedStyles } from '@/hooks/use-colors';
 import { radius } from '@/constants/theme/radius';
 import { spacing } from '@/constants/theme/spacing';
 import { typography } from '@/constants/theme/typography';
-import { formatPriceHT } from '@/lib/format/currency';
+import { formatPriceHT, formatSpokenEuros } from '@/lib/format/currency';
 
 export type ProductAnalysisDraft = {
   title: string;
@@ -115,7 +115,13 @@ export function ProductAnalysisConfirmationModal({
                   <Text style={[styles.metaChip, styles.warningChip]}>Prix à confirmer</Text>
                 ) : null}
               </View>
-              <Text style={styles.lineAmount}>
+              <Text
+                accessibilityLabel={
+                  lineAmount === null
+                    ? 'Montant de la ligne à confirmer'
+                    : `Montant de la ligne, ${formatSpokenEuros(lineAmount)}`
+                }
+                style={styles.lineAmount}>
                 Montant de la ligne :{' '}
                 {lineAmount === null ? 'à confirmer' : formatPriceHT(lineAmount)}
               </Text>

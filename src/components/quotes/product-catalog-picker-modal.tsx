@@ -9,7 +9,11 @@ import { useDebouncedValue } from '@/hooks/use-debounced-value';
 import { radius } from '@/constants/theme/radius';
 import { spacing } from '@/constants/theme/spacing';
 import { typography } from '@/constants/theme/typography';
-import { formatPriceHT, formatVatRate } from '@/lib/format/currency';
+import {
+  formatPriceHT,
+  formatSpokenEuros,
+  formatVatRate,
+} from '@/lib/format/currency';
 import { searchProducts } from '@/lib/supabase/products';
 import type { ProductRow } from '@/types/database';
 
@@ -47,7 +51,11 @@ export function ProductCatalogPickerModal({
       <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
         <View style={styles.header}>
           <Text style={styles.title}>Catalogue</Text>
-          <Pressable accessibilityRole="button" hitSlop={12} onPress={onClose}>
+          <Pressable
+            accessibilityLabel="Fermer le catalogue"
+            accessibilityRole="button"
+            hitSlop={12}
+            onPress={onClose}>
             <Text style={[styles.close, { color: colors.primary }]}>Fermer</Text>
           </Pressable>
         </View>
@@ -92,7 +100,11 @@ export function ProductCatalogPickerModal({
                     {formatVatRate(item.vat_rate)} TVA
                   </Text>
                 </View>
-                <Text style={styles.rowPrice}>{formatPriceHT(item.unit_price)}</Text>
+                <Text
+                  accessibilityLabel={formatSpokenEuros(item.unit_price)}
+                  style={styles.rowPrice}>
+                  {formatPriceHT(item.unit_price)}
+                </Text>
               </Pressable>
             )}
             showsVerticalScrollIndicator={false}

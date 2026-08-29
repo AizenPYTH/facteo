@@ -2,7 +2,7 @@ import { StyleSheet, View } from 'react-native';
 
 import { useColors } from '@/hooks/use-colors';
 import { spacing } from '@/constants/theme/spacing';
-import { formatCurrency } from '@/lib/format/currency';
+import { formatCurrency, formatSpokenEuros } from '@/lib/format/currency';
 import type { DashboardStats } from '@/types/dashboard';
 
 import { SectionHeader } from './section-header';
@@ -26,6 +26,7 @@ export function ExtendedStatsGrid({ stats, premiumLocked = false }: ExtendedStat
           premiumLocked={premiumLocked}
           style={styles.card}
           value={formatCurrency(stats.todayRevenue)}
+          valueAccessibilityLabel={formatSpokenEuros(stats.todayRevenue)}
         />
         <StatCard
           accentColor={colors.info}
@@ -33,6 +34,7 @@ export function ExtendedStatsGrid({ stats, premiumLocked = false }: ExtendedStat
           premiumLocked={premiumLocked}
           style={styles.card}
           value={formatCurrency(stats.weeklyRevenue)}
+          valueAccessibilityLabel={formatSpokenEuros(stats.weeklyRevenue)}
         />
         <StatCard
           accentColor={colors.success}
@@ -40,6 +42,7 @@ export function ExtendedStatsGrid({ stats, premiumLocked = false }: ExtendedStat
           premiumLocked={premiumLocked}
           style={styles.card}
           value={formatCurrency(stats.monthlyRevenue)}
+          valueAccessibilityLabel={formatSpokenEuros(stats.monthlyRevenue)}
         />
         <StatCard
           accentColor={colors.primary}
@@ -47,6 +50,7 @@ export function ExtendedStatsGrid({ stats, premiumLocked = false }: ExtendedStat
           premiumLocked={premiumLocked}
           style={styles.card}
           value={formatCurrency(stats.yearlyRevenue)}
+          valueAccessibilityLabel={formatSpokenEuros(stats.yearlyRevenue)}
         />
         <StatCard
           accentColor={colors.warning}
@@ -54,6 +58,7 @@ export function ExtendedStatsGrid({ stats, premiumLocked = false }: ExtendedStat
           premiumLocked={premiumLocked}
           style={styles.card}
           value={formatCurrency(stats.outstandingAmount)}
+          valueAccessibilityLabel={formatSpokenEuros(stats.outstandingAmount)}
         />
         <StatCard
           accentColor={colors.error}
@@ -75,6 +80,7 @@ export function ExtendedStatsGrid({ stats, premiumLocked = false }: ExtendedStat
           premiumLocked={premiumLocked}
           style={styles.card}
           value={formatCurrency(stats.averageInvoiceAmount)}
+          valueAccessibilityLabel={formatSpokenEuros(stats.averageInvoiceAmount)}
         />
         <StatCard
           accentColor={colors.warning}

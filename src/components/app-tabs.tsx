@@ -175,7 +175,6 @@ function RailButton({
       </View>
       <AppText
         color={isFocused ? 'link' : 'tertiary'}
-        numberOfLines={1}
         semibold={isFocused}
         style={styles.railLabel}
         variant="caption">
@@ -237,6 +236,7 @@ const useRailStyles = () =>
     },
     railLabel: {
       fontSize: 11,
+      textAlign: 'center' as const,
     },
     pressed: {
       opacity: 0.7,

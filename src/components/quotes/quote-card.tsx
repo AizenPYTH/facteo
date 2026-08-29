@@ -4,7 +4,7 @@ import { useThemedStyles } from '@/hooks/use-colors';
 import { components } from '@/constants/theme/design-system';
 import { spacing } from '@/constants/theme/spacing';
 import { formatDate } from '@/lib/format/date';
-import { formatPriceHT } from '@/lib/format/currency';
+import { formatPriceHT, formatSpokenEuros } from '@/lib/format/currency';
 import type { Quote } from '@/types/quote';
 
 import { QuoteField } from './quote-field';
@@ -41,7 +41,11 @@ export function QuoteCard({
       </View>
 
       <View style={styles.row}>
-        <QuoteField label="Montant TTC" value={formatPriceHT(quote.totalTtc)} />
+        <QuoteField
+          label="Montant TTC"
+          value={formatPriceHT(quote.totalTtc)}
+          valueAccessibilityLabel={formatSpokenEuros(quote.totalTtc)}
+        />
       </View>
     </View>
   );
@@ -56,7 +60,7 @@ export function QuoteCard({
 
   return (
     <Pressable
-      accessibilityLabel={`Devis ${quote.number}`}
+      accessibilityLabel={`Devis ${quote.number}, ${formatSpokenEuros(quote.totalTtc)}`}
       accessibilityRole="button"
       accessibilityState={{ selected }}
       onPress={() => onPress(quote)}
