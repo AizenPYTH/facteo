@@ -2,6 +2,11 @@ import { NativeTabs } from 'expo-router/unstable-native-tabs';
 
 import { useColors } from '@/hooks/use-colors';
 
+/**
+ * Cinq positions — DESIGN §4 :
+ * Accueil · Documents · Créer · Clients · Réglages
+ * Factures/Devis restent des routes (sans onglet) pour le détail / deep link.
+ */
 export default function AppTabs() {
   const colors = useColors();
 
@@ -9,12 +14,31 @@ export default function AppTabs() {
     <NativeTabs
       backgroundColor={colors.background}
       indicatorColor={colors.backgroundElement}
-      labelStyle={{ selected: { color: colors.text } }}>
+      labelStyle={{
+        selected: { color: colors.primary },
+        default: { color: colors.textTertiary },
+      }}>
       <NativeTabs.Trigger name="index">
-        <NativeTabs.Trigger.Label>Tableau de bord</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Label>Accueil</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon
           md="home"
           sf={{ default: 'house', selected: 'house.fill' }}
+        />
+      </NativeTabs.Trigger>
+
+      <NativeTabs.Trigger name="documents">
+        <NativeTabs.Trigger.Label>Documents</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Icon
+          md="description"
+          sf={{ default: 'doc.text', selected: 'doc.text.fill' }}
+        />
+      </NativeTabs.Trigger>
+
+      <NativeTabs.Trigger name="create">
+        <NativeTabs.Trigger.Label>Créer</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Icon
+          md="add_circle"
+          sf={{ default: 'plus.circle', selected: 'plus.circle.fill' }}
         />
       </NativeTabs.Trigger>
 
@@ -26,19 +50,11 @@ export default function AppTabs() {
         />
       </NativeTabs.Trigger>
 
-      <NativeTabs.Trigger name="quotes">
-        <NativeTabs.Trigger.Label>Devis</NativeTabs.Trigger.Label>
+      <NativeTabs.Trigger name="settings">
+        <NativeTabs.Trigger.Label>Réglages</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon
-          md="description"
-          sf={{ default: 'doc.text', selected: 'doc.text.fill' }}
-        />
-      </NativeTabs.Trigger>
-
-      <NativeTabs.Trigger name="invoices">
-        <NativeTabs.Trigger.Label>Factures</NativeTabs.Trigger.Label>
-        <NativeTabs.Trigger.Icon
-          md="receipt_long"
-          sf={{ default: 'doc.plaintext', selected: 'doc.plaintext.fill' }}
+          md="settings"
+          sf={{ default: 'gearshape', selected: 'gearshape.fill' }}
         />
       </NativeTabs.Trigger>
     </NativeTabs>
