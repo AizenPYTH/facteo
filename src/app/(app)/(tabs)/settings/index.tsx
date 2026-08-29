@@ -139,6 +139,18 @@ export default function SettingsScreen() {
             />
             <View style={styles.separator} />
             <SettingsRow
+              label="Sécurité"
+              onPress={() => {
+                Alert.alert(
+                  'Sécurité',
+                  `Compte : ${user?.email ?? '—'}\n\nPour changer votre mot de passe, utilisez « Mot de passe oublié » sur l’écran de connexion. Aucun parcours de création de compte n’est proposé dans l’app iOS.`,
+                  [{ text: 'OK' }],
+                );
+              }}
+              value={user?.email ?? undefined}
+            />
+            <View style={styles.separator} />
+            <SettingsRow
               label="Mode sombre"
               onPress={
                 darkModeSupported ? undefined : () => showSuccess('Bientôt disponible sur le web.')
@@ -155,9 +167,8 @@ export default function SettingsScreen() {
                 />
               }
             />
+            <NotificationPreferencesSection variant="embedded" />
           </SettingsSection>
-
-          <NotificationPreferencesSection />
 
           <SettingsSection title="Assistance">
             <SettingsRow
