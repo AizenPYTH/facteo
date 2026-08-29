@@ -8,7 +8,7 @@ import Animated, {
   withSpring,
   withTiming,
 } from 'react-native-reanimated';
-    10|import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { PdfPreviewWebView } from '@/components/pdf/pdf-preview-webview';
 import { TemplatePreviewCard } from '@/components/pdf/template-preview-card';
@@ -18,7 +18,7 @@ import { Button } from '@/components/ui/button';
 import { StatusChip } from '@/components/ui/status-chip';
 import { useColors, useThemedStyles } from '@/hooks/use-colors';
 import { triggerImpactHaptic } from '@/lib/haptics';
-    20|import { ensureTemplatePreviewPdf } from '@/lib/pdf/template-preview-pdf';
+import { ensureTemplatePreviewPdf } from '@/lib/pdf/template-preview-pdf';
 import { spacing } from '@/constants/theme/spacing';
 import { radius } from '@/constants/theme/radius';
 import { PDF_TEMPLATES } from '@/lib/pdf/engine/templates';
@@ -28,17 +28,16 @@ type TemplateGalleryModalProps = {
   visible: boolean;
   title: string;
   selectedTemplateId: string;
-    30|  onClose: () => void;
+  onClose: () => void;
   onSelect: (templateId: string) => void;
   buildPreviewHtml: (templateId: string) => Promise<string>;
-  /** Namespace for PDF preview cache (document id, settings scope, etc.). */
   cacheKey?: string;
 };
 
 const SWIPE_THRESHOLD = 56;
 const TOTAL_TEMPLATES = PDF_TEMPLATES.length;
 
-    40|function findTemplateIndex(templateId: string): number {
+function findTemplateIndex(templateId: string): number {
   const index = PDF_TEMPLATES.findIndex((template) => template.id === templateId);
   return index >= 0 ? index : 0;
 }
@@ -46,8 +45,8 @@ const TOTAL_TEMPLATES = PDF_TEMPLATES.length;
 /**
  * Galerie de modèles — DESIGN §5.8.
  * Aucun enregistrement au swipe : la navigation ne met à jour qu'un brouillon
- * local (`draftId`). Seul « Utiliser ce modèle » confirme le choix au parent.
-    50| */
+ * local (draftId). Seul « Utiliser ce modèle » confirme le choix au parent.
+ */
 export function TemplateGalleryModal({
   visible,
   title,
@@ -57,7 +56,7 @@ export function TemplateGalleryModal({
   buildPreviewHtml,
   cacheKey = 'default',
 }: TemplateGalleryModalProps) {
-    60|  const styles = useStyles();
+  const styles = useStyles();
   const colors = useColors();
   const insets = useSafeAreaInsets();
 
@@ -67,7 +66,7 @@ export function TemplateGalleryModal({
   const cacheKeyRef = useRef(cacheKey);
 
   const [activeIndex, setActiveIndex] = useState(() => findTemplateIndex(selectedTemplateId));
-    70|  const [draftId, setDraftId] = useState(selectedTemplateId);
+  const [draftId, setDraftId] = useState(selectedTemplateId);
   const [activePdfUri, setActivePdfUri] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [gestureLocked, setGestureLocked] = useState(false);
@@ -76,7 +75,7 @@ export function TemplateGalleryModal({
   const contentOpacity = useSharedValue(1);
   const contentTranslateX = useSharedValue(0);
 
-    80|  buildPreviewHtmlRef.current = buildPreviewHtml;
+  buildPreviewHtmlRef.current = buildPreviewHtml;
   gestureLockedRef.current = gestureLocked;
   cacheKeyRef.current = cacheKey;
 
@@ -84,7 +83,7 @@ export function TemplateGalleryModal({
   const currentTemplate = PDF_TEMPLATES.find((template) => template.id === selectedTemplateId);
   const hasPendingChange = draftId !== selectedTemplateId;
 
-    90|  const loadTemplatePdf = useCallback(async (templateId: string): Promise<string | null> => {
+  const loadTemplatePdf = useCallback(async (templateId: string): Promise<string | null> => {
     try {
       const timeout = new Promise<never>((_, reject) => {
         setTimeout(() => reject(new Error('Délai dépassé')), 30000);
@@ -93,7 +92,7 @@ export function TemplateGalleryModal({
       return await Promise.race([
         ensureTemplatePreviewPdf(cacheKeyRef.current, templateId, buildPreviewHtmlRef.current),
         timeout,
-   100|      ]);
+      ]);
     } catch {
       return null;
     }
@@ -103,7 +102,7 @@ export function TemplateGalleryModal({
     (index: number) => {
       const neighbors = [index - 1, index + 1].filter(
         (neighbor) => neighbor >= 0 && neighbor < TOTAL_TEMPLATES,
-   110|      );
+      );
 
       for (const neighbor of neighbors) {
         const template = PDF_TEMPLATES[neighbor];
@@ -113,7 +112,7 @@ export function TemplateGalleryModal({
       }
     },
     [loadTemplatePdf],
-   120|  );
+  );
 
   const displayTemplate = useCallback(
     async (index: number, direction: -1 | 0 | 1 = 0) => {
@@ -123,7 +122,7 @@ export function TemplateGalleryModal({
         return;
       }
 
-   130|      const generation = ++loadGenerationRef.current;
+      const generation = ++loadGenerationRef.current;
       setActiveIndex(bounded);
       setLoading(true);
       setErrorMessage(null);
@@ -133,7 +132,7 @@ export function TemplateGalleryModal({
         contentTranslateX.value = withTiming(direction * 24, { duration: 120 });
       }
 
-   140|      const pdfUri = await loadTemplatePdf(template.id);
+      const pdfUri = await loadTemplatePdf(template.id);
 
       if (generation !== loadGenerationRef.current) {
         return;
@@ -144,16 +143,15 @@ export function TemplateGalleryModal({
         setErrorMessage('Impossible de générer l’aperçu PDF.');
         contentOpacity.value = withTiming(1, { duration: 160 });
         contentTranslateX.value = withSpring(0, { damping: 20, stiffness: 260 });
-   150|        return;
+        return;
       }
 
       setActiveIndex(bounded);
       setActivePdfUri(pdfUri);
-      // Navigation seule — pas d'enregistrement au swipe (DESIGN §5.8).
       setDraftId(template.id);
       prefetchNeighbors(bounded);
       setLoading(false);
-   160|
+
       contentTranslateX.value = direction === 0 ? 0 : direction * -16;
       contentOpacity.value = withTiming(1, { duration: 220 });
       contentTranslateX.value = withSpring(0, { damping: 20, stiffness: 260 });
@@ -163,7 +161,7 @@ export function TemplateGalleryModal({
 
   const displayTemplateRef = useRef(displayTemplate);
   displayTemplateRef.current = displayTemplate;
-   170|
+
   useEffect(() => {
     if (!visible) {
       loadGenerationRef.current += 1;
@@ -172,7 +170,7 @@ export function TemplateGalleryModal({
       setGestureLocked(false);
       setErrorMessage(null);
       return;
-   180|    }
+    }
 
     const initialIndex = findTemplateIndex(selectedTemplateId);
     setDraftId(selectedTemplateId);
@@ -182,7 +180,7 @@ export function TemplateGalleryModal({
   const goToIndex = useCallback(
     (nextIndex: number) => {
       if (gestureLockedRef.current || loading) {
-   190|        return;
+        return;
       }
 
       const direction: -1 | 0 | 1 =
@@ -193,7 +191,7 @@ export function TemplateGalleryModal({
       }
 
       void displayTemplate(nextIndex, direction);
-   200|    },
+    },
     [activeIndex, displayTemplate, loading],
   );
 
@@ -204,7 +202,7 @@ export function TemplateGalleryModal({
       if (gestureLockedRef.current) {
         return;
       }
-   210|
+
       if (event.translationX <= -SWIPE_THRESHOLD && activeIndex < TOTAL_TEMPLATES - 1) {
         runOnJS(goToIndex)(activeIndex + 1);
         return;
@@ -215,17 +213,16 @@ export function TemplateGalleryModal({
       }
     });
 
-   220|  const contentAnimatedStyle = useAnimatedStyle(() => ({
+  const contentAnimatedStyle = useAnimatedStyle(() => ({
     opacity: contentOpacity.value,
     transform: [{ translateX: contentTranslateX.value }],
   }));
 
   function handleClose() {
-    // Annuler : le brouillon est abandonné, rien n'est transmis au parent.
     onClose();
   }
 
-   230|  function handleConfirm() {
+  function handleConfirm() {
     onSelect(draftId);
     onClose();
   }
@@ -234,7 +231,7 @@ export function TemplateGalleryModal({
     <Modal animationType="fade" onRequestClose={handleClose} statusBarTranslucent visible={visible}>
       <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
         <View style={styles.header}>
-   240|          <Button onPress={handleClose} title="Annuler" variant="tertiary" />
+          <Button onPress={handleClose} title="Annuler" variant="tertiary" />
           <View style={styles.headerCenter}>
             <AppText numberOfLines={1} variant="title">
               {title}
@@ -242,7 +239,7 @@ export function TemplateGalleryModal({
             <AppText color="secondary" variant="caption">
               Aperçu PDF · {TOTAL_TEMPLATES} modèles
             </AppText>
-   250|          </View>
+          </View>
           <View style={styles.headerSpacer} />
         </View>
 
@@ -252,7 +249,7 @@ export function TemplateGalleryModal({
             showsVerticalScrollIndicator={false}
             style={styles.thumbnailColumn}>
             {PDF_TEMPLATES.map((template, index) => {
-   260|              const isDraft = template.id === draftId;
+              const isDraft = template.id === draftId;
               const isCurrent = template.id === selectedTemplateId;
 
               return (
@@ -262,32 +259,30 @@ export function TemplateGalleryModal({
                   onPress={() => goToIndex(index)}
                   style={[styles.thumbnail, isDraft && styles.thumbnailActive]}>
                   <TemplatePreviewCard compact selected={isDraft} template={template} />
-   270|                  {isCurrent ? (
-                    <View style={styles.thumbnailCurrentDot} />
-                  ) : null}
+                  {isCurrent ? <View style={styles.thumbnailCurrentDot} /> : null}
                 </Pressable>
               );
             })}
           </ScrollView>
 
           <View style={styles.viewer}>
-   280|            <View style={styles.templateMeta}>
+            <View style={styles.templateMeta}>
               <View style={styles.templateMetaHeader}>
                 <AppText numberOfLines={1} style={styles.templateName} variant="title">
                   {activeTemplate.name}
                 </AppText>
                 <View style={styles.badgeRow}>
                   <StatusChip label="Sélectionné" tone="sent" />
-   290|                  {hasPendingChange && currentTemplate ? (
+                  {hasPendingChange && currentTemplate ? (
                     <StatusChip
-                      label={`Modèle actuel : ${currentTemplate.name}`}
+                      label={`Modèle actuel : ${currentTemplate.name}`}
                       tone="draft"
                     />
                   ) : null}
                 </View>
               </View>
               <AppText color="secondary" numberOfLines={2} variant="subtitle">
-   300|                {activeTemplate.description}
+                {activeTemplate.description}
               </AppText>
             </View>
 
@@ -297,7 +292,7 @@ export function TemplateGalleryModal({
                   <View style={styles.errorState}>
                     <AppText color="secondary" variant="body">
                       {errorMessage}
-   310|                    </AppText>
+                    </AppText>
                   </View>
                 ) : activePdfUri ? (
                   <PdfPreviewWebView
@@ -307,7 +302,7 @@ export function TemplateGalleryModal({
                     preferPdfJs
                   />
                 ) : (
-   320|                  <View style={styles.viewerLoading}>
+                  <View style={styles.viewerLoading}>
                     <ActivityIndicator color={colors.primary} size="small" />
                     <AppText color="secondary" variant="caption">
                       Génération du PDF…
@@ -317,7 +312,7 @@ export function TemplateGalleryModal({
 
                 {loading && activePdfUri ? (
                   <View pointerEvents="none" style={styles.viewerLoadingOverlay}>
-   330|                    <ActivityIndicator color={colors.primary} size="small" />
+                    <ActivityIndicator color={colors.primary} size="small" />
                   </View>
                 ) : null}
               </Animated.View>
@@ -327,7 +322,7 @@ export function TemplateGalleryModal({
 
         <ActionBar caption="Appliqué aux prochains documents. Les documents déjà émis ne changent pas.">
           <Button onPress={handleConfirm} title="Utiliser ce modèle" />
-   340|        </ActionBar>
+        </ActionBar>
       </View>
     </Modal>
   );
@@ -337,7 +332,7 @@ const useStyles = () =>
   useThemedStyles((colors) => ({
     container: {
       flex: 1,
-   350|      backgroundColor: colors.backgroundGrouped,
+      backgroundColor: colors.backgroundGrouped,
     },
     header: {
       flexDirection: 'row',
@@ -346,7 +341,7 @@ const useStyles = () =>
       gap: spacing.sm,
     },
     headerCenter: {
-   360|      flex: 1,
+      flex: 1,
       alignItems: 'center',
       gap: 2,
     },
@@ -356,7 +351,7 @@ const useStyles = () =>
     body: {
       flex: 1,
       flexDirection: 'row',
-   370|      gap: spacing.sm,
+      gap: spacing.sm,
       paddingHorizontal: spacing.md,
       paddingTop: spacing.sm,
     },
@@ -366,7 +361,7 @@ const useStyles = () =>
     thumbnailColumnContent: {
       gap: spacing.sm,
       paddingBottom: spacing.sm,
-   380|    },
+    },
     thumbnail: {
       borderRadius: radius.md,
       borderWidth: StyleSheet.hairlineWidth,
@@ -376,7 +371,7 @@ const useStyles = () =>
     thumbnailActive: {
       borderColor: colors.primary,
       backgroundColor: colors.primarySubtle,
-   390|    },
+    },
     thumbnailCurrentDot: {
       position: 'absolute',
       top: 4,
@@ -386,7 +381,7 @@ const useStyles = () =>
       borderRadius: 4,
       backgroundColor: colors.textTertiary,
       borderWidth: 1,
-   400|      borderColor: colors.surface,
+      borderColor: colors.surface,
     },
     viewer: {
       flex: 1,
@@ -396,7 +391,7 @@ const useStyles = () =>
       gap: 4,
     },
     templateMetaHeader: {
-   410|      flexDirection: 'row',
+      flexDirection: 'row',
       alignItems: 'flex-start',
       justifyContent: 'space-between',
       gap: spacing.sm,
@@ -405,7 +400,7 @@ const useStyles = () =>
       flexShrink: 1,
     },
     badgeRow: {
-   420|      flexDirection: 'row',
+      flexDirection: 'row',
       gap: spacing.xs,
       flexWrap: 'wrap',
     },
@@ -415,7 +410,7 @@ const useStyles = () =>
       overflow: 'hidden',
       backgroundColor: '#EBEBF0',
     },
-   430|    viewerLoading: {
+    viewerLoading: {
       flex: 1,
       alignItems: 'center',
       justifyContent: 'center',
@@ -425,7 +420,7 @@ const useStyles = () =>
       ...StyleSheet.absoluteFill,
       alignItems: 'center',
       justifyContent: 'center',
-   440|      backgroundColor: 'rgba(235, 235, 240, 0.55)',
+      backgroundColor: 'rgba(235, 235, 240, 0.55)',
     },
     errorState: {
       flex: 1,

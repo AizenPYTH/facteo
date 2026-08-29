@@ -48,7 +48,7 @@ import {
 import { canConvertQuoteToInvoice } from '@/types/invoice';
 import { useToast } from '@/providers/toast-provider';
 
-const DOCUMENTS_FALLBACK = '/quotes' as Href;
+const DOCUMENTS_FALLBACK = '/documents' as Href;
 
 export default function QuoteDetailScreen() {
   const styles = useStyles();

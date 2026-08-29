@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 
 import { triggerImpactHaptic } from '@/lib/haptics';
@@ -13,8 +14,13 @@ type WizardActionBarProps = {
   onPrimary: () => void;
   primaryDisabled?: boolean;
   primaryLoading?: boolean;
-  /** Raison affichée sous le primaire désactivé — DESIGN §5.3 */
+  /**
+   * Raison affichée sous le primaire quand il est désactivé — DESIGN §5.3 :
+   * « un primaire désactivé affiche toujours la raison juste en dessous ».
+   */
   disabledReason?: string;
+  /** Récapitulatif au-dessus des actions (total…) — DESIGN §3.2. */
+  summary?: ReactNode;
 };
 
 export function WizardActionBar({
@@ -25,13 +31,16 @@ export function WizardActionBar({
   primaryDisabled = false,
   primaryLoading = false,
   disabledReason,
+  summary,
 }: WizardActionBarProps) {
   const styles = useStyles();
   const colors = useColors();
   const isDisabled = primaryDisabled || primaryLoading;
 
   return (
-    <View style={styles.wrap}>
+    <View style={styles.container}>
+      {summary ? <View style={styles.summary}>{summary}</View> : null}
+
       <View style={styles.row}>
         <Pressable
           accessibilityLabel={backLabel}
@@ -71,8 +80,9 @@ export function WizardActionBar({
           )}
         </Pressable>
       </View>
-      {isDisabled && disabledReason ? (
-        <Text maxFontSizeMultiplier={1.5} style={styles.reason}>
+
+      {primaryDisabled && disabledReason ? (
+        <Text maxFontSizeMultiplier={1.5} style={styles.disabledReason}>
           {disabledReason}
         </Text>
       ) : null}
@@ -82,20 +92,22 @@ export function WizardActionBar({
 
 const useStyles = () =>
   useThemedStyles((colors) => ({
-    wrap: {
+    container: {
       gap: spacing.xs,
-      width: '100%',
+    },
+    summary: {
+      gap: spacing.xs,
     },
     row: {
-      flexDirection: 'row' as const,
-      alignItems: 'center' as const,
+      flexDirection: 'row',
+      alignItems: 'center',
       gap: spacing.sm,
     },
     backButton: {
       minHeight: 44,
       paddingHorizontal: spacing.md,
-      alignItems: 'center' as const,
-      justifyContent: 'center' as const,
+      alignItems: 'center',
+      justifyContent: 'center',
       borderRadius: radius.buttonSmall,
     },
     backButtonPressed: {
@@ -109,8 +121,8 @@ const useStyles = () =>
       flex: 1,
       minHeight: 46,
       borderRadius: radius.button,
-      alignItems: 'center' as const,
-      justifyContent: 'center' as const,
+      alignItems: 'center',
+      justifyContent: 'center',
       paddingHorizontal: spacing.lg,
       backgroundColor: colors.ink,
     },
@@ -124,9 +136,9 @@ const useStyles = () =>
       ...typography.buttonPrimary,
       color: colors.onInk,
     },
-    reason: {
+    disabledReason: {
       ...typography.caption1,
       color: colors.textTertiary,
-      textAlign: 'center' as const,
+      textAlign: 'center',
     },
   }));
