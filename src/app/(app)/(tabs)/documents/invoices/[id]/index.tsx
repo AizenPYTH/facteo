@@ -2,7 +2,7 @@ import { router, type Href } from 'expo-router';
 import { useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Pressable, ScrollView, Share, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, Share, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { DocumentActionsSheet } from '@/components/documents/document-actions-sheet';
@@ -18,11 +18,13 @@ import { PdfPreviewModal } from '@/components/pdf/pdf-preview-modal';
 import { TemplateGalleryModal } from '@/components/pdf/template-gallery-modal';
 import { DocumentClientSignatureBlock } from '@/components/signatures/document-client-signature-block';
 import { ActionBar } from '@/components/ui/action-bar';
+import { AppText } from '@/components/ui/app-text';
 import { Button } from '@/components/ui/button';
 import { LoadingView } from '@/components/ui/loading-view';
 import { useDocumentActions } from '@/hooks/use-document-actions';
 import { useThemedStyles, useColors } from '@/hooks/use-colors';
 import { components } from '@/constants/theme/design-system';
+import { radius } from '@/constants/theme/radius';
 import { spacing } from '@/constants/theme/spacing';
 import { useDesktopListRedirect } from '@/hooks/use-desktop-list-redirect';
 import { useBreakpoint } from '@/hooks/use-breakpoint';
@@ -31,6 +33,7 @@ import { useInvoice } from '@/hooks/use-invoices';
 import { useInvoiceMutations } from '@/hooks/use-invoice-mutations';
 import { getInvoiceErrorMessage } from '@/lib/invoices/errors';
 import { buildInvoicePdfHtml } from '@/lib/pdf/document-pdf';
+import { resolvePdfTemplate } from '@/lib/pdf/engine/templates';
 import { useAuth } from '@/hooks/use-auth';
 import { useTenant } from '@/hooks/use-tenant';
 import { requireScope } from '@/lib/tenant/scope';
@@ -456,6 +459,7 @@ export default function InvoiceDetailScreen() {
 
   const showPaymentLink =
     invoice.amountDue > 0 && invoice.status !== 'paid' && invoice.status !== 'canceled';
+  const template = resolvePdfTemplate(documentActions.templateId);
 
   return (
     <SafeAreaView edges={['top']} style={styles.safeArea}>
@@ -470,6 +474,46 @@ export default function InvoiceDetailScreen() {
           invoice={invoice}
           onAddPayment={() => openPaymentFlow()}
         />
+
+        <View style={styles.previewCard}>
+          <Pressable
+            onPress={() => void documentActions.handleOpenPreview()}
+            style={({ pressed }) => [styles.previewRow, pressed && styles.pressed]}>
+            <View style={[styles.previewAccent, { backgroundColor: template.theme.primary }]} />
+            <View style={styles.previewContent}>
+              <AppText medium variant="body">
+                Aperçu PDF
+              </AppText>
+              <AppText color="secondary" variant="caption">
+                {invoice.number} · modèle {template.name}
+              </AppText>
+            </View>
+            {documentActions.loading || documentActions.pdfLoading ? (
+              <ActivityIndicator color={colors.primary} />
+            ) : (
+              <SymbolView
+                name={{ ios: 'doc.richtext', android: 'description', web: 'description' }}
+                size={26}
+                tintColor={colors.primary}
+              />
+            )}
+          </Pressable>
+          <View style={styles.previewActions}>
+            <Button
+              onPress={() => void documentActions.handleOpenPreview()}
+              style={styles.previewActionButton}
+              title="Ouvrir"
+              variant="secondary"
+            />
+            <Button
+              loading={documentActions.loading}
+              onPress={() => void documentActions.handleShare()}
+              style={styles.previewActionButton}
+              title="Partager"
+              variant="secondary"
+            />
+          </View>
+        </View>
 
         <DocumentClientSignatureBlock
           documentId={invoice.id}
@@ -586,6 +630,35 @@ function useStyles() {
       paddingHorizontal: spacing.screenPaddingHorizontal,
       paddingBottom: spacing.xl,
       gap: spacing.lg,
+    },
+    previewCard: {
+      backgroundColor: colors.surface,
+      borderRadius: radius.card,
+      borderWidth: 1,
+      borderColor: colors.border,
+      padding: spacing.md,
+      gap: spacing.md,
+    },
+    previewRow: {
+      flexDirection: 'row' as const,
+      alignItems: 'center' as const,
+      gap: spacing.md,
+    },
+    previewAccent: {
+      width: 4,
+      alignSelf: 'stretch' as const,
+      borderRadius: 999,
+    },
+    previewContent: {
+      flex: 1,
+      gap: 2,
+    },
+    previewActions: {
+      flexDirection: 'row' as const,
+      gap: spacing.sm,
+    },
+    previewActionButton: {
+      flex: 1,
     },
     actionsButton: {
       minWidth: components.touchTarget,
