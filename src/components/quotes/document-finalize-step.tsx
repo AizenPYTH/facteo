@@ -2,6 +2,7 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { QuoteTotals } from '@/components/quotes/quote-totals';
 import { CollapsibleSection } from '@/components/ui/collapsible-section';
+import { DateField } from '@/components/ui/date-field';
 import { TextField } from '@/components/ui/text-field';
 import { useColors, useThemedStyles } from '@/hooks/use-colors';
 import { radius } from '@/constants/theme/radius';
@@ -70,23 +71,23 @@ export function DocumentFinalizeStep({
       </View>
 
       <View style={styles.card}>
-        <TextField
+        <DateField
           label="Date d'émission"
-          onChangeText={(text) => updateField('issuedAt', text)}
-          placeholder="JJ/MM/AAAA"
+          onChange={(date) => updateField('issuedAt', date)}
+          requirement="required"
           value={info.issuedAt}
         />
-        <TextField
+        <DateField
           label={secondaryDateLabel ?? expirationLabel}
-          onChangeText={(text) => {
+          onChange={(date) => {
             if (onSecondaryDateChange) {
-              onSecondaryDateChange(text);
+              onSecondaryDateChange(date);
               return;
             }
 
-            updateField('validUntil', text);
+            updateField('validUntil', date);
           }}
-          placeholder="JJ/MM/AAAA"
+          requirement="optional"
           value={secondaryDate}
         />
       </View>

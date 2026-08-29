@@ -1,5 +1,5 @@
 import { router, type Href } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Alert } from 'react-native';
 
 import { InvoiceScreenHeader } from '@/components/invoices/invoice-screen-header';
@@ -73,6 +73,7 @@ export function InvoiceWizardScreen({
   const [state, setState] = useState<InvoiceWizardState>(
     initialState ?? createEmptyInvoiceWizardState(),
   );
+  const dueAtTouchedRef = useRef(false);
 
   const totals = useMemo(() => mapInvoiceLinesToDocumentTotals(state.lines), [state.lines]);
   const companyName = companyProfile?.companyName?.trim() || 'Votre entreprise';
@@ -143,6 +144,7 @@ export function InvoiceWizardScreen({
   }
 
   function handleDueAtChange(dueAt: string) {
+    dueAtTouchedRef.current = true;
     setState((current) => ({
       ...current,
       info: { ...current.info, dueAt },
@@ -159,13 +161,17 @@ export function InvoiceWizardScreen({
     const next = {
       ...state.info,
       issuedAt: info.issuedAt,
-      dueAt: info.validUntil,
       paymentTermsDays: info.paymentTermsDays,
       notes: info.notes,
     };
 
     const days = Number(info.paymentTermsDays);
-    if (info.issuedAt && /^\d+$/.test(info.paymentTermsDays) && days > 0) {
+    if (
+      !dueAtTouchedRef.current &&
+      info.issuedAt &&
+      /^\d+$/.test(info.paymentTermsDays) &&
+      days > 0
+    ) {
       const issuedIso = frenchDateInputToIso(info.issuedAt);
       if (issuedIso) {
         next.dueAt = addDaysFrenchDateInput(days, new Date(issuedIso));
