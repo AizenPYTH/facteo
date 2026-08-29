@@ -9,7 +9,7 @@ import { shadows } from '@/constants/theme/theme';
 import { typography } from '@/constants/theme/typography';
 
 export type SegmentedControlOption<TValue extends string> = {
-    10|  value: TValue;
+  value: TValue;
   label: string;
 };
 
@@ -20,7 +20,7 @@ type SegmentedControlProps<TValue extends string> = {
   accessibilityLabel?: string;
 };
 
-    20|/**
+/**
  * Sélecteur à options exclusives — DESIGN §5.5 (Entreprise / Particulier).
  * Piste neutre, option active sur carte avec ombre 1px (`shadows.segmented`).
  */
@@ -30,7 +30,7 @@ export function SegmentedControl<TValue extends string>({
   onChange,
   accessibilityLabel,
 }: SegmentedControlProps<TValue>) {
-    30|  const styles = useStyles();
+  const styles = useStyles();
 
   return (
     <View accessibilityLabel={accessibilityLabel} accessibilityRole="tablist" style={styles.track}>
@@ -40,7 +40,7 @@ export function SegmentedControl<TValue extends string>({
         return (
           <Pressable
             accessibilityRole="tab"
-    40|            accessibilityState={{ selected: isActive }}
+            accessibilityState={{ selected: isActive }}
             key={option.value}
             onPress={() => {
               if (!isActive) {
@@ -49,7 +49,7 @@ export function SegmentedControl<TValue extends string>({
               }
             }}
             style={({ pressed }) => [
-    50|              styles.option,
+              styles.option,
               isActive && styles.optionActive,
               pressed && !isActive && styles.optionPressed,
             ]}>
@@ -59,7 +59,7 @@ export function SegmentedControl<TValue extends string>({
               {option.label}
             </Text>
           </Pressable>
-    60|        );
+        );
       })}
     </View>
   );
@@ -70,7 +70,7 @@ function useStyles() {
     track: {
       flexDirection: 'row' as const,
       backgroundColor: colors.surfaceSecondary,
-    70|      borderRadius: radius.segmented,
+      borderRadius: radius.segmented,
       padding: spacing.xs,
       gap: spacing.xs,
     },
@@ -80,7 +80,7 @@ function useStyles() {
       alignItems: 'center' as const,
       justifyContent: 'center' as const,
       borderRadius: radius.sm,
-    80|    },
+    },
     optionActive: {
       backgroundColor: colors.surface,
       ...shadows.segmented,
@@ -91,7 +91,7 @@ function useStyles() {
     label: {
       ...typography.subheadlineMedium,
       color: colors.textSecondary,
-    90|    },
+    },
     labelActive: {
       color: colors.text,
     },

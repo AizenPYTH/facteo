@@ -25,7 +25,11 @@ export type Client = {
   updatedAt: string;
 };
 
+/** Choix explicite en tête de formulaire — DESIGN §5.5. UI only, non persisté. */
+export type ClientKind = 'company' | 'person';
+
 export type ClientFormValues = {
+  clientKind: ClientKind;
   lastName: string;
   firstName: string;
   company: string;
@@ -46,6 +50,7 @@ export type UpdateClientInput = ClientFormValues;
 
 export function createEmptyClientFormValues(): ClientFormValues {
   return {
+    clientKind: 'person',
     lastName: '',
     firstName: '',
     company: '',
@@ -64,6 +69,7 @@ export function createEmptyClientFormValues(): ClientFormValues {
 
 export function mapClientToFormValues(client: Client): ClientFormValues {
   return {
+    clientKind: client.company?.trim() ? 'company' : 'person',
     lastName: client.lastName,
     firstName: client.firstName,
     company: client.company ?? '',

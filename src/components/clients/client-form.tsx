@@ -1,7 +1,8 @@
 import { StyleSheet, View } from 'react-native';
-import { type Control, Controller, type FieldErrors, type UseFormSetValue } from 'react-hook-form';
+import { type Control, Controller, type FieldErrors, type UseFormSetValue, useWatch } from 'react-hook-form';
 
 import { FormDivider, FormField, FormSection } from '@/components/company/form-section';
+import { SegmentedControl } from '@/components/ui/segmented-control';
 import { TextField } from '@/components/ui/text-field';
 import { spacing } from '@/constants/theme/spacing';
 import { formatFrenchPhoneInput } from '@/lib/format/phone';
@@ -15,12 +16,60 @@ type ClientFormProps = {
   setValue: UseFormSetValue<ClientFormValues>;
 };
 
+const CLIENT_KIND_OPTIONS = [
+  { value: 'company', label: 'Entreprise' },
+  { value: 'person', label: 'Particulier' },
+] as const;
+
 export function ClientForm({ control, errors, setValue }: ClientFormProps) {
+  const clientKind = useWatch({ control, name: 'clientKind' }) ?? 'person';
+  const isCompany = clientKind === 'company';
+
   return (
     <View style={styles.form}>
-      <ClientCompanyLookup control={control} errors={errors} setValue={setValue} />
+      <Controller
+        control={control}
+        name="clientKind"
+        render={({ field: { onChange, value } }) => (
+          <SegmentedControl
+            accessibilityLabel="Type de client"
+            onChange={onChange}
+            options={CLIENT_KIND_OPTIONS}
+            value={value ?? 'person'}
+          />
+        )}
+      />
+
+      {isCompany ? (
+        <ClientCompanyLookup control={control} errors={errors} setValue={setValue} />
+      ) : null}
 
       <FormSection title="Identité">
+        {isCompany ? (
+          <>
+            <FormField>
+              <Controller
+                control={control}
+                name="company"
+                render={({ field: { onChange, onBlur, value } }) => (
+                  <TextField
+                    autoCapitalize="words"
+                    error={errors.company?.message}
+                    label="Entreprise"
+                    onBlur={onBlur}
+                    onChangeText={onChange}
+                    placeholder="Acme SARL"
+                    requirement="required"
+                    textContentType="organizationName"
+                    value={value}
+                  />
+                )}
+              />
+            </FormField>
+            <FormDivider />
+          </>
+        ) : null}
+
         <FormField>
           <Controller
             control={control}
@@ -33,6 +82,7 @@ export function ClientForm({ control, errors, setValue }: ClientFormProps) {
                 onBlur={onBlur}
                 onChangeText={onChange}
                 placeholder="Dupont"
+                requirement={isCompany ? 'optional' : 'required'}
                 returnKeyType="next"
                 textContentType="familyName"
                 value={value}
@@ -53,27 +103,9 @@ export function ClientForm({ control, errors, setValue }: ClientFormProps) {
                 onBlur={onBlur}
                 onChangeText={onChange}
                 placeholder="Jean"
+                requirement="optional"
                 returnKeyType="next"
                 textContentType="givenName"
-                value={value}
-              />
-            )}
-          />
-        </FormField>
-        <FormDivider />
-        <FormField>
-          <Controller
-            control={control}
-            name="company"
-            render={({ field: { onChange, onBlur, value } }) => (
-              <TextField
-                autoCapitalize="words"
-                error={errors.company?.message}
-                label="Entreprise"
-                onBlur={onBlur}
-                onChangeText={onChange}
-                placeholder="Acme SARL"
-                textContentType="organizationName"
                 value={value}
               />
             )}

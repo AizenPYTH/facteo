@@ -5,24 +5,49 @@ import { useColors, useThemedStyles } from '@/hooks/use-colors';
 import { spacing } from '@/constants/theme/spacing';
 import { typography } from '@/constants/theme/typography';
 
+type TextFieldRequirement = 'required' | 'optional' | 'none';
+
 type TextFieldProps = TextInputProps & {
   label?: string;
   error?: string;
+  /** Affiche « requis » / « · facultatif » — DESIGN §3.3 */
+  requirement?: TextFieldRequirement;
 };
 
 /**
  * Champ legacy (sans bordure autonome) — préférer `Field` (DESIGN §3.3).
  * Conservé pour les formulaires en groupe de lignes existants.
  */
-export function TextField({ label, error, style, accessibilityLabel, ...props }: TextFieldProps) {
+export function TextField({
+  label,
+  error,
+  requirement = 'none',
+  style,
+  accessibilityLabel,
+  ...props
+}: TextFieldProps) {
   const styles = useStyles();
   const colors = useColors();
   return (
     <View style={styles.container}>
       {label ? (
-        <Text maxFontSizeMultiplier={1.5} style={styles.label}>
-          {label}
-        </Text>
+        <View style={styles.labelRow}>
+          <Text maxFontSizeMultiplier={1.5} style={styles.label}>
+            {label}
+          </Text>
+          {requirement === 'required' ? (
+            <Text maxFontSizeMultiplier={1.5} style={styles.required}>
+              {' '}
+              requis
+            </Text>
+          ) : null}
+          {requirement === 'optional' ? (
+            <Text maxFontSizeMultiplier={1.5} style={styles.optional}>
+              {' '}
+              · facultatif
+            </Text>
+          ) : null}
+        </View>
       ) : null}
       <TextInput
         accessibilityLabel={accessibilityLabel ?? label ?? props.placeholder}
@@ -48,10 +73,23 @@ function useStyles() {
     container: {
       gap: spacing.xs,
     },
+    labelRow: {
+      flexDirection: 'row' as const,
+      flexWrap: 'wrap' as const,
+      alignItems: 'center' as const,
+    },
     label: {
       ...typography.caption1,
       fontFamily: typography.caption2.fontFamily,
       color: colors.textSecondary,
+    },
+    required: {
+      ...typography.caption1,
+      color: colors.error,
+    },
+    optional: {
+      ...typography.caption1,
+      color: colors.textTertiary,
     },
     input: {
       ...typography.body,
