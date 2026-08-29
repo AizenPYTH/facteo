@@ -10,6 +10,7 @@ import { QuoteScreenHeader } from '@/components/quotes/quote-screen-header';
 import { QuoteWizardProgress } from '@/components/quotes/quote-wizard-progress';
 import { WizardActionBar } from '@/components/ui/wizard-action-bar';
 import { WizardScreen } from '@/components/ui/wizard-screen';
+import { WizardTotalsSummary } from '@/components/ui/wizard-totals-summary';
 import { useCompanyProfile } from '@/hooks/use-company-profile';
 import { useFeatureIntro } from '@/hooks/use-feature-intro';
 import { useQuoteMutations } from '@/hooks/use-quote-mutations';
@@ -24,7 +25,7 @@ import { mapLinesToDocumentTotals } from '@/lib/quotes/mappers';
 import { isQuoteInfoValid, areQuoteLinesValid, parseQuoteInfoValues } from '@/lib/quotes/validators';
 import { useToast } from '@/providers/toast-provider';
 import { getClientDisplayName, type Client } from '@/types/client';
-import { createEmptyQuoteLine, type QuoteLineValue } from '@/types/quote';
+import type { QuoteLineValue } from '@/types/quote';
 
 const TOTAL_STEPS = 3;
 
@@ -85,18 +86,6 @@ export function QuoteWizardScreen({
     }));
   }, [settings?.paymentTermsDays, settings?.quoteValidityDays, state.info.issuedAt]);
 
-  useEffect(() => {
-    if (step !== 2 || state.lines.length > 0) {
-      return;
-    }
-
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- add starter line when entering step 2
-    setState((current) => ({
-      ...current,
-      lines: [createEmptyQuoteLine()],
-    }));
-  }, [step, state.lines.length]);
-
   function handleSelectClient(client: Client) {
     setState((current) => ({
       ...current,
@@ -130,46 +119,41 @@ export function QuoteWizardScreen({
     setState((current) => ({ ...current, info }));
   }
 
-  function canGoNext(): boolean {
+  /**
+   * DESIGN §5.3 : un primaire désactivé affiche toujours la raison juste en
+   * dessous — jamais de « Suivant » mort et muet, à aucune étape.
+   */
+  function getDisabledReason(): string | undefined {
     switch (step) {
       case 1:
-        return Boolean(state.clientId);
-      case 2:
-        return state.lines.length > 0 && areQuoteLinesValid(state.lines);
-      case 3:
-        return (
-          Boolean(state.clientId) &&
-          areQuoteLinesValid(state.lines) &&
-          isQuoteInfoValid(state.info)
-        );
-      default:
-        return false;
-    }
-  }
-
-  function showStepError() {
-    switch (step) {
-      case 1:
-        showError('Sélectionnez un client pour continuer.');
-        break;
+        return state.clientId ? undefined : 'Sélectionnez un client pour continuer.';
       case 2:
         if (state.lines.length === 0) {
-          showError('Ajoutez au moins une prestation au devis.');
-        } else {
-          showError('Renseignez la description, la quantité et le prix de chaque prestation.');
+          return 'Ajoutez au moins une prestation pour continuer.';
         }
-        break;
+        return areQuoteLinesValid(state.lines)
+          ? undefined
+          : 'Renseignez la description, la quantité et le prix de chaque prestation.';
       case 3:
-        showError('Renseignez une date d’émission valide.');
-        break;
+        if (!state.clientId) {
+          return 'Sélectionnez un client pour continuer.';
+        }
+        if (!areQuoteLinesValid(state.lines)) {
+          return 'Vérifiez les prestations avant de continuer.';
+        }
+        return isQuoteInfoValid(state.info)
+          ? undefined
+          : 'Renseignez une date d’émission valide.';
       default:
-        showError('Le devis est incomplet.');
+        return undefined;
     }
   }
 
+  const disabledReason = getDisabledReason();
+  const canGoNext = !disabledReason;
+
   function handleNext() {
-    if (!canGoNext()) {
-      showStepError();
+    if (disabledReason) {
       return;
     }
 
@@ -194,14 +178,14 @@ export function QuoteWizardScreen({
             router.back();
             return;
           }
-          router.replace('/quotes' as Href);
+          router.replace('/documents' as Href);
         },
       },
     ]);
   }
 
   async function handleSave() {
-    if (!state.clientId || !canGoNext()) {
+    if (!canGoNext || !state.clientId) {
       showError('Le devis est incomplet.');
       return;
     }
@@ -225,7 +209,7 @@ export function QuoteWizardScreen({
       if (mode === 'create') {
         await createQuote.mutateAsync(input);
         showSuccess('Devis créé.');
-        router.replace('/quotes' as Href);
+        router.replace('/documents' as Href);
         return;
       }
 
@@ -236,7 +220,7 @@ export function QuoteWizardScreen({
 
       await updateQuote.mutateAsync({ quoteId, input });
       showSuccess('Devis modifié.');
-      router.replace(`/quotes/${quoteId}` as Href);
+      router.replace(`/documents/quotes/${quoteId}` as Href);
     } catch (error) {
       showError(getQuoteErrorMessage(readErrorMessage(error)));
     }
@@ -286,26 +270,24 @@ export function QuoteWizardScreen({
           ? 'Créer ce devis'
           : 'Enregistrer ce devis';
 
-  const disabledReason =
-    step < TOTAL_STEPS && !canGoNext()
-      ? step === 1
-        ? 'Choisissez un client pour continuer.'
-        : 'Ajoutez au moins une prestation.'
-      : undefined;
-
   const isDesktop = variant === 'desktop';
+  const totalsSummary =
+    step === 2 && state.lines.length > 0 ? (
+      <WizardTotalsSummary totalHt={totals.subtotalHt} totalTtc={totals.totalTtc} />
+    ) : undefined;
 
   return (
     <WizardScreen
       footer={
         <WizardActionBar
           backLabel={step === 1 ? 'Annuler' : 'Précédent'}
-          disabledReason={disabledReason}
+          disabledReason={step < TOTAL_STEPS ? disabledReason : undefined}
           onBack={handleBack}
           onPrimary={step < TOTAL_STEPS ? handleNext : handleSave}
-          primaryDisabled={step < TOTAL_STEPS ? !canGoNext() : false}
+          primaryDisabled={step < TOTAL_STEPS ? !canGoNext : false}
           primaryLabel={primaryActionLabel}
           primaryLoading={step >= TOTAL_STEPS && isSaving}
+          summary={totalsSummary}
         />
       }
       header={

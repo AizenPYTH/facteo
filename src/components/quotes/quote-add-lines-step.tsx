@@ -1,5 +1,6 @@
 import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
+import { SymbolView } from 'expo-symbols';
 import {
   useEffect,
   useRef,
@@ -13,6 +14,7 @@ import {
   FlatList,
   Linking,
   Platform,
+  Pressable,
   Text,
   View,
 } from 'react-native';
@@ -24,12 +26,13 @@ import {
 } from '@/components/ai/product-analysis-confirmation-modal';
 import { ProductAnalysisLoadingModal } from '@/components/ai/product-analysis-loading-modal';
 import { FeatureIntroModal } from '@/components/feature-intros';
-import { Button } from '@/components/ui/button';
+import { ProductCatalogPickerModal } from '@/components/quotes/product-catalog-picker-modal';
 import { useAuth } from '@/hooks/use-auth';
-import { useThemedStyles } from '@/hooks/use-colors';
+import { useColors, useThemedStyles } from '@/hooks/use-colors';
 import { useFeatureIntro } from '@/hooks/use-feature-intro';
 import { usePlatformActionSheet } from '@/hooks/use-platform-action-sheet';
 import { useSubscription } from '@/hooks/use-subscription';
+import { radius } from '@/constants/theme/radius';
 import { spacing } from '@/constants/theme/spacing';
 import { typography } from '@/constants/theme/typography';
 import { analyzeProductImage } from '@/lib/ai/product-image-analysis';
@@ -43,6 +46,7 @@ import {
 } from '@/lib/products/spreadsheet-import';
 import { createProduct, findProductByBarcode } from '@/lib/supabase/products';
 import { useToast } from '@/providers/toast-provider';
+import type { ProductRow } from '@/types/database';
 import type { QuoteLineValue } from '@/types/quote';
 import { createEmptyQuoteLine, formatDecimalForInput } from '@/types/quote';
 import { router, type Href } from 'expo-router';
@@ -77,6 +81,7 @@ export function QuoteAddLinesStep({
   const [analysisDraft, setAnalysisDraft] = useState<ProductAnalysisDraft | null>(null);
   const [batchDrafts, setBatchDrafts] = useState<ProductAnalysisDraft[] | null>(null);
   const [barcodeScannerVisible, setBarcodeScannerVisible] = useState(false);
+  const [catalogPickerVisible, setCatalogPickerVisible] = useState(false);
   const [pendingBarcodeHint, setPendingBarcodeHint] = useState<string | null>(null);
   const [isSavingProduct, setIsSavingProduct] = useState(false);
   const progressTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -99,22 +104,27 @@ export function QuoteAddLinesStep({
     return true;
   }
 
-  function handleAddPrestation() {
+  function handleScanBarcode() {
+    scannerIntro.runWithIntro(() => {
+      setBarcodeScannerVisible(true);
+    });
+  }
+
+  function handleOpenCatalog() {
+    setCatalogPickerVisible(true);
+  }
+
+  function handleCatalogSelect(product: ProductRow) {
+    setCatalogPickerVisible(false);
+    setAnalysisImageUri(null);
+    setAnalysisDraft(mapProductRowToDraft(product, 'Catalogue'));
+  }
+
+  /** Options secondaires — Scanner, Catalogue et Saisie libre restent exposés d'emblée (DESIGN §5.3). */
+  function handleMoreOptions() {
     openActionSheet({
-      title: 'Ajouter une prestation',
+      title: 'Autres façons d’ajouter',
       options: [
-        {
-          label: 'Ajouter manuellement',
-          onPress: handleAddManualPrestation,
-        },
-        {
-          label: 'Code-barres produit',
-          onPress: () => {
-            scannerIntro.runWithIntro(() => {
-              setBarcodeScannerVisible(true);
-            });
-          },
-        },
         {
           label: 'Photo / capture produit (IA)',
           onPress: () => {
@@ -154,25 +164,23 @@ export function QuoteAddLinesStep({
     try {
       const existing = await findProductByBarcode(code);
       if (existing) {
-        onAddLine({
-          id: createEmptyQuoteLine().id,
-          productId: existing.id,
-          description: existing.name,
-          quantity: '1',
-          unit: existing.unit || 'pièce',
-          unitPrice: formatDecimalForInput(existing.unit_price),
-          vatRate: formatDecimalForInput(existing.vat_rate),
-          discountPercent: '0',
-        });
-        showSuccess('Produit trouvé dans votre catalogue.');
+        setAnalysisImageUri(null);
+        setAnalysisDraft(mapProductRowToDraft(existing, `Code-barres ${code}`));
         return;
       }
 
       Alert.alert(
         'Produit introuvable',
-        `Aucun produit catalogue pour le code ${code}. Continuez avec une photo/capture (Amazon, fiche fournisseur…) pour l’identifier via le même service IA que le site.`,
+        `Aucun produit catalogue pour le code ${code}. Vous pouvez ressayer, saisir la référence, ou créer le produit via une photo.`,
         [
           { text: 'Annuler', style: 'cancel' },
+          {
+            text: 'Saisie libre',
+            onPress: () => {
+              setPendingBarcodeHint(code);
+              handleAddManualPrestation();
+            },
+          },
           {
             text: 'Photo produit',
             onPress: () => {
@@ -358,15 +366,19 @@ export function QuoteAddLinesStep({
     });
   }
 
-  async function handleConfirmAiProduct() {
+  async function handleConfirmAiProduct(persistCatalog: boolean) {
     if (!analysisDraft) {
       return;
     }
 
     try {
       setIsSavingProduct(true);
-      await addDraftAsLine(analysisDraft, true);
-      showSuccess('Produit ajouté à votre document.');
+      await addDraftAsLine(analysisDraft, persistCatalog);
+      showSuccess(
+        persistCatalog
+          ? 'Produit ajouté au document et au catalogue.'
+          : 'Produit ajouté au document.',
+      );
       handleCloseConfirmationModal();
     } catch (error) {
       showError(readAiErrorMessage(error));
@@ -375,7 +387,7 @@ export function QuoteAddLinesStep({
     }
   }
 
-  async function handleConfirmBatch(items: ProductAnalysisDraft[]) {
+  async function handleConfirmBatch(items: ProductAnalysisDraft[], persistCatalog: boolean) {
     if (items.length === 0) {
       showError('Sélectionnez au moins un produit.');
       return;
@@ -384,7 +396,7 @@ export function QuoteAddLinesStep({
     try {
       setIsSavingProduct(true);
       for (const item of items) {
-        await addDraftAsLine(item, true);
+        await addDraftAsLine(item, persistCatalog);
       }
       showSuccess(`${items.length} produit(s) ajouté(s) au document.`);
       handleCloseBatchModal();
@@ -427,14 +439,23 @@ export function QuoteAddLinesStep({
           });
         }}
       />
+      <ProductCatalogPickerModal
+        onClose={() => setCatalogPickerVisible(false)}
+        onSelect={handleCatalogSelect}
+        visible={catalogPickerVisible}
+      />
       {analysisDraft ? (
         <ProductAnalysisConfirmationModal
           imageUri={analysisImageUri ?? ''}
           isSaving={isSavingProduct}
           onChange={setAnalysisDraft}
           onClose={handleCloseConfirmationModal}
-          onConfirm={() => {
-            void handleConfirmAiProduct();
+          onConfirm={(persistCatalog) => {
+            void handleConfirmAiProduct(persistCatalog);
+          }}
+          onScanNext={() => {
+            handleCloseConfirmationModal();
+            handleScanBarcode();
           }}
           value={analysisDraft}
           visible
@@ -447,8 +468,8 @@ export function QuoteAddLinesStep({
           items={batchDrafts}
           onChangeItems={setBatchDrafts}
           onClose={handleCloseBatchModal}
-          onConfirmSelected={(items) => {
-            void handleConfirmBatch(items);
+          onConfirmSelected={(items, persistCatalog) => {
+            void handleConfirmBatch(items, persistCatalog);
           }}
           visible
         />
@@ -458,23 +479,25 @@ export function QuoteAddLinesStep({
 
   const listHeader = (
     <View style={styles.headerSection}>
-      <Text style={styles.description}>
-        Ajoutez vos prestations : manuel, code-barres, photo IA ou Excel.
-      </Text>
+      <Text style={styles.description}>Ajoutez vos prestations.</Text>
 
-      <Button onPress={handleAddPrestation} title="Ajouter une prestation" />
-      {Platform.OS === 'web' ? (
-        <Button
-          onPress={() => {
-            if (!ensureAiAccess()) return;
-            aiIntro.runWithIntro(() => {
-              void handleSourceSelection('gallery');
-            });
-          }}
-          title="Scanner un produit (IA)"
-          variant="ghost"
+      <View style={styles.entryRow}>
+        <AddEntryButton icon="barcode.viewfinder" label="Scanner" onPress={handleScanBarcode} />
+        <AddEntryButton icon="square.grid.2x2" label="Catalogue" onPress={handleOpenCatalog} />
+        <AddEntryButton
+          icon="square.and.pencil"
+          label="Saisie libre"
+          onPress={handleAddManualPrestation}
         />
-      ) : null}
+      </View>
+
+      <Pressable
+        accessibilityRole="button"
+        hitSlop={8}
+        onPress={handleMoreOptions}
+        style={styles.moreOptions}>
+        <Text style={styles.moreOptionsText}>Photo IA, import Excel…</Text>
+      </Pressable>
 
       <View style={styles.prestationsHeader}>
         <Text style={styles.sectionLabel}>Prestations ({lines.length})</Text>
@@ -489,7 +512,7 @@ export function QuoteAddLinesStep({
           {listHeader}
           <View style={styles.emptyPrestations}>
             <Text style={styles.emptyPrestationsText}>
-              Appuyez sur « Ajouter une prestation » pour commencer.
+              Scannez, choisissez dans le catalogue ou saisissez librement pour commencer.
             </Text>
           </View>
         </View>
@@ -524,6 +547,54 @@ export function QuoteAddLinesStep({
   );
 }
 
+type AddEntryButtonProps = {
+  icon: Parameters<typeof SymbolView>[0]['name'];
+  label: string;
+  onPress: () => void;
+};
+
+/** Entrée exposée d'emblée — DESIGN §5.3 (Scanner, Catalogue, Saisie libre). */
+function AddEntryButton({ icon, label, onPress }: AddEntryButtonProps) {
+  const styles = useEntryButtonStyles();
+  const colors = useColors();
+
+  return (
+    <Pressable
+      accessibilityLabel={label}
+      accessibilityRole="button"
+      onPress={onPress}
+      style={({ pressed }) => [styles.entry, pressed && styles.entryPressed]}>
+      <SymbolView name={icon} size={20} tintColor={colors.primary} type="hierarchical" />
+      <Text maxFontSizeMultiplier={1.4} style={styles.entryLabel}>
+        {label}
+      </Text>
+    </Pressable>
+  );
+}
+
+function useEntryButtonStyles() {
+  return useThemedStyles((colors) => ({
+    entry: {
+      flex: 1,
+      alignItems: 'center',
+      gap: spacing.xs,
+      paddingVertical: spacing.md,
+      borderRadius: radius.card,
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    entryPressed: {
+      backgroundColor: colors.surfaceSecondary,
+    },
+    entryLabel: {
+      ...typography.footnoteMedium,
+      color: colors.text,
+      textAlign: 'center',
+    },
+  }));
+}
+
 function useStyles() {
   return useThemedStyles((colors) => ({
     container: {
@@ -540,6 +611,19 @@ function useStyles() {
     description: {
       ...typography.subheadline,
       color: colors.textSecondary,
+    },
+    entryRow: {
+      flexDirection: 'row',
+      gap: spacing.sm,
+    },
+    moreOptions: {
+      alignSelf: 'center',
+      minHeight: 32,
+      justifyContent: 'center',
+    },
+    moreOptionsText: {
+      ...typography.footnoteMedium,
+      color: colors.primary,
     },
     sectionLabel: {
       ...typography.footnoteMedium,
@@ -704,4 +788,24 @@ function readAiErrorMessage(error: unknown): string {
   }
 
   return 'Analyse impossible pour cette image.';
+}
+
+function mapProductRowToDraft(product: ProductRow, sourceLabel: string): ProductAnalysisDraft {
+  return {
+    title: product.name,
+    brand: product.brand ?? '',
+    model: '',
+    reference: product.reference ?? '',
+    description: product.description ?? '',
+    unitPriceHt: formatDecimalForInput(product.unit_price),
+    unitPriceTtc: '',
+    vatRate: formatDecimalForInput(product.vat_rate),
+    currency: 'EUR',
+    unit: product.unit || 'pièce',
+    quantity: '1',
+    confidence: 1,
+    sku: product.sku ?? '',
+    ean: product.barcode_ean ?? '',
+    sourceUrl: sourceLabel,
+  };
 }

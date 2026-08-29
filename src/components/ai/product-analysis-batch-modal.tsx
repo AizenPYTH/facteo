@@ -18,7 +18,7 @@ type ProductAnalysisBatchModalProps = {
   isSaving: boolean;
   onChangeItems: (items: ProductAnalysisDraft[]) => void;
   onClose: () => void;
-  onConfirmSelected: (items: ProductAnalysisDraft[]) => void;
+  onConfirmSelected: (items: ProductAnalysisDraft[], persistCatalog: boolean) => void;
 };
 
 export function ProductAnalysisBatchModal({
@@ -37,6 +37,7 @@ export function ProductAnalysisBatchModal({
     Object.fromEntries(items.map((_, index) => [index, true])),
   );
   const [expanded, setExpanded] = useState<number | null>(0);
+  const [persistCatalog, setPersistCatalog] = useState(false);
 
   const stats = useMemo(() => {
     const selectedItems = items.filter((_, index) => selected[index]);
@@ -62,7 +63,7 @@ export function ProductAnalysisBatchModal({
 
   function handleConfirm() {
     const chosen = items.filter((_, index) => selected[index]);
-    onConfirmSelected(chosen);
+    onConfirmSelected(chosen, persistCatalog);
   }
 
   return (
@@ -162,6 +163,15 @@ export function ProductAnalysisBatchModal({
           </ScrollView>
 
           <View style={styles.actions}>
+            <Pressable
+              accessibilityRole="checkbox"
+              accessibilityState={{ checked: persistCatalog }}
+              onPress={() => setPersistCatalog((current) => !current)}
+              style={styles.persistRow}>
+              <Text style={styles.persistLabel}>
+                {persistCatalog ? '☑' : '☐'} Enregistrer aussi dans le catalogue
+              </Text>
+            </Pressable>
             <Button
               loading={isSaving}
               onPress={handleConfirm}
@@ -249,6 +259,14 @@ function useStyles() {
     },
     actions: {
       gap: spacing.xs,
+    },
+    persistRow: {
+      minHeight: 44,
+      justifyContent: 'center',
+    },
+    persistLabel: {
+      ...typography.subheadline,
+      color: colors.text,
     },
   }));
 }
