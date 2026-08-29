@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { TextField } from '@/components/ui/text-field';
 import { useColors, useThemedStyles } from '@/hooks/use-colors';
 import { useDebouncedValue } from '@/hooks/use-debounced-value';
+import { radius } from '@/constants/theme/radius';
 import { spacing } from '@/constants/theme/spacing';
 import { typography } from '@/constants/theme/typography';
 import { formatPriceHT, formatVatRate } from '@/lib/format/currency';
@@ -138,7 +139,7 @@ function useStyles() {
       gap: spacing.md,
       paddingVertical: spacing.sm,
       paddingHorizontal: spacing.md,
-      borderRadius: 12,
+      borderRadius: radius.card,
       backgroundColor: colors.surface,
       borderWidth: StyleSheet.hairlineWidth,
       borderColor: colors.border,
