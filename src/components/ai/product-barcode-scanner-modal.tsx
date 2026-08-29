@@ -1,12 +1,17 @@
 import { useEffect, useState } from 'react';
-import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Modal, Pressable, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { ActionBar } from '@/components/ui/action-bar';
 import { Button } from '@/components/ui/button';
-import { TextField } from '@/components/ui/text-field';
+import { Field } from '@/components/ui/field';
+import { SegmentedControl } from '@/components/ui/segmented-control';
 import { useColors, useThemedStyles } from '@/hooks/use-colors';
+import { components } from '@/constants/theme/design-system';
 import { spacing } from '@/constants/theme/spacing';
 import { typography } from '@/constants/theme/typography';
+
+type ScannerMode = 'scanner' | 'reference' | 'photo';
 
 type ProductBarcodeScannerModalProps = {
   visible: boolean;
@@ -16,10 +21,9 @@ type ProductBarcodeScannerModalProps = {
 };
 
 /**
- * Barcode entry without expo-camera / ZXing.
- * Live camera barcode was removed: those native frameworks caused an immediate
- * cold-start crash on TestFlight (absent from last stable build #41).
- * Flow: type EAN/UPC, or continue with product photo (IA).
+ * Scanner produit — DESIGN §5.6
+ * Caméra native absente (crash TestFlight) : mode Scanner affiche l'état réel,
+ * défaut = Référence. Photo = IA Premium, annoncée avant la prise.
  */
 export function ProductBarcodeScannerModal({
   visible,
@@ -30,11 +34,13 @@ export function ProductBarcodeScannerModal({
   const styles = useStyles();
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const [mode, setMode] = useState<ScannerMode>('reference');
   const [manualCode, setManualCode] = useState('');
 
   useEffect(() => {
     if (visible) {
       setManualCode('');
+      setMode('reference');
     }
   }, [visible]);
 
@@ -46,38 +52,116 @@ export function ProductBarcodeScannerModal({
     onBarcode(data);
   }
 
+  const canSubmit = manualCode.replace(/\s/g, '').trim().length > 0;
+
   return (
     <Modal animationType="slide" onRequestClose={onClose} visible={visible}>
-      <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
+      <View
+        style={[
+          styles.container,
+          { paddingTop: insets.top, backgroundColor: colors.ink },
+        ]}>
         <View style={styles.header}>
-          <Text style={styles.title}>Code-barres produit</Text>
-          <Pressable onPress={onClose} hitSlop={12}>
-            <Text style={[styles.close, { color: colors.primary }]}>Fermer</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.title}>
+            Produit
+          </Text>
+          <Pressable
+            accessibilityLabel="Fermer"
+            accessibilityRole="button"
+            hitSlop={12}
+            onPress={onClose}
+            style={styles.closeHit}>
+            <Text style={styles.close}>Fermer</Text>
           </Pressable>
         </View>
 
-        <View style={styles.body}>
-          <Text style={styles.help}>
-            Saisissez l’EAN / UPC / GTIN du produit, ou utilisez une photo pour l’identifier avec
-            l’IA (comme sur le site).
-          </Text>
-
-          <TextField
-            label="Code-barres (EAN / UPC / GTIN)"
-            onChangeText={setManualCode}
-            placeholder="Ex. 3017620422003"
-            value={manualCode}
-            keyboardType="number-pad"
-            autoFocus
-          />
-
-          <Button onPress={handleManualSubmit} title="Rechercher ce code" />
-          <Button
-            onPress={onFallbackPhotoSearch}
-            title="Photo / capture produit (IA)"
-            variant="ghost"
+        <View style={styles.segmentWrap}>
+          <SegmentedControl
+            accessibilityLabel="Mode d’ajout produit"
+            onChange={setMode}
+            options={[
+              { value: 'scanner', label: 'Scanner' },
+              { value: 'reference', label: 'Référence' },
+              { value: 'photo', label: 'Photo' },
+            ]}
+            value={mode}
           />
         </View>
+
+        <View style={styles.body}>
+          {mode === 'scanner' ? (
+            <View style={styles.stateCard}>
+              <Text maxFontSizeMultiplier={1.5} style={styles.stateTitle}>
+                Caméra non disponible
+              </Text>
+              <Text maxFontSizeMultiplier={1.5} style={styles.stateBody}>
+                Le scan live n’est pas activé sur cette version. Saisissez la référence du produit
+                ou utilisez une photo.
+              </Text>
+              <Button
+                onPress={() => setMode('reference')}
+                title="Saisir la référence"
+                variant="secondary"
+              />
+            </View>
+          ) : null}
+
+          {mode === 'reference' ? (
+            <View style={styles.form}>
+              <Text maxFontSizeMultiplier={1.5} style={styles.help}>
+                Saisissez le code EAN / UPC / GTIN ou une référence catalogue.
+              </Text>
+              <Field
+                autoFocus
+                keyboardType="number-pad"
+                label="Référence produit"
+                onChangeText={setManualCode}
+                placeholder="Ex. 3017620422003"
+                value={manualCode}
+              />
+            </View>
+          ) : null}
+
+          {mode === 'photo' ? (
+            <View style={styles.stateCard}>
+              <Text maxFontSizeMultiplier={1.5} style={styles.stateTitle}>
+                Analyse photo (Premium)
+              </Text>
+              <Text maxFontSizeMultiplier={1.5} style={styles.stateBody}>
+                Une photo du produit sera analysée par l’IA. Vous vérifierez prix, TVA et quantité
+                avant tout ajout au document.
+              </Text>
+            </View>
+          ) : null}
+        </View>
+
+        <ActionBar
+          caption={
+            mode === 'photo'
+              ? 'Aucun produit n’est ajouté sans l’écran de vérification.'
+              : undefined
+          }
+          style={{ backgroundColor: colors.surface }}
+          transparent={false}>
+          {mode === 'reference' ? (
+            <>
+              <Button
+                disabled={!canSubmit}
+                onPress={handleManualSubmit}
+                title="Rechercher"
+              />
+              {!canSubmit ? (
+                <Text style={styles.disabledReason}>Saisissez une référence pour continuer.</Text>
+              ) : null}
+            </>
+          ) : null}
+          {mode === 'photo' ? (
+            <Button onPress={onFallbackPhotoSearch} title="Prendre une photo" />
+          ) : null}
+          {mode === 'scanner' ? (
+            <Button onPress={() => setMode('reference')} title="Passer en référence" />
+          ) : null}
+        </ActionBar>
       </View>
     </Modal>
   );
@@ -87,32 +171,62 @@ function useStyles() {
   return useThemedStyles((colors) => ({
     container: {
       flex: 1,
-      backgroundColor: colors.background,
-      gap: spacing.md,
     },
     header: {
-      paddingHorizontal: spacing.lg,
+      paddingHorizontal: spacing.md,
       paddingVertical: spacing.sm,
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
+      flexDirection: 'row' as const,
+      alignItems: 'center' as const,
+      justifyContent: 'space-between' as const,
     },
     title: {
-      ...typography.headline,
-      color: colors.text,
+      ...typography.title3,
+      color: colors.onInk,
+    },
+    closeHit: {
+      minWidth: components.touchTarget,
+      minHeight: components.touchTarget,
+      alignItems: 'center' as const,
+      justifyContent: 'center' as const,
     },
     close: {
       ...typography.subheadlineMedium,
+      color: colors.primary,
+    },
+    segmentWrap: {
+      paddingHorizontal: spacing.md,
+      paddingBottom: spacing.md,
     },
     body: {
       flex: 1,
+      paddingHorizontal: spacing.md,
       gap: spacing.md,
-      paddingHorizontal: spacing.lg,
-      paddingTop: spacing.md,
+    },
+    form: {
+      gap: spacing.md,
     },
     help: {
       ...typography.subheadline,
       color: colors.textSecondary,
+    },
+    stateCard: {
+      backgroundColor: colors.surface,
+      borderRadius: 14,
+      padding: spacing.md,
+      gap: spacing.md,
+    },
+    stateTitle: {
+      ...typography.headline,
+      color: colors.text,
+    },
+    stateBody: {
+      ...typography.subheadline,
+      color: colors.textSecondary,
+    },
+    disabledReason: {
+      ...typography.caption1,
+      color: colors.textTertiary,
+      textAlign: 'center' as const,
     },
   }));
 }
