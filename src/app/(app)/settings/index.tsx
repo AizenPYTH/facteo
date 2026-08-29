@@ -91,7 +91,7 @@ export default function SettingsScreen() {
   }
 
   return (
-    <SettingsScreenFrame title="Paramètres">
+    <SettingsScreenFrame title="Réglages">
       {useDesktopSettings ? (
         <SettingsDesktopContent />
       ) : (
