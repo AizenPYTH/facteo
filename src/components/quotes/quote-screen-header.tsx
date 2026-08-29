@@ -17,7 +17,7 @@ export function QuoteScreenHeader({
   title,
   onBack,
   backLabel = 'Documents',
-  fallbackHref = '/quotes',
+  fallbackHref = '/documents',
   showBackButton,
   style,
   trailing,

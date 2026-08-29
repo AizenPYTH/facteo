@@ -46,7 +46,7 @@ import {
 } from '@/types/invoice';
 import { useToast } from '@/providers/toast-provider';
 
-const DOCUMENTS_FALLBACK = '/invoices' as Href;
+const DOCUMENTS_FALLBACK = '/documents' as Href;
 
 export default function InvoiceDetailScreen() {
   const styles = useStyles();
