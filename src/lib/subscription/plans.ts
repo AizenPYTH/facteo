@@ -22,7 +22,7 @@ export const DEFAULT_PLAN_FEATURES: Record<EffectivePlanId, PlanFeatures> = {
     client_signature: false,
     pdf_templates: true,
     stripe_payments: false,
-    ai_assistant: false,
+    ai_assistant: true,
     advanced_stats: false,
     siren_search: true,
   },
@@ -31,9 +31,9 @@ export const DEFAULT_PLAN_FEATURES: Record<EffectivePlanId, PlanFeatures> = {
     company_signature: true,
     client_signature: true,
     pdf_templates: true,
-    stripe_payments: false,
-    ai_assistant: false,
-    advanced_stats: false,
+    stripe_payments: true,
+    ai_assistant: true,
+    advanced_stats: true,
     siren_search: true,
   },
   pro: {
@@ -41,9 +41,9 @@ export const DEFAULT_PLAN_FEATURES: Record<EffectivePlanId, PlanFeatures> = {
     company_signature: true,
     client_signature: true,
     pdf_templates: true,
-    stripe_payments: false,
-    ai_assistant: false,
-    advanced_stats: false,
+    stripe_payments: true,
+    ai_assistant: true,
+    advanced_stats: true,
     siren_search: true,
   },
 };
@@ -73,11 +73,24 @@ export function hasPlanFeature(
   feature: PlanFeatureKey,
   effectivePlanId: EffectivePlanId = 'micro',
 ): boolean {
-  if (features && feature in features) {
-    return Boolean(features[feature]);
+  const defaults = DEFAULT_PLAN_FEATURES[effectivePlanId];
+
+  // Les plans payés débloquent Photo IA / assistant même si la ligne DB
+  // `four_plans` a laissé `ai_assistant: false` par erreur.
+  if (feature === 'ai_assistant' && effectivePlanId !== 'micro') {
+    return true;
   }
 
-  return DEFAULT_PLAN_FEATURES[effectivePlanId][feature];
+  if (features && feature in features) {
+    const fromDb = Boolean(features[feature]);
+    // Ne pas laisser un `false` DB écraser un droit payant attendu côté app.
+    if (!fromDb && defaults[feature]) {
+      return true;
+    }
+    return fromDb;
+  }
+
+  return defaults[feature];
 }
 
 export function formatPlanLimit(limit: number | null): string {

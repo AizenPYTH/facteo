@@ -1,3 +1,10 @@
+/**
+ * Écran Abonnement — DESIGN §5.10
+ *
+ * iOS : Apple IAP uniquement (pas de Stripe Checkout / /tarifs).
+ * Web : Stripe Checkout.
+ * Un abonnement web ou Apple est reconnu via la même table `subscriptions`.
+ */
 import { SymbolView } from 'expo-symbols';
 import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
@@ -18,6 +25,10 @@ import { spacing } from '@/constants/theme/spacing';
 import { typography } from '@/constants/theme/typography';
 import { formatDate } from '@/lib/format/date';
 import { isAppleIapNotConfiguredError } from '@/lib/iap/apple-iap';
+import {
+  resolvePremiumPlan,
+  resolveStandardPlan,
+} from '@/lib/subscription/resolve-display-plans';
 import { useColors, useThemedStyles } from '@/hooks/use-colors';
 import { useApplePremiumPurchase } from '@/hooks/use-apple-iap';
 import { usePremiumCheckout } from '@/hooks/use-premium-checkout';
@@ -38,11 +49,7 @@ type DurationOption = {
 
 /**
  * DESIGN §5.10 : « deux durées » si la donnée existe. Le catalogue actuel
- * (`subscription_plans`) n'expose qu'une offre mensuelle — pas de ligne
- * annuelle ni de `billing_interval`. On renvoie donc une seule option ici
- * plutôt que d'inventer un prix annuel. Ajouter l'entrée « yearly » dès
- * qu'un plan annuel (avec son propre `appStoreProductId`) existera côté
- * catalogue — voir OPEN ITEMS.
+ * n'expose qu'une offre mensuelle — pas de ligne annuelle.
  */
 function buildDurationOptions(
   premiumPlan: SubscriptionPlan,
@@ -62,20 +69,27 @@ function buildDurationOptions(
 export default function PremiumScreen() {
   const styles = useStyles();
   const { showError, showSuccess } = useToast();
-  const { subscription, isPremium, usage, isLoading } = useSubscription();
+  const { subscription, isPremium, usage, isLoading, refresh } = useSubscription();
   const plansQuery = useSubscriptionPlans();
   const stripeCheckout = usePremiumCheckout();
   const appleIap = useApplePremiumPurchase();
 
   usePremiumCheckoutReturn();
 
-  const standardPlan = plansQuery.data?.find((plan) => plan.id === 'free');
-  const premiumPlan = plansQuery.data?.find((plan) => plan.id === 'premium');
+  const plans = plansQuery.data ?? [];
+  const standardPlan = resolveStandardPlan(plans);
+  const premiumPlan = resolvePremiumPlan(plans);
   const appStoreProductId =
     premiumPlan?.appStoreProductId ?? APPLE_PREMIUM_PRODUCT_ID;
   const appleStoreProduct = appleIap.products.data?.find(
     (product) => product.productId === appStoreProductId,
   );
+  const appleProductsError = appleIap.products.isError;
+  const appleProductsEmpty =
+    IS_APPLE_IAP_PLATFORM &&
+    appleIap.products.isFetched &&
+    !appleIap.products.isFetching &&
+    (appleIap.products.data?.length ?? 0) === 0;
   const premiumPriceLabel =
     IS_APPLE_IAP_PLATFORM && appleStoreProduct?.displayPrice
       ? appleStoreProduct.displayPrice
@@ -134,10 +148,33 @@ export default function PremiumScreen() {
     }
   }
 
-  if (isLoading || plansQuery.isLoading || !standardPlan || !premiumPlan) {
+  async function handleRetry() {
+    await Promise.all([
+      refresh(),
+      plansQuery.refetch(),
+      IS_APPLE_IAP_PLATFORM ? appleIap.products.refetch() : Promise.resolve(),
+    ]);
+  }
+
+  if (isLoading || plansQuery.isLoading) {
     return (
       <SettingsScreenFrame title="Abonnement">
-        <LoadingView message="Chargement de votre offre..." />
+        <LoadingView message="Chargement de votre offre…" />
+      </SettingsScreenFrame>
+    );
+  }
+
+  if (plansQuery.isError || !standardPlan || !premiumPlan) {
+    return (
+      <SettingsScreenFrame title="Abonnement">
+        <View style={styles.errorState}>
+          <Text style={styles.errorTitle}>Impossible de charger les abonnements.</Text>
+          <Text style={styles.errorBody}>
+            Vérifiez votre connexion, puis réessayez. Si le problème continue, contactez le
+            support.
+          </Text>
+          <Button onPress={() => void handleRetry()} title="Réessayer" />
+        </View>
       </SettingsScreenFrame>
     );
   }
@@ -149,7 +186,7 @@ export default function PremiumScreen() {
           <Text style={styles.heroTitle}>INVEQ Premium</Text>
           {isPremium ? (
             <Text style={styles.heroSubtitle}>
-              Toutes les fonctionnalités et limites de votre activité sont débloquées.
+              Votre abonnement est actif sur ce compte — web et iOS partagent le même état.
             </Text>
           ) : (
             <>
@@ -158,7 +195,8 @@ export default function PremiumScreen() {
                 <Text style={styles.heroPeriod}>{PREMIUM_PRICE_PERIOD_LABEL}</Text>
               </Text>
               <Text style={styles.heroSubtitle}>
-                Débloquez toutes les fonctionnalités et supprimez les limites de votre activité.
+                Débloquez toutes les fonctionnalités. Si vous êtes déjà abonné sur le web,
+                reconnectez-vous avec le même compte : l’abonnement est reconnu automatiquement.
               </Text>
             </>
           )}
@@ -175,13 +213,29 @@ export default function PremiumScreen() {
         {isPremium && subscription ? <CurrentPlanState subscription={subscription} /> : null}
 
         {!isPremium && IS_APPLE_IAP_PLATFORM ? (
-          <AppleOffer
-            appStoreProductId={appStoreProductId}
-            durationOptions={durationOptions}
-            isConfigured={appleIap.isConfigured}
-            onPurchase={handleApplePurchase}
-            purchasing={appleIap.purchase.isPending}
-          />
+          appleProductsError || appleProductsEmpty ? (
+            <View style={styles.errorState}>
+              <Text style={styles.errorTitle}>Impossible de charger les abonnements.</Text>
+              <Text style={styles.errorBody}>
+                L’App Store n’a renvoyé aucune offre. Vérifiez votre connexion, que les produits
+                sont actifs dans App Store Connect, puis réessayez.
+              </Text>
+              <Button
+                loading={appleIap.products.isFetching}
+                onPress={() => void appleIap.products.refetch()}
+                title="Réessayer"
+              />
+            </View>
+          ) : (
+            <AppleOffer
+              appStoreProductId={appStoreProductId}
+              durationOptions={durationOptions}
+              isConfigured={appleIap.isConfigured}
+              isLoadingProducts={appleIap.products.isLoading}
+              onPurchase={handleApplePurchase}
+              purchasing={appleIap.purchase.isPending}
+            />
+          )
         ) : null}
 
         <PlanComparison isPremium={isPremium} premiumPlan={premiumPlan} standardPlan={standardPlan} />
@@ -253,6 +307,7 @@ type AppleOfferProps = {
   appStoreProductId: string | null;
   durationOptions: DurationOption[];
   isConfigured: boolean;
+  isLoadingProducts: boolean;
   onPurchase: (appStoreProductId: string | null) => void;
   purchasing: boolean;
 };
@@ -261,6 +316,7 @@ function AppleOffer({
   appStoreProductId,
   durationOptions,
   isConfigured,
+  isLoadingProducts,
   onPurchase,
   purchasing,
 }: AppleOfferProps) {
@@ -271,6 +327,10 @@ function AppleOffer({
   const active = durationOptions.find((option) => option.id === selectedId) ?? durationOptions[0];
   const resolvedProductId = active?.appStoreProductId ?? appStoreProductId;
   const isUnavailable = !resolvedProductId || !isConfigured;
+
+  if (isLoadingProducts) {
+    return <LoadingView message="Chargement des offres App Store…" />;
+  }
 
   return (
     <View style={styles.container}>
@@ -370,6 +430,22 @@ function useStyles() {
       ...typography.caption1,
       color: colors.textTertiary,
       textAlign: 'center',
+    },
+    errorState: {
+      gap: spacing.md,
+      paddingVertical: spacing.xl,
+      alignItems: 'stretch',
+    },
+    errorTitle: {
+      ...typography.title3,
+      color: colors.text,
+      textAlign: 'center',
+    },
+    errorBody: {
+      ...typography.subheadline,
+      color: colors.textSecondary,
+      textAlign: 'center',
+      lineHeight: 22,
     },
   }));
 }
