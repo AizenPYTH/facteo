@@ -19,7 +19,7 @@ type PremiumUpgradeBannerProps = {
  * iOS (§1).
  */
 export function PremiumUpgradeBanner({
-  message = 'Disponible avec INVEQ Premium',
+  message = 'Disponible avec une offre supérieure',
   compact = false,
 }: PremiumUpgradeBannerProps) {
   const styles = useStyles(compact);

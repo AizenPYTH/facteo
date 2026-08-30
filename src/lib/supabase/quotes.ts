@@ -13,11 +13,12 @@ import type {
   QuoteStatus,
   UpdateQuoteInput,
 } from '@/types/quote';
-import {
-  QUOTES_PAGE_SIZE,
-  type QuotesPage,
-  type QuotesPageParams,
+import type {
+  QuoteStatusFilter,
+  QuotesPage,
+  QuotesPageParams,
 } from '@/types/quotes-list';
+import { QUOTES_PAGE_SIZE } from '@/types/quotes-list';
 import type { DataScope } from '@/types/tenant';
 import type { QuoteItemInsert, QuoteItemRow, QuoteWithClient } from '@/types/database';
 
@@ -124,6 +125,33 @@ export async function fetchQuotesPage(
     nextPage: hasMore ? page + 1 : null,
     totalCount: count,
   };
+}
+
+/** Compteurs par statut (hors recherche / filtre actif) pour Documents. */
+export async function fetchQuoteStatusCounts(
+  scope: DataScope,
+): Promise<Partial<Record<QuoteStatusFilter, number>>> {
+  const { data, error } = await supabase
+    .from('quotes')
+    .select('status')
+    .eq('company_id', scope.companyId);
+
+  if (error) {
+    logSupabaseError('fetchQuoteStatusCounts', error);
+    return {};
+  }
+
+  const counts: Partial<Record<QuoteStatusFilter, number>> = {
+    all: 0,
+  };
+
+  for (const row of (data as { status: QuoteStatus }[] | null) ?? []) {
+    counts.all = (counts.all ?? 0) + 1;
+    const status = row.status as QuoteStatusFilter;
+    counts[status] = (counts[status] ?? 0) + 1;
+  }
+
+  return counts;
 }
 
 export async function fetchQuoteById(

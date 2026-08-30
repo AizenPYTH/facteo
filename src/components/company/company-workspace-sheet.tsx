@@ -252,12 +252,12 @@ export function CompanyWorkspaceSheet({
 
 function readErrorMessage(error: unknown): string {
   if (error && typeof error === 'object' && 'name' in error && error.name === 'PlanLimitError') {
-    return 'Limite du plan atteinte : vous ne pouvez pas créer d’autre entreprise. Passez à Premium ou libérez une activité.';
+    return 'Limite du plan atteinte : vous ne pouvez pas créer d’autre entreprise. Passez à une offre supérieure ou libérez une activité.';
   }
 
   if (error instanceof Error) {
     if (error.message === 'PLAN_LIMIT_REACHED' || error.message.includes('PLAN_LIMIT')) {
-      return 'Limite du plan atteinte : vous ne pouvez pas créer d’autre entreprise. Passez à Premium ou libérez une activité.';
+      return 'Limite du plan atteinte : vous ne pouvez pas créer d’autre entreprise. Passez à une offre supérieure ou libérez une activité.';
     }
     return error.message;
   }

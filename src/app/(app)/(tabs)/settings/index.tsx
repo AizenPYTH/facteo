@@ -1,16 +1,17 @@
 import { router, type Href } from 'expo-router';
-import { Alert, Linking, Platform, StyleSheet, Switch, Text, View } from 'react-native';
+import { Alert, Linking, StyleSheet, Text, View } from 'react-native';
 
 import {
   SettingsProfileSummary,
   SettingsRow,
   SettingsSection,
 } from '@/components/settings';
+import { AppearancePreference } from '@/components/settings/appearance-preference';
 import { NotificationPreferencesSection } from '@/components/settings/notification-preferences-section';
 import { SettingsScreenFrame } from '@/components/web/desktop/settings-screen-frame';
 import { SettingsDesktopContent } from '@/components/web/desktop/screens/settings-desktop-content';
 import { useBreakpoint } from '@/hooks/use-breakpoint';
-import { useColors, useThemedStyles } from '@/hooks/use-colors';
+import { useThemedStyles } from '@/hooks/use-colors';
 import { spacing } from '@/constants/theme/spacing';
 import { typography } from '@/constants/theme/typography';
 import { MARKETING_CONTACT } from '@/constants/marketing/site';
@@ -19,33 +20,18 @@ import { useAuth } from '@/hooks/use-auth';
 import { useCompanyProfile } from '@/hooks/use-company-profile';
 import { useSubscription } from '@/hooks/use-subscription';
 import { getAppVersionInfo } from '@/lib/app-version';
-import { useThemePreference } from '@/providers/theme-preference-provider';
-import { useToast } from '@/providers/toast-provider';
+import { getEffectivePlanDisplayName } from '@/lib/subscription/plans';
 
 export default function SettingsScreen() {
   const styles = useStyles();
-  const colors = useColors();
   const { isWeb, isDesktop, isTablet } = useBreakpoint();
   const useDesktopSettings = isWeb && (isDesktop || isTablet);
   const { user, signOut } = useAuth();
   const companyProfile = useCompanyProfile();
-  const { isPremium } = useSubscription();
-  const { preference, setPreference } = useThemePreference();
-  const { showSuccess } = useToast();
+  const { subscription } = useSubscription();
   const versionInfo = getAppVersionInfo();
 
-  const isDarkMode = preference === 'dark';
-  const darkModeSupported = Platform.OS !== 'web';
-  const planLabel = isPremium ? 'INVEQ Premium' : 'INVEQ Standard';
-
-  async function handleToggleDarkMode(value: boolean) {
-    if (!darkModeSupported) {
-      showSuccess('Le mode sombre sera bientôt disponible sur le web.');
-      return;
-    }
-
-    await setPreference(value ? 'dark' : 'light');
-  }
+  const planLabel = `INVEQ ${getEffectivePlanDisplayName(subscription?.effectivePlanId ?? 'micro')}`;
 
   async function handleLogout() {
     const { error } = await signOut();
@@ -150,23 +136,7 @@ export default function SettingsScreen() {
               value={user?.email ?? undefined}
             />
             <View style={styles.separator} />
-            <SettingsRow
-              label="Mode sombre"
-              onPress={
-                darkModeSupported ? undefined : () => showSuccess('Bientôt disponible sur le web.')
-              }
-              trailing={
-                <Switch
-                  disabled={!darkModeSupported}
-                  onValueChange={(value) => {
-                    void handleToggleDarkMode(value);
-                  }}
-                  thumbColor={colors.surface}
-                  trackColor={{ false: colors.borderStrong, true: colors.primary }}
-                  value={isDarkMode}
-                />
-              }
-            />
+            <AppearancePreference />
             <NotificationPreferencesSection variant="embedded" />
           </SettingsSection>
 

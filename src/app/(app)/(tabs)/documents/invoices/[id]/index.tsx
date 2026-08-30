@@ -347,7 +347,7 @@ export default function InvoiceDetailScreen() {
       },
       {
         id: 'sign',
-        label: signatureLocked ? 'Faire signer (Premium)' : 'Faire signer',
+        label: signatureLocked ? 'Faire signer (offre supérieure)' : 'Faire signer',
         icon: { ios: 'pencil.tip', android: 'draw', web: 'draw' } as const,
         onPress: () => {
           if (signatureLocked) {
@@ -405,7 +405,7 @@ export default function InvoiceDetailScreen() {
               id: 'payment-link',
               label: hasFeature('stripe_payments')
                 ? 'Lien de paiement'
-                : 'Lien de paiement (Premium)',
+                : 'Lien de paiement (offre supérieure)',
               icon: { ios: 'link', android: 'link', web: 'link' } as const,
               onPress: () => void handlePaymentLink(),
               loading: paymentLinkLoading || createLink.isPending,
@@ -670,7 +670,7 @@ export default function InvoiceDetailScreen() {
             onPress={() => void handlePaymentLink()}
             style={styles.tabletHeaderAction}
             title={
-              hasFeature('stripe_payments') ? 'Lien de paiement' : 'Lien de paiement (Premium)'
+              hasFeature('stripe_payments') ? 'Lien de paiement' : 'Lien de paiement (offre supérieure)'
             }
             variant={primaryAction ? 'secondary' : 'primary'}
           />
@@ -812,7 +812,7 @@ export default function InvoiceDetailScreen() {
               loading={paymentLinkLoading || createLink.isPending}
               onPress={() => void handlePaymentLink()}
               title={
-                hasFeature('stripe_payments') ? 'Lien de paiement' : 'Lien de paiement (Premium)'
+                hasFeature('stripe_payments') ? 'Lien de paiement' : 'Lien de paiement (offre supérieure)'
               }
               variant={primaryAction ? 'secondary' : 'primary'}
             />

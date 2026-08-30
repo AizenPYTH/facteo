@@ -1,7 +1,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
 
 import { planIdFromAppleProductId } from '../_shared/apple-products.ts';
-import { applyPremiumSubscription } from '../_shared/subscription-sync.ts';
+import { applyPlanSubscription } from '../_shared/subscription-sync.ts';
 import {
   appleSubscriptionStorageId,
   toIsoFromAppleMs,
@@ -10,14 +10,14 @@ import {
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers':
-    'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
 type ConfirmBody = {
   productId?: string;
   transactionId?: string;
   purchaseToken?: string | null;
+  platform?: string;
 };
 
 Deno.serve(async (request) => {
@@ -25,23 +25,16 @@ Deno.serve(async (request) => {
     return new Response('ok', { headers: corsHeaders });
   }
 
-  if (request.method !== 'POST') {
-    return jsonResponse({ error: 'Méthode non autorisée.' }, 405);
-  }
-
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY');
-    const supabaseServiceRoleKey = Deno.env.get(
-      'SUPABASE_SERVICE_ROLE_KEY',
-    );
+    const supabaseServiceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 
     if (!supabaseUrl || !supabaseAnonKey || !supabaseServiceRoleKey) {
       return jsonResponse({ error: 'Configuration serveur incomplète.' }, 500);
     }
 
     const authHeader = request.headers.get('Authorization');
-
     if (!authHeader) {
       return jsonResponse({ error: 'Non autorisé.' }, 401);
     }
@@ -49,6 +42,7 @@ Deno.serve(async (request) => {
     const userClient = createClient(supabaseUrl, supabaseAnonKey, {
       global: { headers: { Authorization: authHeader } },
     });
+
     const {
       data: { user },
       error: userError,
@@ -71,55 +65,34 @@ Deno.serve(async (request) => {
       purchaseToken,
     });
 
-    if (
-      body.productId?.trim() &&
-      body.productId.trim() !== verified.productId
-    ) {
-      return jsonResponse(
-        { error: 'productId incohérent avec la transaction Apple.' },
-        400,
-      );
+    if (body.productId?.trim() && body.productId.trim() !== verified.productId) {
+      return jsonResponse({ error: 'productId incohérent avec Apple.' }, 400);
     }
 
     const planId = planIdFromAppleProductId(verified.productId);
-
-    if (planId !== 'premium') {
-      return jsonResponse(
-        { error: `Produit Apple non mappé : ${verified.productId}` },
-        400,
-      );
+    if (!planId) {
+      return jsonResponse({ error: `Produit Apple non mappé: ${verified.productId}` }, 400);
     }
 
-    const serviceClient = createClient(
-      supabaseUrl,
-      supabaseServiceRoleKey,
-    );
-    const storageId = appleSubscriptionStorageId(
-      verified.originalTransactionId,
-    );
-    const { data: existingOwner, error: ownerError } = await serviceClient
+    const serviceClient = createClient(supabaseUrl, supabaseServiceRoleKey);
+    const storageId = appleSubscriptionStorageId(verified.originalTransactionId);
+
+    const { data: existingOwner } = await serviceClient
       .from('subscriptions')
       .select('user_id')
       .eq('stripe_subscription_id', storageId)
       .maybeSingle();
 
-    if (ownerError) {
-      throw ownerError;
-    }
-
     if (existingOwner?.user_id && existingOwner.user_id !== user.id) {
       return jsonResponse(
-        {
-          error:
-            'Cet abonnement Apple est déjà lié à un autre compte INVEQ.',
-        },
+        { error: 'Cet abonnement Apple est déjà lié à un autre compte INVEQ.' },
         409,
       );
     }
 
-    await applyPremiumSubscription(serviceClient, {
+    await applyPlanSubscription(serviceClient, {
       userId: user.id,
-      planId: 'premium',
+      planId,
       status: 'active',
       stripeSubscriptionId: storageId,
       currentPeriodStart: toIsoFromAppleMs(verified.purchaseDate),
@@ -129,9 +102,9 @@ Deno.serve(async (request) => {
 
     return jsonResponse(
       {
-        planId: 'premium',
+        planId,
         status: 'active',
-        isPremium: true,
+        isPremium: planId !== 'micro',
         transactionId: verified.transactionId,
         originalTransactionId: verified.originalTransactionId,
         productId: verified.productId,
@@ -141,14 +114,12 @@ Deno.serve(async (request) => {
       200,
     );
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : 'Erreur inattendue.';
-    const status = message.startsWith('Secret Apple manquant') ? 500 : 400;
-    return jsonResponse({ error: message }, status);
+    const message = error instanceof Error ? error.message : 'Erreur inattendue.';
+    return jsonResponse({ error: message }, 400);
   }
 });
 
-function jsonResponse(payload: unknown, status: number): Response {
+function jsonResponse(payload: unknown, status = 200) {
   return new Response(JSON.stringify(payload), {
     status,
     headers: {

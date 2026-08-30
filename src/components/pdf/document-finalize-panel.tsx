@@ -310,7 +310,7 @@ export function DocumentFinalizePanel({
 
                 onSignPress();
               }}
-              subtitle={signatureLocked ? 'Premium' : 'Signature client'}
+              subtitle={signatureLocked ? 'Offre supérieure' : 'Signature client'}
               title="Faire signer"
             />
           </View>

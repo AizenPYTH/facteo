@@ -79,7 +79,7 @@ function DashboardMobileScreen() {
               onInvoicePress={(invoice) => router.push(`/documents/invoices/${invoice.id}` as Href)}
             />
             <PremiumGatedSection
-              bannerMessage="Statistiques avancées — INVEQ Premium"
+              bannerMessage="Statistiques avancées — offre Max"
               locked={advancedStatsLocked}>
               <ExtendedStatsGrid premiumLocked={advancedStatsLocked} stats={stats} />
               <RevenueChart data={extended.revenueByMonth} premiumLocked={advancedStatsLocked} />

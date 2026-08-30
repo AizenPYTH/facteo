@@ -6,6 +6,7 @@ import { Platform, Pressable, Text, View } from 'react-native';
 
 import { AuthScreen } from '@/components/auth/auth-screen';
 import { AuthTextField } from '@/components/auth/auth-text-field';
+import { SocialAuthButton } from '@/components/auth/social-auth-button';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/use-auth';
 import { useAuthScreenStyles } from '@/hooks/use-auth-screen-styles';
@@ -49,6 +50,7 @@ export default function LoginScreen() {
     try {
       const { error, session } = await signInWithApple();
       if (error) {
+        // Afficher le message déjà localisé (mapAppleAuthError) sans le masquer.
         setFormError(getAuthErrorMessage(error.message));
         return;
       }
@@ -161,23 +163,29 @@ export default function LoginScreen() {
         <View style={styles.separatorLine} />
       </View>
 
-      <View style={styles.oauthRow}>
-        <View style={styles.oauthButton}>
-          <Button
+      <View style={styles.oauthColumn}>
+        {Platform.OS === 'ios' ? (
+          <SocialAuthButton
             loading={oauthLoading === 'apple'}
             onPress={() => void handleApple()}
+            provider="apple"
             title="Continuer avec Apple"
-            variant="secondary"
           />
-        </View>
-        <View style={styles.oauthButton}>
-          <Button
-            loading={oauthLoading === 'google'}
-            onPress={() => void handleGoogle()}
-            title="Continuer avec Google"
-            variant="secondary"
+        ) : null}
+        <SocialAuthButton
+          loading={oauthLoading === 'google'}
+          onPress={() => void handleGoogle()}
+          provider="google"
+          title="Continuer avec Google"
+        />
+        {Platform.OS !== 'ios' ? (
+          <SocialAuthButton
+            loading={oauthLoading === 'apple'}
+            onPress={() => void handleApple()}
+            provider="apple"
+            title="Continuer avec Apple"
           />
-        </View>
+        ) : null}
       </View>
     </AuthScreen>
   );
@@ -212,12 +220,8 @@ function useStyles() {
       ...typography.caption1,
       color: colors.textTertiary,
     },
-    oauthRow: {
-      flexDirection: 'row' as const,
+    oauthColumn: {
       gap: spacing.sm,
-    },
-    oauthButton: {
-      flex: 1,
     },
   }));
 }

@@ -61,7 +61,7 @@ export function InvoicePaymentLinkButton({
       onPress={() => {
         void handlePress();
       }}
-      title={isLocked ? 'Lien de paiement (Premium)' : 'Lien de paiement'}
+      title={isLocked ? 'Lien de paiement (offre supérieure)' : 'Lien de paiement'}
       variant="secondary"
     />
   );

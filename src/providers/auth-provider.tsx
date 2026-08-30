@@ -19,10 +19,12 @@ import { MARKETING_SITE_URL } from '@/constants/marketing/site';
 import { supabase } from '@/lib/supabase';
 
 async function createAppleNonce(): Promise<{ rawNonce: string; hashedNonce: string }> {
-  const rawNonce = Crypto.randomUUID().replace(/-/g, '');
+  // Apple attend le SHA-256 du nonce en hex ; Supabase vérifie avec le nonce brut.
+  const rawNonce = Crypto.randomUUID().replace(/-/g, '') + Crypto.randomUUID().replace(/-/g, '');
   const hashedNonce = await Crypto.digestStringAsync(
     Crypto.CryptoDigestAlgorithm.SHA256,
     rawNonce,
+    { encoding: Crypto.CryptoEncoding.HEX },
   );
   return { rawNonce, hashedNonce };
 }

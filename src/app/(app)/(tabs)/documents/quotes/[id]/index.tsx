@@ -303,7 +303,7 @@ export default function QuoteDetailScreen() {
       },
       {
         id: 'sign',
-        label: signatureLocked ? 'Faire signer (Premium)' : 'Faire signer',
+        label: signatureLocked ? 'Faire signer (offre supérieure)' : 'Faire signer',
         icon: { ios: 'pencil.tip', android: 'draw', web: 'draw' } as const,
         onPress: () => {
           if (signatureLocked) {

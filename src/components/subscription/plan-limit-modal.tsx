@@ -31,7 +31,7 @@ export function PlanLimitModal({ visible, onClose }: PlanLimitModalProps) {
         <Pressable onPress={(event) => event.stopPropagation()} style={styles.dialog}>
           <Text style={styles.title}>Limite atteinte</Text>
           <Text style={styles.description}>
-            Vous avez atteint la limite de votre offre actuelle. Passez à INVEQ Premium pour
+            Vous avez atteint la limite de votre offre actuelle. Passez à une offre supérieure pour
             continuer.
           </Text>
 

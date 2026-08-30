@@ -1,21 +1,14 @@
 import { router, useLocalSearchParams, type Href } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
-import { View } from 'react-native';
+import { SymbolView } from 'expo-symbols';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Pressable, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import {
-  AddInvoiceFab,
-  InvoiceSearchBar,
-  InvoiceStatusFilterBar,
-  InvoicesList,
-} from '@/components/invoices';
-import {
-  AddQuoteFab,
-  QuoteSearchBar,
-  QuoteStatusFilterBar,
-  QuotesList,
-} from '@/components/quotes';
+import { DocumentsFilterMenu } from '@/components/documents/documents-filter-menu';
+import { DocumentsOverview } from '@/components/documents/documents-overview';
 import { FeatureIntroModal } from '@/components/feature-intros';
+import { InvoiceSearchBar, InvoicesList } from '@/components/invoices';
+import { QuoteSearchBar, QuotesList } from '@/components/quotes';
 import { AppText } from '@/components/ui/app-text';
 import { Button } from '@/components/ui/button';
 import { SegmentedControl } from '@/components/ui/segmented-control';
@@ -25,24 +18,34 @@ import {
   type TabletDocumentsSegment,
 } from '@/components/tablet/tablet-documents-list';
 import { BottomTabInset } from '@/constants/theme';
-import { useThemedStyles } from '@/hooks/use-colors';
+import { useThemedStyles, useColors } from '@/hooks/use-colors';
 import { spacing } from '@/constants/theme/spacing';
+import { radius } from '@/constants/theme/radius';
+import { typography } from '@/constants/theme/typography';
 import { useBreakpoint } from '@/hooks/use-breakpoint';
 import { useDebouncedValue } from '@/hooks/use-debounced-value';
 import { useFeatureIntro } from '@/hooks/use-feature-intro';
 import { useInfiniteInvoices, useInvoiceStatusCounts } from '@/hooks/use-invoices';
-import { useInfiniteQuotes } from '@/hooks/use-quotes';
+import { useInfiniteQuotes, useQuoteStatusCounts } from '@/hooks/use-quotes';
+import { usePlanLimitGuard } from '@/hooks/use-plan-limit';
 import { useTenant } from '@/hooks/use-tenant';
-import type { InvoiceStatusFilter } from '@/types/invoices-list';
-import type { QuoteStatusFilter } from '@/types/quotes-list';
+import {
+  INVOICE_STATUS_FILTER_OPTIONS,
+  type InvoiceStatusFilter,
+} from '@/types/invoices-list';
+import {
+  QUOTE_STATUS_FILTER_OPTIONS,
+  type QuoteStatusFilter,
+} from '@/types/quotes-list';
 
-const FAB_CLEARANCE = 104;
+const LIST_BOTTOM_CLEARANCE = 32;
 const SEARCH_DEBOUNCE_MS = 300;
 
 type DocumentsSegment = 'invoices' | 'quotes';
 
 /**
- * Documents — Factures | Devis (DESIGN §4).
+ * Documents — workspace factures / devis (DESIGN §4).
+ * Hiérarchie : titre + CTA créer · type · synthèse · recherche/filtre · liste.
  */
 export default function DocumentsScreen() {
   const { isTablet, isWeb } = useBreakpoint();
@@ -93,12 +96,11 @@ function TabletDocumentsScreen() {
 
 function DocumentsMobileScreen() {
   const styles = useStyles();
+  const colors = useColors();
   const { segment: segmentParam } = useLocalSearchParams<{ segment?: string }>();
   const [segment, setSegment] = useState<DocumentsSegment>(
     segmentParam === 'quotes' ? 'quotes' : 'invoices',
   );
-  // Suit le paramètre `segment` (ex. raccourcis tableau de bord) sans effet —
-  // ajustement pendant le rendu, cf. https://react.dev/learn/you-might-not-need-an-effect.
   const [lastSegmentParam, setLastSegmentParam] = useState(segmentParam);
   if (segmentParam !== lastSegmentParam) {
     setLastSegmentParam(segmentParam);
@@ -108,6 +110,7 @@ function DocumentsMobileScreen() {
   }
   const invoicesIntro = useFeatureIntro('invoice');
   const quotesIntro = useFeatureIntro('quote');
+  const { guardResource } = usePlanLimitGuard();
 
   useEffect(() => {
     return invoicesIntro.presentOnFirstVisit();
@@ -120,12 +123,39 @@ function DocumentsMobileScreen() {
     }
   }
 
+  async function handleCreate() {
+    const allowed = await guardResource('documents');
+    if (!allowed) return;
+    const href =
+      segment === 'invoices' ? '/documents/invoices/new' : '/documents/quotes/new';
+    router.push(href as Href);
+  }
+
   return (
     <SafeAreaView edges={['top']} style={styles.safeArea}>
       <View style={styles.header}>
-        <AppText accessibilityRole="header" variant="display">
-          Documents
-        </AppText>
+        <View style={styles.titleRow}>
+          <AppText accessibilityRole="header" variant="display">
+            Documents
+          </AppText>
+          <Pressable
+            accessibilityLabel={segment === 'invoices' ? 'Nouvelle facture' : 'Nouveau devis'}
+            accessibilityRole="button"
+            onPress={() => {
+              void handleCreate();
+            }}
+            style={({ pressed }) => [styles.createButton, pressed && styles.createButtonPressed]}>
+            <SymbolView
+              name={{ ios: 'plus', android: 'add', web: 'add' }}
+              size={16}
+              tintColor={colors.onInk}
+              type="hierarchical"
+            />
+            <Text style={styles.createLabel}>
+              {segment === 'invoices' ? 'Facture' : 'Devis'}
+            </Text>
+          </Pressable>
+        </View>
         <SegmentedControl
           accessibilityLabel="Type de document"
           onChange={handleSegmentChange}
@@ -165,6 +195,7 @@ function InvoicesPane() {
   const insets = useSafeAreaInsets();
   const { isSwitching } = useTenant();
   const statusCountsQuery = useInvoiceStatusCounts();
+  const counts = statusCountsQuery.data;
 
   const {
     invoices,
@@ -178,7 +209,36 @@ function InvoicesPane() {
 
   const isSearching = debouncedSearch.trim().length > 0;
   const isInitialLoading = (isLoading || isSwitching) && invoices.length === 0;
-  const showFab = invoices.length > 0 || isSearching || statusFilter !== 'all';
+
+  const overviewStats = useMemo(
+    () => [
+      { key: 'all', label: 'Total', value: counts?.all ?? 0 },
+      {
+        key: 'action',
+        label: 'À traiter',
+        value: (counts?.draft ?? 0) + (counts?.sent ?? 0),
+        emphasis: 'warning' as const,
+      },
+      {
+        key: 'overdue',
+        label: 'En retard',
+        value: counts?.overdue ?? 0,
+        emphasis: 'danger' as const,
+      },
+      { key: 'paid', label: 'Payées', value: counts?.paid ?? 0 },
+    ],
+    [counts],
+  );
+
+  const filterOptions = useMemo(
+    () =>
+      INVOICE_STATUS_FILTER_OPTIONS.map((option) => ({
+        value: option.value,
+        label: option.label,
+        count: counts?.[option.value],
+      })),
+    [counts],
+  );
 
   const handleRefresh = useCallback(() => {
     refetch();
@@ -193,16 +253,26 @@ function InvoicesPane() {
 
   return (
     <View style={styles.pane}>
-      <InvoiceSearchBar onChangeText={setSearch} value={search} />
-      <InvoiceStatusFilterBar
-        counts={statusCountsQuery.data}
-        onChange={setStatusFilter}
-        value={statusFilter}
-      />
+      <DocumentsOverview stats={overviewStats} />
+      <View style={styles.toolbar}>
+        <View style={styles.searchGrow}>
+          <InvoiceSearchBar
+            onChangeText={setSearch}
+            placeholder="N° facture, client…"
+            value={search}
+          />
+        </View>
+        <DocumentsFilterMenu
+          accessibilityLabel="Filtrer les factures"
+          onChange={setStatusFilter}
+          options={filterOptions}
+          value={statusFilter}
+        />
+      </View>
       <View style={styles.listContainer}>
         <InvoicesList
           contentContainerStyle={{
-            paddingBottom: insets.bottom + BottomTabInset + FAB_CLEARANCE,
+            paddingBottom: insets.bottom + BottomTabInset + LIST_BOTTOM_CLEARANCE,
           }}
           invoices={invoices}
           isFetchingNextPage={isFetchingNextPage}
@@ -212,13 +282,10 @@ function InvoicesPane() {
           onEndReached={handleEndReached}
           onInvoicePress={(invoice) => router.push(`/documents/invoices/${invoice.id}` as Href)}
           onRefresh={handleRefresh}
-          showCreateAction={!showFab}
+          showCreateAction={false}
           statusFilter={statusFilter}
         />
       </View>
-      {showFab ? (
-        <AddInvoiceFab style={{ bottom: insets.bottom + BottomTabInset + spacing.md }} />
-      ) : null}
     </View>
   );
 }
@@ -230,6 +297,8 @@ function QuotesPane() {
   const debouncedSearch = useDebouncedValue(search, SEARCH_DEBOUNCE_MS);
   const insets = useSafeAreaInsets();
   const { isSwitching } = useTenant();
+  const statusCountsQuery = useQuoteStatusCounts();
+  const counts = statusCountsQuery.data;
 
   const {
     quotes,
@@ -243,11 +312,36 @@ function QuotesPane() {
 
   const isSearching = debouncedSearch.trim().length > 0;
   const isInitialLoading = (isLoading || isSwitching) && quotes.length === 0;
-  const showFab = quotes.length > 0 || isSearching || statusFilter !== 'all';
+
+  const overviewStats = useMemo(
+    () => [
+      { key: 'all', label: 'Total', value: counts?.all ?? 0 },
+      {
+        key: 'draft',
+        label: 'Brouillons',
+        value: counts?.draft ?? 0,
+        emphasis: 'warning' as const,
+      },
+      { key: 'sent', label: 'Envoyés', value: counts?.sent ?? 0 },
+      { key: 'accepted', label: 'Acceptés', value: counts?.accepted ?? 0 },
+    ],
+    [counts],
+  );
+
+  const filterOptions = useMemo(
+    () =>
+      QUOTE_STATUS_FILTER_OPTIONS.map((option) => ({
+        value: option.value,
+        label: option.label,
+        count: counts?.[option.value],
+      })),
+    [counts],
+  );
 
   const handleRefresh = useCallback(() => {
     refetch();
-  }, [refetch]);
+    void statusCountsQuery.refetch();
+  }, [refetch, statusCountsQuery]);
 
   const handleEndReached = useCallback(() => {
     if (hasNextPage && !isFetchingNextPage) {
@@ -257,12 +351,26 @@ function QuotesPane() {
 
   return (
     <View style={styles.pane}>
-      <QuoteSearchBar onChangeText={setSearch} value={search} />
-      <QuoteStatusFilterBar onChange={setStatusFilter} value={statusFilter} />
+      <DocumentsOverview stats={overviewStats} />
+      <View style={styles.toolbar}>
+        <View style={styles.searchGrow}>
+          <QuoteSearchBar
+            onChangeText={setSearch}
+            placeholder="N° devis, client…"
+            value={search}
+          />
+        </View>
+        <DocumentsFilterMenu
+          accessibilityLabel="Filtrer les devis"
+          onChange={setStatusFilter}
+          options={filterOptions}
+          value={statusFilter}
+        />
+      </View>
       <View style={styles.listContainer}>
         <QuotesList
           contentContainerStyle={{
-            paddingBottom: insets.bottom + BottomTabInset + FAB_CLEARANCE,
+            paddingBottom: insets.bottom + BottomTabInset + LIST_BOTTOM_CLEARANCE,
           }}
           isFetchingNextPage={isFetchingNextPage}
           isInitialLoading={isInitialLoading}
@@ -275,9 +383,6 @@ function QuotesPane() {
           statusFilter={statusFilter}
         />
       </View>
-      {showFab ? (
-        <AddQuoteFab style={{ bottom: insets.bottom + BottomTabInset + spacing.md }} />
-      ) : null}
     </View>
   );
 }
@@ -294,10 +399,41 @@ function useStyles() {
       paddingBottom: spacing.md,
       gap: spacing.md,
     },
+    titleRow: {
+      flexDirection: 'row' as const,
+      alignItems: 'center' as const,
+      justifyContent: 'space-between' as const,
+      gap: spacing.md,
+    },
+    createButton: {
+      flexDirection: 'row' as const,
+      alignItems: 'center' as const,
+      gap: spacing.xs,
+      minHeight: 40,
+      paddingHorizontal: spacing.md,
+      borderRadius: radius.buttonSmall,
+      backgroundColor: colors.ink,
+    },
+    createButtonPressed: {
+      backgroundColor: colors.inkPressed,
+    },
+    createLabel: {
+      ...typography.subheadlineMedium,
+      color: colors.onInk,
+    },
     pane: {
       flex: 1,
       gap: spacing.sm,
       paddingHorizontal: spacing.screenPaddingHorizontal,
+    },
+    toolbar: {
+      flexDirection: 'row' as const,
+      alignItems: 'center' as const,
+      gap: spacing.sm,
+    },
+    searchGrow: {
+      flex: 1,
+      minWidth: 0,
     },
     listContainer: {
       flex: 1,
