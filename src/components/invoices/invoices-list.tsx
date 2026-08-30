@@ -22,6 +22,9 @@ import { InvoiceCard } from './invoice-card';
 export type InvoicesListProps = {
   invoices: Invoice[];
   onInvoicePress?: (invoice: Invoice) => void;
+  onInvoiceShare?: (invoice: Invoice) => void;
+  onMarkPaid?: (invoice: Invoice) => void;
+  onInvoiceRemind?: (invoice: Invoice) => void;
   isInitialLoading?: boolean;
   isRefreshing?: boolean;
   isFetchingNextPage?: boolean;
@@ -46,6 +49,9 @@ export function InvoicesList({
   onRefresh,
   onEndReached,
   onInvoicePress,
+  onInvoiceShare,
+  onMarkPaid,
+  onInvoiceRemind,
   contentContainerStyle,
   selectedId,
   testID,
@@ -56,7 +62,10 @@ export function InvoicesList({
     <View>
       <InvoiceCard
         invoice={item}
+        onMarkPaid={onMarkPaid}
         onPress={onInvoicePress}
+        onRemind={onInvoiceRemind}
+        onShare={onInvoiceShare}
         selected={item.id === selectedId}
       />
       {index < invoices.length - 1 ? <View style={styles.separator} /> : null}

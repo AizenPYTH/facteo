@@ -88,9 +88,9 @@ function useStyles() {
     },
     track: {
       flexDirection: 'row' as const,
-      backgroundColor: colors.surfaceSecondary,
+      backgroundColor: colors.segmentedTrack,
       borderRadius: 11,
-      padding: 4,
+      padding: 3,
       gap: 4,
     },
     option: {

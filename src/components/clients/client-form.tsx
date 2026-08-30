@@ -46,71 +46,70 @@ export function ClientForm({ control, errors, setValue }: ClientFormProps) {
 
       <FormSection title="Identité">
         {isCompany ? (
+          <FormField>
+            <Controller
+              control={control}
+              name="company"
+              render={({ field: { onChange, onBlur, value } }) => (
+                <TextField
+                  autoCapitalize="words"
+                  error={errors.company?.message}
+                  label="Entreprise"
+                  onBlur={onBlur}
+                  onChangeText={onChange}
+                  placeholder="Acme SARL"
+                  requirement="required"
+                  textContentType="organizationName"
+                  value={value}
+                />
+              )}
+            />
+          </FormField>
+        ) : (
           <>
             <FormField>
               <Controller
                 control={control}
-                name="company"
+                name="lastName"
                 render={({ field: { onChange, onBlur, value } }) => (
                   <TextField
                     autoCapitalize="words"
-                    error={errors.company?.message}
-                    label="Entreprise"
+                    error={errors.lastName?.message}
+                    label="Nom"
                     onBlur={onBlur}
                     onChangeText={onChange}
-                    placeholder="Acme SARL"
+                    placeholder="Dupont"
                     requirement="required"
-                    textContentType="organizationName"
+                    returnKeyType="next"
+                    textContentType="familyName"
                     value={value}
                   />
                 )}
               />
             </FormField>
             <FormDivider />
+            <FormField>
+              <Controller
+                control={control}
+                name="firstName"
+                render={({ field: { onChange, onBlur, value } }) => (
+                  <TextField
+                    autoCapitalize="words"
+                    error={errors.firstName?.message}
+                    label="Prénom"
+                    onBlur={onBlur}
+                    onChangeText={onChange}
+                    placeholder="Jean"
+                    requirement="optional"
+                    returnKeyType="next"
+                    textContentType="givenName"
+                    value={value}
+                  />
+                )}
+              />
+            </FormField>
           </>
-        ) : null}
-
-        <FormField>
-          <Controller
-            control={control}
-            name="lastName"
-            render={({ field: { onChange, onBlur, value } }) => (
-              <TextField
-                autoCapitalize="words"
-                error={errors.lastName?.message}
-                label="Nom"
-                onBlur={onBlur}
-                onChangeText={onChange}
-                placeholder="Dupont"
-                requirement={isCompany ? 'optional' : 'required'}
-                returnKeyType="next"
-                textContentType="familyName"
-                value={value}
-              />
-            )}
-          />
-        </FormField>
-        <FormDivider />
-        <FormField>
-          <Controller
-            control={control}
-            name="firstName"
-            render={({ field: { onChange, onBlur, value } }) => (
-              <TextField
-                autoCapitalize="words"
-                error={errors.firstName?.message}
-                label="Prénom"
-                onBlur={onBlur}
-                onChangeText={onChange}
-                placeholder="Jean"
-                requirement="optional"
-                returnKeyType="next"
-                textContentType="givenName"
-                value={value}
-              />
-            )}
-          />
-        </FormField>
+        )}
       </FormSection>
 
       <FormSection title="Coordonnées">
@@ -231,24 +230,28 @@ export function ClientForm({ control, errors, setValue }: ClientFormProps) {
       </FormSection>
 
       <FormSection title="Informations complémentaires">
-        <FormField>
-          <Controller
-            control={control}
-            name="vatNumber"
-            render={({ field: { onChange, onBlur, value } }) => (
-              <TextField
-                autoCapitalize="characters"
-                error={errors.vatNumber?.message}
-                label="Numéro de TVA"
-                onBlur={onBlur}
-                onChangeText={onChange}
-                placeholder="FR12345678901"
-                value={value}
+        {isCompany ? (
+          <>
+            <FormField>
+              <Controller
+                control={control}
+                name="vatNumber"
+                render={({ field: { onChange, onBlur, value } }) => (
+                  <TextField
+                    autoCapitalize="characters"
+                    error={errors.vatNumber?.message}
+                    label="Numéro de TVA"
+                    onBlur={onBlur}
+                    onChangeText={onChange}
+                    placeholder="FR12345678901"
+                    value={value}
+                  />
+                )}
               />
-            )}
-          />
-        </FormField>
-        <FormDivider />
+            </FormField>
+            <FormDivider />
+          </>
+        ) : null}
         <FormField>
           <Controller
             control={control}

@@ -22,6 +22,11 @@ import { useSubscription } from '@/hooks/use-subscription';
 import { getAppVersionInfo } from '@/lib/app-version';
 import { getEffectivePlanDisplayName } from '@/lib/subscription/plans';
 
+/**
+ * Réglages — DESIGN §5.9
+ * Facturation → Compte → Assistance → un seul lien destructif.
+ * Apparence conservée (exigence produit §20) sous Compte.
+ */
 export default function SettingsScreen() {
   const styles = useStyles();
   const { isWeb, isDesktop, isTablet } = useBreakpoint();
@@ -62,18 +67,17 @@ export default function SettingsScreen() {
             );
           },
         },
-        {
-          text: 'Se déconnecter',
-          style: 'destructive',
-          onPress: () => {
-            void (async () => {
-              await signOut();
-              router.replace('/login' as Href);
-            })();
-          },
-        },
       ],
     );
+  }
+
+  function handleLegal() {
+    Alert.alert('Légal', 'Choisissez un document', [
+      { text: 'Annuler', style: 'cancel' },
+      { text: 'Confidentialité', onPress: () => void openLegalPage('privacy') },
+      { text: 'Conditions', onPress: () => void openLegalPage('terms') },
+      { text: 'Mentions légales', onPress: () => void openLegalPage('legal') },
+    ]);
   }
 
   return (
@@ -97,23 +101,21 @@ export default function SettingsScreen() {
             />
             <View style={styles.separator} />
             <SettingsRow
-              label="Mes entreprises"
-              onPress={() => router.push('/settings/companies' as Href)}
-            />
-            <View style={styles.separator} />
-            <SettingsRow
               label="TVA et mentions"
               onPress={() => router.push('/company' as Href)}
+              value="Mentions PDF"
             />
             <View style={styles.separator} />
             <SettingsRow
               label="Numérotation"
               onPress={() => router.push('/settings/numbering' as Href)}
+              value="Factures & devis"
             />
             <View style={styles.separator} />
             <SettingsRow
               label="Modèles"
               onPress={() => router.push('/settings/templates' as Href)}
+              value="PDF"
             />
           </SettingsSection>
 
@@ -129,14 +131,18 @@ export default function SettingsScreen() {
               onPress={() => {
                 Alert.alert(
                   'Sécurité',
-                  `Compte : ${user?.email ?? '—'}\n\nPour changer votre mot de passe, utilisez « Mot de passe oublié » sur l’écran de connexion. Aucun parcours de création de compte n’est proposé dans l’app iOS.`,
-                  [{ text: 'OK' }],
+                  `Compte : ${user?.email ?? '—'}\n\nPour changer votre mot de passe, utilisez « Mot de passe oublié » sur l’écran de connexion.`,
+                  [
+                    { text: 'OK' },
+                    { text: 'Supprimer le compte', style: 'destructive', onPress: handleDeleteAccount },
+                  ],
                 );
               }}
               value={user?.email ?? undefined}
             />
             <View style={styles.separator} />
             <AppearancePreference />
+            <View style={styles.separator} />
             <NotificationPreferencesSection variant="embedded" />
           </SettingsSection>
 
@@ -146,29 +152,13 @@ export default function SettingsScreen() {
               onPress={() => router.push('/settings/discover' as Href)}
             />
             <View style={styles.separator} />
-            <SettingsRow label="Centre d’aide" onPress={() => void openHelpPage('support')} />
+            <SettingsRow label="Aide" onPress={() => void openHelpPage('support')} />
             <View style={styles.separator} />
-            <SettingsRow
-              label="Politique de confidentialité"
-              onPress={() => void openLegalPage('privacy')}
-            />
-            <View style={styles.separator} />
-            <SettingsRow
-              label="Conditions d’utilisation"
-              onPress={() => void openLegalPage('terms')}
-            />
-            <View style={styles.separator} />
-            <SettingsRow label="Mentions légales" onPress={() => void openLegalPage('legal')} />
+            <SettingsRow label="Légal" onPress={handleLegal} />
           </SettingsSection>
 
           <SettingsSection title="">
             <SettingsRow destructive label="Se déconnecter" onPress={() => void handleLogout()} />
-            <View style={styles.separator} />
-            <SettingsRow
-              destructive
-              label="Supprimer le compte"
-              onPress={handleDeleteAccount}
-            />
           </SettingsSection>
 
           <Text style={styles.version}>

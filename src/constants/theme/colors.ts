@@ -50,6 +50,8 @@ export const colors = {
   borderControl: '#C9CEDB',
   separator: '#EEF0F5',
   separatorOpaque: '#E8EAF0',
+  /** Piste segmented — DESIGN §3.5 */
+  segmentedTrack: '#ECEEF4',
 
   icon: '#1B1D24',
   iconSecondary: '#4C505E',
@@ -139,6 +141,8 @@ export const colorsDark = {
   borderControl: '#3A3F4C',
   separator: '#262A34',
   separatorOpaque: '#2B2F3A',
+  /** Piste segmented sombre — surface enfoncée distincte */
+  segmentedTrack: '#21242E',
 
   icon: '#E9EBF0',
   iconSecondary: '#C3C9D6',

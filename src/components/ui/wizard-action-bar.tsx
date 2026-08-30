@@ -128,7 +128,7 @@ const useStyles = () =>
     },
     primaryButton: {
       flex: 1,
-      minHeight: 46,
+      minHeight: 52,
       borderRadius: radius.button,
       alignItems: 'center',
       justifyContent: 'center',

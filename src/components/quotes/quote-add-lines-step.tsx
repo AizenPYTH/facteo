@@ -25,6 +25,7 @@ import {
   type ProductAnalysisDraft,
 } from '@/components/ai/product-analysis-confirmation-modal';
 import { ProductAnalysisLoadingModal } from '@/components/ai/product-analysis-loading-modal';
+import { ProductBarcodeScannerModal } from '@/components/ai/product-barcode-scanner-modal';
 import { ExcelImportSheet } from '@/components/ai/excel-import-sheet';
 import { FeatureIntroModal } from '@/components/feature-intros';
 import { ProductCatalogPickerModal } from '@/components/quotes/product-catalog-picker-modal';
@@ -71,6 +72,8 @@ export function QuoteAddLinesStep({
   const { hasFeature, isPremium } = useSubscription();
   const { showError, showSuccess } = useToast();
   const aiIntro = useFeatureIntro('ai');
+  const scannerIntro = useFeatureIntro('scanner');
+  const [scannerVisible, setScannerVisible] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisProgress, setAnalysisProgress] = useState(0.08);
   const [analysisImageUri, setAnalysisImageUri] = useState<string | null>(null);
@@ -102,10 +105,39 @@ export function QuoteAddLinesStep({
     return false;
   }
 
+  function handleOpenScanner() {
+    scannerIntro.runWithIntro(() => {
+      setScannerVisible(true);
+    });
+  }
+
   function handleOpenPhotoAi() {
+    setScannerVisible(false);
     if (!ensureAiAccess()) return;
     aiIntro.runWithIntro(() => {
       void handleSourceSelection(Platform.OS === 'web' ? 'gallery' : 'camera');
+    });
+  }
+
+  function handleReferenceSubmit(reference: string) {
+    setScannerVisible(false);
+    setAnalysisImageUri(null);
+    setAnalysisDraft({
+      title: reference,
+      brand: '',
+      model: '',
+      reference,
+      description: '',
+      unitPriceHt: '',
+      unitPriceTtc: '',
+      vatRate: '',
+      currency: 'EUR',
+      unit: 'pièce',
+      quantity: '1',
+      confidence: 0.4,
+      sku: '',
+      ean: /^\d{8,14}$/.test(reference) ? reference : '',
+      sourceUrl: '',
     });
   }
 
@@ -365,11 +397,24 @@ export function QuoteAddLinesStep({
   const modals = (
     <>
       <FeatureIntroModal
+        config={scannerIntro.config}
+        onClose={scannerIntro.onClose}
+        onCta={scannerIntro.onCta}
+        onDontShowAgain={scannerIntro.onDontShowAgain}
+        visible={scannerIntro.visible}
+      />
+      <FeatureIntroModal
         config={aiIntro.config}
         onClose={aiIntro.onClose}
         onCta={aiIntro.onCta}
         onDontShowAgain={aiIntro.onDontShowAgain}
         visible={aiIntro.visible}
+      />
+      <ProductBarcodeScannerModal
+        onClose={() => setScannerVisible(false)}
+        onPhotoSearch={handleOpenPhotoAi}
+        onReferenceSubmit={handleReferenceSubmit}
+        visible={scannerVisible}
       />
       <ProductAnalysisLoadingModal
         onCancel={handleCancelAnalysis}
@@ -403,7 +448,7 @@ export function QuoteAddLinesStep({
           }}
           onScanNext={() => {
             handleCloseConfirmationModal();
-            handleOpenPhotoAi();
+            handleOpenScanner();
           }}
           value={analysisDraft}
           visible
@@ -430,7 +475,7 @@ export function QuoteAddLinesStep({
       <Text style={styles.description}>Ajoutez vos prestations.</Text>
 
       <View style={styles.entryRow}>
-        <AddEntryButton icon="camera.fill" label="Photo IA" onPress={handleOpenPhotoAi} />
+        <AddEntryButton icon="barcode.viewfinder" label="Scanner" onPress={handleOpenScanner} />
         <AddEntryButton icon="square.grid.2x2" label="Catalogue" onPress={handleOpenCatalog} />
         <AddEntryButton
           icon="square.and.pencil"
@@ -450,8 +495,10 @@ export function QuoteAddLinesStep({
       </Pressable>
 
       <View style={styles.featureHints}>
-        <Text style={styles.featureHintTitle}>Photo IA</Text>
-        <Text style={styles.featureHintBody}>Analysez automatiquement vos documents.</Text>
+        <Text style={styles.featureHintTitle}>Scanner</Text>
+        <Text style={styles.featureHintBody}>
+          Visez, identifiez, vérifiez prix et TVA, puis ajoutez. Photo IA via l’onglet Photo.
+        </Text>
       </View>
 
       <View style={styles.prestationsHeader}>
@@ -467,7 +514,8 @@ export function QuoteAddLinesStep({
           {listHeader}
           <View style={styles.emptyPrestations}>
             <Text style={styles.emptyPrestationsText}>
-              Prenez une photo, importez Excel, choisissez dans le catalogue ou saisissez librement.
+              Scannez, choisissez dans le catalogue ou saisissez librement. Chaque produit est
+              vérifié avant d’être ajouté.
             </Text>
           </View>
         </View>

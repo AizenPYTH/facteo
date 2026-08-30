@@ -22,6 +22,7 @@ import { QuoteCard } from './quote-card';
 export type QuotesListProps = {
   quotes: Quote[];
   onQuotePress?: (quote: Quote) => void;
+  onQuoteShare?: (quote: Quote) => void;
   isInitialLoading?: boolean;
   isRefreshing?: boolean;
   isFetchingNextPage?: boolean;
@@ -44,6 +45,7 @@ export function QuotesList({
   onRefresh,
   onEndReached,
   onQuotePress,
+  onQuoteShare,
   contentContainerStyle,
   selectedId,
   testID,
@@ -54,6 +56,7 @@ export function QuotesList({
     <View>
       <QuoteCard
         onPress={onQuotePress}
+        onShare={onQuoteShare}
         quote={item}
         selected={item.id === selectedId}
       />

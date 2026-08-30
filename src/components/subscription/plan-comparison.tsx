@@ -48,16 +48,22 @@ function buildPlans(
         ? storeKitPrices[plan.id as ApplePaidPlanId]
         : undefined;
 
+    // iOS : jamais de prix web HT — StoreKit uniquement (DESIGN §1 / §5.10).
+    const priceLabel = storePrice?.trim()
+      ? storePrice
+      : plan.id === 'micro'
+        ? 'Gratuit'
+        : Platform.OS === 'ios'
+          ? 'Prix App Store'
+          : formatCatalogPriceHt(plan.priceMonthlyHt);
+
     return {
       id: plan.id,
       name: plan.name,
       description: plan.description,
-      priceLabel: storePrice?.trim()
-        ? storePrice
-        : plan.id === 'micro'
-          ? 'Gratuit'
-          : formatCatalogPriceHt(plan.priceMonthlyHt),
-      pricePeriod: storePrice || plan.id === 'micro' ? '' : ' / mois',
+      priceLabel,
+      pricePeriod:
+        storePrice || plan.id === 'micro' || Platform.OS === 'ios' ? '' : ' / mois',
       highlighted: plan.highlighted,
       badge: Platform.OS === 'ios' && plan.id !== 'micro' ? 'App Store' : plan.badge,
       inherit: parent ? `Tout ${parent.name}` : null,

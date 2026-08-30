@@ -69,9 +69,9 @@ function useStyles() {
   return useThemedStyles((colors) => ({
     track: {
       flexDirection: 'row' as const,
-      backgroundColor: colors.surfaceSecondary,
+      backgroundColor: colors.segmentedTrack,
       borderRadius: radius.segmented,
-      padding: spacing.xs,
+      padding: 3,
       gap: spacing.xs,
     },
     option: {

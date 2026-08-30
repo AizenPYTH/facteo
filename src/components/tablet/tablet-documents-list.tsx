@@ -1,13 +1,11 @@
 import { router, type Href } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { DocumentsFilterMenu } from '@/components/documents/documents-filter-menu';
-import { DocumentsOverview } from '@/components/documents/documents-overview';
-import { InvoiceSearchBar, InvoicesList } from '@/components/invoices';
-import { QuoteSearchBar, QuotesList } from '@/components/quotes';
+import { InvoiceSearchBar, InvoiceStatusFilterBar, InvoicesList } from '@/components/invoices';
+import { QuoteSearchBar, QuoteStatusFilterBar, QuotesList } from '@/components/quotes';
 import { AppText } from '@/components/ui/app-text';
 import { Button } from '@/components/ui/button';
 import { SegmentedControl } from '@/components/ui/segmented-control';
@@ -17,14 +15,8 @@ import { useDebouncedValue } from '@/hooks/use-debounced-value';
 import { useInfiniteInvoices, useInvoiceStatusCounts } from '@/hooks/use-invoices';
 import { useInfiniteQuotes, useQuoteStatusCounts } from '@/hooks/use-quotes';
 import { useTenant } from '@/hooks/use-tenant';
-import {
-  INVOICE_STATUS_FILTER_OPTIONS,
-  type InvoiceStatusFilter,
-} from '@/types/invoices-list';
-import {
-  QUOTE_STATUS_FILTER_OPTIONS,
-  type QuoteStatusFilter,
-} from '@/types/quotes-list';
+import type { InvoiceStatusFilter } from '@/types/invoices-list';
+import type { QuoteStatusFilter } from '@/types/quotes-list';
 
 export type TabletDocumentsSegment = 'invoices' | 'quotes';
 
@@ -35,6 +27,7 @@ type TabletDocumentsListProps = {
   onDismiss?: () => void;
 };
 
+/** Liste Documents iPad — même hiérarchie que iPhone (DESIGN §7). */
 export function TabletDocumentsList({
   initialSegment = 'invoices',
   selectedId = null,
@@ -72,8 +65,13 @@ export function TabletDocumentsList({
             <Button
               accessibilityLabel={segment === 'invoices' ? 'Nouvelle facture' : 'Nouveau devis'}
               onPress={handleCreate}
-              title={segment === 'invoices' ? 'Nouvelle facture' : 'Nouveau devis'}
-            />
+              variant="icon">
+              <SymbolView
+                name={{ ios: 'plus', android: 'add', web: 'add' }}
+                size={20}
+                tintColor={styles.iconColor.color}
+              />
+            </Button>
             {onDismiss ? (
               <Button
                 accessibilityLabel="Fermer la liste des documents"
@@ -88,26 +86,20 @@ export function TabletDocumentsList({
             ) : null}
           </View>
         </View>
-
-        <SegmentedControl
-          accessibilityLabel="Type de document"
-          onChange={handleSegmentChange}
-          options={[
-            { value: 'invoices', label: 'Factures' },
-            { value: 'quotes', label: 'Devis' },
-          ]}
-          value={segment}
-        />
       </View>
 
       {segment === 'invoices' ? (
         <TabletInvoicesPane
           onDismiss={onDismiss}
+          onSegmentChange={handleSegmentChange}
+          segment={segment}
           selectedId={selectedType === 'invoice' ? selectedId : null}
         />
       ) : (
         <TabletQuotesPane
           onDismiss={onDismiss}
+          onSegmentChange={handleSegmentChange}
+          segment={segment}
           selectedId={selectedType === 'quote' ? selectedId : null}
         />
       )}
@@ -118,9 +110,13 @@ export function TabletDocumentsList({
 function TabletInvoicesPane({
   selectedId,
   onDismiss,
+  segment,
+  onSegmentChange,
 }: {
   selectedId: string | null;
   onDismiss?: () => void;
+  segment: TabletDocumentsSegment;
+  onSegmentChange: (next: TabletDocumentsSegment) => void;
 }) {
   const styles = useStyles();
   const insets = useSafeAreaInsets();
@@ -129,7 +125,6 @@ function TabletInvoicesPane({
   const debouncedSearch = useDebouncedValue(search, 300);
   const { isSwitching } = useTenant();
   const statusCountsQuery = useInvoiceStatusCounts();
-  const counts = statusCountsQuery.data;
   const {
     invoices,
     isLoading,
@@ -143,59 +138,41 @@ function TabletInvoicesPane({
   const isSearching = debouncedSearch.trim().length > 0;
   const isInitialLoading = (isLoading || isSwitching) && invoices.length === 0;
 
-  const overviewStats = useMemo(
-    () => [
-      { key: 'all', label: 'Total', value: counts?.all ?? 0 },
-      {
-        key: 'action',
-        label: 'À traiter',
-        value: (counts?.draft ?? 0) + (counts?.sent ?? 0),
-        emphasis: 'warning' as const,
-      },
-      {
-        key: 'overdue',
-        label: 'En retard',
-        value: counts?.overdue ?? 0,
-        emphasis: 'danger' as const,
-      },
-      { key: 'paid', label: 'Payées', value: counts?.paid ?? 0 },
-    ],
-    [counts],
-  );
-
-  const filterOptions = useMemo(
-    () =>
-      INVOICE_STATUS_FILTER_OPTIONS.map((option) => ({
-        value: option.value,
-        label: option.label,
-        count: counts?.[option.value],
-      })),
-    [counts],
-  );
-
   const handleEndReached = useCallback(() => {
     if (hasNextPage && !isFetchingNextPage) {
       fetchNextPage();
     }
   }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
 
+  const openInvoice = useCallback(
+    (id: string) => {
+      onDismiss?.();
+      router.replace(`/documents/invoices/${id}` as Href);
+    },
+    [onDismiss],
+  );
+
   return (
     <View style={styles.pane}>
-      <DocumentsOverview stats={overviewStats} />
-      <View style={styles.toolbar}>
-        <View style={styles.searchGrow}>
-          <InvoiceSearchBar
-            onChangeText={setSearch}
-            placeholder="N° facture, client…"
-            value={search}
-          />
-        </View>
-        <DocumentsFilterMenu
-          onChange={setStatusFilter}
-          options={filterOptions}
-          value={statusFilter}
-        />
-      </View>
+      <InvoiceSearchBar
+        onChangeText={setSearch}
+        placeholder="Rechercher une facture"
+        value={search}
+      />
+      <SegmentedControl
+        accessibilityLabel="Type de document"
+        onChange={onSegmentChange}
+        options={[
+          { value: 'invoices', label: 'Factures' },
+          { value: 'quotes', label: 'Devis' },
+        ]}
+        value={segment}
+      />
+      <InvoiceStatusFilterBar
+        counts={statusCountsQuery.data}
+        onChange={setStatusFilter}
+        value={statusFilter}
+      />
       <View style={styles.list}>
         <InvoicesList
           contentContainerStyle={{ paddingBottom: insets.bottom + spacing.md }}
@@ -205,10 +182,10 @@ function TabletInvoicesPane({
           isRefreshing={isRefetching && !isFetchingNextPage}
           isSearching={isSearching}
           onEndReached={handleEndReached}
-          onInvoicePress={(invoice) => {
-            onDismiss?.();
-            router.replace(`/documents/invoices/${invoice.id}` as Href);
-          }}
+          onInvoicePress={(invoice) => openInvoice(invoice.id)}
+          onInvoiceRemind={(invoice) => openInvoice(invoice.id)}
+          onInvoiceShare={(invoice) => openInvoice(invoice.id)}
+          onMarkPaid={(invoice) => openInvoice(invoice.id)}
           onRefresh={() => {
             refetch();
             void statusCountsQuery.refetch();
@@ -225,9 +202,13 @@ function TabletInvoicesPane({
 function TabletQuotesPane({
   selectedId,
   onDismiss,
+  segment,
+  onSegmentChange,
 }: {
   selectedId: string | null;
   onDismiss?: () => void;
+  segment: TabletDocumentsSegment;
+  onSegmentChange: (next: TabletDocumentsSegment) => void;
 }) {
   const styles = useStyles();
   const insets = useSafeAreaInsets();
@@ -236,7 +217,6 @@ function TabletQuotesPane({
   const debouncedSearch = useDebouncedValue(search, 300);
   const { isSwitching } = useTenant();
   const statusCountsQuery = useQuoteStatusCounts();
-  const counts = statusCountsQuery.data;
   const {
     quotes,
     isLoading,
@@ -250,31 +230,6 @@ function TabletQuotesPane({
   const isSearching = debouncedSearch.trim().length > 0;
   const isInitialLoading = (isLoading || isSwitching) && quotes.length === 0;
 
-  const overviewStats = useMemo(
-    () => [
-      { key: 'all', label: 'Total', value: counts?.all ?? 0 },
-      {
-        key: 'draft',
-        label: 'Brouillons',
-        value: counts?.draft ?? 0,
-        emphasis: 'warning' as const,
-      },
-      { key: 'sent', label: 'Envoyés', value: counts?.sent ?? 0 },
-      { key: 'accepted', label: 'Acceptés', value: counts?.accepted ?? 0 },
-    ],
-    [counts],
-  );
-
-  const filterOptions = useMemo(
-    () =>
-      QUOTE_STATUS_FILTER_OPTIONS.map((option) => ({
-        value: option.value,
-        label: option.label,
-        count: counts?.[option.value],
-      })),
-    [counts],
-  );
-
   const handleEndReached = useCallback(() => {
     if (hasNextPage && !isFetchingNextPage) {
       fetchNextPage();
@@ -283,21 +238,25 @@ function TabletQuotesPane({
 
   return (
     <View style={styles.pane}>
-      <DocumentsOverview stats={overviewStats} />
-      <View style={styles.toolbar}>
-        <View style={styles.searchGrow}>
-          <QuoteSearchBar
-            onChangeText={setSearch}
-            placeholder="N° devis, client…"
-            value={search}
-          />
-        </View>
-        <DocumentsFilterMenu
-          onChange={setStatusFilter}
-          options={filterOptions}
-          value={statusFilter}
-        />
-      </View>
+      <QuoteSearchBar
+        onChangeText={setSearch}
+        placeholder="Rechercher un devis"
+        value={search}
+      />
+      <SegmentedControl
+        accessibilityLabel="Type de document"
+        onChange={onSegmentChange}
+        options={[
+          { value: 'invoices', label: 'Factures' },
+          { value: 'quotes', label: 'Devis' },
+        ]}
+        value={segment}
+      />
+      <QuoteStatusFilterBar
+        counts={statusCountsQuery.data}
+        onChange={setStatusFilter}
+        value={statusFilter}
+      />
       <View style={styles.list}>
         <QuotesList
           contentContainerStyle={{ paddingBottom: insets.bottom + spacing.md }}
@@ -307,6 +266,10 @@ function TabletQuotesPane({
           isSearching={isSearching}
           onEndReached={handleEndReached}
           onQuotePress={(quote) => {
+            onDismiss?.();
+            router.replace(`/documents/quotes/${quote.id}` as Href);
+          }}
+          onQuoteShare={(quote) => {
             onDismiss?.();
             router.replace(`/documents/quotes/${quote.id}` as Href);
           }}
@@ -333,8 +296,7 @@ const useStyles = () =>
     header: {
       paddingHorizontal: spacing.md,
       paddingTop: spacing.sm,
-      paddingBottom: spacing.md,
-      gap: spacing.md,
+      paddingBottom: spacing.sm,
       borderBottomWidth: 1,
       borderBottomColor: colors.border,
     },
@@ -348,7 +310,6 @@ const useStyles = () =>
       flexDirection: 'row' as const,
       alignItems: 'center' as const,
       gap: spacing.sm,
-      flexShrink: 1,
     },
     pane: {
       flex: 1,
@@ -357,18 +318,14 @@ const useStyles = () =>
       padding: spacing.md,
       backgroundColor: colors.backgroundGrouped,
     },
-    toolbar: {
-      flexDirection: 'row' as const,
-      alignItems: 'center' as const,
-      gap: spacing.sm,
-    },
-    searchGrow: {
-      flex: 1,
-      minWidth: 0,
-    },
     list: {
       flex: 1,
       minHeight: 0,
+      backgroundColor: colors.surface,
+      borderRadius: 14,
+      overflow: 'hidden' as const,
+      borderWidth: 1,
+      borderColor: colors.border,
     },
     iconColor: {
       color: colors.primary,

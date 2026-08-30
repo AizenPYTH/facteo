@@ -115,8 +115,8 @@ export default function DocumentTemplatesScreen() {
         ) : null}
 
         <AppText color="secondary" variant="subtitle">
-          Parcourez les modèles en taille réelle. Le modèle sélectionné est enregistré
-          automatiquement.
+          Ouvrez la galerie pour choisir un modèle. Validez avec « Utiliser ce modèle » — rien
+          n’est enregistré au simple glissement. Appliqué aux prochains documents uniquement.
         </AppText>
 
         <View style={styles.segment}>
