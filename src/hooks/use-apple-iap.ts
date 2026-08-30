@@ -1,32 +1,28 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+/**
+ * @deprecated Préférer `usePlanCheckout` + `useAppleStoreProducts`.
+ * Pont de compatibilité vers le pipeline multi-plan.
+ */
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Platform } from 'react-native';
 
+import type { ApplePaidPlanId } from '@/constants/iap';
+import { planIdFromAppleProductId } from '@/constants/iap';
 import { useAuth } from '@/hooks/use-auth';
+import { useAppleStoreProducts } from '@/hooks/use-apple-store-products';
 import {
-  fetchAppleStoreProducts,
-  isAppleIapConfigured,
-  purchasePremium,
-  restorePurchases,
-} from '@/lib/iap/apple-iap';
+  isAppleSubscriptionConfirmConfigured,
+  restoreApplePlanPurchases,
+  startApplePlanPurchase,
+} from '@/lib/iap/apple-subscription';
 import { subscriptionQueryKeys } from '@/lib/supabase/query-keys';
 
-/** Pont React Query pour le catalogue, l'achat et la restauration StoreKit. */
 export function useApplePremiumPurchase() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const products = useQuery({
-    queryKey: ['apple-store-products'],
-    queryFn: fetchAppleStoreProducts,
-    enabled: Platform.OS === 'ios',
-    staleTime: 5 * 60_000,
-    retry: 1,
-  });
+  const products = useAppleStoreProducts();
 
   async function invalidateSubscriptionQueries() {
-    if (!user?.id) {
-      return;
-    }
-
+    if (!user?.id) return;
     await queryClient.invalidateQueries({
       queryKey: subscriptionQueryKeys.snapshot(user.id),
     });
@@ -36,17 +32,22 @@ export function useApplePremiumPurchase() {
   }
 
   const purchase = useMutation({
-    mutationFn: (appStoreProductId: string | null) => purchasePremium(appStoreProductId),
+    mutationFn: async (appStoreProductId: string | null) => {
+      const planId =
+        (appStoreProductId ? planIdFromAppleProductId(appStoreProductId) : null) ??
+        ('pro' as ApplePaidPlanId);
+      return startApplePlanPurchase(planId);
+    },
     onSuccess: invalidateSubscriptionQueries,
   });
 
   const restore = useMutation({
-    mutationFn: () => restorePurchases(),
+    mutationFn: () => restoreApplePlanPurchases(),
     onSuccess: invalidateSubscriptionQueries,
   });
 
   return {
-    isConfigured: isAppleIapConfigured(),
+    isConfigured: Platform.OS === 'ios' && isAppleSubscriptionConfirmConfigured(),
     products,
     purchase,
     restore,
