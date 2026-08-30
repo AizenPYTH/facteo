@@ -16,7 +16,7 @@ import { useBreakpoint } from '@/hooks/use-breakpoint';
 import { useThemedStyles } from '@/hooks/use-colors';
 import { spacing } from '@/constants/theme/spacing';
 import { useDebouncedValue } from '@/hooks/use-debounced-value';
-import { useInfiniteInvoices } from '@/hooks/use-invoices';
+import { useInfiniteInvoices, useInvoiceStatusCounts } from '@/hooks/use-invoices';
 import { useTenant } from '@/hooks/use-tenant';
 import type { InvoiceStatusFilter } from '@/types/invoices-list';
 
@@ -44,6 +44,7 @@ function InvoicesMobileScreen() {
   const debouncedSearch = useDebouncedValue(search, SEARCH_DEBOUNCE_MS);
   const insets = useSafeAreaInsets();
   const { isSwitching } = useTenant();
+  const statusCountsQuery = useInvoiceStatusCounts();
 
   const {
     invoices,
@@ -61,7 +62,8 @@ function InvoicesMobileScreen() {
 
   const handleRefresh = useCallback(() => {
     refetch();
-  }, [refetch]);
+    void statusCountsQuery.refetch();
+  }, [refetch, statusCountsQuery]);
 
   const handleEndReached = useCallback(() => {
     if (hasNextPage && !isFetchingNextPage) {
@@ -74,7 +76,11 @@ function InvoicesMobileScreen() {
       <View style={styles.headerSection}>
         <InvoicesScreenHeader />
         <InvoiceSearchBar onChangeText={setSearch} value={search} />
-        <InvoiceStatusFilterBar onChange={setStatusFilter} value={statusFilter} />
+        <InvoiceStatusFilterBar
+          counts={statusCountsQuery.data}
+          onChange={setStatusFilter}
+          value={statusFilter}
+        />
       </View>
 
       <View style={styles.listContainer}>

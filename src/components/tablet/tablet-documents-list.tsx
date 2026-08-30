@@ -20,7 +20,7 @@ import { SegmentedControl } from '@/components/ui/segmented-control';
 import { spacing } from '@/constants/theme/spacing';
 import { useThemedStyles } from '@/hooks/use-colors';
 import { useDebouncedValue } from '@/hooks/use-debounced-value';
-import { useInfiniteInvoices } from '@/hooks/use-invoices';
+import { useInfiniteInvoices, useInvoiceStatusCounts } from '@/hooks/use-invoices';
 import { useInfiniteQuotes } from '@/hooks/use-quotes';
 import { useTenant } from '@/hooks/use-tenant';
 import type { InvoiceStatusFilter } from '@/types/invoices-list';
@@ -133,6 +133,7 @@ function TabletInvoicesPane({
   const [statusFilter, setStatusFilter] = useState<InvoiceStatusFilter>('all');
   const debouncedSearch = useDebouncedValue(search, 300);
   const { isSwitching } = useTenant();
+  const statusCountsQuery = useInvoiceStatusCounts();
   const {
     invoices,
     isLoading,
@@ -155,7 +156,11 @@ function TabletInvoicesPane({
   return (
     <View style={styles.pane}>
       <InvoiceSearchBar onChangeText={setSearch} value={search} />
-      <InvoiceStatusFilterBar onChange={setStatusFilter} value={statusFilter} />
+      <InvoiceStatusFilterBar
+        counts={statusCountsQuery.data}
+        onChange={setStatusFilter}
+        value={statusFilter}
+      />
       <View style={styles.list}>
         <InvoicesList
           contentContainerStyle={{ paddingBottom: insets.bottom + spacing.md }}
@@ -169,7 +174,10 @@ function TabletInvoicesPane({
             onDismiss?.();
             router.replace(`/documents/invoices/${invoice.id}` as Href);
           }}
-          onRefresh={() => refetch()}
+          onRefresh={() => {
+            refetch();
+            void statusCountsQuery.refetch();
+          }}
           selectedId={selectedId}
           showCreateAction={false}
           statusFilter={statusFilter}

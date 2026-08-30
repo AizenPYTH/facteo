@@ -30,7 +30,7 @@ import { spacing } from '@/constants/theme/spacing';
 import { useBreakpoint } from '@/hooks/use-breakpoint';
 import { useDebouncedValue } from '@/hooks/use-debounced-value';
 import { useFeatureIntro } from '@/hooks/use-feature-intro';
-import { useInfiniteInvoices } from '@/hooks/use-invoices';
+import { useInfiniteInvoices, useInvoiceStatusCounts } from '@/hooks/use-invoices';
 import { useInfiniteQuotes } from '@/hooks/use-quotes';
 import { useTenant } from '@/hooks/use-tenant';
 import type { InvoiceStatusFilter } from '@/types/invoices-list';
@@ -164,6 +164,7 @@ function InvoicesPane() {
   const debouncedSearch = useDebouncedValue(search, SEARCH_DEBOUNCE_MS);
   const insets = useSafeAreaInsets();
   const { isSwitching } = useTenant();
+  const statusCountsQuery = useInvoiceStatusCounts();
 
   const {
     invoices,
@@ -181,7 +182,8 @@ function InvoicesPane() {
 
   const handleRefresh = useCallback(() => {
     refetch();
-  }, [refetch]);
+    void statusCountsQuery.refetch();
+  }, [refetch, statusCountsQuery]);
 
   const handleEndReached = useCallback(() => {
     if (hasNextPage && !isFetchingNextPage) {
@@ -192,7 +194,11 @@ function InvoicesPane() {
   return (
     <View style={styles.pane}>
       <InvoiceSearchBar onChangeText={setSearch} value={search} />
-      <InvoiceStatusFilterBar onChange={setStatusFilter} value={statusFilter} />
+      <InvoiceStatusFilterBar
+        counts={statusCountsQuery.data}
+        onChange={setStatusFilter}
+        value={statusFilter}
+      />
       <View style={styles.listContainer}>
         <InvoicesList
           contentContainerStyle={{
