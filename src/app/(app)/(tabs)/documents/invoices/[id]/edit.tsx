@@ -3,24 +3,24 @@ import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { QuoteWizardScreen } from '@/components/quotes/quote-wizard-screen';
+import { InvoiceWizardScreen } from '@/components/invoices/invoice-wizard-screen';
 import { LoadingView } from '@/components/ui/loading-view';
 import { useColors } from '@/hooks/use-colors';
-import { useQuote } from '@/hooks/use-quote';
-import { mapQuoteDetailToWizardState } from '@/lib/quotes/form';
+import { useInvoice } from '@/hooks/use-invoices';
+import { mapInvoiceDetailToWizardState } from '@/lib/invoices/form';
 import { useToast } from '@/providers/toast-provider';
-import { canEditQuote } from '@/types/quote';
+import { canEditInvoice } from '@/types/invoice';
 
-export default function EditQuoteScreen() {
+export default function EditInvoiceScreen() {
   const colors = useColors();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const quoteId = Array.isArray(id) ? id[0] : id ?? '';
-  const { data: quote, isLoading, isFetched } = useQuote(quoteId);
+  const invoiceId = Array.isArray(id) ? id[0] : id ?? '';
+  const { data: invoice, isLoading, isFetched } = useInvoice(invoiceId);
   const { showError } = useToast();
 
   const initialState = useMemo(
-    () => (quote ? mapQuoteDetailToWizardState(quote) : undefined),
-    [quote],
+    () => (invoice ? mapInvoiceDetailToWizardState(invoice) : undefined),
+    [invoice],
   );
 
   useEffect(() => {
@@ -28,27 +28,27 @@ export default function EditQuoteScreen() {
       return;
     }
 
-    if (!quote) {
-      showError('Devis introuvable.');
+    if (!invoice) {
+      showError('Facture introuvable.');
       router.back();
       return;
     }
 
-    if (!canEditQuote(quote.status)) {
-      showError('Seuls les devis en brouillon peuvent être modifiés.');
-      router.replace(`/quotes/${quoteId}` as Href);
+    if (!canEditInvoice(invoice.status)) {
+      showError('Seules les factures en brouillon peuvent être modifiées.');
+      router.replace(`/documents/invoices/${invoiceId}` as Href);
     }
-  }, [isFetched, quote, quoteId, showError]);
+  }, [invoice, invoiceId, isFetched, showError]);
 
-  if (isLoading || !quote || !initialState) {
+  if (isLoading || !invoice || !initialState) {
     return (
       <SafeAreaView edges={['top', 'bottom']} style={{ flex: 1, backgroundColor: colors.backgroundGrouped }}>
-        <LoadingView message="Chargement du devis..." />
+        <LoadingView message="Chargement de la facture..." />
       </SafeAreaView>
     );
   }
 
-  if (!canEditQuote(quote.status)) {
+  if (!canEditInvoice(invoice.status)) {
     return (
       <SafeAreaView edges={['top', 'bottom']} style={{ flex: 1, backgroundColor: colors.backgroundGrouped }}>
         <LoadingView message="Redirection..." />
@@ -57,11 +57,11 @@ export default function EditQuoteScreen() {
   }
 
   return (
-    <QuoteWizardScreen
+    <InvoiceWizardScreen
       initialState={initialState}
+      invoiceId={invoiceId}
       mode="edit"
-      quoteId={quoteId}
-      title="Modifier le devis"
+      title="Modifier la facture"
     />
   );
 }

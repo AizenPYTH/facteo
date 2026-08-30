@@ -44,6 +44,7 @@ type OutstandingInvoiceRow = {
   total_ttc: number | null;
   total: number | null;
   status: string;
+  due_at: string | null;
   invoice_payments: { amount: number }[] | { amount: number } | null;
 };
 
@@ -158,17 +159,52 @@ function readInvoiceTotal(row: { total_ttc: number | null; total: number | null 
   return row.total_ttc ?? row.total ?? 0;
 }
 
+function dueAmountRemaining(row: OutstandingInvoiceRow): number {
+  const total = readInvoiceTotal(row);
+  const payments = Array.isArray(row.invoice_payments)
+    ? row.invoice_payments
+    : row.invoice_payments
+      ? [row.invoice_payments]
+      : [];
+  const paid = payments.reduce((paymentSum, payment) => paymentSum + payment.amount, 0);
+  return Math.max(0, total - paid);
+}
+
 function computeOutstandingAmount(rows: OutstandingInvoiceRow[]): number {
-  return rows.reduce((sum, row) => {
-    const total = readInvoiceTotal(row);
-    const payments = Array.isArray(row.invoice_payments)
-      ? row.invoice_payments
-      : row.invoice_payments
-        ? [row.invoice_payments]
-        : [];
-    const paid = payments.reduce((paymentSum, payment) => paymentSum + payment.amount, 0);
-    return sum + Math.max(0, total - paid);
-  }, 0);
+  return rows.reduce((sum, row) => sum + dueAmountRemaining(row), 0);
+}
+
+/** Répartition reste à encaisser — DESIGN §5.2 (retard / ≤7j / à venir). */
+function computeOutstandingBreakdown(rows: OutstandingInvoiceRow[]): {
+  overdueAmount: number;
+  dueSoonAmount: number;
+  upcomingAmount: number;
+} {
+  const now = Date.now();
+  const inSevenDays = now + 7 * 24 * 60 * 60 * 1000;
+  let overdueAmount = 0;
+  let dueSoonAmount = 0;
+  let upcomingAmount = 0;
+
+  for (const row of rows) {
+    const remaining = dueAmountRemaining(row);
+    if (remaining <= 0) {
+      continue;
+    }
+
+    const dueAt = row.due_at ? new Date(row.due_at).getTime() : null;
+    const isOverdueStatus = row.status === 'overdue';
+
+    if (isOverdueStatus || (dueAt !== null && dueAt < now)) {
+      overdueAmount += remaining;
+    } else if (dueAt !== null && dueAt <= inSevenDays) {
+      dueSoonAmount += remaining;
+    } else {
+      upcomingAmount += remaining;
+    }
+  }
+
+  return { overdueAmount, dueSoonAmount, upcomingAmount };
 }
 
 function computeAveragePaymentDelayDays(rows: PaidInvoiceDelayRow[]): number {
@@ -333,7 +369,7 @@ export async function fetchDashboardStats(scope: DataScope): Promise<DashboardSt
       .in('status', [...UNPAID_INVOICE_STATUSES]),
     supabase
       .from('invoices')
-      .select('total_ttc, total, status, invoice_payments(amount)')
+      .select('total_ttc, total, status, due_at, invoice_payments(amount)')
       .eq('company_id', scope.companyId)
       .in('status', [...UNPAID_INVOICE_STATUSES]),
     supabase
@@ -371,6 +407,7 @@ export async function fetchDashboardStats(scope: DataScope): Promise<DashboardSt
   ]);
 
   const outstandingRows = (outstandingAmountResult.data as OutstandingInvoiceRow[] | null) ?? [];
+  const breakdown = computeOutstandingBreakdown(outstandingRows);
 
   return {
     monthlyRevenue: getSumFromRows(
@@ -404,6 +441,9 @@ export async function fetchDashboardStats(scope: DataScope): Promise<DashboardSt
       'fetchDashboardStats.outstandingInvoices',
     ),
     outstandingAmount: computeOutstandingAmount(outstandingRows),
+    overdueAmount: breakdown.overdueAmount,
+    dueSoonAmount: breakdown.dueSoonAmount,
+    upcomingAmount: breakdown.upcomingAmount,
     lateInvoices: getCountFromQuery(
       lateResult.count,
       lateResult.error,

@@ -100,22 +100,22 @@ export function AuthTextField({
 function useStyles() {
   return useThemedStyles((colors) => ({
     container: {
-      gap: spacing[1.5],
+      gap: spacing.xs,
     },
     label: {
-      ...typography.footnoteMedium,
+      ...typography.caption1,
+      fontFamily: typography.caption2.fontFamily,
       color: colors.textSecondary,
-      marginLeft: spacing[0.5],
     },
     field: {
-      minHeight: components.inputHeight + 4,
+      minHeight: components.inputHeight,
       flexDirection: 'row',
       alignItems: 'center',
       gap: spacing.sm,
       paddingHorizontal: spacing.md,
-      borderRadius: radius.xl,
-      backgroundColor: colors.backgroundSecondary,
-      borderWidth: 1.5,
+      borderRadius: radius.input,
+      backgroundColor: colors.surface,
+      borderWidth: 1,
       borderColor: colors.border,
     },
     fieldFocused: {
@@ -132,16 +132,18 @@ function useStyles() {
       ...typography.body,
       color: colors.text,
       flex: 1,
-      paddingVertical: spacing.sm + 2,
+      paddingVertical: spacing.group,
       margin: 0,
     },
     trailingButton: {
-      padding: spacing.xs,
+      width: components.touchTarget,
+      minHeight: components.touchTarget,
+      alignItems: 'center',
+      justifyContent: 'center',
     },
     error: {
       ...typography.caption1,
       color: colors.error,
-      marginLeft: spacing[0.5],
     },
   }));
 }

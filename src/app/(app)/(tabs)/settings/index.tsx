@@ -14,7 +14,7 @@ import { useColors, useThemedStyles } from '@/hooks/use-colors';
 import { spacing } from '@/constants/theme/spacing';
 import { typography } from '@/constants/theme/typography';
 import { MARKETING_CONTACT } from '@/constants/marketing/site';
-import { openHelpPage, openLegalPage, openMarketingSite } from '@/lib/legal/open-legal-page';
+import { openHelpPage, openLegalPage } from '@/lib/legal/open-legal-page';
 import { useAuth } from '@/hooks/use-auth';
 import { useCompanyProfile } from '@/hooks/use-company-profile';
 import { useSubscription } from '@/hooks/use-subscription';
@@ -91,7 +91,7 @@ export default function SettingsScreen() {
   }
 
   return (
-    <SettingsScreenFrame title="Paramètres">
+    <SettingsScreenFrame title="Réglages">
       {useDesktopSettings ? (
         <SettingsDesktopContent />
       ) : (
@@ -103,39 +103,53 @@ export default function SettingsScreen() {
             planLabel={planLabel}
           />
 
-          <SettingsSection title="Entreprise">
+          <SettingsSection title="Facturation">
+            <SettingsRow
+              label="Entreprise"
+              onPress={() => router.push('/company' as Href)}
+              value={companyProfile.data?.companyName ?? undefined}
+            />
+            <View style={styles.separator} />
             <SettingsRow
               label="Mes entreprises"
               onPress={() => router.push('/settings/companies' as Href)}
             />
             <View style={styles.separator} />
             <SettingsRow
-              label="Profil entreprise"
+              label="TVA et mentions"
               onPress={() => router.push('/company' as Href)}
             />
-          </SettingsSection>
-
-          <SettingsSection title="Numérotation & documents">
+            <View style={styles.separator} />
             <SettingsRow
-              label="Préfixes et numéros"
+              label="Numérotation"
               onPress={() => router.push('/settings/numbering' as Href)}
             />
             <View style={styles.separator} />
             <SettingsRow
-              label="Modèles de factures et devis"
+              label="Modèles"
               onPress={() => router.push('/settings/templates' as Href)}
             />
           </SettingsSection>
 
-          <NotificationPreferencesSection />
-
-          <SettingsSection
-            footer={
-              darkModeSupported
-                ? 'Le thème s’applique immédiatement sur l’appareil.'
-                : 'Bientôt disponible sur le web.'
-            }
-            title="Apparence">
+          <SettingsSection title="Compte">
+            <SettingsRow
+              label="Abonnement"
+              onPress={() => router.push('/settings/premium' as Href)}
+              value={planLabel}
+            />
+            <View style={styles.separator} />
+            <SettingsRow
+              label="Sécurité"
+              onPress={() => {
+                Alert.alert(
+                  'Sécurité',
+                  `Compte : ${user?.email ?? '—'}\n\nPour changer votre mot de passe, utilisez « Mot de passe oublié » sur l’écran de connexion. Aucun parcours de création de compte n’est proposé dans l’app iOS.`,
+                  [{ text: 'OK' }],
+                );
+              }}
+              value={user?.email ?? undefined}
+            />
+            <View style={styles.separator} />
             <SettingsRow
               label="Mode sombre"
               onPress={
@@ -153,37 +167,17 @@ export default function SettingsScreen() {
                 />
               }
             />
+            <NotificationPreferencesSection variant="embedded" />
           </SettingsSection>
 
-          <SettingsSection title="Compte">
-            <SettingsRow label="Se déconnecter" onPress={() => void handleLogout()} />
-            <View style={styles.separator} />
-            <SettingsRow destructive label="Supprimer le compte" onPress={handleDeleteAccount} />
-          </SettingsSection>
-
-          <SettingsSection title="Aide">
+          <SettingsSection title="Assistance">
             <SettingsRow
-              label="Centre d’aide"
-              onPress={() => void openHelpPage('support')}
+              label="Découvrir INVEQ"
+              onPress={() => router.push('/settings/discover' as Href)}
             />
             <View style={styles.separator} />
-            <SettingsRow
-              label="Guide d’utilisation"
-              onPress={() => void openHelpPage('guide')}
-            />
+            <SettingsRow label="Centre d’aide" onPress={() => void openHelpPage('support')} />
             <View style={styles.separator} />
-            <SettingsRow
-              label="Contact"
-              onPress={() => void openHelpPage('contact')}
-            />
-            <View style={styles.separator} />
-            <SettingsRow
-              label="Site web INVEQ"
-              onPress={() => void openMarketingSite()}
-            />
-          </SettingsSection>
-
-          <SettingsSection title="Confidentialité & conditions">
             <SettingsRow
               label="Politique de confidentialité"
               onPress={() => void openLegalPage('privacy')}
@@ -195,10 +189,15 @@ export default function SettingsScreen() {
             />
             <View style={styles.separator} />
             <SettingsRow label="Mentions légales" onPress={() => void openLegalPage('legal')} />
+          </SettingsSection>
+
+          <SettingsSection title="">
+            <SettingsRow destructive label="Se déconnecter" onPress={() => void handleLogout()} />
             <View style={styles.separator} />
             <SettingsRow
-              label="Politique des cookies"
-              onPress={() => void openLegalPage('cookies')}
+              destructive
+              label="Supprimer le compte"
+              onPress={handleDeleteAccount}
             />
           </SettingsSection>
 

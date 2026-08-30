@@ -1,6 +1,6 @@
-import { router, type Href } from 'expo-router';
+import { Redirect, router, type Href } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
@@ -13,10 +13,10 @@ import {
 import { InvoicesDesktopScreen } from '@/components/web/desktop/screens/invoices-desktop-screen';
 import { BottomTabInset } from '@/constants/theme';
 import { useBreakpoint } from '@/hooks/use-breakpoint';
-import { useColors, useThemedStyles } from '@/hooks/use-colors';
+import { useThemedStyles } from '@/hooks/use-colors';
 import { spacing } from '@/constants/theme/spacing';
 import { useDebouncedValue } from '@/hooks/use-debounced-value';
-import { useInfiniteInvoices } from '@/hooks/use-invoices';
+import { useInfiniteInvoices, useInvoiceStatusCounts } from '@/hooks/use-invoices';
 import { useTenant } from '@/hooks/use-tenant';
 import type { InvoiceStatusFilter } from '@/types/invoices-list';
 
@@ -30,17 +30,21 @@ export default function InvoicesScreen() {
     return <InvoicesDesktopScreen />;
   }
 
+  if (!isWeb && isTablet) {
+    return <Redirect href={'/documents?segment=invoices' as Href} />;
+  }
+
   return <InvoicesMobileScreen />;
 }
 
 function InvoicesMobileScreen() {
   const styles = useStyles();
-  const colors = useColors();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<InvoiceStatusFilter>('all');
   const debouncedSearch = useDebouncedValue(search, SEARCH_DEBOUNCE_MS);
   const insets = useSafeAreaInsets();
   const { isSwitching } = useTenant();
+  const statusCountsQuery = useInvoiceStatusCounts();
 
   const {
     invoices,
@@ -58,7 +62,8 @@ function InvoicesMobileScreen() {
 
   const handleRefresh = useCallback(() => {
     refetch();
-  }, [refetch]);
+    void statusCountsQuery.refetch();
+  }, [refetch, statusCountsQuery]);
 
   const handleEndReached = useCallback(() => {
     if (hasNextPage && !isFetchingNextPage) {
@@ -71,7 +76,11 @@ function InvoicesMobileScreen() {
       <View style={styles.headerSection}>
         <InvoicesScreenHeader />
         <InvoiceSearchBar onChangeText={setSearch} value={search} />
-        <InvoiceStatusFilterBar onChange={setStatusFilter} value={statusFilter} />
+        <InvoiceStatusFilterBar
+          counts={statusCountsQuery.data}
+          onChange={setStatusFilter}
+          value={statusFilter}
+        />
       </View>
 
       <View style={styles.listContainer}>
@@ -85,9 +94,10 @@ function InvoicesMobileScreen() {
           isRefreshing={isRefetching && !isFetchingNextPage}
           isSearching={isSearching}
           onEndReached={handleEndReached}
-          onInvoicePress={(invoice) => router.push(`/invoices/${invoice.id}` as Href)}
+          onInvoicePress={(invoice) => router.push(`/documents/invoices/${invoice.id}` as Href)}
           onRefresh={handleRefresh}
           showCreateAction={!showFab}
+          statusFilter={statusFilter}
         />
       </View>
 

@@ -14,6 +14,7 @@ import { radius } from '@/constants/theme/radius';
 import { spacing } from '@/constants/theme/spacing';
 import { typography } from '@/constants/theme/typography';
 import type { Quote } from '@/types/quote';
+import type { QuoteStatusFilter } from '@/types/quotes-list';
 
 import { EmptyQuotes } from './empty-quotes';
 import { QuoteCard } from './quote-card';
@@ -25,9 +26,11 @@ export type QuotesListProps = {
   isRefreshing?: boolean;
   isFetchingNextPage?: boolean;
   isSearching?: boolean;
+  statusFilter?: QuoteStatusFilter;
   onRefresh?: () => void;
   onEndReached?: () => void;
   contentContainerStyle?: ViewStyle;
+  selectedId?: string | null;
   testID?: string;
 };
 
@@ -37,17 +40,23 @@ export function QuotesList({
   isRefreshing = false,
   isFetchingNextPage = false,
   isSearching = false,
+  statusFilter = 'all',
   onRefresh,
   onEndReached,
   onQuotePress,
   contentContainerStyle,
+  selectedId,
   testID,
 }: QuotesListProps) {
   const styles = useStyles();
   const colors = useColors();
   const renderItem: ListRenderItem<Quote> = ({ item, index }) => (
     <View>
-      <QuoteCard onPress={onQuotePress} quote={item} />
+      <QuoteCard
+        onPress={onQuotePress}
+        quote={item}
+        selected={item.id === selectedId}
+      />
       {index < quotes.length - 1 ? <View style={styles.separator} /> : null}
     </View>
   );
@@ -81,7 +90,9 @@ export function QuotesList({
       ]}
       data={quotes}
       keyExtractor={(item) => item.id}
-      ListEmptyComponent={<EmptyQuotes isSearching={isSearching} />}
+      ListEmptyComponent={
+        <EmptyQuotes isSearching={isSearching} statusFilter={statusFilter} />
+      }
       ListFooterComponent={renderFooter}
       onEndReached={onEndReached}
       onEndReachedThreshold={0.4}

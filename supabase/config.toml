@@ -1,0 +1,2 @@
+[functions.apple-subscription-notifications]
+verify_jwt = false

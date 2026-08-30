@@ -14,6 +14,12 @@ function mapAuthErrorMessage(message: string): string {
     case 'User already registered':
       return 'Un compte existe déjà avec cette adresse e-mail.';
     default:
+      if (
+        message.toLowerCase().includes('already') &&
+        message.toLowerCase().includes('email')
+      ) {
+        return 'Un compte INVEQ existe déjà avec cet e-mail. Connectez-vous avec le même compte pour éviter un doublon.';
+      }
       return GENERIC_ERROR_MESSAGE;
   }
 }

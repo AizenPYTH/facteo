@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, Text, View, type ViewStyle } from 'react-native'
 import { useColors, useThemedStyles } from '@/hooks/use-colors';
 import { spacing } from '@/constants/theme/spacing';
 import { typography } from '@/constants/theme/typography';
-import { formatCurrency } from '@/lib/format/currency';
+import { formatCurrency, formatSpokenEuros } from '@/lib/format/currency';
 import type { Invoice } from '@/types/dashboard';
 
 export type RecentInvoiceCardProps = {
@@ -29,7 +29,9 @@ export function RecentInvoiceCard({
         <Text style={styles.invoiceNumber}>{invoice.number}</Text>
         <Text style={styles.clientName}>{invoice.clientName}</Text>
       </View>
-      <Text style={styles.amount}>{formatCurrency(invoice.amount)}</Text>
+      <Text accessibilityLabel={formatSpokenEuros(invoice.amount)} style={styles.amount}>
+        {formatCurrency(invoice.amount)}
+      </Text>
     </View>
   );
 

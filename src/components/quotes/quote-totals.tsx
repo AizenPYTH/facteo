@@ -1,10 +1,11 @@
 import { StyleSheet, Text, View } from 'react-native';
 
-import { useColors, useThemedStyles } from '@/hooks/use-colors';
+import { useThemedStyles } from '@/hooks/use-colors';
+import { useIsLargeContentSize } from '@/hooks/use-is-large-content-size';
 import { radius } from '@/constants/theme/radius';
 import { spacing } from '@/constants/theme/spacing';
 import { typography } from '@/constants/theme/typography';
-import { formatPriceHT } from '@/lib/format/currency';
+import { formatPriceHT, formatSpokenEuros } from '@/lib/format/currency';
 import type { DocumentTotals } from '@/lib/calculations/totals';
 
 type QuoteTotalsProps = {
@@ -13,20 +14,28 @@ type QuoteTotalsProps = {
 
 export function QuoteTotals({ totals }: QuoteTotalsProps) {
   const styles = useStyles();
-  const colors = useColors();
+  const isLargeContentSize = useIsLargeContentSize();
   return (
     <View style={styles.container}>
-      <View style={styles.row}>
+      <View style={[styles.row, isLargeContentSize && styles.rowLarge]}>
         <Text style={styles.label}>Total HT</Text>
-        <Text style={styles.value}>{formatPriceHT(totals.subtotalHt)}</Text>
+        <Text accessibilityLabel={formatSpokenEuros(totals.subtotalHt)} style={styles.value}>
+          {formatPriceHT(totals.subtotalHt)}
+        </Text>
       </View>
-      <View style={styles.row}>
+      <View style={[styles.row, isLargeContentSize && styles.rowLarge]}>
         <Text style={styles.label}>TVA</Text>
-        <Text style={styles.value}>{formatPriceHT(totals.totalVat)}</Text>
+        <Text accessibilityLabel={formatSpokenEuros(totals.totalVat)} style={styles.value}>
+          {formatPriceHT(totals.totalVat)}
+        </Text>
       </View>
-      <View style={[styles.row, styles.totalRow]}>
+      <View style={[styles.row, styles.totalRow, isLargeContentSize && styles.rowLarge]}>
         <Text style={styles.totalLabel}>Total TTC</Text>
-        <Text style={styles.totalValue}>{formatPriceHT(totals.totalTtc)}</Text>
+        <Text
+          accessibilityLabel={formatSpokenEuros(totals.totalTtc)}
+          style={styles.totalValue}>
+          {formatPriceHT(totals.totalTtc)}
+        </Text>
       </View>
     </View>
   );
@@ -47,6 +56,11 @@ function useStyles() {
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: spacing.md,
+  },
+  rowLarge: {
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+    gap: spacing.xs,
   },
   label: {
     ...typography.subheadline,

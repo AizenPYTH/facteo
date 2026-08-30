@@ -30,22 +30,22 @@ export const DESKTOP_NAV_SECTIONS: DesktopNavSection[] = [
         matchPrefixes: ['/clients'],
       },
       {
-        href: '/quotes',
+        href: '/documents/quotes',
         label: 'Devis',
         icon: { ios: 'doc.text', android: 'description', web: 'description' },
-        matchPrefixes: ['/quotes'],
+        matchPrefixes: ['/documents/quotes'],
       },
       {
-        href: '/invoices',
+        href: '/documents/invoices',
         label: 'Factures',
         icon: { ios: 'doc.plaintext', android: 'receipt_long', web: 'receipt_long' },
-        matchPrefixes: ['/invoices'],
+        matchPrefixes: ['/documents/invoices'],
       },
       {
-        href: '/invoices?status=paid',
+        href: '/documents/invoices?status=paid',
         label: 'Paiements',
         icon: { ios: 'creditcard', android: 'payments', web: 'payments' },
-        matchPrefixes: ['/invoices'],
+        matchPrefixes: ['/documents/invoices'],
       },
     ],
   },
@@ -112,12 +112,12 @@ export function isNavItemActive(pathname: string, item: DesktopNavItem): boolean
   }
 
   if (item.label === 'Paiements') {
-    return path.startsWith('/invoices') && path.includes('status=paid');
+    return path.startsWith('/documents/invoices') && path.includes('status=paid');
   }
 
   if (item.label === 'Factures') {
     return (
-      (path === '/invoices' || path.startsWith('/invoices/')) &&
+      (path === '/documents/invoices' || path.startsWith('/documents/invoices/')) &&
       !path.includes('status=paid')
     );
   }
