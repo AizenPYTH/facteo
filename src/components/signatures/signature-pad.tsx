@@ -30,6 +30,7 @@ export function SignaturePad({ loading = false, onExport, onError }: SignaturePa
 
   const [ready, setReady] = useState(false);
   const [hasInk, setHasInk] = useState(false);
+  const readyRef = useRef(false);
 
   const sourceHtml = buildSignaturePadHtml(padWidth, padHeight);
 
@@ -40,6 +41,7 @@ export function SignaturePad({ loading = false, onExport, onError }: SignaturePa
 
         switch (payload.type) {
           case 'ready':
+            readyRef.current = true;
             setReady(true);
             break;
           case 'cleared':
@@ -73,8 +75,31 @@ export function SignaturePad({ loading = false, onExport, onError }: SignaturePa
   }
 
   function handleExport() {
-    if (!ready) {
-      onError?.('Le pad de signature n’est pas prêt.');
+    if (!readyRef.current) {
+      webViewRef.current?.injectJavaScript(`
+        if (window.ReactNativeWebView) {
+          window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'ready' }));
+        }
+        true;
+      `);
+      setTimeout(() => {
+        if (!readyRef.current) {
+          onError?.(
+            'Le pad de signature n’est pas prêt. Fermez puis rouvrez la signature, ou réessayez.',
+          );
+          return;
+        }
+        if (!hasInk) {
+          onError?.('Veuillez signer avant de valider.');
+          return;
+        }
+        runPadCommand('exportSignature');
+      }, 350);
+      return;
+    }
+
+    if (!hasInk) {
+      onError?.('Veuillez signer avant de valider.');
       return;
     }
 
@@ -87,7 +112,14 @@ export function SignaturePad({ loading = false, onExport, onError }: SignaturePa
         <WebView
           ref={webViewRef}
           bounces={false}
+          javaScriptEnabled
           nestedScrollEnabled={false}
+          onLoadEnd={() => {
+            setTimeout(() => {
+              readyRef.current = true;
+              setReady(true);
+            }, 200);
+          }}
           onMessage={handleMessage}
           originWhitelist={['*']}
           scrollEnabled={false}
@@ -99,7 +131,7 @@ export function SignaturePad({ loading = false, onExport, onError }: SignaturePa
       </View>
 
       <View style={styles.actions}>
-        <Button loading={loading} onPress={handleExport} title="Valider la signature" />
+        <Button disabled={!ready} loading={loading} onPress={handleExport} title="Valider la signature" />
         <Button disabled={loading || !hasInk} onPress={handleClear} title="Effacer" variant="ghost" />
       </View>
     </View>
