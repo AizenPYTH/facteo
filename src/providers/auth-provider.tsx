@@ -2,6 +2,8 @@ import type { AuthError, Session, User } from '@supabase/supabase-js';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import * as QueryParams from 'expo-auth-session/build/QueryParams';
 import { makeRedirectUri } from 'expo-auth-session';
+import * as Crypto from 'expo-crypto';
+import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
 import { Platform } from 'react-native';
 import {
@@ -15,6 +17,15 @@ import {
 
 import { MARKETING_SITE_URL } from '@/constants/marketing/site';
 import { supabase } from '@/lib/supabase';
+
+async function createAppleNonce(): Promise<{ rawNonce: string; hashedNonce: string }> {
+  const rawNonce = Crypto.randomUUID().replace(/-/g, '');
+  const hashedNonce = await Crypto.digestStringAsync(
+    Crypto.CryptoDigestAlgorithm.SHA256,
+    rawNonce,
+  );
+  return { rawNonce, hashedNonce };
+}
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -51,8 +62,8 @@ export type AuthContextValue = {
 export const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 function getRedirectTo(): string {
+  // Aligner le scheme sur app.config / APP_VARIANT (inveq ou inveq-dev).
   return makeRedirectUri({
-    scheme: 'inveq',
     path: 'auth/callback',
   });
 }
@@ -92,6 +103,26 @@ export function AuthProvider({ children }: PropsWithChildren) {
   useEffect(() => {
     let mounted = true;
 
+    // Cold start / retour deep link OAuth (Google / Apple hors iOS natif).
+    async function handleIncomingUrl(url: string | null) {
+      if (!url || !url.includes('auth/callback')) {
+        return;
+      }
+      const result = await createSessionFromUrl(url);
+      if (!mounted || result.error || !result.session) {
+        return;
+      }
+      setSession(result.session);
+      setUser(result.session.user);
+    }
+
+    void Linking.getInitialURL().then((url) => {
+      void handleIncomingUrl(url);
+    });
+    const linkingSub = Linking.addEventListener('url', ({ url }) => {
+      void handleIncomingUrl(url);
+    });
+
     async function restoreSession() {
       const { data, error } = await supabase.auth.getSession();
 
@@ -127,6 +158,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
 
     return () => {
       mounted = false;
+      linkingSub.remove();
       subscription.unsubscribe();
     };
   }, []);
@@ -207,11 +239,13 @@ export function AuthProvider({ children }: PropsWithChildren) {
       }
 
       try {
+        const { rawNonce, hashedNonce } = await createAppleNonce();
         const credential = await AppleAuthentication.signInAsync({
           requestedScopes: [
             AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
             AppleAuthentication.AppleAuthenticationScope.EMAIL,
           ],
+          nonce: hashedNonce,
         });
 
         if (!credential.identityToken) {
@@ -227,9 +261,35 @@ export function AuthProvider({ children }: PropsWithChildren) {
         const { data, error } = await supabase.auth.signInWithIdToken({
           provider: 'apple',
           token: credential.identityToken,
+          nonce: rawNonce,
         });
 
-        return { error, session: data.session };
+        if (error) {
+          return {
+            error: {
+              message: mapAppleAuthError(error.message),
+              name: 'AuthError',
+            } as AuthError,
+            session: null,
+          };
+        }
+
+        // Apple ne renvoie le nom qu’à la première autorisation — le conserver.
+        if (credential.fullName && data.user) {
+          const given = credential.fullName.givenName?.trim() ?? '';
+          const family = credential.fullName.familyName?.trim() ?? '';
+          if (given || family) {
+            void supabase.auth.updateUser({
+              data: {
+                first_name: given || undefined,
+                last_name: family || undefined,
+                full_name: [given, family].filter(Boolean).join(' ') || undefined,
+              },
+            });
+          }
+        }
+
+        return { error: null, session: data.session };
       } catch (error) {
         if (
           error &&
@@ -244,7 +304,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
           error: {
             message:
               error && typeof error === 'object' && 'message' in error
-                ? String((error as { message: string }).message)
+                ? mapAppleAuthError(String((error as { message: string }).message))
                 : 'Connexion Apple impossible.',
             name: 'AuthError',
           } as AuthError,
@@ -321,4 +381,28 @@ export function AuthProvider({ children }: PropsWithChildren) {
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+}
+
+function mapAppleAuthError(message: string): string {
+  const lower = message.toLowerCase();
+
+  if (
+    lower.includes('already registered') ||
+    lower.includes('already been registered') ||
+    lower.includes('identity is already linked') ||
+    lower.includes('user already exists') ||
+    lower.includes('email address is already')
+  ) {
+    return 'Un compte INVEQ existe déjà avec cet e-mail. Connectez-vous avec le même compte (e-mail ou Google) pour retrouver votre abonnement.';
+  }
+
+  if (lower.includes('nonce') || lower.includes('audience') || lower.includes('id token')) {
+    return 'Connexion Apple refusée. Vérifiez la configuration Sign in with Apple, puis réessayez.';
+  }
+
+  if (lower.includes('network') || lower.includes('fetch')) {
+    return 'Connexion impossible. Vérifiez votre réseau et réessayez.';
+  }
+
+  return message || 'Connexion Apple impossible.';
 }

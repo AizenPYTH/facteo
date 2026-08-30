@@ -166,7 +166,7 @@ export default function LoginScreen() {
           <Button
             loading={oauthLoading === 'apple'}
             onPress={() => void handleApple()}
-            title="Apple"
+            title="Continuer avec Apple"
             variant="secondary"
           />
         </View>
@@ -174,7 +174,7 @@ export default function LoginScreen() {
           <Button
             loading={oauthLoading === 'google'}
             onPress={() => void handleGoogle()}
-            title="Google"
+            title="Continuer avec Google"
             variant="secondary"
           />
         </View>
