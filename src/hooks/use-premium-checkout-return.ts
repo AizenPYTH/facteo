@@ -40,7 +40,7 @@ export function usePremiumCheckoutReturn() {
         }
 
         await refresh();
-        showSuccess('INVEQ Premium est activé.');
+        showSuccess('Votre abonnement INVEQ est activé.');
       } catch (error) {
         if (!cancelled) {
           showError(readErrorMessage(error));

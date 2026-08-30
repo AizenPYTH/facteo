@@ -1,14 +1,15 @@
 import { router, type Href } from 'expo-router';
-import { Alert, Linking, Platform, StyleSheet, Switch, Text, View } from 'react-native';
+import { Alert, Linking, StyleSheet, Text, View } from 'react-native';
 
 import {
   SettingsProfileSummary,
   SettingsRow,
   SettingsSection,
 } from '@/components/settings';
+import { AppearancePreference } from '@/components/settings/appearance-preference';
 import { NotificationPreferencesSection } from '@/components/settings/notification-preferences-section';
 import { DesktopPanel } from '@/components/web/desktop/desktop-panel';
-import { useColors, useThemedStyles } from '@/hooks/use-colors';
+import { useThemedStyles } from '@/hooks/use-colors';
 import { spacing } from '@/constants/theme/spacing';
 import { typography } from '@/constants/theme/typography';
 import { MARKETING_CONTACT } from '@/constants/marketing/site';
@@ -17,31 +18,18 @@ import { useAuth } from '@/hooks/use-auth';
 import { useCompanyProfile } from '@/hooks/use-company-profile';
 import { useSubscription } from '@/hooks/use-subscription';
 import { getAppVersionInfo } from '@/lib/app-version';
-import { useThemePreference } from '@/providers/theme-preference-provider';
+import { getEffectivePlanDisplayName } from '@/lib/subscription/plans';
 import { useToast } from '@/providers/toast-provider';
 
 export function SettingsDesktopContent() {
   const styles = useStyles();
-  const colors = useColors();
   const { user, signOut } = useAuth();
   const companyProfile = useCompanyProfile();
-  const { isPremium } = useSubscription();
-  const { preference, setPreference } = useThemePreference();
+  const { subscription } = useSubscription();
   const { showSuccess } = useToast();
   const versionInfo = getAppVersionInfo();
 
-  const isDarkMode = preference === 'dark';
-  const darkModeSupported = Platform.OS !== 'web';
-  const planLabel = isPremium ? 'INVEQ Premium' : 'INVEQ Standard';
-
-  async function handleToggleDarkMode(value: boolean) {
-    if (!darkModeSupported) {
-      showSuccess('Le mode sombre sera bientôt disponible sur le web.');
-      return;
-    }
-
-    await setPreference(value ? 'dark' : 'light');
-  }
+  const planLabel = `INVEQ ${getEffectivePlanDisplayName(subscription?.effectivePlanId ?? 'micro')}`;
 
   async function handleLogout() {
     const { error } = await signOut();
@@ -101,31 +89,9 @@ export function SettingsDesktopContent() {
           <NotificationPreferencesSection />
 
           <SettingsSection
-            footer={
-              darkModeSupported
-                ? 'Le thème s’applique immédiatement sur l’appareil.'
-                : 'Bientôt disponible sur le web.'
-            }
+            footer="Le thème s’applique immédiatement et est conservé après redémarrage."
             title="Apparence">
-            <SettingsRow
-              label="Mode sombre"
-              onPress={
-                darkModeSupported
-                  ? undefined
-                  : () => showSuccess('Bientôt disponible sur le web.')
-              }
-              trailing={
-                <Switch
-                  disabled={!darkModeSupported}
-                  onValueChange={(value) => {
-                    void handleToggleDarkMode(value);
-                  }}
-                  thumbColor={colors.surface}
-                  trackColor={{ false: colors.borderStrong, true: colors.primary }}
-                  value={isDarkMode}
-                />
-              }
-            />
+            <AppearancePreference />
           </SettingsSection>
 
           <SettingsSection title="Session">
@@ -135,6 +101,11 @@ export function SettingsDesktopContent() {
           </SettingsSection>
 
           <SettingsSection title="Aide">
+            <SettingsRow
+              label="Découvrir INVEQ"
+              onPress={() => router.push('/settings/discover' as Href)}
+            />
+            <View style={styles.separator} />
             <SettingsRow label="Centre d’aide" onPress={() => void openHelpPage('support')} />
             <View style={styles.separator} />
             <SettingsRow label="Guide d’utilisation" onPress={() => void openHelpPage('guide')} />

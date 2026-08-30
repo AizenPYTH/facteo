@@ -74,6 +74,7 @@ export default function EditClientScreen() {
   if (isLoading || !client) {
     return (
       <SafeAreaView edges={['top', 'bottom']} style={styles.safeArea}>
+        <ClientScreenHeader title="Modifier le client" />
         <LoadingView message="Chargement du client..." />
       </SafeAreaView>
     );

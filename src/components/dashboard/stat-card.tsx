@@ -10,6 +10,7 @@ import { typography } from '@/constants/theme/typography';
 export type StatCardProps = {
   label: string;
   value: string;
+  valueAccessibilityLabel?: string;
   accentColor?: string;
   onPress?: () => void;
   style?: ViewStyle;
@@ -20,6 +21,7 @@ export type StatCardProps = {
 export function StatCard({
   label,
   value,
+  valueAccessibilityLabel,
   accentColor,
   onPress,
   style,
@@ -38,7 +40,11 @@ export function StatCard({
         </View>
       ) : null}
       <Text style={styles.label}>{label}</Text>
-      <Text style={[styles.value, premiumLocked ? styles.valueLocked : null]}>{value}</Text>
+      <Text
+        accessibilityLabel={valueAccessibilityLabel}
+        style={[styles.value, premiumLocked ? styles.valueLocked : null]}>
+        {value}
+      </Text>
     </>
   );
 

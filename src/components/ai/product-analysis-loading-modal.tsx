@@ -1,5 +1,6 @@
 import { ActivityIndicator, Modal, Text, View } from 'react-native';
 
+import { Button } from '@/components/ui/button';
 import { useColors, useThemedStyles } from '@/hooks/use-colors';
 import { radius } from '@/constants/theme/radius';
 import { spacing } from '@/constants/theme/spacing';
@@ -8,15 +9,24 @@ import { typography } from '@/constants/theme/typography';
 type ProductAnalysisLoadingModalProps = {
   visible: boolean;
   progress: number;
+  onCancel?: () => void;
 };
 
-export function ProductAnalysisLoadingModal({ visible, progress }: ProductAnalysisLoadingModalProps) {
+export function ProductAnalysisLoadingModal({
+  visible,
+  progress,
+  onCancel,
+}: ProductAnalysisLoadingModalProps) {
   const styles = useStyles();
   const colors = useColors();
   const percent = Math.round(Math.min(100, Math.max(5, progress * 100)));
 
   return (
-    <Modal animationType="fade" transparent visible={visible}>
+    <Modal
+      animationType="fade"
+      onRequestClose={onCancel}
+      transparent
+      visible={visible}>
       <View style={styles.overlay}>
         <View style={styles.card}>
           <ActivityIndicator color={colors.primary} size="large" />
@@ -27,6 +37,10 @@ export function ProductAnalysisLoadingModal({ visible, progress }: ProductAnalys
             <View style={[styles.progressFill, { width: `${percent}%` }]} />
           </View>
           <Text style={styles.progressLabel}>{percent}%</Text>
+
+          {onCancel ? (
+            <Button onPress={onCancel} title="Annuler" variant="tertiary" />
+          ) : null}
         </View>
       </View>
     </Modal>

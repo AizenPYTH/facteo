@@ -15,6 +15,8 @@ export type { EmptyInvoicesProps } from './empty-invoices';
 
 export { DashboardWelcome } from './dashboard-welcome';
 
+export { OutstandingHero } from './outstanding-hero';
+export { TodoNowSection } from './todo-now-section';
 export { StatsGrid } from './stats-grid';
 export { ExtendedStatsGrid } from './extended-stats-grid';
 export { RevenueChart } from './revenue-chart';

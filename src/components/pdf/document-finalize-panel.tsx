@@ -231,7 +231,7 @@ export function DocumentFinalizePanel({
   }
 
   return (
-    <SurfaceCard elevated style={styles.panel}>
+    <SurfaceCard style={styles.panel}>
       <View style={styles.header}>
         <View style={styles.headerText}>
           <AppText variant="title">Finaliser le document</AppText>
@@ -250,6 +250,7 @@ export function DocumentFinalizePanel({
 
       <Pressable
         accessibilityLabel="Aperçu du document"
+        accessibilityRole="button"
         onPress={() => void handleOpenPreview()}
         style={({ pressed }) => [styles.previewCard, pressed && styles.pressed]}>
         <View style={[styles.previewAccent, { backgroundColor: template.theme.primary }]} />
@@ -309,7 +310,7 @@ export function DocumentFinalizePanel({
 
                 onSignPress();
               }}
-              subtitle={signatureLocked ? 'Premium' : 'Signature client'}
+              subtitle={signatureLocked ? 'Offre supérieure' : 'Signature client'}
               title="Faire signer"
             />
           </View>
@@ -327,6 +328,8 @@ export function DocumentFinalizePanel({
       </View>
 
       <Pressable
+        accessibilityLabel="Ouvrir les réglages des modèles"
+        accessibilityRole="button"
         onPress={() => router.push('/settings/templates' as Href)}
         style={({ pressed }) => [styles.settingsLink, pressed && styles.pressed]}>
         <AppText color="secondary" variant="caption">
@@ -410,6 +413,7 @@ const useStyles = () =>
       gap: 2,
     },
     templateButton: {
+      minHeight: 44,
       alignItems: 'center',
       gap: 4,
       paddingHorizontal: spacing.sm,
@@ -453,6 +457,7 @@ const useStyles = () =>
       flexGrow: 1,
     },
     settingsLink: {
+      minHeight: 44,
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',

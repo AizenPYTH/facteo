@@ -2,12 +2,14 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { TemplateGalleryModal } from '@/components/pdf/template-gallery-modal';
+import { FeatureIntroModal } from '@/components/feature-intros';
 import { SettingsScreenFrame } from '@/components/web/desktop/settings-screen-frame';
 import { AppText } from '@/components/ui/app-text';
 import { LoadingView } from '@/components/ui/loading-view';
 import { useAuth } from '@/hooks/use-auth';
 import { useThemedStyles } from '@/hooks/use-colors';
 import { spacing } from '@/constants/theme/spacing';
+import { useFeatureIntro } from '@/hooks/use-feature-intro';
 import { useSettings, useUpdateDocumentTemplates } from '@/hooks/use-settings';
 import { useSubscription } from '@/hooks/use-subscription';
 import { useTenant } from '@/hooks/use-tenant';
@@ -27,12 +29,14 @@ export default function DocumentTemplatesScreen() {
   const templatesLocked = !hasFeature('pdf_templates');
   const updateTemplates = useUpdateDocumentTemplates();
   const { showError } = useToast();
+  const templatesIntro = useFeatureIntro('templates');
 
   const [quoteTemplateId, setQuoteTemplateId] = useState(data?.quoteTemplateId ?? 'classic-blue');
   const [invoiceTemplateId, setInvoiceTemplateId] = useState(data?.invoiceTemplateId ?? 'classic-blue');
   const [activeKind, setActiveKind] = useState<DocumentKind>('invoice');
   const [galleryVisible, setGalleryVisible] = useState(false);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
 
   useEffect(() => {
     if (data) {
@@ -111,8 +115,8 @@ export default function DocumentTemplatesScreen() {
         ) : null}
 
         <AppText color="secondary" variant="subtitle">
-          Parcourez les modèles en taille réelle. Le modèle sélectionné est enregistré
-          automatiquement.
+          Ouvrez la galerie pour choisir un modèle. Validez avec « Utiliser ce modèle » — rien
+          n’est enregistré au simple glissement. Appliqué aux prochains documents uniquement.
         </AppText>
 
         <View style={styles.segment}>
@@ -159,6 +163,13 @@ export default function DocumentTemplatesScreen() {
         selectedTemplateId={selectedTemplateId}
         title={activeKind === 'invoice' ? 'Modèles de factures' : 'Modèles de devis'}
         visible={galleryVisible && !templatesLocked}
+      />
+      <FeatureIntroModal
+        config={templatesIntro.config}
+        onClose={templatesIntro.onClose}
+        onCta={templatesIntro.onCta}
+        onDontShowAgain={templatesIntro.onDontShowAgain}
+        visible={templatesIntro.visible}
       />
     </SettingsScreenFrame>
   );

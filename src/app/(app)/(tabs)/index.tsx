@@ -1,21 +1,14 @@
-import { router, type Href } from 'expo-router';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
   DashboardHeader,
   DashboardWelcome,
-  ExtendedStatsGrid,
-  QuickActions,
+  OutstandingHero,
   RecentActivitySection,
-  RecentInvoicesSection,
-  RevenueChart,
-  SectionHeader,
-  StatsGrid,
-  TopClientsSection,
-  TopPrestationsSection,
+  TodoNowSection,
 } from '@/components/dashboard';
-import { PremiumGatedSection } from '@/components/subscription/premium-gated-section';
+import { FeatureIntroModal } from '@/components/feature-intros';
 import { DashboardDesktopScreen } from '@/components/web/desktop/screens/dashboard-desktop-screen';
 import { LoadingView } from '@/components/ui/loading-view';
 import { BottomTabInset } from '@/constants/theme';
@@ -23,9 +16,14 @@ import { useBreakpoint } from '@/hooks/use-breakpoint';
 import { useThemedStyles } from '@/hooks/use-colors';
 import { spacing } from '@/constants/theme/spacing';
 import { useDashboard } from '@/hooks/use-dashboard';
-import { useSubscription } from '@/hooks/use-subscription';
+import { useFeatureIntro } from '@/hooks/use-feature-intro';
 import { useTenant } from '@/hooks/use-tenant';
 
+/**
+ * Accueil — DESIGN §5.2 :
+ * Reste à encaisser → À faire maintenant (≤2) → Activité récente.
+ * Pas de grille de petites cartes statistiques.
+ */
 export default function DashboardScreen() {
   const { isDesktop, isTablet, isWeb } = useBreakpoint();
 
@@ -40,10 +38,9 @@ function DashboardMobileScreen() {
   const styles = useStyles();
   const { firstName, companyName, stats, extended, recentInvoices, loading } = useDashboard();
   const { companies, activeCompany, switchCompany, createNewCompany } = useTenant();
-  const { hasFeature } = useSubscription();
-  const advancedStatsLocked = !hasFeature('advanced_stats');
   const insets = useSafeAreaInsets();
   const hasNoActivity = stats.totalClients === 0 && recentInvoices.length === 0;
+  const statsIntro = useFeatureIntro('statistics');
 
   return (
     <SafeAreaView edges={['top']} style={styles.safeArea}>
@@ -70,52 +67,33 @@ function DashboardMobileScreen() {
         ) : (
           <>
             {hasNoActivity ? <DashboardWelcome /> : null}
-            <StatsGrid stats={stats} />
-            <PremiumGatedSection
-              bannerMessage="Statistiques avancées — INVEQ Premium"
-              locked={advancedStatsLocked}>
-              <ExtendedStatsGrid premiumLocked={advancedStatsLocked} stats={stats} />
-              <RevenueChart data={extended.revenueByMonth} premiumLocked={advancedStatsLocked} />
-              <TopClientsSection clients={extended.topClients} premiumLocked={advancedStatsLocked} />
-              <TopPrestationsSection
-                premiumLocked={advancedStatsLocked}
-                prestations={extended.topPrestations}
-              />
-              <RecentActivitySection
-                activity={extended.recentActivity}
-                premiumLocked={advancedStatsLocked}
-              />
-            </PremiumGatedSection>
+            <OutstandingHero stats={stats} />
+            <TodoNowSection recentInvoices={recentInvoices} stats={stats} />
+            <RecentActivitySection activity={extended.recentActivity} />
           </>
         )}
-
-        <View style={styles.section}>
-          <SectionHeader title="Actions rapides" />
-          <QuickActions />
-        </View>
-
-        <RecentInvoicesSection
-          invoices={recentInvoices}
-          onInvoicePress={(invoice) => router.push(`/invoices/${invoice.id}` as Href)}
-        />
       </ScrollView>
+      <FeatureIntroModal
+        config={statsIntro.config}
+        onClose={statsIntro.onClose}
+        onCta={statsIntro.onCta}
+        onDontShowAgain={statsIntro.onDontShowAgain}
+        visible={statsIntro.visible}
+      />
     </SafeAreaView>
   );
 }
 
 function useStyles() {
   return useThemedStyles((colors) => ({
-  safeArea: {
-    flex: 1,
-    backgroundColor: colors.backgroundGrouped,
-  },
-  content: {
-    paddingHorizontal: spacing.screenPaddingHorizontal,
-    paddingTop: spacing.md,
-    gap: spacing.sectionGap,
-  },
-  section: {
-    gap: spacing.md,
-  },
-}));
+    safeArea: {
+      flex: 1,
+      backgroundColor: colors.backgroundGrouped,
+    },
+    content: {
+      paddingHorizontal: spacing.screenPaddingHorizontal,
+      paddingTop: spacing.md,
+      gap: spacing.sectionGap,
+    },
+  }));
 }

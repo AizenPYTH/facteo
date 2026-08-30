@@ -69,6 +69,8 @@ export function ThemePreferenceProvider({ children }: PropsWithChildren) {
         if (mounted && isThemePreference(stored)) {
           setPreferenceState(stored);
           applyNativeColorScheme(stored);
+        } else if (mounted) {
+          applyNativeColorScheme('system');
         }
       } finally {
         if (mounted) {

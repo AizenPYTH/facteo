@@ -145,7 +145,7 @@ export function QuotesDesktopScreen() {
 
   function handleSelect(quoteId: string) {
     setSelectedId(quoteId);
-    router.replace(`/quotes?selected=${encodeURIComponent(quoteId)}` as Href);
+    router.replace(`/documents/quotes?selected=${encodeURIComponent(quoteId)}` as Href);
   }
 
   async function handleDuplicate() {
@@ -163,7 +163,7 @@ export function QuotesDesktopScreen() {
     <View style={styles.root}>
       <DesktopTopHeader
         actions={
-          <Button onPress={() => router.push('/quotes/new' as Href)} title="Nouveau devis" />
+          <Button onPress={() => router.push('/documents/quotes/new' as Href)} title="Nouveau devis" />
         }
         subtitle="Créez, envoyez et suivez vos devis"
         title="Devis"
@@ -263,7 +263,7 @@ export function QuotesDesktopScreen() {
             onDuplicate={() => void handleDuplicate()}
             onEdit={
               selectedQuote
-                ? () => router.push(`/quotes/${selectedQuote.id}/edit` as Href)
+                ? () => router.push(`/documents/quotes/${selectedQuote.id}/edit` as Href)
                 : undefined
             }
             onSend={() => void documentActions.handleSendEmail()}

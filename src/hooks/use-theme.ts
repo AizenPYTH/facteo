@@ -1,14 +1,8 @@
+import { useColors, type AppColors } from '@/hooks/use-colors';
+
 /**
- * Learn more about light and dark modes:
- * https://docs.expo.dev/guides/color-schemes/
+ * @deprecated Prefer `useColors()` from `@/hooks/use-colors`.
  */
-
-import { Colors } from '@/constants/theme';
-import { useColorScheme } from '@/hooks/use-color-scheme';
-
-export function useTheme() {
-  const scheme = useColorScheme();
-  const theme = scheme ?? 'light';
-
-  return Colors[theme];
+export function useTheme(): AppColors {
+  return useColors();
 }

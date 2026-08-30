@@ -1,5 +1,6 @@
-import { ScrollView, StyleSheet, Text } from 'react-native';
-import { useColors, useThemedStyles } from '@/hooks/use-colors';
+import { Pressable, ScrollView, StyleSheet, Text } from 'react-native';
+
+import { useThemedStyles } from '@/hooks/use-colors';
 import { radius } from '@/constants/theme/radius';
 import { spacing } from '@/constants/theme/spacing';
 import { typography } from '@/constants/theme/typography';
@@ -9,11 +10,12 @@ import { QUOTE_STATUS_FILTER_OPTIONS } from '@/types/quotes-list';
 type QuoteStatusFilterBarProps = {
   value: QuoteStatusFilter;
   onChange: (value: QuoteStatusFilter) => void;
+  counts?: Partial<Record<QuoteStatusFilter, number>>;
 };
 
-export function QuoteStatusFilterBar({ value, onChange }: QuoteStatusFilterBarProps) {
+export function QuoteStatusFilterBar({ value, onChange, counts }: QuoteStatusFilterBarProps) {
   const styles = useStyles();
-  const colors = useColors();
+
   return (
     <ScrollView
       contentContainerStyle={styles.content}
@@ -23,16 +25,23 @@ export function QuoteStatusFilterBar({ value, onChange }: QuoteStatusFilterBarPr
       showsHorizontalScrollIndicator={false}>
       {QUOTE_STATUS_FILTER_OPTIONS.map((option) => {
         const isActive = option.value === value;
+        const count = counts?.[option.value];
+        const label =
+          typeof count === 'number' ? `${option.label} ${count}` : option.label;
 
         return (
-          <Text
+          <Pressable
             accessibilityRole="button"
             accessibilityState={{ selected: isActive }}
             key={option.value}
             onPress={() => onChange(option.value)}
             style={[styles.chip, isActive && styles.chipActive]}>
-            {option.label}
-          </Text>
+            <Text
+              maxFontSizeMultiplier={1.3}
+              style={[styles.chipLabel, isActive && styles.chipLabelActive]}>
+              {label}
+            </Text>
+          </Pressable>
         );
       })}
     </ScrollView>
@@ -41,25 +50,33 @@ export function QuoteStatusFilterBar({ value, onChange }: QuoteStatusFilterBarPr
 
 function useStyles() {
   return useThemedStyles((colors) => ({
-  content: {
-    gap: spacing.sm,
-    paddingVertical: spacing.xs,
-  },
-  chip: {
-    ...typography.subheadlineMedium,
-    color: colors.textSecondary,
-    backgroundColor: colors.surface,
-    borderRadius: radius.full,
-    borderWidth: 1,
-    borderColor: colors.border,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    overflow: 'hidden',
-  },
-  chipActive: {
-    color: colors.primary,
-    backgroundColor: colors.primarySubtle,
-    borderColor: colors.primary,
-  },
-}));
+    content: {
+      gap: spacing.xs,
+      paddingVertical: spacing.xs,
+      paddingRight: spacing.md,
+    },
+    chip: {
+      borderRadius: radius.filterChip,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: colors.border,
+      backgroundColor: colors.surface,
+      paddingHorizontal: spacing.sm + 2,
+      paddingVertical: 6,
+      minHeight: 32,
+      justifyContent: 'center',
+    },
+    chipActive: {
+      backgroundColor: colors.ink,
+      borderColor: colors.ink,
+    },
+    chipLabel: {
+      ...typography.caption1,
+      fontWeight: '500',
+      fontSize: 13,
+      color: colors.textSecondary,
+    },
+    chipLabelActive: {
+      color: colors.onInk,
+    },
+  }));
 }
