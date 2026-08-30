@@ -84,7 +84,7 @@ export function DashboardDesktopScreen() {
               <View style={styles.centerColumn}>
                 <DesktopPanel title="Évolution du chiffre d'affaires">
                   <PremiumGatedSection
-                    bannerMessage="Statistiques avancées — INVEQ Premium"
+                    bannerMessage="Statistiques avancées — offre Max"
                     locked={advancedStatsLocked}>
                     <View style={styles.chartBody}>
                       <RevenueChart
@@ -108,7 +108,7 @@ export function DashboardDesktopScreen() {
                         status: invoice.status,
                       }))}
                       onPress={(id) =>
-                        router.push(`/invoices?selected=${encodeURIComponent(id)}` as Href)
+                        router.push(`/documents/invoices?selected=${encodeURIComponent(id)}` as Href)
                       }
                       type="invoice"
                     />
@@ -121,8 +121,8 @@ export function DashboardDesktopScreen() {
                       onPress={(item) => {
                         const path =
                           item.type === 'invoice'
-                            ? `/invoices?selected=${encodeURIComponent(item.id)}`
-                            : `/quotes?selected=${encodeURIComponent(item.id)}`;
+                            ? `/documents/invoices?selected=${encodeURIComponent(item.id)}`
+                            : `/documents/quotes?selected=${encodeURIComponent(item.id)}`;
                         router.push(path as Href);
                       }}
                     />
@@ -137,13 +137,13 @@ export function DashboardDesktopScreen() {
                       description="Créer et envoyer"
                       icon={{ ios: 'doc.plaintext', android: 'receipt', web: 'receipt' }}
                       label="Créer une facture"
-                      onPress={() => router.push('/invoices/new' as Href)}
+                      onPress={() => router.push('/documents/invoices/new' as Href)}
                     />
                     <DesktopShortcutButton
                       description="Proposer un devis"
                       icon={{ ios: 'doc.text', android: 'description', web: 'description' }}
                       label="Créer un devis"
-                      onPress={() => router.push('/quotes/new' as Href)}
+                      onPress={() => router.push('/documents/quotes/new' as Href)}
                     />
                     <DesktopShortcutButton
                       description="Ajouter au CRM"
@@ -167,7 +167,7 @@ export function DashboardDesktopScreen() {
                       <NotificationItem
                         icon={{ ios: 'bell.badge', android: 'notifications_active', web: 'notifications_active' }}
                         label={`${stats.lateInvoices} facture${stats.lateInvoices > 1 ? 's' : ''} en retard`}
-                        onPress={() => router.push('/invoices?status=overdue' as Href)}
+                        onPress={() => router.push('/documents/invoices?status=overdue' as Href)}
                         tone="warning"
                       />
                     ) : null}
@@ -175,7 +175,7 @@ export function DashboardDesktopScreen() {
                       <NotificationItem
                         icon={{ ios: 'doc.text', android: 'description', web: 'description' }}
                         label={`${stats.pendingQuotes} devis en attente`}
-                        onPress={() => router.push('/quotes?status=sent' as Href)}
+                        onPress={() => router.push('/documents/quotes?status=sent' as Href)}
                         tone="info"
                       />
                     ) : null}

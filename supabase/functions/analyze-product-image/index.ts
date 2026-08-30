@@ -9,6 +9,7 @@ const corsHeaders = {
 type AnalyzeProductBody = {
   imageBase64?: string;
   mimeType?: string;
+  barcodeHint?: string;
 };
 
 type ProductAnalysis = {
@@ -24,6 +25,9 @@ type ProductAnalysis = {
   unit: string;
   quantity: number;
   confidence: number;
+  sku: string;
+  ean: string;
+  source_url: string;
 };
 
 const PRODUCT_ANALYSIS_SCHEMA = {
@@ -42,6 +46,9 @@ const PRODUCT_ANALYSIS_SCHEMA = {
     unit: { type: 'string' },
     quantity: { type: 'number' },
     confidence: { type: 'number' },
+    sku: { type: 'string' },
+    ean: { type: 'string' },
+    source_url: { type: 'string' },
     products: {
       type: 'array',
       items: {
@@ -60,6 +67,9 @@ const PRODUCT_ANALYSIS_SCHEMA = {
           unit: { type: 'string' },
           quantity: { type: 'number' },
           confidence: { type: 'number' },
+          sku: { type: 'string' },
+          ean: { type: 'string' },
+          source_url: { type: 'string' },
         },
         required: [
           'title',
@@ -74,6 +84,9 @@ const PRODUCT_ANALYSIS_SCHEMA = {
           'unit',
           'quantity',
           'confidence',
+          'sku',
+          'ean',
+          'source_url',
         ],
       },
     },
@@ -91,6 +104,9 @@ const PRODUCT_ANALYSIS_SCHEMA = {
     'unit',
     'quantity',
     'confidence',
+    'sku',
+    'ean',
+    'source_url',
     'products',
   ],
 };
@@ -149,6 +165,7 @@ Deno.serve(async (request) => {
     const mimeType = (body.mimeType ?? 'image/jpeg').trim() || 'image/jpeg';
     const imageDataUrl = `data:${mimeType};base64,${body.imageBase64}`;
     const model = Deno.env.get('OPENAI_VISION_MODEL')?.trim() || 'gpt-4.1-mini';
+    const barcodeHint = typeof body.barcodeHint === 'string' ? body.barcodeHint.trim() : '';
 
     const modelOutput = await requestOpenAiJsonSchema({
       apiKey: openAiApiKey,
@@ -156,23 +173,27 @@ Deno.serve(async (request) => {
       schemaName: 'product_analysis',
       schema: PRODUCT_ANALYSIS_SCHEMA,
       systemPrompt: [
-        'Tu es un assistant INVEQ qui extrait des produits depuis une photo.',
+        'Tu es un assistant INVEQ qui extrait des produits depuis une photo (facture, liste, capture Amazon/e-commerce, étiquette).',
         'Tu dois comprendre le contexte visuel, pas seulement lire du texte.',
         'Si plusieurs prix existent, choisis le prix actuel (et non barré).',
-        'Si un prix est présent TTC avec TVA visible, renseigne aussi le HT.',
-        'Si aucune TVA n’est visible mais le prix semble TTC, laisse vat à null.',
+        'Si un prix est présent TTC avec TVA explicitement visible, renseigne aussi le HT.',
+        'Ne devine JAMAIS un taux de TVA. Si le taux n’est pas explicitement lisible/fiable, laisse vat à null.',
+        'Ne mélange jamais les champs de deux produits différents (nom A + prix B).',
         'Si aucune information n’est visible, retourne des champs vides/null sans inventer.',
         'La quantité par défaut est 1. L’unité par défaut est "pièce".',
         'La devise par défaut est EUR pour un contexte francophone.',
         'confidence doit représenter ton niveau de certitude entre 0 et 1.',
-        'Si plusieurs produits sont visibles (tableau, liste, feuille Excel, capture e-commerce), renseigne products avec tous les produits détectés.',
-        'Chaque entrée de products doit contenir les mêmes champs que le produit principal.',
+        'Renseigne ean/sku/source_url uniquement s’ils sont visibles (code-barres, fiche, URL). Sinon chaîne vide.',
+        'Si plusieurs produits sont visibles (tableau, liste, feuille Excel, capture e-commerce), renseigne products avec tous les produits détectés (max 20).',
+        'Chaque entrée de products doit contenir les mêmes champs que le produit principal, de façon indépendante.',
         'Le produit principal (champs top-level) doit être le premier élément pertinent détecté.',
       ].join('\n'),
       userContent: [
         {
           type: 'input_text',
-          text: 'Analyse cette image et retourne uniquement les données produit au format JSON.',
+          text: barcodeHint
+            ? `Analyse cette image et retourne uniquement les données produit au format JSON. Code-barres scanné (indice, à confirmer visuellement si possible) : ${barcodeHint}.`
+            : 'Analyse cette image et retourne uniquement les données produit au format JSON.',
         },
         {
           type: 'input_image',
@@ -221,6 +242,9 @@ function normalizeProductAnalysis(source: Partial<ProductAnalysis>): ProductAnal
     unit: normalizeText(source.unit) || 'pièce',
     quantity: Math.max(1, toNullableNumber(source.quantity) ?? 1),
     confidence: clamp(toNullableNumber(source.confidence) ?? 0.5, 0, 1),
+    sku: normalizeText(source.sku),
+    ean: normalizeText(source.ean),
+    source_url: normalizeText(source.source_url),
   };
 }
 

@@ -19,6 +19,7 @@ import type {
 } from '@/types/invoice';
 import {
   INVOICES_PAGE_SIZE,
+  type InvoiceStatusFilter,
   type InvoicesPage,
   type InvoicesPageParams,
 } from '@/types/invoices-list';
@@ -204,6 +205,31 @@ export async function fetchInvoicesPage(
     nextPage: hasMore ? page + 1 : null,
     totalCount: count,
   };
+}
+
+/** Compteurs par statut (hors recherche / filtre actif) pour les chips Documents. */
+export async function fetchInvoiceStatusCounts(
+  scope: DataScope,
+): Promise<Partial<Record<InvoiceStatusFilter, number>>> {
+  const { data, error } = await supabase
+    .from('invoices')
+    .select('status')
+    .eq('company_id', scope.companyId);
+
+  if (error) {
+    logSupabaseError('fetchInvoiceStatusCounts', error);
+    return {};
+  }
+
+  const counts: Partial<Record<InvoiceStatusFilter, number>> = { all: 0 };
+
+  for (const row of (data as { status: InvoiceStatus }[] | null) ?? []) {
+    counts.all = (counts.all ?? 0) + 1;
+    const status = row.status as InvoiceStatusFilter;
+    counts[status] = (counts[status] ?? 0) + 1;
+  }
+
+  return counts;
 }
 
 export async function fetchInvoiceById(

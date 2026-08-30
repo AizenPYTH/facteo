@@ -47,7 +47,8 @@ export function ClientSearchBar({
           accessibilityLabel="Effacer la recherche"
           accessibilityRole="button"
           hitSlop={8}
-          onPress={() => onChangeText('')}>
+          onPress={() => onChangeText('')}
+          style={styles.clearButton}>
           <SymbolView
             name={{ ios: 'xmark.circle.fill', android: 'close', web: 'close' }}
             size={18}
@@ -79,6 +80,14 @@ function useStyles() {
     color: colors.text,
     padding: 0,
     margin: 0,
+  },
+  clearButton: {
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginVertical: -8,
+    marginRight: -8,
   },
 }));
 }

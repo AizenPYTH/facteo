@@ -8,12 +8,10 @@ export const INVOICE_STATUS_FILTER_OPTIONS: {
   value: InvoiceStatusFilter;
   label: string;
 }[] = [
-  { value: 'all', label: 'Tous' },
-  { value: 'paid', label: 'Payées' },
-  { value: 'sent', label: 'Envoyées' },
-  { value: 'canceled', label: 'Annulées' },
+  { value: 'all', label: 'Toutes' },
   { value: 'draft', label: 'Brouillons' },
-  { value: 'partially_paid', label: 'Partiellement payées' },
+  { value: 'sent', label: 'Envoyées' },
+  { value: 'paid', label: 'Payées' },
   { value: 'overdue', label: 'En retard' },
 ];
 

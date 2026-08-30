@@ -11,7 +11,17 @@ import {
 import type { NotificationPreferences } from '@/lib/notifications/preferences';
 import { useToast } from '@/providers/toast-provider';
 
-export function NotificationPreferencesSection() {
+type NotificationPreferencesSectionProps = {
+  /**
+   * `section` : bloc autonome « Notifications ».
+   * `embedded` : lignes seules, à placer dans Compte — DESIGN §5.9.
+   */
+  variant?: 'section' | 'embedded';
+};
+
+export function NotificationPreferencesSection({
+  variant = 'section',
+}: NotificationPreferencesSectionProps) {
   const styles = useStyles();
   const colors = useColors();
   const { data: preferences, isLoading } = useNotificationPreferences();
@@ -40,10 +50,15 @@ export function NotificationPreferencesSection() {
     return null;
   }
 
-  return (
-    <SettingsSection
-      footer="Les notifications sont envoyées sur votre appareil."
-      title="Notifications">
+  const rows = (
+    <>
+      {variant === 'embedded' ? (
+        <>
+          <View style={styles.separator} />
+          <SettingsRow label="Notifications" value="Factures, devis, paiements" />
+          <View style={styles.separator} />
+        </>
+      ) : null}
       <SettingsRow
         label="Facture en retard"
         trailing={
@@ -104,24 +119,36 @@ export function NotificationPreferencesSection() {
           Rappel {preferences.dueDateReminderDays} jour(s) avant l’échéance
         </Text>
       </View>
+    </>
+  );
+
+  if (variant === 'embedded') {
+    return rows;
+  }
+
+  return (
+    <SettingsSection
+      footer="Les notifications sont envoyées sur votre appareil."
+      title="Notifications">
+      {rows}
     </SettingsSection>
   );
 }
 
 function useStyles() {
   return useThemedStyles((colors) => ({
-  separator: {
-    height: StyleSheet.hairlineWidth,
-    backgroundColor: colors.separator,
-    marginLeft: spacing.md,
-  },
-  reminderInfo: {
-    paddingHorizontal: spacing.md,
-    paddingBottom: spacing.sm,
-  },
-  reminderText: {
-    ...typography.footnote,
-    color: colors.textSecondary,
-  },
-}));
+    separator: {
+      height: StyleSheet.hairlineWidth,
+      backgroundColor: colors.separator,
+      marginLeft: spacing.md,
+    },
+    reminderInfo: {
+      paddingHorizontal: spacing.md,
+      paddingBottom: spacing.sm,
+    },
+    reminderText: {
+      ...typography.footnote,
+      color: colors.textSecondary,
+    },
+  }));
 }

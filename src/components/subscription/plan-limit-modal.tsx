@@ -1,39 +1,28 @@
-import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { router, type Href } from 'expo-router';
+import { Modal, Pressable, Text, View } from 'react-native';
 
 import { Button } from '@/components/ui/button';
-import { usePremiumCheckout } from '@/hooks/use-premium-checkout';
 import { useThemedStyles } from '@/hooks/use-colors';
 import { radius } from '@/constants/theme/radius';
 import { spacing } from '@/constants/theme/spacing';
 import { typography } from '@/constants/theme/typography';
-import { useToast } from '@/providers/toast-provider';
 
 export type PlanLimitModalProps = {
   visible: boolean;
   onClose: () => void;
 };
 
+/**
+ * DESIGN §5.10 : chaque limite Premium renvoie vers l'écran d'offre complet
+ * (`settings/premium`) plutôt que de lancer un paiement depuis la modale —
+ * ceci évite aussi tout appel Stripe hors de l'écran dédié sur iOS (§1).
+ */
 export function PlanLimitModal({ visible, onClose }: PlanLimitModalProps) {
   const styles = useStyles();
-  const { startCheckout, subscribe, isConfigured } = usePremiumCheckout();
-  const { showError, showSuccess } = useToast();
 
-  async function handleUpgrade() {
-    if (!isConfigured) {
-      showError('Stripe n’est pas encore configuré. Contactez le support.');
-      return;
-    }
-
-    try {
-      onClose();
-      const completed = await startCheckout();
-
-      if (completed) {
-        showSuccess('INVEQ Premium est activé.');
-      }
-    } catch (error) {
-      showError(readErrorMessage(error));
-    }
+  function handleViewOffer() {
+    onClose();
+    router.push('/settings/premium' as Href);
   }
 
   return (
@@ -47,27 +36,13 @@ export function PlanLimitModal({ visible, onClose }: PlanLimitModalProps) {
           </Text>
 
           <View style={styles.actions}>
-            <Button
-              loading={subscribe.isPending}
-              onPress={() => {
-                void handleUpgrade();
-              }}
-              title="Voir les offres"
-            />
-            <Button onPress={onClose} title="Fermer" variant="ghost" />
+            <Button onPress={handleViewOffer} title="Voir l’offre Premium" />
+            <Button onPress={onClose} title="Fermer" variant="tertiary" />
           </View>
         </Pressable>
       </Pressable>
     </Modal>
   );
-}
-
-function readErrorMessage(error: unknown): string {
-  if (error instanceof Error) {
-    return error.message;
-  }
-
-  return 'Impossible d’ouvrir le paiement Stripe.';
 }
 
 function useStyles() {

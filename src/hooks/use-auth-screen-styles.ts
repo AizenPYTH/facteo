@@ -21,10 +21,11 @@ export function useAuthScreenStyles() {
     },
     content: {
       flexGrow: 1,
+      justifyContent: 'center' as const,
       paddingHorizontal: spacing.screenPaddingHorizontal,
-      paddingTop: spacing['4xl'],
-      paddingBottom: spacing.xl,
-      gap: spacing['2xl'],
+      paddingTop: spacing.lg,
+      paddingBottom: spacing.lg,
+      gap: spacing.lg,
     },
     header: {
       gap: spacing.md,

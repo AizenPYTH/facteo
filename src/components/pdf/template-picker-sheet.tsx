@@ -3,8 +3,10 @@ import { Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { TemplatePreviewCard } from '@/components/pdf/template-preview-card';
+import { ActionBar } from '@/components/ui/action-bar';
 import { AppText } from '@/components/ui/app-text';
 import { Button } from '@/components/ui/button';
+import { StatusChip } from '@/components/ui/status-chip';
 import { useColors, useThemedStyles } from '@/hooks/use-colors';
 import { spacing } from '@/constants/theme/spacing';
 import { radius } from '@/constants/theme/radius';
@@ -18,6 +20,11 @@ type TemplatePickerSheetProps = {
   onSelect: (templateId: string) => void;
 };
 
+/**
+ * Sélecteur de modèle compact — cohérent avec la galerie (DESIGN §5.8).
+ * Aucun enregistrement au choix dans la grille : seul « Utiliser ce modèle »
+ * confirme le brouillon (`draftId`) au parent. Annuler l'abandonne.
+ */
 export function TemplatePickerSheet({
   visible,
   title,
@@ -34,17 +41,45 @@ export function TemplatePickerSheet({
     () => PDF_TEMPLATES.find((template) => template.id === draftId) ?? PDF_TEMPLATES[0],
     [draftId],
   );
+  const currentTemplate = useMemo(
+    () => PDF_TEMPLATES.find((template) => template.id === selectedTemplateId),
+    [selectedTemplateId],
+  );
+  const hasPendingChange = draftId !== selectedTemplateId;
+
+  function handleClose() {
+    setDraftId(selectedTemplateId);
+    onClose();
+  }
+
+  function handleConfirm() {
+    onSelect(draftId);
+    onClose();
+  }
 
   return (
-    <Modal animationType="slide" onRequestClose={onClose} transparent visible={visible}>
+    <Modal animationType="slide" onRequestClose={handleClose} transparent visible={visible}>
       <View style={styles.overlay}>
-        <Pressable accessibilityLabel="Fermer" onPress={onClose} style={StyleSheet.absoluteFill} />
+        <Pressable accessibilityLabel="Fermer" onPress={handleClose} style={StyleSheet.absoluteFill} />
         <View style={[styles.sheet, { paddingBottom: Math.max(insets.bottom, spacing.lg) }]}>
           <View style={styles.handle} />
-          <AppText variant="title">{title}</AppText>
-          <AppText color="secondary" variant="subtitle">
-            Prévisualisez les styles avant de générer le PDF.
-          </AppText>
+
+          <View style={styles.header}>
+            <View style={styles.headerText}>
+              <AppText variant="title">{title}</AppText>
+              <AppText color="secondary" variant="subtitle">
+                Prévisualisez les styles avant de générer le PDF.
+              </AppText>
+            </View>
+            <Button onPress={handleClose} title="Annuler" variant="tertiary" />
+          </View>
+
+          <View style={styles.badgeRow}>
+            <StatusChip label="Sélectionné" tone="sent" />
+            {hasPendingChange && currentTemplate ? (
+              <StatusChip label={`Modèle actuel : ${currentTemplate.name}`} tone="draft" />
+            ) : null}
+          </View>
 
           <View style={styles.previewHero}>
             <TemplatePreviewCard selected template={selectedTemplate} />
@@ -67,16 +102,12 @@ export function TemplatePickerSheet({
             })}
           </ScrollView>
 
-          <View style={styles.actions}>
-            <Button
-              onPress={() => {
-                onSelect(draftId);
-                onClose();
-              }}
-              title="Utiliser ce modèle"
-            />
-            <Button onPress={onClose} title="Annuler" variant="ghost" />
-          </View>
+          <ActionBar
+            caption="Appliqué aux prochains documents. Les documents déjà émis ne changent pas."
+            style={styles.actionBar}
+            transparent>
+            <Button onPress={handleConfirm} title="Utiliser ce modèle" />
+          </ActionBar>
         </View>
       </View>
     </Modal>
@@ -108,6 +139,21 @@ const useStyles = () =>
       borderRadius: 2,
       backgroundColor: colors.borderStrong,
     },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      justifyContent: 'space-between',
+      gap: spacing.sm,
+    },
+    headerText: {
+      flex: 1,
+      gap: 2,
+    },
+    badgeRow: {
+      flexDirection: 'row',
+      gap: spacing.xs,
+      flexWrap: 'wrap',
+    },
     previewHero: {
       borderWidth: StyleSheet.hairlineWidth,
       borderColor: colors.border,
@@ -129,7 +175,7 @@ const useStyles = () =>
       padding: spacing.xs,
       backgroundColor: colors.surface,
     },
-    actions: {
-      gap: spacing.sm,
+    actionBar: {
+      paddingHorizontal: 0,
     },
   }));

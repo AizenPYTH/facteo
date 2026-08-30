@@ -10,34 +10,102 @@ type ShadowStyle = Pick<
   'shadowColor' | 'shadowOffset' | 'shadowOpacity' | 'shadowRadius' | 'elevation'
 >;
 
-function shadow(
-  offsetY: number,
-  radius: number,
-  opacity: number,
-  elevation: number,
-): ShadowStyle {
-  return Platform.select({
-    ios: {
-      shadowColor: '#000000',
-      shadowOffset: { width: 0, height: offsetY },
-      shadowOpacity: opacity,
-      shadowRadius: radius,
-    },
-    android: { elevation },
-    default: {},
-  })!;
-}
-
+/**
+ * Élévation — DESIGN §2.5 : trois niveaux seulement.
+ * Sombre = bordure plus claire, pas d'ombre (appliqué côté composants).
+ */
 export const shadows = {
   none: {} satisfies ShadowStyle,
-  xs: shadow(1, 2, 0.04, 1),
-  sm: shadow(1, 3, 0.08, 2),
-  md: shadow(2, 8, 0.1, 4),
-  lg: shadow(4, 16, 0.12, 8),
-  xl: shadow(8, 24, 0.16, 12),
-  card: shadow(2, 12, 0.08, 3),
-  floating: shadow(4, 20, 0.14, 6),
-  sheet: shadow(8, 32, 0.18, 10),
+  /** Repos : aucune ombre (bordure 1px côté composant). */
+  rest: {} satisfies ShadowStyle,
+  /** Barre d'action / bottom sheet : 0 -8px 24px rgba(27,29,36,.06) */
+  actionBar: Platform.select<ShadowStyle>({
+    ios: {
+      shadowColor: '#1B1D24',
+      shadowOffset: { width: 0, height: -8 },
+      shadowOpacity: 0.06,
+      shadowRadius: 24,
+    },
+    android: { elevation: 8 },
+    default: {},
+  })!,
+  /** Modale : 0 20px 48px rgba(27,29,36,.22) */
+  modal: Platform.select<ShadowStyle>({
+    ios: {
+      shadowColor: '#1B1D24',
+      shadowOffset: { width: 0, height: 20 },
+      shadowOpacity: 0.22,
+      shadowRadius: 48,
+    },
+    android: { elevation: 16 },
+    default: {},
+  })!,
+  /** Segmented active option — ombre 1px */
+  segmented: Platform.select<ShadowStyle>({
+    ios: {
+      shadowColor: '#1B1D24',
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.06,
+      shadowRadius: 2,
+    },
+    android: { elevation: 1 },
+    default: {},
+  })!,
+
+  /** @deprecated aliases → niveaux DESIGN */
+  xs: {} as ShadowStyle,
+  sm: {} as ShadowStyle,
+  md: Platform.select<ShadowStyle>({
+    ios: {
+      shadowColor: '#1B1D24',
+      shadowOffset: { width: 0, height: -8 },
+      shadowOpacity: 0.06,
+      shadowRadius: 24,
+    },
+    android: { elevation: 8 },
+    default: {},
+  })!,
+  lg: Platform.select<ShadowStyle>({
+    ios: {
+      shadowColor: '#1B1D24',
+      shadowOffset: { width: 0, height: 20 },
+      shadowOpacity: 0.22,
+      shadowRadius: 48,
+    },
+    android: { elevation: 16 },
+    default: {},
+  })!,
+  xl: Platform.select<ShadowStyle>({
+    ios: {
+      shadowColor: '#1B1D24',
+      shadowOffset: { width: 0, height: 20 },
+      shadowOpacity: 0.22,
+      shadowRadius: 48,
+    },
+    android: { elevation: 16 },
+    default: {},
+  })!,
+  card: {} as ShadowStyle,
+  floating: Platform.select<ShadowStyle>({
+    ios: {
+      shadowColor: '#1B1D24',
+      shadowOffset: { width: 0, height: -8 },
+      shadowOpacity: 0.06,
+      shadowRadius: 24,
+    },
+    android: { elevation: 8 },
+    default: {},
+  })!,
+  sheet: Platform.select<ShadowStyle>({
+    ios: {
+      shadowColor: '#1B1D24',
+      shadowOffset: { width: 0, height: -8 },
+      shadowOpacity: 0.06,
+      shadowRadius: 24,
+    },
+    android: { elevation: 8 },
+    default: {},
+  })!,
 } as const;
 
 export const lightTheme = {

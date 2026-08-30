@@ -23,6 +23,8 @@ import { getClientDisplayName, type Client } from '@/types/client';
 type QuoteClientStepProps = {
   selectedClientId: string | null;
   onSelectClient: (client: Client) => void;
+  /** DESIGN §5.3 : nommer le document (« ce devis » / « cette facture »), pas de copie générique. */
+  documentType?: 'quote' | 'invoice';
 };
 
 function ClientRow({
@@ -68,9 +70,14 @@ function ClientRow({
   );
 }
 
-export function QuoteClientStep({ selectedClientId, onSelectClient }: QuoteClientStepProps) {
+export function QuoteClientStep({
+  selectedClientId,
+  onSelectClient,
+  documentType = 'quote',
+}: QuoteClientStepProps) {
   const styles = useStyles();
   const colors = useColors();
+  const documentDemonstrative = documentType === 'invoice' ? 'cette facture' : 'ce devis';
   const [search, setSearch] = useState('');
   const debouncedSearch = useDebouncedValue(search, 300);
   const { clients, isLoading } = useInfiniteClients(debouncedSearch);
@@ -132,7 +139,7 @@ export function QuoteClientStep({ selectedClientId, onSelectClient }: QuoteClien
 
   return (
     <View style={styles.container}>
-      <Text style={styles.description}>Choisissez le client pour ce devis.</Text>
+      <Text style={styles.description}>Choisissez le client pour {documentDemonstrative}.</Text>
 
       <Button
         onPress={() => router.push('/clients/new' as Href)}

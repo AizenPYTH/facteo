@@ -14,6 +14,7 @@ import { radius } from '@/constants/theme/radius';
 import { spacing } from '@/constants/theme/spacing';
 import { typography } from '@/constants/theme/typography';
 import type { Invoice } from '@/types/invoice';
+import type { InvoiceStatusFilter } from '@/types/invoices-list';
 
 import { EmptyInvoices } from './empty-invoices';
 import { InvoiceCard } from './invoice-card';
@@ -25,10 +26,12 @@ export type InvoicesListProps = {
   isRefreshing?: boolean;
   isFetchingNextPage?: boolean;
   isSearching?: boolean;
+  statusFilter?: InvoiceStatusFilter;
   showCreateAction?: boolean;
   onRefresh?: () => void;
   onEndReached?: () => void;
   contentContainerStyle?: ViewStyle;
+  selectedId?: string | null;
   testID?: string;
 };
 
@@ -38,18 +41,24 @@ export function InvoicesList({
   isRefreshing = false,
   isFetchingNextPage = false,
   isSearching = false,
+  statusFilter = 'all',
   showCreateAction = true,
   onRefresh,
   onEndReached,
   onInvoicePress,
   contentContainerStyle,
+  selectedId,
   testID,
 }: InvoicesListProps) {
   const styles = useStyles();
   const colors = useColors();
   const renderItem: ListRenderItem<Invoice> = ({ item, index }) => (
     <View>
-      <InvoiceCard invoice={item} onPress={onInvoicePress} />
+      <InvoiceCard
+        invoice={item}
+        onPress={onInvoicePress}
+        selected={item.id === selectedId}
+      />
       {index < invoices.length - 1 ? <View style={styles.separator} /> : null}
     </View>
   );
@@ -84,7 +93,11 @@ export function InvoicesList({
       data={invoices}
       keyExtractor={(item) => item.id}
       ListEmptyComponent={
-        <EmptyInvoices isSearching={isSearching} showCreateAction={showCreateAction} />
+        <EmptyInvoices
+          isSearching={isSearching}
+          showCreateAction={showCreateAction}
+          statusFilter={statusFilter}
+        />
       }
       ListFooterComponent={renderFooter}
       onEndReached={onEndReached}

@@ -14,6 +14,22 @@ function mapAuthErrorMessage(message: string): string {
     case 'User already registered':
       return 'Un compte existe déjà avec cette adresse e-mail.';
     default:
+      if (
+        message.toLowerCase().includes('already') &&
+        message.toLowerCase().includes('email')
+      ) {
+        return 'Un compte INVEQ existe déjà avec cet e-mail. Connectez-vous avec le même compte pour éviter un doublon.';
+      }
+      // Préserver les messages déjà localisés (ex. mapAppleAuthError) —
+      // ne pas les écraser par le libellé générique.
+      if (
+        /[àâäéèêëïîôùûüçœ]/i.test(message) ||
+        /connexion|impossible|vérifiez|compte inveq|sign in with apple|jeton apple/i.test(
+          message,
+        )
+      ) {
+        return message;
+      }
       return GENERIC_ERROR_MESSAGE;
   }
 }

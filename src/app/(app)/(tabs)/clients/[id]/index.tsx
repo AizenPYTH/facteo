@@ -63,6 +63,9 @@ export default function ClientDetailScreen() {
   if (isLoading || !client) {
     return (
       <SafeAreaView edges={['top', 'bottom']} style={styles.safeArea}>
+        <View style={styles.header}>
+          <ClientScreenHeader title="Client" />
+        </View>
         <LoadingView message="Chargement du client..." />
       </SafeAreaView>
     );

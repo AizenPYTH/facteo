@@ -2,12 +2,13 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { QuoteTotals } from '@/components/quotes/quote-totals';
 import { CollapsibleSection } from '@/components/ui/collapsible-section';
+import { DateField } from '@/components/ui/date-field';
 import { TextField } from '@/components/ui/text-field';
 import { useColors, useThemedStyles } from '@/hooks/use-colors';
 import { radius } from '@/constants/theme/radius';
 import { spacing } from '@/constants/theme/spacing';
 import { typography } from '@/constants/theme/typography';
-import { formatPriceHT } from '@/lib/format/currency';
+import { formatPriceHT, formatSpokenEuros } from '@/lib/format/currency';
 import { mapLineValueToTotals } from '@/lib/quotes/mappers';
 import type { DocumentTotals } from '@/lib/calculations/totals';
 import type { QuoteInfoValues, QuoteLineValue } from '@/types/quote';
@@ -42,6 +43,8 @@ export function DocumentFinalizeStep({
   const expirationLabel =
     documentType === 'quote' ? "Date d'expiration" : "Date d'échéance";
   const secondaryDate = secondaryDateValue ?? info.validUntil;
+  /** DESIGN §5.3 : nommer le document (« cette facture » / « ce devis »), jamais générique. */
+  const documentDemonstrative = documentType === 'quote' ? 'ce devis' : 'cette facture';
 
   function updateField<K extends keyof QuoteInfoValues>(field: K, value: QuoteInfoValues[K]) {
     onInfoChange({ ...info, [field]: value });
@@ -54,7 +57,7 @@ export function DocumentFinalizeStep({
       keyboardShouldPersistTaps="handled"
       showsVerticalScrollIndicator={false}>
       <Text style={styles.description}>
-        Vérifiez les informations essentielles avant d’enregistrer.
+        Vérifiez les informations essentielles de {documentDemonstrative} avant d’enregistrer.
       </Text>
 
       <View style={styles.card}>
@@ -70,23 +73,23 @@ export function DocumentFinalizeStep({
       </View>
 
       <View style={styles.card}>
-        <TextField
+        <DateField
           label="Date d'émission"
-          onChangeText={(text) => updateField('issuedAt', text)}
-          placeholder="JJ/MM/AAAA"
+          onChange={(date) => updateField('issuedAt', date)}
+          requirement="required"
           value={info.issuedAt}
         />
-        <TextField
+        <DateField
           label={secondaryDateLabel ?? expirationLabel}
-          onChangeText={(text) => {
+          onChange={(date) => {
             if (onSecondaryDateChange) {
-              onSecondaryDateChange(text);
+              onSecondaryDateChange(date);
               return;
             }
 
-            updateField('validUntil', text);
+            updateField('validUntil', date);
           }}
-          placeholder="JJ/MM/AAAA"
+          requirement="optional"
           value={secondaryDate}
         />
       </View>
@@ -102,11 +105,17 @@ export function DocumentFinalizeStep({
                 <Text style={styles.lineTitle}>
                   {index + 1}. {line.description || 'Sans description'}
                 </Text>
-                <Text style={styles.lineMeta}>
+                <Text
+                  accessibilityLabel={`${line.quantity} ${line.unit}, ${formatSpokenEuros(lineTotals.lineTotalHt)} hors taxes`}
+                  style={styles.lineMeta}>
                   {line.quantity} {line.unit} · {formatPriceHT(lineTotals.lineTotalHt)} HT
                 </Text>
               </View>
-              <Text style={styles.lineAmount}>{formatPriceHT(lineTotals.lineTotalTtc)}</Text>
+              <Text
+                accessibilityLabel={formatSpokenEuros(lineTotals.lineTotalTtc)}
+                style={styles.lineAmount}>
+                {formatPriceHT(lineTotals.lineTotalTtc)}
+              </Text>
             </View>
           );
         })}

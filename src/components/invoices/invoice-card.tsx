@@ -1,10 +1,11 @@
-import { Pressable, StyleSheet, View, type ViewStyle } from 'react-native';
+import { Pressable, View, type ViewStyle } from 'react-native';
 
 import { QuoteField } from '@/components/quotes/quote-field';
-import { useColors, useThemedStyles } from '@/hooks/use-colors';
+import { useThemedStyles } from '@/hooks/use-colors';
+import { components } from '@/constants/theme/design-system';
 import { spacing } from '@/constants/theme/spacing';
 import { formatDate } from '@/lib/format/date';
-import { formatPriceHT } from '@/lib/format/currency';
+import { formatPriceHT, formatSpokenEuros } from '@/lib/format/currency';
 import type { Invoice } from '@/types/invoice';
 
 import { InvoiceStatusBadge } from './invoice-status-badge';
@@ -12,17 +13,23 @@ import { InvoiceStatusBadge } from './invoice-status-badge';
 export type InvoiceCardProps = {
   invoice: Invoice;
   onPress?: (invoice: Invoice) => void;
+  selected?: boolean;
   style?: ViewStyle;
   testID?: string;
 };
 
-export function InvoiceCard({ invoice, onPress, style, testID }: InvoiceCardProps) {
+export function InvoiceCard({
+  invoice,
+  onPress,
+  selected = false,
+  style,
+  testID,
+}: InvoiceCardProps) {
   const styles = useStyles();
-  const colors = useColors();
   const displayDate = formatDate(invoice.issuedAt ?? invoice.createdAt);
 
   const content = (
-    <View style={[styles.card, style]}>
+    <View style={[styles.card, invoice.status === 'overdue' && styles.overdue, style]}>
       <View style={styles.header}>
         <QuoteField emphasize label="Numéro" value={invoice.number} />
         <InvoiceStatusBadge status={invoice.status} />
@@ -34,7 +41,11 @@ export function InvoiceCard({ invoice, onPress, style, testID }: InvoiceCardProp
       </View>
 
       <View style={styles.row}>
-        <QuoteField label="Montant TTC" value={formatPriceHT(invoice.totalTtc)} />
+        <QuoteField
+          label="Montant TTC"
+          value={formatPriceHT(invoice.totalTtc)}
+          valueAccessibilityLabel={formatSpokenEuros(invoice.totalTtc)}
+        />
         {invoice.dueAt ? <QuoteField label="Échéance" value={formatDate(invoice.dueAt)} /> : null}
       </View>
     </View>
@@ -42,7 +53,7 @@ export function InvoiceCard({ invoice, onPress, style, testID }: InvoiceCardProp
 
   if (!onPress) {
     return (
-      <View style={styles.wrapper} testID={testID}>
+      <View style={[styles.wrapper, selected && styles.selected]} testID={testID}>
         {content}
       </View>
     );
@@ -50,10 +61,15 @@ export function InvoiceCard({ invoice, onPress, style, testID }: InvoiceCardProp
 
   return (
     <Pressable
-      accessibilityLabel={`Facture ${invoice.number}`}
+      accessibilityLabel={`Facture ${invoice.number}, ${formatSpokenEuros(invoice.totalTtc)}`}
       accessibilityRole="button"
+      accessibilityState={{ selected }}
       onPress={() => onPress(invoice)}
-      style={({ pressed }) => [styles.wrapper, pressed && styles.pressed]}
+      style={({ pressed }) => [
+        styles.wrapper,
+        selected && styles.selected,
+        pressed && styles.pressed,
+      ]}
       testID={testID}>
       {content}
     </Pressable>
@@ -65,6 +81,9 @@ function useStyles() {
   wrapper: {
     backgroundColor: colors.surface,
   },
+  selected: {
+    backgroundColor: colors.primarySubtle,
+  },
   pressed: {
     backgroundColor: colors.backgroundSecondary,
   },
@@ -72,6 +91,10 @@ function useStyles() {
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.md,
     gap: spacing.md,
+  },
+  overdue: {
+    borderLeftWidth: components.overdueAccentWidth,
+    borderLeftColor: colors.statusOverdue,
   },
   header: {
     flexDirection: 'row',

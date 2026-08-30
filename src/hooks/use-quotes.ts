@@ -1,11 +1,22 @@
-import { useInfiniteQuery } from '@tanstack/react-query';
+import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
 
 import { useTenant } from '@/hooks/use-tenant';
 import { requireScope } from '@/lib/tenant/scope';
-import { fetchQuotesPage } from '@/lib/supabase/quotes';
+import { fetchQuotesPage, fetchQuoteStatusCounts } from '@/lib/supabase/quotes';
 import { quotesQueryKeys } from '@/lib/supabase/query-keys';
 import type { QuoteStatusFilter, QuotesPage } from '@/types/quotes-list';
+
+export function useQuoteStatusCounts() {
+  const { scope, loading: tenantLoading, isSwitching } = useTenant();
+
+  return useQuery({
+    queryKey: [...quotesQueryKeys.all, 'status-counts', scope?.companyId ?? 'anonymous'],
+    queryFn: () => fetchQuoteStatusCounts(requireScope(scope)),
+    enabled: Boolean(scope?.companyId) && !tenantLoading && !isSwitching,
+    staleTime: 30_000,
+  });
+}
 
 export function useInfiniteQuotes(search = '', status: QuoteStatusFilter = 'all') {
   const { scope, loading: tenantLoading, isSwitching } = useTenant();

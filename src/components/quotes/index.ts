@@ -1,8 +1,14 @@
 export { AddQuoteFab } from './add-quote-fab';
 export type { AddQuoteFabProps } from './add-quote-fab';
 
+export { ConvertQuoteModal } from './convert-quote-modal';
+
 export { DeleteQuoteModal } from './delete-quote-modal';
 export { QuoteDetailView } from './quote-detail-view';
+
+export { QuoteStatusConfirmSheet } from './quote-status-confirm-sheet';
+
+export { QuoteTypeChip } from './quote-type-chip';
 
 export { EmptyQuotes } from './empty-quotes';
 export type { EmptyQuotesProps } from './empty-quotes';

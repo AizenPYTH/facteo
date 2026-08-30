@@ -4,7 +4,7 @@ import { useColors, useThemedStyles } from '@/hooks/use-colors';
 import { radius } from '@/constants/theme/radius';
 import { spacing } from '@/constants/theme/spacing';
 import { typography } from '@/constants/theme/typography';
-import { formatCurrency } from '@/lib/format/currency';
+import { formatCurrency, formatSpokenEuros } from '@/lib/format/currency';
 import type { TopPrestation } from '@/types/dashboard';
 
 import { SectionHeader } from './section-header';
@@ -33,7 +33,11 @@ export function TopPrestationsSection({ prestations, premiumLocked = false }: To
                     {prestation.name}
                   </Text>
                 </View>
-                <Text style={styles.amount}>{formatCurrency(prestation.revenue)}</Text>
+                <Text
+                  accessibilityLabel={formatSpokenEuros(prestation.revenue)}
+                  style={styles.amount}>
+                  {formatCurrency(prestation.revenue)}
+                </Text>
               </View>
               {index < prestations.length - 1 ? <View style={styles.separator} /> : null}
             </View>

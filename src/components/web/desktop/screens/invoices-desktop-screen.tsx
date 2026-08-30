@@ -21,7 +21,7 @@ import { spacing } from '@/constants/theme/spacing';
 import { typography } from '@/constants/theme/typography';
 import { useDebouncedValue } from '@/hooks/use-debounced-value';
 import { useDocumentActions } from '@/hooks/use-document-actions';
-import { useInvoice, useInfiniteInvoices } from '@/hooks/use-invoices';
+import { useInvoice, useInfiniteInvoices, useInvoiceStatusCounts } from '@/hooks/use-invoices';
 import { useInvoiceMutations } from '@/hooks/use-invoice-mutations';
 import { useTenant } from '@/hooks/use-tenant';
 import { formatDate } from '@/lib/format/date';
@@ -71,6 +71,7 @@ export function InvoicesDesktopScreen() {
     fetchNextPage,
     data,
   } = useInfiniteInvoices(debouncedSearch, statusFilter);
+  const statusCountsQuery = useInvoiceStatusCounts();
 
   const totalCount = data?.pages[0]?.totalCount ?? null;
 
@@ -159,7 +160,7 @@ export function InvoicesDesktopScreen() {
 
   function handleSelect(invoiceId: string) {
     setSelectedId(invoiceId);
-    router.replace(`/invoices?selected=${encodeURIComponent(invoiceId)}` as Href);
+    router.replace(`/documents/invoices?selected=${encodeURIComponent(invoiceId)}` as Href);
   }
 
   async function handleDuplicate() {
@@ -178,7 +179,7 @@ export function InvoicesDesktopScreen() {
       <DesktopTopHeader
         actions={
           <Button
-            onPress={() => router.push('/invoices/new' as Href)}
+            onPress={() => router.push('/documents/invoices/new' as Href)}
             title="Nouvelle facture"
           />
         }
@@ -190,7 +191,11 @@ export function InvoicesDesktopScreen() {
         <DesktopPanel flex={1.15} flush style={styles.listPanel}>
           <View style={styles.toolbar}>
             <DesktopSearchInput onChangeText={setSearch} value={search} />
-            <InvoiceStatusFilterBar onChange={setStatusFilter} value={statusFilter} />
+            <InvoiceStatusFilterBar
+              counts={statusCountsQuery.data}
+              onChange={setStatusFilter}
+              value={statusFilter}
+            />
             <View style={styles.sortRow}>
               <Text style={styles.sortLabel}>Trier par</Text>
               <SortChip active={sortKey === 'date'} label="Date" onPress={() => setSortKey('date')} />
@@ -280,7 +285,7 @@ export function InvoicesDesktopScreen() {
             onDuplicate={() => void handleDuplicate()}
             onEdit={
               selectedInvoice
-                ? () => router.push(`/invoices/${selectedInvoice.id}/edit` as Href)
+                ? () => router.push(`/documents/invoices/${selectedInvoice.id}/edit` as Href)
                 : undefined
             }
             onPayment={() => setPaymentVisible(true)}

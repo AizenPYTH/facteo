@@ -39,6 +39,47 @@ export function CompanyProfileForm({ control, errors, assets }: CompanyProfileFo
                 onBlur={onBlur}
                 onChangeText={onChange}
                 placeholder="INVEQ SARL"
+                requirement="required"
+                value={value}
+              />
+            )}
+          />
+        </FormField>
+        <FormDivider />
+        <FormField>
+          <Controller
+            control={control}
+            name="firstName"
+            render={({ field: { onChange, onBlur, value } }) => (
+              <TextField
+                autoCapitalize="words"
+                error={errors.firstName?.message}
+                label="Prénom"
+                onBlur={onBlur}
+                onChangeText={onChange}
+                placeholder="Jean"
+                requirement="required"
+                textContentType="givenName"
+                value={value}
+              />
+            )}
+          />
+        </FormField>
+        <FormDivider />
+        <FormField>
+          <Controller
+            control={control}
+            name="lastName"
+            render={({ field: { onChange, onBlur, value } }) => (
+              <TextField
+                autoCapitalize="words"
+                error={errors.lastName?.message}
+                label="Nom"
+                onBlur={onBlur}
+                onChangeText={onChange}
+                placeholder="Dupont"
+                requirement="required"
+                textContentType="familyName"
                 value={value}
               />
             )}
@@ -59,6 +100,7 @@ export function CompanyProfileForm({ control, errors, assets }: CompanyProfileFo
                 onBlur={onBlur}
                 onChangeText={onChange}
                 placeholder="contact@entreprise.fr"
+                requirement="required"
                 textContentType="emailAddress"
                 value={value}
               />
@@ -79,6 +121,7 @@ export function CompanyProfileForm({ control, errors, assets }: CompanyProfileFo
                 onBlur={onBlur}
                 onChangeText={onChange}
                 placeholder="06 12 34 56 78"
+                requirement="optional"
                 textContentType="telephoneNumber"
                 value={value}
               />
@@ -106,44 +149,6 @@ export function CompanyProfileForm({ control, errors, assets }: CompanyProfileFo
           <FormField>
             <Controller
               control={control}
-              name="firstName"
-              render={({ field: { onChange, onBlur, value } }) => (
-                <TextField
-                  autoCapitalize="words"
-                  error={errors.firstName?.message}
-                  label="Prénom"
-                  onBlur={onBlur}
-                  onChangeText={onChange}
-                  placeholder="Jean"
-                  textContentType="givenName"
-                  value={value}
-                />
-              )}
-            />
-          </FormField>
-          <FormDivider />
-          <FormField>
-            <Controller
-              control={control}
-              name="lastName"
-              render={({ field: { onChange, onBlur, value } }) => (
-                <TextField
-                  autoCapitalize="words"
-                  error={errors.lastName?.message}
-                  label="Nom"
-                  onBlur={onBlur}
-                  onChangeText={onChange}
-                  placeholder="Dupont"
-                  textContentType="familyName"
-                  value={value}
-                />
-              )}
-            />
-          </FormField>
-          <FormDivider />
-          <FormField>
-            <Controller
-              control={control}
               name="address"
               render={({ field: { onChange, onBlur, value } }) => (
                 <TextField
@@ -153,6 +158,7 @@ export function CompanyProfileForm({ control, errors, assets }: CompanyProfileFo
                   onBlur={onBlur}
                   onChangeText={onChange}
                   placeholder="12 rue de la Paix"
+                  requirement="optional"
                   textContentType="fullStreetAddress"
                   value={value}
                 />
@@ -172,6 +178,7 @@ export function CompanyProfileForm({ control, errors, assets }: CompanyProfileFo
                   onBlur={onBlur}
                   onChangeText={onChange}
                   placeholder="75001"
+                  requirement="optional"
                   textContentType="postalCode"
                   value={value}
                 />
@@ -191,6 +198,7 @@ export function CompanyProfileForm({ control, errors, assets }: CompanyProfileFo
                   onBlur={onBlur}
                   onChangeText={onChange}
                   placeholder="Paris"
+                  requirement="optional"
                   textContentType="addressCity"
                   value={value}
                 />
@@ -210,6 +218,7 @@ export function CompanyProfileForm({ control, errors, assets }: CompanyProfileFo
                   onBlur={onBlur}
                   onChangeText={onChange}
                   placeholder="France"
+                  requirement="optional"
                   textContentType="countryName"
                   value={value}
                 />
@@ -229,6 +238,7 @@ export function CompanyProfileForm({ control, errors, assets }: CompanyProfileFo
                   onBlur={onBlur}
                   onChangeText={onChange}
                   placeholder="123 456 789 00012"
+                  requirement="optional"
                   value={value}
                 />
               )}
@@ -247,6 +257,7 @@ export function CompanyProfileForm({ control, errors, assets }: CompanyProfileFo
                   onBlur={onBlur}
                   onChangeText={onChange}
                   placeholder="FR12345678901"
+                  requirement="optional"
                   value={value}
                 />
               )}
