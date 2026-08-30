@@ -1,58 +1,38 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { Modal, Pressable, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ActionBar } from '@/components/ui/action-bar';
 import { Button } from '@/components/ui/button';
-import { Field } from '@/components/ui/field';
-import { SegmentedControl } from '@/components/ui/segmented-control';
 import { useColors, useThemedStyles } from '@/hooks/use-colors';
 import { components } from '@/constants/theme/design-system';
 import { spacing } from '@/constants/theme/spacing';
 import { typography } from '@/constants/theme/typography';
 
-type ScannerMode = 'scanner' | 'reference' | 'photo';
-
 type ProductBarcodeScannerModalProps = {
   visible: boolean;
   onClose: () => void;
-  onBarcode: (code: string) => void;
+  /** Conservé pour compat — non utiliséé (plus de saisie EAN manuelle). */
+  onBarcode?: (code: string) => void;
   onFallbackPhotoSearch: () => void;
 };
 
 /**
- * Scanner produit — DESIGN §5.6
- * Caméra native absente (crash TestFlight) : mode Scanner affiche l'état réel,
- * défaut = Référence. Photo = IA Premium, annoncée avant la prise.
+ * Ajout produit par photo — caméra iOS → analyse IA.
+ * La saisie EAN chiffre par chiffre a été retirée (UX).
  */
 export function ProductBarcodeScannerModal({
   visible,
   onClose,
-  onBarcode,
   onFallbackPhotoSearch,
 }: ProductBarcodeScannerModalProps) {
   const styles = useStyles();
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const [mode, setMode] = useState<ScannerMode>('reference');
-  const [manualCode, setManualCode] = useState('');
 
   useEffect(() => {
-    if (visible) {
-      setManualCode('');
-      setMode('reference');
-    }
+    // Ouverture : rien à reset (plus de champ manuel).
   }, [visible]);
-
-  function handleManualSubmit() {
-    const data = manualCode.replace(/\s/g, '').trim();
-    if (!data) {
-      return;
-    }
-    onBarcode(data);
-  }
-
-  const canSubmit = manualCode.replace(/\s/g, '').trim().length > 0;
 
   return (
     <Modal animationType="slide" onRequestClose={onClose} visible={visible}>
@@ -63,7 +43,7 @@ export function ProductBarcodeScannerModal({
         ]}>
         <View style={styles.header}>
           <Text maxFontSizeMultiplier={1.4} style={styles.title}>
-            Produit
+            Photo produit
           </Text>
           <Pressable
             accessibilityLabel="Fermer"
@@ -75,92 +55,24 @@ export function ProductBarcodeScannerModal({
           </Pressable>
         </View>
 
-        <View style={styles.segmentWrap}>
-          <SegmentedControl
-            accessibilityLabel="Mode d’ajout produit"
-            onChange={setMode}
-            options={[
-              { value: 'scanner', label: 'Scanner' },
-              { value: 'reference', label: 'Référence' },
-              { value: 'photo', label: 'Photo' },
-            ]}
-            value={mode}
-          />
-        </View>
-
         <View style={styles.body}>
-          {mode === 'scanner' ? (
-            <View style={styles.stateCard}>
-              <Text maxFontSizeMultiplier={1.5} style={styles.stateTitle}>
-                Caméra non disponible
-              </Text>
-              <Text maxFontSizeMultiplier={1.5} style={styles.stateBody}>
-                Le scan live n’est pas activé sur cette version. Saisissez la référence du produit
-                ou utilisez une photo.
-              </Text>
-              <Button
-                onPress={() => setMode('reference')}
-                title="Saisir la référence"
-                variant="secondary"
-              />
-            </View>
-          ) : null}
-
-          {mode === 'reference' ? (
-            <View style={styles.form}>
-              <Text maxFontSizeMultiplier={1.5} style={styles.help}>
-                Saisissez le code EAN / UPC / GTIN ou une référence catalogue.
-              </Text>
-              <Field
-                autoFocus
-                keyboardType="number-pad"
-                label="Référence produit"
-                onChangeText={setManualCode}
-                placeholder="Ex. 3017620422003"
-                value={manualCode}
-              />
-            </View>
-          ) : null}
-
-          {mode === 'photo' ? (
-            <View style={styles.stateCard}>
-              <Text maxFontSizeMultiplier={1.5} style={styles.stateTitle}>
-                Analyse photo (Premium)
-              </Text>
-              <Text maxFontSizeMultiplier={1.5} style={styles.stateBody}>
-                Une photo du produit sera analysée par l’IA. Vous vérifierez prix, TVA et quantité
-                avant tout ajout au document.
-              </Text>
-            </View>
-          ) : null}
+          <View style={styles.stateCard}>
+            <Text maxFontSizeMultiplier={1.5} style={styles.stateTitle}>
+              Prendre une photo du produit
+            </Text>
+            <Text maxFontSizeMultiplier={1.5} style={styles.stateBody}>
+              L’IA identifie nom, marque, référence, EAN, prix, TVA et quantité. Si plusieurs
+              produits sont visibles, vous pourrez les vérifier un par un avant de les ajouter.
+            </Text>
+          </View>
         </View>
 
         <ActionBar
-          caption={
-            mode === 'photo'
-              ? 'Aucun produit n’est ajouté sans l’écran de vérification.'
-              : undefined
-          }
+          caption="Aucun produit n’est ajouté sans l’écran de vérification."
           style={{ backgroundColor: colors.surface }}
           transparent={false}>
-          {mode === 'reference' ? (
-            <>
-              <Button
-                disabled={!canSubmit}
-                onPress={handleManualSubmit}
-                title="Rechercher"
-              />
-              {!canSubmit ? (
-                <Text style={styles.disabledReason}>Saisissez une référence pour continuer.</Text>
-              ) : null}
-            </>
-          ) : null}
-          {mode === 'photo' ? (
-            <Button onPress={onFallbackPhotoSearch} title="Prendre une photo" />
-          ) : null}
-          {mode === 'scanner' ? (
-            <Button onPress={() => setMode('reference')} title="Passer en référence" />
-          ) : null}
+          <Button onPress={onFallbackPhotoSearch} title="Ouvrir la caméra" />
+          <Button onPress={onClose} title="Annuler" variant="tertiary" />
         </ActionBar>
       </View>
     </Modal>
@@ -193,40 +105,25 @@ function useStyles() {
       ...typography.subheadlineMedium,
       color: colors.primary,
     },
-    segmentWrap: {
-      paddingHorizontal: spacing.md,
-      paddingBottom: spacing.md,
-    },
     body: {
       flex: 1,
       paddingHorizontal: spacing.md,
-      gap: spacing.md,
-    },
-    form: {
-      gap: spacing.md,
-    },
-    help: {
-      ...typography.subheadline,
-      color: colors.textSecondary,
+      justifyContent: 'center' as const,
     },
     stateCard: {
-      backgroundColor: colors.surface,
-      borderRadius: 14,
-      padding: spacing.md,
       gap: spacing.md,
+      padding: spacing.lg,
+      borderRadius: 14,
+      backgroundColor: 'rgba(255,255,255,0.08)',
     },
     stateTitle: {
-      ...typography.headline,
-      color: colors.text,
+      ...typography.title3,
+      color: colors.onInk,
     },
     stateBody: {
       ...typography.subheadline,
-      color: colors.textSecondary,
-    },
-    disabledReason: {
-      ...typography.caption1,
-      color: colors.textTertiary,
-      textAlign: 'center' as const,
+      color: 'rgba(233,235,240,0.82)',
+      lineHeight: 22,
     },
   }));
 }

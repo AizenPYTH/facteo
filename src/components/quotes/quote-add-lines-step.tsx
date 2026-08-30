@@ -25,12 +25,12 @@ import {
   type ProductAnalysisDraft,
 } from '@/components/ai/product-analysis-confirmation-modal';
 import { ProductAnalysisLoadingModal } from '@/components/ai/product-analysis-loading-modal';
+import { ExcelImportSheet } from '@/components/ai/excel-import-sheet';
 import { FeatureIntroModal } from '@/components/feature-intros';
 import { ProductCatalogPickerModal } from '@/components/quotes/product-catalog-picker-modal';
 import { useAuth } from '@/hooks/use-auth';
 import { useColors, useThemedStyles } from '@/hooks/use-colors';
 import { useFeatureIntro } from '@/hooks/use-feature-intro';
-import { usePlatformActionSheet } from '@/hooks/use-platform-action-sheet';
 import { useSubscription } from '@/hooks/use-subscription';
 import { radius } from '@/constants/theme/radius';
 import { spacing } from '@/constants/theme/spacing';
@@ -44,14 +44,12 @@ import {
   parseProductSpreadsheet,
   type ImportedProductRow,
 } from '@/lib/products/spreadsheet-import';
-import { createProduct, findProductByBarcode } from '@/lib/supabase/products';
+import { createProduct } from '@/lib/supabase/products';
 import { useToast } from '@/providers/toast-provider';
 import type { ProductRow } from '@/types/database';
 import type { QuoteLineValue } from '@/types/quote';
 import { createEmptyQuoteLine, formatDecimalForInput } from '@/types/quote';
 import { router, type Href } from 'expo-router';
-
-import { ProductBarcodeScannerModal } from '@/components/ai/product-barcode-scanner-modal';
 
 import { QuoteLine } from './quote-line';
 
@@ -69,21 +67,21 @@ export function QuoteAddLinesStep({
   onRemoveLine,
 }: QuoteAddLinesStepProps) {
   const styles = useStyles();
-  const { openActionSheet, actionSheetNode } = usePlatformActionSheet();
   const { user } = useAuth();
-  const { hasFeature } = useSubscription();
+  const { hasFeature, isPremium } = useSubscription();
   const { showError, showSuccess } = useToast();
-  const scannerIntro = useFeatureIntro('scanner');
   const aiIntro = useFeatureIntro('ai');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisProgress, setAnalysisProgress] = useState(0.08);
   const [analysisImageUri, setAnalysisImageUri] = useState<string | null>(null);
   const [analysisDraft, setAnalysisDraft] = useState<ProductAnalysisDraft | null>(null);
   const [batchDrafts, setBatchDrafts] = useState<ProductAnalysisDraft[] | null>(null);
-  const [barcodeScannerVisible, setBarcodeScannerVisible] = useState(false);
   const [catalogPickerVisible, setCatalogPickerVisible] = useState(false);
+  const [excelImportVisible, setExcelImportVisible] = useState(false);
+  const [isDownloadingTemplate, setIsDownloadingTemplate] = useState(false);
   const [pendingBarcodeHint, setPendingBarcodeHint] = useState<string | null>(null);
   const [isSavingProduct, setIsSavingProduct] = useState(false);
+  const analysisAbortRef = useRef(false);
   const progressTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
@@ -97,16 +95,17 @@ export function QuoteAddLinesStep({
   }
 
   function ensureAiAccess(): boolean {
-    if (!hasFeature('ai_assistant')) {
-      router.push('/settings/premium' as Href);
-      return false;
+    if (hasFeature('ai_assistant') || isPremium) {
+      return true;
     }
-    return true;
+    router.push('/settings/premium' as Href);
+    return false;
   }
 
-  function handleScanBarcode() {
-    scannerIntro.runWithIntro(() => {
-      setBarcodeScannerVisible(true);
+  function handleOpenPhotoAi() {
+    if (!ensureAiAccess()) return;
+    aiIntro.runWithIntro(() => {
+      void handleSourceSelection(Platform.OS === 'web' ? 'gallery' : 'camera');
     });
   }
 
@@ -120,83 +119,24 @@ export function QuoteAddLinesStep({
     setAnalysisDraft(mapProductRowToDraft(product, 'Catalogue'));
   }
 
-  /** Options secondaires — Scanner, Catalogue et Saisie libre restent exposés d'emblée (DESIGN §5.3). */
-  function handleMoreOptions() {
-    openActionSheet({
-      title: 'Autres façons d’ajouter',
-      options: [
-        {
-          label: 'Photo / capture produit (IA)',
-          onPress: () => {
-            if (!ensureAiAccess()) return;
-            aiIntro.runWithIntro(() => {
-              void handleSourceSelection(Platform.OS === 'web' ? 'gallery' : 'camera');
-            });
-          },
-        },
-        {
-          label: 'Importer Excel / CSV',
-          onPress: () => {
-            void handleImportSpreadsheet();
-          },
-        },
-        {
-          label: 'Télécharger le modèle Excel',
-          onPress: () => {
-            void handleDownloadTemplate();
-          },
-        },
-      ],
-    });
+  function handleOpenExcelImport() {
+    setExcelImportVisible(true);
   }
 
   async function handleDownloadTemplate() {
+    setIsDownloadingTemplate(true);
     try {
       await downloadProductImportTemplate();
       showSuccess('Modèle Excel prêt à partager / télécharger.');
     } catch (error) {
       showError(readAiErrorMessage(error));
-    }
-  }
-
-  async function handleBarcode(code: string) {
-    setBarcodeScannerVisible(false);
-    try {
-      const existing = await findProductByBarcode(code);
-      if (existing) {
-        setAnalysisImageUri(null);
-        setAnalysisDraft(mapProductRowToDraft(existing, `Code-barres ${code}`));
-        return;
-      }
-
-      Alert.alert(
-        'Produit introuvable',
-        `Aucun produit catalogue pour le code ${code}. Vous pouvez ressayer, saisir la référence, ou créer le produit via une photo.`,
-        [
-          { text: 'Annuler', style: 'cancel' },
-          {
-            text: 'Saisie libre',
-            onPress: () => {
-              setPendingBarcodeHint(code);
-              handleAddManualPrestation();
-            },
-          },
-          {
-            text: 'Photo produit',
-            onPress: () => {
-              if (!ensureAiAccess()) return;
-              setPendingBarcodeHint(code);
-              void handleSourceSelection(Platform.OS === 'web' ? 'gallery' : 'camera', code);
-            },
-          },
-        ],
-      );
-    } catch (error) {
-      showError(readAiErrorMessage(error));
+    } finally {
+      setIsDownloadingTemplate(false);
     }
   }
 
   async function handleImportSpreadsheet() {
+    setExcelImportVisible(false);
     try {
       const picked = await DocumentPicker.getDocumentAsync({
         type: [
@@ -260,6 +200,7 @@ export function QuoteAddLinesStep({
         return;
       }
 
+      analysisAbortRef.current = false;
       setAnalysisImageUri(selected.uri);
       setIsAnalyzing(true);
       setAnalysisProgress(0.1);
@@ -270,6 +211,10 @@ export function QuoteAddLinesStep({
         mimeType: selected.mimeType,
         barcodeHint: barcodeHint ?? pendingBarcodeHint ?? undefined,
       });
+
+      if (analysisAbortRef.current) {
+        return;
+      }
 
       setAnalysisProgress(1);
       const products =
@@ -287,9 +232,12 @@ export function QuoteAddLinesStep({
       }
       setPendingBarcodeHint(null);
     } catch (error) {
+      if (analysisAbortRef.current) {
+        return;
+      }
       const message = readAiErrorMessage(error);
 
-      if (message.includes('Permission caméra bloquée')) {
+      if (message.includes('Permission caméra bloquée') || message.toLowerCase().includes('caméra')) {
         Alert.alert('Caméra requise', message, [
           { text: 'Annuler', style: 'cancel' },
           {
@@ -306,6 +254,13 @@ export function QuoteAddLinesStep({
       clearProgressTimer(progressTimerRef);
       setIsAnalyzing(false);
     }
+  }
+
+  function handleCancelAnalysis() {
+    analysisAbortRef.current = true;
+    clearProgressTimer(progressTimerRef);
+    setIsAnalyzing(false);
+    setAnalysisImageUri(null);
   }
 
   function handleCloseConfirmationModal() {
@@ -409,14 +364,6 @@ export function QuoteAddLinesStep({
 
   const modals = (
     <>
-      {actionSheetNode}
-      <FeatureIntroModal
-        config={scannerIntro.config}
-        onClose={scannerIntro.onClose}
-        onCta={scannerIntro.onCta}
-        onDontShowAgain={scannerIntro.onDontShowAgain}
-        visible={scannerIntro.visible}
-      />
       <FeatureIntroModal
         config={aiIntro.config}
         onClose={aiIntro.onClose}
@@ -424,20 +371,21 @@ export function QuoteAddLinesStep({
         onDontShowAgain={aiIntro.onDontShowAgain}
         visible={aiIntro.visible}
       />
-      <ProductAnalysisLoadingModal progress={analysisProgress} visible={isAnalyzing} />
-      <ProductBarcodeScannerModal
-        visible={barcodeScannerVisible}
-        onBarcode={(code) => {
-          void handleBarcode(code);
+      <ProductAnalysisLoadingModal
+        onCancel={handleCancelAnalysis}
+        progress={analysisProgress}
+        visible={isAnalyzing}
+      />
+      <ExcelImportSheet
+        downloading={isDownloadingTemplate}
+        onClose={() => setExcelImportVisible(false)}
+        onDownloadTemplate={() => {
+          void handleDownloadTemplate();
         }}
-        onClose={() => setBarcodeScannerVisible(false)}
-        onFallbackPhotoSearch={() => {
-          setBarcodeScannerVisible(false);
-          if (!ensureAiAccess()) return;
-          aiIntro.runWithIntro(() => {
-            void handleSourceSelection(Platform.OS === 'web' ? 'gallery' : 'camera');
-          });
+        onPickFile={() => {
+          void handleImportSpreadsheet();
         }}
+        visible={excelImportVisible}
       />
       <ProductCatalogPickerModal
         onClose={() => setCatalogPickerVisible(false)}
@@ -455,7 +403,7 @@ export function QuoteAddLinesStep({
           }}
           onScanNext={() => {
             handleCloseConfirmationModal();
-            handleScanBarcode();
+            handleOpenPhotoAi();
           }}
           value={analysisDraft}
           visible
@@ -482,7 +430,7 @@ export function QuoteAddLinesStep({
       <Text style={styles.description}>Ajoutez vos prestations.</Text>
 
       <View style={styles.entryRow}>
-        <AddEntryButton icon="barcode.viewfinder" label="Scanner" onPress={handleScanBarcode} />
+        <AddEntryButton icon="camera.fill" label="Photo IA" onPress={handleOpenPhotoAi} />
         <AddEntryButton icon="square.grid.2x2" label="Catalogue" onPress={handleOpenCatalog} />
         <AddEntryButton
           icon="square.and.pencil"
@@ -493,11 +441,18 @@ export function QuoteAddLinesStep({
 
       <Pressable
         accessibilityRole="button"
-        hitSlop={8}
-        onPress={handleMoreOptions}
-        style={styles.moreOptions}>
-        <Text style={styles.moreOptionsText}>Photo IA, import Excel…</Text>
+        onPress={handleOpenExcelImport}
+        style={({ pressed }) => [styles.excelEntry, pressed && styles.excelEntryPressed]}>
+        <View style={styles.excelEntryText}>
+          <Text style={styles.featureHintTitle}>Importer Excel</Text>
+          <Text style={styles.featureHintBody}>Importez plusieurs données rapidement.</Text>
+        </View>
       </Pressable>
+
+      <View style={styles.featureHints}>
+        <Text style={styles.featureHintTitle}>Photo IA</Text>
+        <Text style={styles.featureHintBody}>Analysez automatiquement vos documents.</Text>
+      </View>
 
       <View style={styles.prestationsHeader}>
         <Text style={styles.sectionLabel}>Prestations ({lines.length})</Text>
@@ -512,7 +467,7 @@ export function QuoteAddLinesStep({
           {listHeader}
           <View style={styles.emptyPrestations}>
             <Text style={styles.emptyPrestationsText}>
-              Scannez, choisissez dans le catalogue ou saisissez librement pour commencer.
+              Prenez une photo, importez Excel, choisissez dans le catalogue ou saisissez librement.
             </Text>
           </View>
         </View>
@@ -616,14 +571,31 @@ function useStyles() {
       flexDirection: 'row',
       gap: spacing.sm,
     },
-    moreOptions: {
-      alignSelf: 'center',
-      minHeight: 32,
-      justifyContent: 'center',
+    excelEntry: {
+      borderRadius: radius.card,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surface,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.md,
     },
-    moreOptionsText: {
+    excelEntryPressed: {
+      backgroundColor: colors.surfaceSecondary,
+    },
+    excelEntryText: {
+      gap: 2,
+    },
+    featureHints: {
+      gap: 2,
+      paddingVertical: spacing.xs,
+    },
+    featureHintTitle: {
       ...typography.footnoteMedium,
-      color: colors.primary,
+      color: colors.text,
+    },
+    featureHintBody: {
+      ...typography.caption1,
+      color: colors.textSecondary,
     },
     sectionLabel: {
       ...typography.footnoteMedium,
