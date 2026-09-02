@@ -120,14 +120,15 @@ export function ClientCompanyLookup({ control, errors, setValue }: ClientCompany
       description={
         sirenSearchEnabled
           ? 'Saisissez un SIREN (9 chiffres) ou un SIRET (14 chiffres) pour remplir automatiquement les informations de l’entreprise.'
-          : 'La saisie manuelle reste possible. La recherche automatique est incluse dans INVEQ Premium.'
+          : 'La saisie manuelle reste possible. La recherche automatique est incluse à partir de l’offre Basique.'
       }
       title="Recherche entreprise">
       {!sirenSearchEnabled ? (
         <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-          <p className="font-medium">Recherche SIREN / SIRET — INVEQ Premium</p>
+          <p className="font-medium">Recherche SIREN / SIRET — à partir de Basique</p>
           <p className="mt-1 text-amber-800/90">
-            Passez à Premium pour préremplir automatiquement les informations entreprise.{' '}
+            Passez à Basique, Standard ou Pro pour préremplir automatiquement les informations
+            entreprise.{' '}
             <Link className="font-medium underline underline-offset-2" href="/app/settings/subscription">
               Voir l’abonnement
             </Link>

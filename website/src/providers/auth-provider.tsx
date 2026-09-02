@@ -11,6 +11,7 @@ import {
   type PropsWithChildren,
 } from 'react';
 
+import { isSafeAppRedirect } from '@/lib/constants';
 import { supabase } from '@/lib/supabase';
 import { getAuthCallbackUrl } from '@/lib/site-url';
 
@@ -31,7 +32,7 @@ type AuthContextValue = {
   loading: boolean;
   signIn: (params: SignInParams) => Promise<AuthResult>;
   signUp: (params: SignUpParams) => Promise<AuthResult>;
-  signInWithGoogle: () => Promise<AuthResult>;
+  signInWithGoogle: (next?: string | null) => Promise<AuthResult>;
   signOut: () => Promise<AuthResult>;
   resetPassword: (email: string) => Promise<AuthResult>;
   updatePassword: (password: string) => Promise<AuthResult>;
@@ -109,12 +110,12 @@ export function AuthProvider({ children }: PropsWithChildren) {
     [],
   );
 
-  const signInWithGoogle = useCallback(async () => {
+  const signInWithGoogle = useCallback(async (next?: string | null) => {
+    const redirectNext = isSafeAppRedirect(next) ? next : undefined;
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        // URL propre (sans ?next=) — plus fiable avec la allowlist Supabase
-        redirectTo: getAuthCallbackUrl(),
+        redirectTo: getAuthCallbackUrl(redirectNext),
         skipBrowserRedirect: true,
         queryParams: {
           access_type: 'offline',

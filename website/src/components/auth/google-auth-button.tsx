@@ -9,11 +9,13 @@ import { useAuth } from '@/providers/auth-provider';
 type GoogleAuthButtonProps = {
   label?: string;
   className?: string;
+  next?: string | null;
 };
 
 export function GoogleAuthButton({
   label = 'Continuer avec Google',
   className,
+  next,
 }: GoogleAuthButtonProps) {
   const { signInWithGoogle } = useAuth();
   const [loading, setLoading] = useState(false);
@@ -23,7 +25,7 @@ export function GoogleAuthButton({
     setError(null);
     setLoading(true);
     try {
-      const { error: oauthError } = await signInWithGoogle();
+      const { error: oauthError } = await signInWithGoogle(next);
       if (oauthError) {
         setError(getAuthErrorMessage(oauthError.message));
         setLoading(false);

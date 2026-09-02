@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import type { Metadata } from 'next';
 
 import { AuthLayout } from '@/components/auth/auth-layout';
@@ -13,7 +14,9 @@ export default function RegisterPage() {
     <AuthLayout
       subtitle="Créez votre compte en quelques secondes. Aucune carte requise."
       title="Créer un compte">
-      <RegisterForm />
+      <Suspense>
+        <RegisterForm />
+      </Suspense>
     </AuthLayout>
   );
 }

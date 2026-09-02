@@ -9,6 +9,25 @@ export const APP_URL = SITE_URL;
 export const APP_DASHBOARD_URL = '/app';
 export const APP_LOGIN_URL = '/login';
 export const APP_REGISTER_URL = '/register';
+export const APP_SUBSCRIPTION_PATH = '/app/settings/subscription';
+
+export function isSafeAppRedirect(value: string | null | undefined): value is string {
+  return Boolean(
+    value &&
+      value.startsWith('/app') &&
+      !value.startsWith('//') &&
+      !value.includes('\\') &&
+      !value.includes('://'),
+  );
+}
+
+export function getSubscribeLoginUrl(): string {
+  return `${APP_LOGIN_URL}?redirect=${encodeURIComponent(APP_SUBSCRIPTION_PATH)}`;
+}
+
+export function getSubscribeRegisterUrl(): string {
+  return `${APP_REGISTER_URL}?redirect=${encodeURIComponent(APP_SUBSCRIPTION_PATH)}`;
+}
 
 export const CONTACT_EMAIL =
   process.env.NEXT_PUBLIC_CONTACT_EMAIL?.trim() || 'farouqdib@gmail.com';

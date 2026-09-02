@@ -10,6 +10,7 @@ import { AuthDivider, GoogleAuthButton } from '@/components/auth/google-auth-but
 import { getAuthErrorMessage } from '@/lib/domain/auth/errors';
 import { getPostAuthPath } from '@/lib/domain/auth/post-auth';
 import { loginSchema, type LoginFormValues } from '@/lib/domain/validations/login';
+import { isSafeAppRedirect } from '@/lib/constants';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/providers/auth-provider';
 
@@ -46,10 +47,7 @@ export function LoginForm() {
 
       await new Promise((resolve) => setTimeout(resolve, 100));
       const path = await getPostAuthPath(session.user.id);
-      const dest =
-        path === '/app' && requestedRedirect?.startsWith('/app')
-          ? requestedRedirect
-          : path;
+      const dest = path === '/app' && isSafeAppRedirect(requestedRedirect) ? requestedRedirect : path;
       window.location.href = dest;
     } catch {
       setFormError('Erreur de connexion. Vérifiez votre connexion internet.');
@@ -58,7 +56,7 @@ export function LoginForm() {
 
   return (
     <div className="space-y-1">
-      <GoogleAuthButton />
+      <GoogleAuthButton next={requestedRedirect} />
       <AuthDivider />
 
       <form className="space-y-5" onSubmit={handleSubmit(onSubmit)}>
@@ -119,7 +117,13 @@ export function LoginForm() {
 
         <p className="text-center text-sm text-slate-500">
           Pas encore de compte ?{' '}
-          <Link className="font-semibold text-primary hover:underline" href="/register">
+          <Link
+            className="font-semibold text-primary hover:underline"
+            href={
+              isSafeAppRedirect(requestedRedirect)
+                ? `/register?redirect=${encodeURIComponent(requestedRedirect)}`
+                : '/register'
+            }>
             Créer un compte
           </Link>
         </p>

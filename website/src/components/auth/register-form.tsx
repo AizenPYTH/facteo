@@ -3,6 +3,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Eye, EyeOff, RefreshCw } from 'lucide-react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 
@@ -10,6 +11,7 @@ import { AuthDivider, GoogleAuthButton } from '@/components/auth/google-auth-but
 import { getAuthErrorMessage } from '@/lib/domain/auth/errors';
 import { getPostAuthPath } from '@/lib/domain/auth/post-auth';
 import { registerSchema, type RegisterFormValues } from '@/lib/domain/validations/register';
+import { isSafeAppRedirect } from '@/lib/constants';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/providers/auth-provider';
 
@@ -22,7 +24,9 @@ function generateSecurePassword(length = 16): string {
 }
 
 export function RegisterForm() {
+  const searchParams = useSearchParams();
   const { signUp } = useAuth();
+  const requestedRedirect = searchParams.get('redirect');
   const [formError, setFormError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -105,7 +109,8 @@ export function RegisterForm() {
     }
     if (session?.user) {
       const path = await getPostAuthPath(session.user.id);
-      window.location.href = path;
+      const dest = path === '/app' && isSafeAppRedirect(requestedRedirect) ? requestedRedirect : path;
+      window.location.href = dest;
       return;
     }
     setSuccess(true);
@@ -131,7 +136,7 @@ export function RegisterForm() {
 
   return (
     <div className="space-y-1">
-      <GoogleAuthButton label="S’inscrire avec Google" />
+      <GoogleAuthButton label="S’inscrire avec Google" next={requestedRedirect} />
       <AuthDivider />
 
       <form className="space-y-6" onSubmit={handleSubmit(onSubmit)} autoComplete="on">
@@ -289,7 +294,13 @@ export function RegisterForm() {
 
         <p className="text-center text-sm text-slate-500">
           Déjà un compte ?{' '}
-          <Link className="font-semibold text-primary hover:underline" href="/login">
+          <Link
+            className="font-semibold text-primary hover:underline"
+            href={
+              isSafeAppRedirect(requestedRedirect)
+                ? `/login?redirect=${encodeURIComponent(requestedRedirect)}`
+                : '/login'
+            }>
             Se connecter
           </Link>
         </p>
