@@ -119,23 +119,41 @@ export function AppSidebar() {
 export function AppTopBar({
   title,
   subtitle,
+  count,
+  toolbar,
   children,
 }: {
   title: string;
   subtitle?: string;
+  count?: number | string | null;
+  toolbar?: React.ReactNode;
   children?: React.ReactNode;
 }) {
   return (
-    <header className="flex items-center justify-between border-b border-slate-200/90 bg-white/95 px-6 py-4 backdrop-blur-sm sm:px-8 sm:py-5">
-      <div className="min-w-0">
-        <h1 className="truncate text-xl font-semibold tracking-tight text-slate-900 sm:text-2xl">
-          {title}
-        </h1>
-        {subtitle ? (
-          <p className="mt-0.5 truncate text-sm text-slate-500">{subtitle}</p>
-        ) : null}
+    <header className="shrink-0 border-b border-app-border bg-app-surface">
+      <div className="flex min-h-16 flex-wrap items-center justify-between gap-x-4 gap-y-2 px-4 py-3.5 sm:px-6">
+        <div className="min-w-0">
+          <div className="flex min-w-0 items-center gap-2">
+            <h1 className="truncate text-[19px] font-semibold tracking-[-0.01em] text-app-text">
+              {title}
+            </h1>
+            {count !== undefined && count !== null ? (
+              <span className="app-num shrink-0 rounded-app-chip bg-app-border-soft px-2 py-0.5 text-[11px] font-semibold text-app-muted">
+                {count}
+              </span>
+            ) : null}
+          </div>
+          {subtitle ? (
+            <p className="mt-0.5 truncate text-[13px] text-app-muted">{subtitle}</p>
+          ) : null}
+        </div>
+        {children ? <div className="flex shrink-0 items-center gap-2">{children}</div> : null}
       </div>
-      {children ? <div className="ml-4 flex shrink-0 items-center gap-2">{children}</div> : null}
+      {toolbar ? (
+        <div className="flex flex-wrap items-center gap-2 border-t border-app-border-soft px-4 py-2.5 sm:px-6">
+          {toolbar}
+        </div>
+      ) : null}
     </header>
   );
 }
@@ -151,9 +169,9 @@ export function AppSearchInput({
 }) {
   return (
     <div className="relative">
-      <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+      <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-app-faint" size={16} />
       <input
-        className="w-full rounded-xl border border-slate-200/90 bg-white py-2.5 pl-9 pr-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-primary focus:ring-2 focus:ring-primary/20"
+        className="w-full rounded-app-control border border-app-border bg-app-subtle py-[9px] pl-9 pr-3 text-[13px] text-app-text outline-none transition-[background-color,border-color,box-shadow] duration-150 placeholder:text-app-faint focus:border-app-accent focus:bg-app-surface focus:ring-2 focus:ring-app-accent/15"
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         type="search"
