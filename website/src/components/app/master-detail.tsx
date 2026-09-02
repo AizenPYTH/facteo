@@ -130,8 +130,8 @@ export function MasterDetailLayout({
       {detailOpen && docked ? (
         <aside
           aria-label={detailTitle}
-          className="sb flex w-[392px] shrink-0 flex-col overflow-y-auto border-l border-app-border bg-app-surface">
-          {detail}
+          className="flex w-[392px] shrink-0 flex-col overflow-hidden border-l border-app-border bg-app-surface">
+          <div className="sb min-h-0 flex-1 overflow-y-auto">{detail}</div>
         </aside>
       ) : null}
 
