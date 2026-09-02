@@ -8,10 +8,13 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { BrandWordmark } from '@/components/brand/brand-logo';
 import { NAV_LINKS } from '@/lib/content';
-import { APP_LOGIN_URL, APP_REGISTER_URL } from '@/lib/constants';
+import { APP_LOGIN_URL, APP_REGISTER_URL, APP_SUBSCRIPTION_PATH } from '@/lib/constants';
+import { useAuth } from '@/providers/auth-provider';
 
 export function SiteHeader() {
   const [open, setOpen] = useState(false);
+  const { user } = useAuth();
+  const signedIn = Boolean(user);
 
   return (
     <header className="glass sticky top-0 z-50">
@@ -32,12 +35,21 @@ export function SiteHeader() {
         </nav>
 
         <div className="hidden items-center gap-3 md:flex">
-          <Button href={APP_LOGIN_URL} variant="ghost">
-            Se connecter
-          </Button>
-          <Button href={APP_REGISTER_URL}>
-            Commencer gratuitement
-          </Button>
+          {signedIn ? (
+            <>
+              <Button href="/app" variant="ghost">
+                Mon espace
+              </Button>
+              <Button href={APP_SUBSCRIPTION_PATH}>Offres et paiement</Button>
+            </>
+          ) : (
+            <>
+              <Button href={APP_LOGIN_URL} variant="ghost">
+                Se connecter
+              </Button>
+              <Button href={APP_REGISTER_URL}>Commencer gratuitement</Button>
+            </>
+          )}
         </div>
 
         <button
@@ -67,12 +79,21 @@ export function SiteHeader() {
                 </Link>
               ))}
               <div className="mt-2 flex flex-col gap-2 border-t border-border pt-4">
-                <Button href={APP_LOGIN_URL} variant="secondary">
-                  Se connecter
-                </Button>
-                <Button href={APP_REGISTER_URL}>
-                  Commencer gratuitement
-                </Button>
+                {signedIn ? (
+                  <>
+                    <Button href="/app" variant="secondary">
+                      Mon espace
+                    </Button>
+                    <Button href={APP_SUBSCRIPTION_PATH}>Offres et paiement</Button>
+                  </>
+                ) : (
+                  <>
+                    <Button href={APP_LOGIN_URL} variant="secondary">
+                      Se connecter
+                    </Button>
+                    <Button href={APP_REGISTER_URL}>Commencer gratuitement</Button>
+                  </>
+                )}
               </div>
             </nav>
           </motion.div>

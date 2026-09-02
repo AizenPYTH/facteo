@@ -102,7 +102,9 @@ export async function resolvePostAuthDestination(
   }
 
   if (onboardingCompleted) {
-    if (preferredNext?.startsWith('/app')) return preferredNext;
+    if (preferredNext && preferredNext.startsWith('/app') && !preferredNext.startsWith('//')) {
+      return preferredNext;
+    }
     return '/app';
   }
 

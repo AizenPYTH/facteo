@@ -22,8 +22,13 @@ import { AnimatePresence, motion } from 'framer-motion';
 
 import { Button } from '@/components/ui/button';
 import { Stagger, StaggerItem } from '@/components/ui/fade-in';
-import { APP_REGISTER_URL } from '@/lib/constants';
+import {
+  APP_REGISTER_URL,
+  APP_SUBSCRIPTION_PATH,
+  getSubscribeLoginUrl,
+} from '@/lib/constants';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/providers/auth-provider';
 import {
   formatPriceHt,
   getInheritLabel,
@@ -170,9 +175,33 @@ function PlanPrice({ plan, interval }: { plan: SubscriptionPlan; interval: Billi
   );
 }
 
-function PlanCard({ plan, interval }: { plan: SubscriptionPlan; interval: BillingInterval }) {
+function planCta(plan: SubscriptionPlan, signedIn: boolean): { href: string; label: string } {
+  if (signedIn) {
+    if (plan.id === 'micro') {
+      return { href: '/app', label: 'Continuer avec Micro' };
+    }
+    return { href: APP_SUBSCRIPTION_PATH, label: `Payer ${plan.name}` };
+  }
+
+  if (plan.id === 'micro') {
+    return { href: APP_REGISTER_URL, label: plan.cta };
+  }
+
+  return { href: getSubscribeLoginUrl(), label: plan.cta };
+}
+
+function PlanCard({
+  plan,
+  interval,
+  signedIn,
+}: {
+  plan: SubscriptionPlan;
+  interval: BillingInterval;
+  signedIn: boolean;
+}) {
   const inheritLabel = getInheritLabel(plan);
   const badge = plan.badge ?? (plan.highlighted ? SUBSCRIPTION_PRICING_COPY.popularBadge : null);
+  const cta = planCta(plan, signedIn);
 
   return (
     <div
@@ -196,10 +225,8 @@ function PlanCard({ plan, interval }: { plan: SubscriptionPlan; interval: Billin
       <PlanPrice interval={interval} plan={plan} />
 
       <div className="mt-6 w-full [&_a]:w-full [&_div]:w-full">
-        <Button
-          href={APP_REGISTER_URL}
-          variant={plan.highlighted ? 'primary' : 'secondary'}>
-          {plan.cta}
+        <Button href={cta.href} variant={plan.highlighted ? 'primary' : 'secondary'}>
+          {cta.label}
         </Button>
       </div>
 
@@ -244,6 +271,8 @@ type PricingSectionProps = {
 };
 
 export function PricingSection({ showHeader = false }: PricingSectionProps) {
+  const { user, loading } = useAuth();
+  const signedIn = Boolean(user);
   const [billingInterval, setBillingInterval] = useState<BillingInterval>('monthly');
   const maxSavings = getMaxYearlySavingsPercent();
 
@@ -254,6 +283,16 @@ export function PricingSection({ showHeader = false }: PricingSectionProps) {
           <h2 className="text-3xl font-bold text-foreground">{SUBSCRIPTION_PRICING_COPY.title}</h2>
           <p className="mx-auto mt-3 max-w-2xl text-muted">{SUBSCRIPTION_PRICING_COPY.subtitle}</p>
         </div>
+      ) : null}
+
+      {signedIn ? (
+        <p className="mb-8 text-center text-sm text-foreground">
+          Vous êtes connecté.{' '}
+          <a className="font-semibold text-primary hover:underline" href={APP_SUBSCRIPTION_PATH}>
+            Choisissez une offre et payez en ligne
+          </a>{' '}
+          depuis votre espace.
+        </p>
       ) : null}
 
       <div className="mb-10 flex justify-center">
@@ -267,10 +306,15 @@ export function PricingSection({ showHeader = false }: PricingSectionProps) {
       <Stagger className="mx-auto grid max-w-6xl gap-5 sm:grid-cols-2 xl:grid-cols-4">
         {SUBSCRIPTION_PLANS.map((plan) => (
           <StaggerItem key={plan.id}>
-            <PlanCard interval={billingInterval} plan={plan} />
+            <PlanCard interval={billingInterval} plan={plan} signedIn={signedIn && !loading} />
           </StaggerItem>
         ))}
       </Stagger>
+
+      <p className="mx-auto mt-8 max-w-2xl text-center text-sm text-muted">
+        Le paiement en ligne (Stripe) est mensuel, sans engagement. Les montants « annuel » indiquent
+        l’équivalent mensuel ; la souscription web facture l’offre au mois.
+      </p>
     </div>
   );
 }

@@ -54,8 +54,10 @@ export default function TemplatesSettingsPage() {
             Les modèles PDF sont disponibles à partir de l’offre Basique. Passez à une offre
             supérieure pour personnaliser vos documents.
           </p>
-          <Link className="mt-3 inline-block text-[13px] font-semibold text-app-accent hover:underline" href="/tarifs">
-            Voir les offres
+          <Link
+            className="mt-3 inline-block text-[13px] font-semibold text-app-accent hover:underline"
+            href="/app/settings/subscription">
+            Voir les offres et payer
           </Link>
         </Panel>
       ) : null}

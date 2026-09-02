@@ -1,21 +1,20 @@
 import Stripe from 'https://esm.sh/stripe@17.7.0?target=deno';
-import { createClient, type SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
+import { type SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
 
-export type SubscriptionPlanId = 'free' | 'premium';
+import { resolvePlanId, type CatalogPlanId, type SubscriptionPlanId } from './subscription-plan-id.ts';
 
-export function resolveStripePriceId(
-  planStripePriceId: string | null | undefined,
-  fallbackEnvKey = 'STRIPE_PREMIUM_PRICE_ID',
-): string | null {
-  const fromPlan = planStripePriceId?.trim();
-
-  if (fromPlan) {
-    return fromPlan;
-  }
-
-  const fromEnv = Deno.env.get(fallbackEnvKey)?.trim();
-  return fromEnv || null;
-}
+export {
+  isPaidPlanId,
+  isPaidSubscriptionStatus,
+  normalizeRequestedPlanId,
+  PAID_PLAN_IDS,
+  resolvePlanId,
+  resolveStripePriceId,
+  resolveStripePriceIdFromEnv,
+  type CatalogPlanId,
+  type PaidPlanId,
+  type SubscriptionPlanId,
+} from './subscription-plan-id.ts';
 
 export function mapStripeSubscriptionStatus(
   status: Stripe.Subscription.Status,
@@ -43,10 +42,6 @@ export function toIso(unixSeconds: number | null | undefined): string | null {
   }
 
   return new Date(unixSeconds * 1000).toISOString();
-}
-
-export function resolvePlanId(metadataPlanId: string | undefined): SubscriptionPlanId {
-  return metadataPlanId === 'free' ? 'free' : 'premium';
 }
 
 export function isPaidCheckoutSession(session: Stripe.Checkout.Session): boolean {
@@ -79,11 +74,11 @@ export async function findUserIdForSubscription(
   return data?.user_id ?? null;
 }
 
-export async function applyPremiumSubscription(
+export async function applyPaidSubscription(
   serviceClient: SupabaseClient,
   input: {
     userId: string;
-    planId?: SubscriptionPlanId;
+    planId: CatalogPlanId;
     status?: 'active' | 'trialing' | 'past_due' | 'canceled' | 'unpaid' | 'incomplete';
     stripeCustomerId?: string | null;
     stripeSubscriptionId?: string | null;
@@ -93,12 +88,11 @@ export async function applyPremiumSubscription(
   },
 ): Promise<void> {
   const now = new Date().toISOString();
-  const planId = input.planId ?? 'premium';
 
   const { error } = await serviceClient
     .from('subscriptions')
     .update({
-      plan: planId,
+      plan: input.planId,
       status: input.status ?? 'active',
       stripe_customer_id: input.stripeCustomerId ?? null,
       stripe_subscription_id: input.stripeSubscriptionId ?? null,
@@ -114,7 +108,27 @@ export async function applyPremiumSubscription(
   }
 }
 
-export async function applyStandardSubscription(
+/** @deprecated Utiliser applyPaidSubscription */
+export async function applyPremiumSubscription(
+  serviceClient: SupabaseClient,
+  input: {
+    userId: string;
+    planId?: SubscriptionPlanId;
+    status?: 'active' | 'trialing' | 'past_due' | 'canceled' | 'unpaid' | 'incomplete';
+    stripeCustomerId?: string | null;
+    stripeSubscriptionId?: string | null;
+    currentPeriodStart?: string | null;
+    currentPeriodEnd?: string | null;
+    cancelAtPeriodEnd?: boolean;
+  },
+): Promise<void> {
+  await applyPaidSubscription(serviceClient, {
+    ...input,
+    planId: resolvePlanId(input.planId, input.status ?? 'active'),
+  });
+}
+
+export async function applyFreeSubscription(
   serviceClient: SupabaseClient,
   input: {
     userId: string;
@@ -145,11 +159,14 @@ export async function applyStandardSubscription(
   }
 }
 
+/** @deprecated Utiliser applyFreeSubscription */
+export const applyStandardSubscription = applyFreeSubscription;
+
 export async function syncSubscriptionCheckoutSession(
   stripe: Stripe,
   serviceClient: SupabaseClient,
   session: Stripe.Checkout.Session,
-): Promise<{ userId: string; planId: SubscriptionPlanId }> {
+): Promise<{ userId: string; planId: CatalogPlanId }> {
   if (session.mode !== 'subscription') {
     throw new Error('Not a subscription checkout session.');
   }
@@ -159,7 +176,7 @@ export async function syncSubscriptionCheckoutSession(
   }
 
   const userId = session.metadata?.user_id ?? session.client_reference_id ?? null;
-  const planId = resolvePlanId(session.metadata?.plan_id);
+  const planId = resolvePlanId(session.metadata?.plan_id, 'active');
 
   if (!userId) {
     throw new Error('Missing user reference on checkout session.');
@@ -183,7 +200,7 @@ export async function syncSubscriptionCheckoutSession(
     status = subscription.status === 'trialing' ? 'trialing' : 'active';
   }
 
-  await applyPremiumSubscription(serviceClient, {
+  await applyPaidSubscription(serviceClient, {
     userId,
     planId,
     status,
@@ -208,11 +225,11 @@ export async function syncStripeSubscriptionObject(
   }
 
   const mappedStatus = mapStripeSubscriptionStatus(subscription.status);
-  const isPremium = subscription.status === 'active' || subscription.status === 'trialing';
-  const planId = isPremium ? resolvePlanId(subscription.metadata?.plan_id) : 'free';
+  const isPaid = subscription.status === 'active' || subscription.status === 'trialing';
+  const planId = resolvePlanId(subscription.metadata?.plan_id, subscription.status);
 
-  if (isPremium) {
-    await applyPremiumSubscription(serviceClient, {
+  if (isPaid) {
+    await applyPaidSubscription(serviceClient, {
       userId,
       planId,
       status: mappedStatus,
@@ -226,7 +243,7 @@ export async function syncStripeSubscriptionObject(
     return;
   }
 
-  await applyStandardSubscription(serviceClient, {
+  await applyFreeSubscription(serviceClient, {
     userId,
     status: mappedStatus,
     stripeSubscriptionId: subscription.id,
