@@ -1,14 +1,14 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useEffect } from 'react';
 import { Controller, useForm } from 'react-hook-form';
-import { KeyboardAvoidingView, Platform, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { z } from 'zod';
 
 import { SettingsScreenFrame } from '@/components/web/desktop/settings-screen-frame';
 import { Button } from '@/components/ui/button';
 import { LoadingView } from '@/components/ui/loading-view';
 import { TextField } from '@/components/ui/text-field';
-import { useColors, useThemedStyles } from '@/hooks/use-colors';
+import { useThemedStyles } from '@/hooks/use-colors';
 import { spacing } from '@/constants/theme/spacing';
 import { useSettings, useUpdateSettings } from '@/hooks/use-settings';
 import { useToast } from '@/providers/toast-provider';
@@ -33,7 +33,6 @@ type NumberingFormValues = z.infer<typeof numberingSchema>;
 
 export default function NumberingSettingsScreen() {
   const styles = useStyles();
-  const colors = useColors();
   const { data, isLoading } = useSettings();
   const updateSettings = useUpdateSettings();
   const { showError, showSuccess } = useToast();
@@ -90,96 +89,86 @@ export default function NumberingSettingsScreen() {
   }
 
   return (
-    <SettingsScreenFrame scrollable={false} title="Numérotation">
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.flex}>
-        <View style={styles.content}>
-          <Controller
-            control={control}
-            name="quotePrefix"
-            render={({ field: { onChange, onBlur, value } }) => (
-              <TextField
-                autoCapitalize="characters"
-                error={errors.quotePrefix?.message}
-                label="Préfixe devis"
-                onBlur={onBlur}
-                onChangeText={onChange}
-                placeholder="DEV"
-                value={value}
-              />
-            )}
-          />
-          <Controller
-            control={control}
-            name="nextQuoteNumber"
-            render={({ field: { onChange, onBlur, value } }) => (
-              <TextField
-                error={errors.nextQuoteNumber?.message}
-                keyboardType="number-pad"
-                label="Prochain numéro devis"
-                onBlur={onBlur}
-                onChangeText={onChange}
-                placeholder="1"
-                value={value}
-              />
-            )}
-          />
-          <Controller
-            control={control}
-            name="invoicePrefix"
-            render={({ field: { onChange, onBlur, value } }) => (
-              <TextField
-                autoCapitalize="characters"
-                error={errors.invoicePrefix?.message}
-                label="Préfixe facture"
-                onBlur={onBlur}
-                onChangeText={onChange}
-                placeholder="FAC"
-                value={value}
-              />
-            )}
-          />
-          <Controller
-            control={control}
-            name="nextInvoiceNumber"
-            render={({ field: { onChange, onBlur, value } }) => (
-              <TextField
-                error={errors.nextInvoiceNumber?.message}
-                keyboardType="number-pad"
-                label="Prochain numéro facture"
-                onBlur={onBlur}
-                onChangeText={onChange}
-                placeholder="1"
-                value={value}
-              />
-            )}
-          />
-
-          <View style={styles.actions}>
-            <Button
-              disabled={!isDirty}
-              loading={isSubmitting || updateSettings.isPending}
-              onPress={handleSubmit(onSubmit)}
-              title="Enregistrer"
+    <SettingsScreenFrame
+      footer={
+        <Button
+          disabled={!isDirty}
+          loading={isSubmitting || updateSettings.isPending}
+          onPress={handleSubmit(onSubmit)}
+          title="Enregistrer"
+        />
+      }
+      title="Numérotation">
+      <View style={styles.content}>
+        <Controller
+          control={control}
+          name="quotePrefix"
+          render={({ field: { onChange, onBlur, value } }) => (
+            <TextField
+              autoCapitalize="characters"
+              error={errors.quotePrefix?.message}
+              label="Préfixe devis"
+              onBlur={onBlur}
+              onChangeText={onChange}
+              placeholder="DEV"
+              value={value}
             />
-          </View>
-        </View>
-      </KeyboardAvoidingView>
+          )}
+        />
+        <Controller
+          control={control}
+          name="nextQuoteNumber"
+          render={({ field: { onChange, onBlur, value } }) => (
+            <TextField
+              error={errors.nextQuoteNumber?.message}
+              keyboardType="number-pad"
+              label="Prochain numéro devis"
+              onBlur={onBlur}
+              onChangeText={onChange}
+              placeholder="1"
+              value={value}
+            />
+          )}
+        />
+        <Controller
+          control={control}
+          name="invoicePrefix"
+          render={({ field: { onChange, onBlur, value } }) => (
+            <TextField
+              autoCapitalize="characters"
+              error={errors.invoicePrefix?.message}
+              label="Préfixe facture"
+              onBlur={onBlur}
+              onChangeText={onChange}
+              placeholder="FAC"
+              value={value}
+            />
+          )}
+        />
+        <Controller
+          control={control}
+          name="nextInvoiceNumber"
+          render={({ field: { onChange, onBlur, value } }) => (
+            <TextField
+              error={errors.nextInvoiceNumber?.message}
+              keyboardType="number-pad"
+              label="Prochain numéro facture"
+              onBlur={onBlur}
+              onChangeText={onChange}
+              placeholder="1"
+              value={value}
+            />
+          )}
+        />
+      </View>
     </SettingsScreenFrame>
   );
 }
 
 function useStyles() {
   return useThemedStyles(() => ({
-  flex: {
-    flex: 1,
-  },
-  content: {
-    gap: spacing.lg,
-  },
-  actions: {
-    marginTop: spacing.sm,
-  },
-}));
+    content: {
+      gap: spacing.lg,
+    },
+  }));
 }

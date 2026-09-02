@@ -1,4 +1,4 @@
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
 import { QuoteTotals } from '@/components/quotes/quote-totals';
 import { CollapsibleSection } from '@/components/ui/collapsible-section';
@@ -48,11 +48,7 @@ export function DocumentFinalizeStep({
   }
 
   return (
-    <ScrollView
-      contentContainerStyle={styles.container}
-      keyboardDismissMode="on-drag"
-      keyboardShouldPersistTaps="handled"
-      showsVerticalScrollIndicator={false}>
+    <View style={styles.container}>
       <Text style={styles.description}>
         Vérifiez les informations essentielles avant d’enregistrer.
       </Text>
@@ -148,7 +144,7 @@ export function DocumentFinalizeStep({
           ) : null}
         </View>
       </CollapsibleSection>
-    </ScrollView>
+    </View>
   );
 }
 

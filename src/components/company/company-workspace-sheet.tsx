@@ -1,19 +1,13 @@
 import { Image } from 'expo-image';
 import { SymbolView } from 'expo-symbols';
 import { useState } from 'react';
-import {
-  Alert,
-  Modal,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  TextInput,
-  View,
-} from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Alert, Modal, Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 
 import { AppText } from '@/components/ui/app-text';
 import { Button } from '@/components/ui/button';
+import { StickyFooter } from '@/components/ui/sticky-footer';
+import { KEYBOARD_TOOLBAR_HEIGHT } from '@/components/ui/keyboard/constants';
 import { useCompanyAsset } from '@/hooks/use-company-asset';
 import { useCompanyManagement } from '@/hooks/use-company-management';
 import { useColors, useThemedStyles } from '@/hooks/use-colors';
@@ -49,7 +43,6 @@ export function CompanyWorkspaceSheet({
 }: CompanyWorkspaceSheetProps) {
   const styles = useStyles();
   const colors = useColors();
-  const insets = useSafeAreaInsets();
   const { showError, showSuccess } = useToast();
   const { createCompany, renameCompany, deleteCompany } = useCompanyManagement();
   const { uploadAsset } = useCompanyAsset('logo');
@@ -131,14 +124,20 @@ export function CompanyWorkspaceSheet({
     <Modal animationType="slide" onRequestClose={onClose} transparent visible={visible}>
       <View style={styles.overlay}>
         <Pressable accessibilityLabel="Fermer" onPress={onClose} style={StyleSheet.absoluteFill} />
-        <View style={[styles.sheet, { paddingBottom: Math.max(insets.bottom, spacing.lg) }]}>
+        <View style={styles.sheet}>
           <View style={styles.handle} />
           <AppText variant="title">Espaces de travail</AppText>
           <AppText color="secondary" variant="subtitle">
             Gérez vos entreprises et changez d’espace en un clic.
           </AppText>
 
-          <ScrollView contentContainerStyle={styles.list} showsVerticalScrollIndicator={false}>
+          <KeyboardAwareScrollView
+            bottomOffset={KEYBOARD_TOOLBAR_HEIGHT + 88}
+            contentContainerStyle={styles.list}
+            keyboardDismissMode="on-drag"
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+            style={styles.flex}>
             {companies.map((company) => {
               const isActive = company.id === activeCompany?.id;
               const isEditing = editingId === company.id;
@@ -231,10 +230,12 @@ export function CompanyWorkspaceSheet({
                 </View>
               );
             })}
-          </ScrollView>
+          </KeyboardAwareScrollView>
 
-          <View style={styles.createBlock}>
-            <AppText medium variant="body">Nouvelle entreprise</AppText>
+          <StickyFooter>
+            <AppText medium variant="body">
+              Nouvelle entreprise
+            </AppText>
             <TextInput
               onChangeText={setCreateName}
               placeholder="Nom de l’entreprise"
@@ -243,7 +244,7 @@ export function CompanyWorkspaceSheet({
               value={createName}
             />
             <Button loading={createCompany.isPending} onPress={() => void handleCreate()} title="Créer" />
-          </View>
+          </StickyFooter>
         </View>
       </View>
     </Modal>
@@ -275,6 +276,10 @@ const useStyles = () =>
       gap: spacing.md,
       borderWidth: StyleSheet.hairlineWidth,
       borderColor: colors.border,
+    },
+    flex: {
+      flexGrow: 1,
+      flexShrink: 1,
     },
     handle: {
       alignSelf: 'center',
@@ -328,12 +333,6 @@ const useStyles = () =>
       gap: spacing.xs,
       paddingHorizontal: spacing.md,
       paddingBottom: spacing.md,
-    },
-    createBlock: {
-      gap: spacing.sm,
-      paddingTop: spacing.sm,
-      borderTopWidth: StyleSheet.hairlineWidth,
-      borderTopColor: colors.separator,
     },
     input: {
       borderWidth: StyleSheet.hairlineWidth,

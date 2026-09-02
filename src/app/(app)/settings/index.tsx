@@ -19,6 +19,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { useCompanyProfile } from '@/hooks/use-company-profile';
 import { useSubscription } from '@/hooks/use-subscription';
 import { getAppVersionInfo } from '@/lib/app-version';
+import { getEffectivePlanDisplayName } from '@/lib/subscription/plans';
 import { useThemePreference } from '@/providers/theme-preference-provider';
 import { useToast } from '@/providers/toast-provider';
 
@@ -29,14 +30,14 @@ export default function SettingsScreen() {
   const useDesktopSettings = isWeb && (isDesktop || isTablet);
   const { user, signOut } = useAuth();
   const companyProfile = useCompanyProfile();
-  const { isPremium } = useSubscription();
+  const { subscription } = useSubscription();
   const { preference, setPreference } = useThemePreference();
   const { showSuccess } = useToast();
   const versionInfo = getAppVersionInfo();
 
   const isDarkMode = preference === 'dark';
   const darkModeSupported = Platform.OS !== 'web';
-  const planLabel = isPremium ? 'INVEQ Premium' : 'INVEQ Standard';
+  const planLabel = `INVEQ ${getEffectivePlanDisplayName(subscription?.effectivePlanId ?? 'micro')}`;
 
   async function handleToggleDarkMode(value: boolean) {
     if (!darkModeSupported) {
@@ -103,6 +104,17 @@ export default function SettingsScreen() {
             planLabel={planLabel}
           />
 
+          <SettingsSection title="Compte">
+            <SettingsRow
+              label="Abonnement"
+              onPress={() => router.push('/settings/premium' as Href)}
+            />
+            <View style={styles.separator} />
+            <SettingsRow label="Se déconnecter" onPress={() => void handleLogout()} />
+            <View style={styles.separator} />
+            <SettingsRow destructive label="Supprimer le compte" onPress={handleDeleteAccount} />
+          </SettingsSection>
+
           <SettingsSection title="Entreprise">
             <SettingsRow
               label="Mes entreprises"
@@ -115,7 +127,7 @@ export default function SettingsScreen() {
             />
           </SettingsSection>
 
-          <SettingsSection title="Numérotation & documents">
+          <SettingsSection title="Facturation">
             <SettingsRow
               label="Préfixes et numéros"
               onPress={() => router.push('/settings/numbering' as Href)}
@@ -129,6 +141,21 @@ export default function SettingsScreen() {
             <SettingsRow
               label="Facturation électronique"
               onPress={() => router.push('/settings/e-invoicing' as Href)}
+            />
+            <View style={styles.separator} />
+            <SettingsRow
+              label="Paiements"
+              onPress={() => router.push('/settings/payments' as Href)}
+            />
+            <View style={styles.separator} />
+            <SettingsRow
+              label="Produits"
+              onPress={() => router.push('/settings/catalog?type=product' as Href)}
+            />
+            <View style={styles.separator} />
+            <SettingsRow
+              label="Prestations"
+              onPress={() => router.push('/settings/catalog?type=service' as Href)}
             />
           </SettingsSection>
 
@@ -158,12 +185,6 @@ export default function SettingsScreen() {
                 />
               }
             />
-          </SettingsSection>
-
-          <SettingsSection title="Compte">
-            <SettingsRow label="Se déconnecter" onPress={() => void handleLogout()} />
-            <View style={styles.separator} />
-            <SettingsRow destructive label="Supprimer le compte" onPress={handleDeleteAccount} />
           </SettingsSection>
 
           <SettingsSection title="Aide">

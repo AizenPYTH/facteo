@@ -21,6 +21,11 @@ const ACTIONS = [
     icon: { ios: 'person.badge.plus', android: 'person_add', web: 'person_add' },
     href: '/clients/new' as Href,
   },
+  {
+    label: 'Produit',
+    icon: { ios: 'cube', android: 'inventory_2', web: 'inventory_2' },
+    href: '/settings/catalog?type=product' as Href,
+  },
 ] as const;
 
 export function QuickActions() {

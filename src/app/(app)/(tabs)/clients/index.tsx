@@ -1,18 +1,20 @@
 import { router, type Href } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
   AddClientFab,
   ClientSearchBar,
+  ClientTypeFilterBar,
+  type ClientTypeFilter,
   ClientsList,
   ClientsScreenHeader,
 } from '@/components/clients';
 import { ClientsDesktopScreen } from '@/components/web/desktop/screens/clients-desktop-screen';
 import { BottomTabInset } from '@/constants/theme';
 import { useBreakpoint } from '@/hooks/use-breakpoint';
-import { useColors, useThemedStyles } from '@/hooks/use-colors';
+import { useThemedStyles } from '@/hooks/use-colors';
 import { spacing } from '@/constants/theme/spacing';
 import { useDebouncedValue } from '@/hooks/use-debounced-value';
 import { useInfiniteClients } from '@/hooks/use-clients';
@@ -34,14 +36,15 @@ export default function ClientsScreen() {
 
 function ClientsMobileScreen() {
   const styles = useStyles();
-  const colors = useColors();
   const [search, setSearch] = useState('');
+  const [typeFilter, setTypeFilter] = useState<ClientTypeFilter>('all');
   const debouncedSearch = useDebouncedValue(search, SEARCH_DEBOUNCE_MS);
   const insets = useSafeAreaInsets();
   const { isSwitching } = useTenant();
 
   const {
     clients,
+    data,
     isLoading,
     isRefetching,
     isFetchingNextPage,
@@ -50,9 +53,21 @@ function ClientsMobileScreen() {
     refetch,
   } = useInfiniteClients(debouncedSearch);
 
+  const visibleClients = useMemo(() => {
+    if (typeFilter === 'all') {
+      return clients;
+    }
+
+    return clients.filter((client) => {
+      const isCompany = Boolean(client.company?.trim() || client.siren || client.siret);
+      return typeFilter === 'company' ? isCompany : !isCompany;
+    });
+  }, [clients, typeFilter]);
+
   const isSearching = debouncedSearch.trim().length > 0;
   const isInitialLoading = (isLoading || isSwitching) && clients.length === 0;
-  const showFab = clients.length > 0 || isSearching;
+  const showFab = visibleClients.length > 0 || isSearching || typeFilter !== 'all';
+  const totalCount = data?.pages[0]?.totalCount ?? visibleClients.length;
 
   const handleRefresh = useCallback(() => {
     refetch();
@@ -71,13 +86,14 @@ function ClientsMobileScreen() {
   return (
     <SafeAreaView edges={['top']} style={styles.safeArea}>
       <View style={styles.headerSection}>
-        <ClientsScreenHeader />
+        <ClientsScreenHeader count={totalCount ?? undefined} />
         <ClientSearchBar onChangeText={setSearch} value={search} />
+        <ClientTypeFilterBar onChange={setTypeFilter} value={typeFilter} />
       </View>
 
       <View style={styles.listContainer}>
         <ClientsList
-          clients={clients}
+          clients={visibleClients}
           contentContainerStyle={{
             paddingBottom: insets.bottom + BottomTabInset + FAB_CLEARANCE,
           }}

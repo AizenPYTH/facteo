@@ -15,6 +15,9 @@ export { ClientForm } from './client-form';
 
 export { ClientScreenHeader } from './client-screen-header';
 
+export { ClientTypeFilterBar } from './client-type-filter-bar';
+export type { ClientTypeFilter } from './client-type-filter-bar';
+
 export { ClientSearchBar } from './client-search-bar';
 export type { ClientSearchBarProps } from './client-search-bar';
 

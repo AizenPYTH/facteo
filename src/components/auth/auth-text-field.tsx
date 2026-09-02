@@ -59,6 +59,7 @@ export function AuthTextField({
           accessibilityLabel={accessibilityLabel ?? label}
           autoCapitalize="none"
           autoCorrect={false}
+          blurOnSubmit={false}
           placeholderTextColor={colors.textPlaceholder}
           style={[styles.input, style]}
           {...props}

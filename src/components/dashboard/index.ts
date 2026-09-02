@@ -23,4 +23,5 @@ export { TopPrestationsSection } from './top-prestations-section';
 export { RecentActivitySection } from './recent-activity-section';
 export { QuickActions } from './quick-actions';
 export { RecentInvoicesSection } from './recent-invoices-section';
+export { DashboardTodayTasks } from './dashboard-today-tasks';
 export { SectionHeader } from './section-header';

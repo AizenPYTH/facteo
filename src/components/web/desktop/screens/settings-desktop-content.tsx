@@ -17,6 +17,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { useCompanyProfile } from '@/hooks/use-company-profile';
 import { useSubscription } from '@/hooks/use-subscription';
 import { getAppVersionInfo } from '@/lib/app-version';
+import { getEffectivePlanDisplayName } from '@/lib/subscription/plans';
 import { useThemePreference } from '@/providers/theme-preference-provider';
 import { useToast } from '@/providers/toast-provider';
 
@@ -25,14 +26,14 @@ export function SettingsDesktopContent() {
   const colors = useColors();
   const { user, signOut } = useAuth();
   const companyProfile = useCompanyProfile();
-  const { isPremium } = useSubscription();
+  const { subscription } = useSubscription();
   const { preference, setPreference } = useThemePreference();
   const { showSuccess } = useToast();
   const versionInfo = getAppVersionInfo();
 
   const isDarkMode = preference === 'dark';
   const darkModeSupported = Platform.OS !== 'web';
-  const planLabel = isPremium ? 'INVEQ Premium' : 'INVEQ Standard';
+  const planLabel = `INVEQ ${getEffectivePlanDisplayName(subscription?.effectivePlanId ?? 'micro')}`;
 
   async function handleToggleDarkMode(value: boolean) {
     if (!darkModeSupported) {
@@ -125,6 +126,23 @@ export function SettingsDesktopContent() {
                   value={isDarkMode}
                 />
               }
+            />
+          </SettingsSection>
+
+          <SettingsSection title="Facturation">
+            <SettingsRow
+              label="Paiements"
+              onPress={() => router.push('/settings/payments' as Href)}
+            />
+            <View style={styles.separator} />
+            <SettingsRow
+              label="Produits"
+              onPress={() => router.push('/settings/catalog?type=product' as Href)}
+            />
+            <View style={styles.separator} />
+            <SettingsRow
+              label="Prestations"
+              onPress={() => router.push('/settings/catalog?type=service' as Href)}
             />
           </SettingsSection>
 

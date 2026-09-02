@@ -42,12 +42,19 @@ export default function LoginScreen() {
     <AuthScreen
       error={formError}
       footer={
-        <Button
-          elevated
-          loading={isSubmitting}
-          onPress={handleSubmit(onSubmit)}
-          title="Connexion"
-        />
+        <>
+          <Button
+            elevated
+            loading={isSubmitting}
+            onPress={handleSubmit(onSubmit)}
+            title="Connexion"
+          />
+          <Button
+            onPress={() => router.push('/login-qr' as Href)}
+            title="Se connecter avec un QR code"
+            variant="ghost"
+          />
+        </>
       }
       footerLink={
         <Text style={authScreenStyles.footerText}>

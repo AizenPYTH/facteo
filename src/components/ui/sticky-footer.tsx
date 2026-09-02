@@ -1,13 +1,14 @@
 import type { ReactNode } from 'react';
-import { Platform, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
-import { KeyboardStickyView } from 'react-native-keyboard-controller';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
+import { KeyboardStickyView, useKeyboardState } from 'react-native-keyboard-controller';
 
+import { KEYBOARD_TOOLBAR_HEIGHT } from '@/components/ui/keyboard/constants';
+import { useKeyboardAwareFooterPadding } from '@/components/ui/keyboard/use-keyboard-footer-padding';
 import { useColors, useThemedStyles } from '@/hooks/use-colors';
 import { spacing } from '@/constants/theme/spacing';
 
 export const STICKY_FOOTER_MIN_HEIGHT = 56;
-export const STICKY_FOOTER_TOOLBAR_HEIGHT = 40;
+export const STICKY_FOOTER_TOOLBAR_HEIGHT = 48;
 
 type StickyFooterVariant = 'default' | 'toolbar';
 
@@ -18,13 +19,18 @@ type StickyFooterProps = {
   variant?: StickyFooterVariant;
 };
 
+/**
+ * Espace à réserver sous le contenu scrollable pour qu’il ne passe pas
+ * sous le pied + la toolbar clavier.
+ */
 export function useStickyFooterInset(variant: StickyFooterVariant = 'default'): number {
-  const insets = useSafeAreaInsets();
-  const paddingBottom = Math.max(insets.bottom, Platform.OS === 'ios' ? spacing.sm : spacing.md);
+  const paddingBottom = useKeyboardAwareFooterPadding();
+  const keyboardVisible = useKeyboardState((state) => state.isVisible);
   const contentHeight = variant === 'toolbar' ? STICKY_FOOTER_TOOLBAR_HEIGHT : STICKY_FOOTER_MIN_HEIGHT;
   const topPadding = variant === 'toolbar' ? spacing.xs : spacing.sm;
+  const toolbarSpace = keyboardVisible ? KEYBOARD_TOOLBAR_HEIGHT : 0;
 
-  return contentHeight + topPadding + paddingBottom + StyleSheet.hairlineWidth;
+  return contentHeight + topPadding + paddingBottom + StyleSheet.hairlineWidth + toolbarSpace;
 }
 
 export function StickyFooter({
@@ -35,12 +41,11 @@ export function StickyFooter({
 }: StickyFooterProps) {
   const styles = useStyles(variant);
   const colors = useColors();
-  const insets = useSafeAreaInsets();
-  const paddingBottom = Math.max(insets.bottom, Platform.OS === 'ios' ? spacing.xs : spacing.md);
+  const paddingBottom = useKeyboardAwareFooterPadding();
   const isToolbar = variant === 'toolbar';
 
   return (
-    <KeyboardStickyView offset={{ closed: 0, opened: 0 }}>
+    <KeyboardStickyView offset={{ closed: 0, opened: KEYBOARD_TOOLBAR_HEIGHT }}>
       <View
         style={[
           styles.footer,

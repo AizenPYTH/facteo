@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { KeyboardAwareScrollView, KeyboardToolbar } from 'react-native-keyboard-controller';
 
 import { Button } from '@/components/ui/button';
 import { CollapsibleSection } from '@/components/ui/collapsible-section';
+import { StickyFooter } from '@/components/ui/sticky-footer';
+import { KEYBOARD_TOOLBAR_HEIGHT } from '@/components/ui/keyboard/constants';
 import { TextField } from '@/components/ui/text-field';
 import { useColors, useThemedStyles } from '@/hooks/use-colors';
 import { radius } from '@/constants/theme/radius';
@@ -40,7 +42,6 @@ export function PaymentModal({
 }: PaymentModalProps) {
   const styles = useStyles();
   const colors = useColors();
-  const insets = useSafeAreaInsets();
   const [form, setForm] = useState(createEmptyPaymentForm);
   const [amountError, setAmountError] = useState<string | undefined>();
   const [dateError, setDateError] = useState<string | undefined>();
@@ -87,17 +88,20 @@ export function PaymentModal({
 
   return (
     <Modal animationType="slide" onRequestClose={onCancel} transparent visible={visible}>
-      <Pressable accessibilityRole="button" onPress={onCancel} style={styles.overlay}>
-        <View style={[styles.card, { paddingBottom: Math.max(insets.bottom, spacing.lg) }]}>
-          <Text style={styles.title}>Enregistrer un paiement</Text>
-          <Text style={styles.subtitle}>Reste à payer : {formatPriceHT(maxAmount)}</Text>
+      <View style={styles.overlay}>
+        <Pressable accessibilityRole="button" onPress={onCancel} style={styles.backdrop} />
+        <KeyboardToolbar.Group>
+          <View style={styles.card}>
+            <Text style={styles.title}>Enregistrer un paiement</Text>
+            <Text style={styles.subtitle}>Reste à payer : {formatPriceHT(maxAmount)}</Text>
 
-          <ScrollView
-            contentContainerStyle={styles.form}
-            keyboardDismissMode="on-drag"
-            keyboardShouldPersistTaps="handled"
-            nestedScrollEnabled
-            showsVerticalScrollIndicator={false}>
+            <KeyboardAwareScrollView
+              bottomOffset={88 + KEYBOARD_TOOLBAR_HEIGHT}
+              contentContainerStyle={styles.form}
+              keyboardDismissMode="on-drag"
+              keyboardShouldPersistTaps="handled"
+              nestedScrollEnabled
+              showsVerticalScrollIndicator={false}>
             <TextField
               error={amountError}
               keyboardType="decimal-pad"
@@ -147,14 +151,15 @@ export function PaymentModal({
                 value={form.notes}
               />
             </CollapsibleSection>
-          </ScrollView>
+            </KeyboardAwareScrollView>
 
-          <View style={styles.actions}>
-            <Button onPress={onCancel} title="Annuler" variant="ghost" />
-            <Button loading={loading} onPress={handleConfirm} title="Enregistrer" />
+            <StickyFooter>
+              <Button onPress={onCancel} title="Annuler" variant="ghost" />
+              <Button loading={loading} onPress={handleConfirm} title="Enregistrer" />
+            </StickyFooter>
           </View>
-        </View>
-      </Pressable>
+        </KeyboardToolbar.Group>
+      </View>
     </Modal>
   );
 }
@@ -166,31 +171,31 @@ function useStyles() {
     backgroundColor: 'rgba(0,0,0,0.4)',
     justifyContent: 'flex-end',
   },
+  backdrop: {
+    ...StyleSheet.absoluteFill,
+  },
   card: {
     backgroundColor: colors.surface,
     borderTopLeftRadius: radius.card,
     borderTopRightRadius: radius.card,
-    padding: spacing.lg,
-    gap: spacing.md,
+    paddingTop: spacing.lg,
     maxHeight: '85%',
   },
   title: {
     ...typography.title3,
     color: colors.text,
+    paddingHorizontal: spacing.lg,
   },
   subtitle: {
     ...typography.subheadline,
     color: colors.textSecondary,
+    paddingHorizontal: spacing.lg,
+    marginBottom: spacing.sm,
   },
   form: {
     gap: spacing.md,
+    paddingHorizontal: spacing.lg,
     paddingBottom: spacing.sm,
-  },
-  actions: {
-    gap: spacing.sm,
-    paddingTop: spacing.sm,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.separator,
   },
 }));
 }

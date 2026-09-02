@@ -1,9 +1,11 @@
 import { Image } from 'expo-image';
 import { SymbolView } from 'expo-symbols';
-import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { KeyboardAwareScrollView, KeyboardToolbar } from 'react-native-keyboard-controller';
 
 import { Button } from '@/components/ui/button';
+import { StickyFooter } from '@/components/ui/sticky-footer';
+import { KEYBOARD_TOOLBAR_HEIGHT } from '@/components/ui/keyboard/constants';
 import { TextField } from '@/components/ui/text-field';
 import { useColors, useThemedStyles } from '@/hooks/use-colors';
 import { radius } from '@/constants/theme/radius';
@@ -46,7 +48,6 @@ export function ProductAnalysisConfirmationModal({
 }: ProductAnalysisConfirmationModalProps) {
   const styles = useStyles();
   const colors = useColors();
-  const insets = useSafeAreaInsets();
   const confidencePercent = Math.round(Math.min(100, Math.max(0, value.confidence * 100)));
 
   function updateField<K extends keyof ProductAnalysisDraft>(
@@ -60,7 +61,8 @@ export function ProductAnalysisConfirmationModal({
     <Modal animationType="slide" onRequestClose={onClose} transparent visible={visible}>
       <View style={styles.overlay}>
         <Pressable accessibilityLabel="Fermer" onPress={onClose} style={StyleSheet.absoluteFill} />
-        <View style={[styles.sheet, { paddingBottom: Math.max(insets.bottom, spacing.md) }]}>
+        <KeyboardToolbar.Group>
+        <View style={styles.sheet}>
           <View style={styles.header}>
             <Text style={styles.title}>Vérifier le produit détecté</Text>
             <Text style={styles.subtitle}>Tous les champs sont modifiables avant création.</Text>
@@ -94,7 +96,12 @@ export function ProductAnalysisConfirmationModal({
             <Text style={styles.confidenceText}>Confiance IA : {confidencePercent}%</Text>
           </View>
 
-          <ScrollView contentContainerStyle={styles.form} showsVerticalScrollIndicator={false}>
+          <KeyboardAwareScrollView
+            bottomOffset={96 + KEYBOARD_TOOLBAR_HEIGHT}
+            contentContainerStyle={styles.form}
+            keyboardDismissMode="on-drag"
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}>
             <TextField
               label="Nom"
               onChangeText={(text) => updateField('title', text)}
@@ -183,13 +190,14 @@ export function ProductAnalysisConfirmationModal({
                 />
               </View>
             </View>
-          </ScrollView>
+          </KeyboardAwareScrollView>
 
-          <View style={styles.actions}>
+          <StickyFooter>
             <Button loading={isSaving} onPress={onConfirm} title="Créer le produit" />
             <Button onPress={onClose} title="Annuler" variant="ghost" />
-          </View>
+          </StickyFooter>
         </View>
+        </KeyboardToolbar.Group>
       </View>
     </Modal>
   );
@@ -209,11 +217,11 @@ function useStyles() {
       borderTopRightRadius: radius.sheet,
       borderWidth: StyleSheet.hairlineWidth,
       borderColor: colors.border,
-      padding: spacing.lg,
-      gap: spacing.md,
+      paddingTop: spacing.lg,
     },
     header: {
       gap: spacing.xs,
+      paddingHorizontal: spacing.lg,
     },
     title: {
       ...typography.title3,
@@ -231,6 +239,7 @@ function useStyles() {
       borderColor: colors.border,
       backgroundColor: colors.surfaceSecondary,
       padding: spacing.sm,
+      marginHorizontal: spacing.lg,
     },
     photo: {
       width: 88,
@@ -268,6 +277,7 @@ function useStyles() {
       flexDirection: 'row',
       alignItems: 'center',
       gap: spacing.xs,
+      paddingHorizontal: spacing.lg,
     },
     confidenceText: {
       ...typography.footnoteMedium,
@@ -275,6 +285,7 @@ function useStyles() {
     },
     form: {
       gap: spacing.md,
+      paddingHorizontal: spacing.lg,
       paddingBottom: spacing.sm,
     },
     row: {
@@ -283,9 +294,6 @@ function useStyles() {
     },
     half: {
       flex: 1,
-    },
-    actions: {
-      gap: spacing.xs,
     },
   }));
 }

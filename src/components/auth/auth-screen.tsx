@@ -1,7 +1,6 @@
 import type { ReactNode } from 'react';
 import { Image, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 
 import { FormScreen } from '@/components/ui/form-screen';
@@ -42,13 +41,12 @@ export function AuthScreen({
         style={StyleSheet.absoluteFill}
       />
 
-      <SafeAreaView edges={['top', 'bottom']} style={styles.safeArea}>
-        <FormScreen
-          contentContainerStyle={styles.content}
-          edges={[]}
-          footer={footer}
-          scrollable
-          transparent>
+      <FormScreen
+        contentContainerStyle={styles.content}
+        edges={['top']}
+        footer={footer}
+        scrollable
+        transparent>
           <Animated.View entering={FadeIn.duration(motion.slow)} style={styles.header}>
             <Image
               accessibilityIgnoresInvertColors
@@ -87,7 +85,6 @@ export function AuthScreen({
             </Animated.View>
           ) : null}
         </FormScreen>
-      </SafeAreaView>
     </View>
   );
 }
@@ -98,16 +95,12 @@ function useStyles() {
       flex: 1,
       backgroundColor: colors.background,
     },
-    safeArea: {
-      flex: 1,
-    },
     content: {
       flexGrow: 1,
       paddingHorizontal: spacing.screenPaddingHorizontal,
       paddingTop: spacing['3xl'],
       paddingBottom: spacing.xl,
       gap: spacing.xl,
-      justifyContent: 'center',
     },
     header: {
       gap: spacing.lg,

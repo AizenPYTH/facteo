@@ -1,12 +1,11 @@
+import { router, type Href } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { usePremiumCheckout } from '@/hooks/use-premium-checkout';
 import { useColors, useThemedStyles } from '@/hooks/use-colors';
 import { radius } from '@/constants/theme/radius';
 import { spacing } from '@/constants/theme/spacing';
 import { typography } from '@/constants/theme/typography';
-import { useToast } from '@/providers/toast-provider';
 
 type PremiumUpgradeBannerProps = {
   message?: string;
@@ -14,55 +13,25 @@ type PremiumUpgradeBannerProps = {
 };
 
 export function PremiumUpgradeBanner({
-  message = 'Disponible avec INVEQ Premium',
+  message = 'Disponible avec une offre supérieure',
   compact = false,
 }: PremiumUpgradeBannerProps) {
   const styles = useStyles(compact);
   const colors = useColors();
-  const { startCheckout, subscribe, isConfigured } = usePremiumCheckout();
-  const { showError, showSuccess } = useToast();
-
-  async function handlePress() {
-    if (!isConfigured) {
-      showError('Stripe n’est pas encore configuré.');
-      return;
-    }
-
-    try {
-      const completed = await startCheckout();
-
-      if (completed) {
-        showSuccess('INVEQ Premium est activé.');
-      }
-    } catch (error) {
-      showError(readErrorMessage(error));
-    }
-  }
 
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`${message}. Débloquer Premium`}
-      disabled={subscribe.isPending}
-      onPress={() => {
-        void handlePress();
-      }}
+      accessibilityLabel={`${message}. Voir les offres`}
+      onPress={() => router.push('/settings/premium' as Href)}
       style={({ pressed }) => [styles.banner, pressed && styles.pressed]}>
       <SymbolView name="lock.fill" size={compact ? 12 : 14} tintColor={colors.primary} />
       <Text numberOfLines={2} style={styles.message}>
         {message}
       </Text>
-      <Text style={styles.cta}>{subscribe.isPending ? 'Ouverture…' : 'Débloquer'}</Text>
+      <Text style={styles.cta}>Voir les offres</Text>
     </Pressable>
   );
-}
-
-function readErrorMessage(error: unknown): string {
-  if (error instanceof Error) {
-    return error.message;
-  }
-
-  return 'Impossible d’ouvrir le paiement Stripe.';
 }
 
 function useStyles(compact: boolean) {

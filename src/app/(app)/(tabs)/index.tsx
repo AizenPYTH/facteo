@@ -4,6 +4,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import {
   DashboardHeader,
+  DashboardTodayTasks,
   DashboardWelcome,
   ExtendedStatsGrid,
   QuickActions,
@@ -71,6 +72,11 @@ function DashboardMobileScreen() {
           <>
             {hasNoActivity ? <DashboardWelcome /> : null}
             <StatsGrid stats={stats} />
+            <DashboardTodayTasks invoices={recentInvoices} />
+            <View style={styles.section}>
+              <SectionHeader title="Créer" />
+              <QuickActions />
+            </View>
             <PremiumGatedSection
               bannerMessage="Statistiques avancées — INVEQ Premium"
               locked={advancedStatsLocked}>
@@ -89,11 +95,6 @@ function DashboardMobileScreen() {
           </>
         )}
 
-        <View style={styles.section}>
-          <SectionHeader title="Actions rapides" />
-          <QuickActions />
-        </View>
-
         <RecentInvoicesSection
           invoices={recentInvoices}
           onInvoicePress={(invoice) => router.push(`/invoices/${invoice.id}` as Href)}
@@ -105,17 +106,17 @@ function DashboardMobileScreen() {
 
 function useStyles() {
   return useThemedStyles((colors) => ({
-  safeArea: {
-    flex: 1,
-    backgroundColor: colors.backgroundGrouped,
-  },
-  content: {
-    paddingHorizontal: spacing.screenPaddingHorizontal,
-    paddingTop: spacing.md,
-    gap: spacing.sectionGap,
-  },
-  section: {
-    gap: spacing.md,
-  },
-}));
+    safeArea: {
+      flex: 1,
+      backgroundColor: colors.backgroundGrouped,
+    },
+    content: {
+      paddingHorizontal: spacing.screenPaddingHorizontal,
+      paddingTop: spacing.md,
+      gap: spacing.sectionGap,
+    },
+    section: {
+      gap: spacing.md,
+    },
+  }));
 }

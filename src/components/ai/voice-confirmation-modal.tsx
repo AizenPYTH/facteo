@@ -1,8 +1,8 @@
 import { SymbolView } from 'expo-symbols';
-import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Button } from '@/components/ui/button';
+import { KeyboardFormSheet } from '@/components/ui/keyboard';
 import { TextField } from '@/components/ui/text-field';
 import { useColors, useThemedStyles } from '@/hooks/use-colors';
 import { radius } from '@/constants/theme/radius';
@@ -29,7 +29,6 @@ export function VoiceConfirmationModal({
 }: VoiceConfirmationModalProps) {
   const styles = useStyles();
   const colors = useColors();
-  const insets = useSafeAreaInsets();
   const confidence = Math.round(Math.max(0, Math.min(1, value.confidence)) * 100);
 
   function updateField<K extends keyof VoiceCommandDraft>(field: K, fieldValue: VoiceCommandDraft[K]) {
@@ -76,7 +75,18 @@ export function VoiceConfirmationModal({
     <Modal animationType="slide" onRequestClose={onClose} transparent visible={visible}>
       <View style={styles.overlay}>
         <Pressable accessibilityLabel="Fermer" onPress={onClose} style={StyleSheet.absoluteFill} />
-        <View style={[styles.sheet, { paddingBottom: Math.max(insets.bottom, spacing.md) }]}>
+        <View style={styles.sheet}>
+          <KeyboardFormSheet
+            footer={
+              <>
+                <Button
+                  loading={loading}
+                  onPress={onConfirm}
+                  title={value.documentType === 'invoice' ? 'Créer la facture' : 'Créer le devis'}
+                />
+                <Button onPress={onClose} title="Annuler" variant="ghost" />
+              </>
+            }>
           <Text style={styles.title}>Vérifier la demande vocale</Text>
           <Text style={styles.subtitle}>Aucune création n’est faite sans validation.</Text>
 
@@ -89,8 +99,6 @@ export function VoiceConfirmationModal({
             />
             <Text style={styles.confidenceText}>Confiance IA : {confidence}%</Text>
           </View>
-
-          <ScrollView contentContainerStyle={styles.form} showsVerticalScrollIndicator={false}>
             <TextField
               label="Client"
               onChangeText={(text) => updateField('client', text)}
@@ -185,18 +193,9 @@ export function VoiceConfirmationModal({
             />
             <View style={styles.transcriptBlock}>
               <Text style={styles.transcriptLabel}>Transcription</Text>
-              <Text style={styles.transcriptText}>{value.transcript}</Text>
-            </View>
-          </ScrollView>
-
-          <View style={styles.actions}>
-            <Button
-              loading={loading}
-              onPress={onConfirm}
-              title={value.documentType === 'invoice' ? 'Créer la facture' : 'Créer le devis'}
-            />
-            <Button onPress={onClose} title="Annuler" variant="ghost" />
+            <Text style={styles.transcriptText}>{value.transcript}</Text>
           </View>
+          </KeyboardFormSheet>
         </View>
       </View>
     </Modal>
@@ -212,13 +211,10 @@ function useStyles() {
     },
     sheet: {
       maxHeight: '94%',
+      minHeight: '70%',
       borderTopLeftRadius: radius.sheet,
       borderTopRightRadius: radius.sheet,
-      borderWidth: StyleSheet.hairlineWidth,
-      borderColor: colors.border,
-      backgroundColor: colors.surface,
-      padding: spacing.lg,
-      gap: spacing.md,
+      overflow: 'hidden',
     },
     title: {
       ...typography.title3,
@@ -292,9 +288,6 @@ function useStyles() {
     transcriptText: {
       ...typography.subheadline,
       color: colors.text,
-    },
-    actions: {
-      gap: spacing.xs,
     },
   }));
 }

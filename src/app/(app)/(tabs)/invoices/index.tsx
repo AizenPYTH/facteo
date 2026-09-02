@@ -13,7 +13,7 @@ import {
 import { InvoicesDesktopScreen } from '@/components/web/desktop/screens/invoices-desktop-screen';
 import { BottomTabInset } from '@/constants/theme';
 import { useBreakpoint } from '@/hooks/use-breakpoint';
-import { useColors, useThemedStyles } from '@/hooks/use-colors';
+import { useThemedStyles } from '@/hooks/use-colors';
 import { spacing } from '@/constants/theme/spacing';
 import { useDebouncedValue } from '@/hooks/use-debounced-value';
 import { useInfiniteInvoices } from '@/hooks/use-invoices';
@@ -35,7 +35,6 @@ export default function InvoicesScreen() {
 
 function InvoicesMobileScreen() {
   const styles = useStyles();
-  const colors = useColors();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<InvoiceStatusFilter>('all');
   const debouncedSearch = useDebouncedValue(search, SEARCH_DEBOUNCE_MS);
@@ -44,6 +43,7 @@ function InvoicesMobileScreen() {
 
   const {
     invoices,
+    data,
     isLoading,
     isRefetching,
     isFetchingNextPage,
@@ -69,7 +69,7 @@ function InvoicesMobileScreen() {
   return (
     <SafeAreaView edges={['top']} style={styles.safeArea}>
       <View style={styles.headerSection}>
-        <InvoicesScreenHeader />
+        <InvoicesScreenHeader count={data?.pages[0]?.totalCount ?? invoices.length} />
         <InvoiceSearchBar onChangeText={setSearch} value={search} />
         <InvoiceStatusFilterBar onChange={setStatusFilter} value={statusFilter} />
       </View>

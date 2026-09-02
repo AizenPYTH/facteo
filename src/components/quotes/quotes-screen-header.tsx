@@ -6,10 +6,11 @@ import { useThemedStyles } from '@/hooks/use-colors';
 
 export type QuotesScreenHeaderProps = {
   title?: string;
+  count?: number;
   style?: ViewStyle;
 };
 
-export function QuotesScreenHeader({ title = 'Devis', style }: QuotesScreenHeaderProps) {
+export function QuotesScreenHeader({ title = 'Devis', count, style }: QuotesScreenHeaderProps) {
   const styles = useStyles();
 
   return (
@@ -17,6 +18,11 @@ export function QuotesScreenHeader({ title = 'Devis', style }: QuotesScreenHeade
       <AppText accessibilityRole="header" variant="display">
         {title}
       </AppText>
+      {typeof count === 'number' ? (
+        <AppText color="secondary" variant="subtitle">
+          {count} devis
+        </AppText>
+      ) : null}
     </View>
   );
 }

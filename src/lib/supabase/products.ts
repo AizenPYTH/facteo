@@ -32,3 +32,31 @@ export async function createProduct(input: CreateProductInput): Promise<ProductR
 
   return data as ProductRow;
 }
+
+export async function fetchCatalogItems(
+  userId: string,
+  type: 'product' | 'service',
+  search = '',
+): Promise<ProductRow[]> {
+  let query = supabase
+    .from('products')
+    .select('*')
+    .eq('user_id', userId)
+    .eq('type', type)
+    .is('deleted_at', null)
+    .order('created_at', { ascending: false });
+
+  const sanitized = search.trim().replace(/[%_,()]/g, ' ').trim();
+  if (sanitized) {
+    query = query.or(
+      `name.ilike.%${sanitized}%,description.ilike.%${sanitized}%,reference.ilike.%${sanitized}%`,
+    );
+  }
+
+  const { data, error } = await query;
+  if (error) {
+    throw error;
+  }
+
+  return (data ?? []) as ProductRow[];
+}

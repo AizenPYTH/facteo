@@ -5,6 +5,7 @@ import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { SplashScreenController } from '@/components/splash-screen-controller';
+import { AppKeyboardToolbar } from '@/components/ui/keyboard';
 import { AuthProvider } from '@/providers/auth-provider';
 import { CompanyProvider } from '@/providers/company-provider';
 import { ColorsProvider } from '@/providers/colors-provider';
@@ -32,6 +33,7 @@ function RootNavigation() {
           <Stack.Screen name="cookies" />
           <Stack.Screen name="(auth)" />
           <Stack.Screen name="(app)" />
+          <Stack.Screen name="mlc" />
         </Stack>
       </ThemeProvider>
     </ColorsProvider>
@@ -50,6 +52,7 @@ export default function RootLayout() {
                   <ToastProvider>
                     <SubscriptionProvider>
                       <RootNavigation />
+                      <AppKeyboardToolbar />
                     </SubscriptionProvider>
                   </ToastProvider>
               </ThemePreferenceProvider>

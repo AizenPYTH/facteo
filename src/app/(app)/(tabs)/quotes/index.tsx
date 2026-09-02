@@ -13,7 +13,7 @@ import {
 import { QuotesDesktopScreen } from '@/components/web/desktop/screens/quotes-desktop-screen';
 import { BottomTabInset } from '@/constants/theme';
 import { useBreakpoint } from '@/hooks/use-breakpoint';
-import { useColors, useThemedStyles } from '@/hooks/use-colors';
+import { useThemedStyles } from '@/hooks/use-colors';
 import { spacing } from '@/constants/theme/spacing';
 import { useDebouncedValue } from '@/hooks/use-debounced-value';
 import { useInfiniteQuotes } from '@/hooks/use-quotes';
@@ -35,7 +35,6 @@ export default function QuotesScreen() {
 
 function QuotesMobileScreen() {
   const styles = useStyles();
-  const colors = useColors();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<QuoteStatusFilter>('all');
   const debouncedSearch = useDebouncedValue(search, SEARCH_DEBOUNCE_MS);
@@ -44,6 +43,7 @@ function QuotesMobileScreen() {
 
   const {
     quotes,
+    data,
     isLoading,
     isRefetching,
     isFetchingNextPage,
@@ -69,7 +69,7 @@ function QuotesMobileScreen() {
   return (
     <SafeAreaView edges={['top']} style={styles.safeArea}>
       <View style={styles.headerSection}>
-        <QuotesScreenHeader />
+        <QuotesScreenHeader count={data?.pages[0]?.totalCount ?? quotes.length} />
         <QuoteSearchBar onChangeText={setSearch} value={search} />
         <QuoteStatusFilterBar onChange={setStatusFilter} value={statusFilter} />
       </View>

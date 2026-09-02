@@ -1,3 +1,4 @@
+import { router, type Href } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
 
 import { useColors } from '@/hooks/use-colors';
@@ -18,27 +19,23 @@ export function StatsGrid({ stats }: StatsGridProps) {
     <View style={styles.grid}>
       <StatCard
         accentColor={colors.primary}
-        label="Chiffre d'affaires"
-        style={styles.card}
+        label="Encaissé ce mois"
+        style={styles.cardWide}
         value={formatCurrency(stats.monthlyRevenue)}
       />
       <StatCard
         accentColor={colors.warning}
-        label="Factures impayées"
+        label="En attente"
+        onPress={() => router.push('/invoices' as Href)}
         style={styles.card}
-        value={String(stats.unpaidInvoices)}
+        value={formatCurrency(stats.outstandingAmount)}
       />
       <StatCard
-        accentColor={colors.success}
-        label="Factures payées"
+        accentColor={colors.error}
+        label="En retard"
+        onPress={() => router.push('/invoices' as Href)}
         style={styles.card}
-        value={String(stats.paidInvoices)}
-      />
-      <StatCard
-        accentColor={colors.iconSecondary}
-        label="Clients"
-        style={styles.card}
-        value={String(stats.totalClients)}
+        value={String(stats.lateInvoices)}
       />
     </View>
   );
@@ -49,6 +46,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: spacing.md,
+  },
+  cardWide: {
+    flexGrow: 1,
+    flexBasis: '100%',
   },
   card: {
     flexGrow: 1,

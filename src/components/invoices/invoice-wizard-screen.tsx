@@ -324,17 +324,16 @@ export function InvoiceWizardScreen({
 
   return (
     <WizardScreen
+      bodyScroll={step === 3 ? 'aware' : 'none'}
       footer={
-        isDesktop ? (
-          <WizardActionBar
-            backLabel={step === 1 ? 'Annuler' : 'Précédent'}
-            onBack={handleBack}
-            onPrimary={step < TOTAL_STEPS ? handleNext : handleSave}
-            primaryDisabled={step < TOTAL_STEPS ? !canGoNext() : false}
-            primaryLabel={primaryActionLabel}
-            primaryLoading={step >= TOTAL_STEPS && isSaving}
-          />
-        ) : undefined
+        <WizardActionBar
+          backLabel={step === 1 ? 'Annuler' : 'Précédent'}
+          onBack={handleBack}
+          onPrimary={step < TOTAL_STEPS ? handleNext : handleSave}
+          primaryDisabled={step < TOTAL_STEPS ? !canGoNext() : false}
+          primaryLabel={primaryActionLabel}
+          primaryLoading={step >= TOTAL_STEPS && isSaving}
+        />
       }
       header={
         isDesktop ? undefined : (
@@ -342,18 +341,6 @@ export function InvoiceWizardScreen({
             <InvoiceScreenHeader showBackButton={false} title={title} />
             <QuoteWizardProgress currentStep={step} />
           </>
-        )
-      }
-      toolbar={
-        isDesktop ? undefined : (
-          <WizardActionBar
-            backLabel={step === 1 ? 'Annuler' : 'Précédent'}
-            onBack={handleBack}
-            onPrimary={step < TOTAL_STEPS ? handleNext : handleSave}
-            primaryDisabled={step < TOTAL_STEPS ? !canGoNext() : false}
-            primaryLabel={primaryActionLabel}
-            primaryLoading={step >= TOTAL_STEPS && isSaving}
-          />
         )
       }
       variant={variant}>

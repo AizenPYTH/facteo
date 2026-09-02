@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 
 import { TextField } from '@/components/ui/text-field';
 import { useColors, useThemedStyles } from '@/hooks/use-colors';
@@ -76,7 +77,8 @@ export function InvoiceInfoStep({ value, onChange }: InvoiceInfoStepProps) {
   }
 
   return (
-    <ScrollView
+    <KeyboardAwareScrollView
+      bottomOffset={24}
       contentContainerStyle={styles.container}
       keyboardDismissMode="on-drag"
       keyboardShouldPersistTaps="handled"
@@ -118,7 +120,7 @@ export function InvoiceInfoStep({ value, onChange }: InvoiceInfoStepProps) {
           value={value.notes}
         />
       </View>
-    </ScrollView>
+    </KeyboardAwareScrollView>
   );
 }
 

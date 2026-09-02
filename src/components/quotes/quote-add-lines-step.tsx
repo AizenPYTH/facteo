@@ -7,6 +7,7 @@ import {
   type MutableRefObject,
   type SetStateAction,
 } from 'react';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import {
   Alert,
   FlatList,
@@ -23,6 +24,7 @@ import {
 } from '@/components/ai/product-analysis-confirmation-modal';
 import { ProductAnalysisLoadingModal } from '@/components/ai/product-analysis-loading-modal';
 import { Button } from '@/components/ui/button';
+import { useStickyFooterInset } from '@/components/ui/sticky-footer';
 import { useAuth } from '@/hooks/use-auth';
 import { useThemedStyles } from '@/hooks/use-colors';
 import { usePlatformActionSheet } from '@/hooks/use-platform-action-sheet';
@@ -57,6 +59,7 @@ export function QuoteAddLinesStep({
   const { user } = useAuth();
   const { hasFeature } = useSubscription();
   const { showError, showSuccess } = useToast();
+  const footerInset = useStickyFooterInset('toolbar');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisProgress, setAnalysisProgress] = useState(0.08);
   const [analysisImageUri, setAnalysisImageUri] = useState<string | null>(null);
@@ -254,7 +257,6 @@ export function QuoteAddLinesStep({
   return (
     <>
       <FlatList
-        automaticallyAdjustKeyboardInsets
         contentContainerStyle={styles.listContent}
         data={lines}
         keyExtractor={(item) => item.id}
@@ -269,6 +271,9 @@ export function QuoteAddLinesStep({
             onRemove={() => onRemoveLine(index)}
             value={item}
           />
+        )}
+        renderScrollComponent={(props) => (
+          <KeyboardAwareScrollView {...props} bottomOffset={footerInset} keyboardShouldPersistTaps="handled" />
         )}
         showsVerticalScrollIndicator={false}
       />

@@ -21,6 +21,7 @@
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
+      "softwareKeyboardLayoutMode": "resize",
       "predictiveBackGestureEnabled": false,
       "permissions": [
         "android.permission.RECORD_AUDIO"
@@ -53,13 +54,21 @@
         }
       ],
       [
+        "expo-camera",
+        {
+          "cameraPermission": "INVEQ utilise l’appareil photo pour scanner le QR code de connexion et analyser vos produits.",
+          "barcodeScannerEnabled": true
+        }
+      ],
+      [
         "expo-notifications",
         {
           "icon": "./assets/images/icon.png",
           "color": "#4F46E5",
           "sounds": []
         }
-      ]
+      ],
+      "expo-iap"
     ],
     "experiments": {
       "typedRoutes": true,

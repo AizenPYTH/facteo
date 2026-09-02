@@ -71,4 +71,10 @@ export const subscriptionQueryKeys = {
     [...subscriptionQueryKeys.all, 'signature', documentType, documentId] as const,
 };
 
+export const catalogQueryKeys = {
+  all: ['catalog'] as const,
+  list: (userId: string, type: string, search: string) =>
+    [...catalogQueryKeys.all, userId, type, search] as const,
+};
+
 export { companiesQueryKeys } from '@/lib/supabase/query-keys-companies';

@@ -6,10 +6,11 @@ import { useThemedStyles } from '@/hooks/use-colors';
 
 export type InvoicesScreenHeaderProps = {
   title?: string;
+  count?: number;
   style?: ViewStyle;
 };
 
-export function InvoicesScreenHeader({ title = 'Factures', style }: InvoicesScreenHeaderProps) {
+export function InvoicesScreenHeader({ title = 'Factures', count, style }: InvoicesScreenHeaderProps) {
   const styles = useStyles();
 
   return (
@@ -17,6 +18,11 @@ export function InvoicesScreenHeader({ title = 'Factures', style }: InvoicesScre
       <AppText accessibilityRole="header" variant="display">
         {title}
       </AppText>
+      {typeof count === 'number' ? (
+        <AppText color="secondary" variant="subtitle">
+          {count} {count > 1 ? 'factures' : 'facture'}
+        </AppText>
+      ) : null}
     </View>
   );
 }

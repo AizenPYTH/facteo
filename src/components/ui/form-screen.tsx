@@ -1,8 +1,9 @@
 import type { ReactNode } from 'react';
-import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
+import { View, type StyleProp, type ViewStyle } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { SafeAreaView, type Edge } from 'react-native-safe-area-context';
 
+import { KEYBOARD_TOOLBAR_HEIGHT } from '@/components/ui/keyboard/constants';
 import { StickyFooter, useStickyFooterInset } from '@/components/ui/sticky-footer';
 import { useThemedStyles } from '@/hooks/use-colors';
 import { spacing } from '@/constants/theme/spacing';
@@ -18,6 +19,13 @@ type FormScreenProps = {
   testID?: string;
 };
 
+/**
+ * Gabarit unique des formulaires (auth, client, entreprise, paramètres).
+ *
+ * - Le scroll est un KeyboardAwareScrollView (iOS + Android).
+ * - Le pied (Enregistrer / Continuer) est un KeyboardStickyView, hors SafeArea bas.
+ * - Ne jamais envelopper ce composant dans un KeyboardAvoidingView React Native.
+ */
 export function FormScreen({
   children,
   header,
@@ -38,7 +46,7 @@ export function FormScreen({
 
         {scrollable ? (
           <KeyboardAwareScrollView
-            bottomOffset={footer ? footerInset : spacing.md}
+            bottomOffset={footer ? footerInset : spacing.md + KEYBOARD_TOOLBAR_HEIGHT}
             contentContainerStyle={[
               styles.scrollContent,
               footer ? { paddingBottom: footerInset + spacing.md } : null,

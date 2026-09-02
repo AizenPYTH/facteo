@@ -23,6 +23,7 @@ export function TextField({ label, error, style, accessibilityLabel, ...props }:
         accessibilityLabel={accessibilityLabel ?? label ?? props.placeholder}
         autoCapitalize="none"
         autoCorrect={false}
+        blurOnSubmit={props.multiline ? true : false}
         placeholderTextColor={colors.textPlaceholder}
         style={[styles.input, error ? styles.inputError : null, style]}
         {...props}
