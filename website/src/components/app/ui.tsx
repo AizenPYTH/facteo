@@ -183,7 +183,7 @@ export function DataTable({
             return (
               <tr
                 className={cn(
-                  'border-l-[3px] transition-colors duration-150',
+                  'group border-l-[3px] transition-colors duration-150',
                   active
                     ? 'border-l-app-accent bg-app-accent-soft'
                     : 'border-l-transparent hover:bg-app-hover',
