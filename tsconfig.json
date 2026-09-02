@@ -19,6 +19,8 @@
   ],
   "exclude": [
     "supabase/functions",
-    "website"
+    "website",
+    "**/__tests__/**",
+    "src/**/__tests__/**"
   ]
 }
