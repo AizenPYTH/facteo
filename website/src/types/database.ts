@@ -134,6 +134,20 @@ export type InvoiceRow = {
   notes: string | null;
   stripe_payment_link: string | null;
   stripe_checkout_session_id: string | null;
+  electronic_invoice_status: string | null;
+  superpdp_invoice_id: number | null;
+  superpdp_external_id: string | null;
+  electronic_invoice_format: string | null;
+  electronic_invoice_sent_at: string | null;
+  electronic_invoice_received_at: string | null;
+  electronic_invoice_last_error: string | null;
+  electronic_invoice_updated_at: string | null;
+  electronic_buyer_address: string | null;
+  delivery_address: string | null;
+  delivery_postal_code: string | null;
+  delivery_city: string | null;
+  delivery_country: string | null;
+  operation_category: string | null;
   created_at: string;
   updated_at: string;
   deleted_at: string | null;
@@ -602,12 +616,38 @@ export type CompanyRow = {
   city: string | null;
   country: string | null;
   siret: string | null;
+  siren: string | null;
   vat_number: string | null;
+  has_vat_on_debits: boolean;
+  vat_regime: string | null;
   iban: string | null;
   bic: string | null;
   payment_methods: unknown;
   logo_url: string | null;
   signature_url: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type SuperPdpReceivedInvoiceRow = {
+  id: string;
+  company_id: string;
+  superpdp_invoice_id: number;
+  supplier_name: string | null;
+  supplier_number: string | null;
+  invoice_number: string | null;
+  issue_date: string | null;
+  currency: string;
+  subtotal_ht: number | null;
+  total_vat: number | null;
+  total_ttc: number | null;
+  latest_status_code: string | null;
+  electronic_invoice_status: string | null;
+  received_at: string | null;
+  document_content_type: string | null;
+  structured_payload: unknown;
+  raw_events: unknown;
+  imported_at: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -660,6 +700,15 @@ export type Database = {
         Row: CompanyMemberRow;
         Insert: Partial<CompanyMemberRow> & { company_id: string; user_id: string };
         Update: Partial<CompanyMemberRow>;
+        Relationships: [];
+      };
+      superpdp_received_invoices: {
+        Row: SuperPdpReceivedInvoiceRow;
+        Insert: Partial<SuperPdpReceivedInvoiceRow> & {
+          company_id: string;
+          superpdp_invoice_id: number;
+        };
+        Update: Partial<SuperPdpReceivedInvoiceRow>;
         Relationships: [];
       };
       clients: {

@@ -24,7 +24,8 @@ function formatDate(value: string | null | undefined): string {
 }
 
 export default function EInvoicingSettingsPage() {
-  const { companyId, activeCompany } = useTenant();
+  const { scope, activeCompany } = useTenant();
+  const companyId = scope?.companyId ?? null;
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
