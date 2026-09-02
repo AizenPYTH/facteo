@@ -9,18 +9,23 @@ import { LoadingState, Panel } from '@/components/app/ui';
 import { mapCompanyToFormValues, updateCompanyProfile } from '@/lib/domain/supabase/companies';
 import { companiesQueryKeys } from '@/lib/domain/supabase/query-keys';
 import { useTenant } from '@/providers/company-provider';
+import { useToast } from '@/providers/toast-provider';
+import { toUserFacingError } from '@/lib/errors/messages';
 import type { CompanyProfileFormValues } from '@/types/company-profile';
 
 export default function CompanySettingsPage() {
   const { activeCompany, loading } = useTenant();
   const queryClient = useQueryClient();
+  const { showSuccess, showError } = useToast();
 
   const mutation = useMutation({
     mutationFn: (values: CompanyProfileFormValues) =>
       updateCompanyProfile(activeCompany!.id, values),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: companiesQueryKeys.all });
+      showSuccess('Profil entreprise enregistré.');
     },
+    onError: (error) => showError(toUserFacingError(error.message)),
   });
 
   if (loading || !activeCompany) {

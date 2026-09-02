@@ -14,12 +14,15 @@ import { updateDocumentTemplates } from '@/lib/supabase/settings';
 import { settingsQueryKeys } from '@/lib/domain/supabase/query-keys';
 import { requireScope } from '@/lib/domain/tenant/scope';
 import { useTenant } from '@/providers/company-provider';
+import { useToast } from '@/providers/toast-provider';
+import { toUserFacingError } from '@/lib/errors/messages';
 import { cn } from '@/lib/utils';
 
 export default function TemplatesSettingsPage() {
   const { scope } = useTenant();
   const { formValues, loading } = useSettings();
   const { hasFeature } = useSubscription();
+  const { showSuccess, showError } = useToast();
   const templatesLocked = !hasFeature('pdf_templates');
   const queryClient = useQueryClient();
   const [quoteTemplateId, setQuoteTemplateId] = useState(formValues.quoteTemplateId);
@@ -35,7 +38,9 @@ export default function TemplatesSettingsPage() {
       updateDocumentTemplates(requireScope(scope), { quoteTemplateId, invoiceTemplateId }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: settingsQueryKeys.all });
+      showSuccess('Modèles PDF enregistrés.');
     },
+    onError: (error) => showError(toUserFacingError(error.message)),
   });
 
   if (loading) {

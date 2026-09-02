@@ -8,6 +8,8 @@ import { AppTopBar } from '@/components/app/app-shell';
 import { CompanyProfileForm } from '@/components/app/company-profile-form';
 import { LoadingState, Panel } from '@/components/app/ui';
 import { useAuth } from '@/providers/auth-provider';
+import { useToast } from '@/providers/toast-provider';
+import { toUserFacingError } from '@/lib/errors/messages';
 import {
   fetchUserProfile,
   mapProfileToFormValues,
@@ -19,6 +21,7 @@ export default function ProfileSettingsPage() {
   const { user } = useAuth();
   const router = useRouter();
   const queryClient = useQueryClient();
+  const { showSuccess, showError } = useToast();
 
   const profileQuery = useQuery({
     queryKey: ['user-profile', user?.id],
@@ -32,7 +35,9 @@ export default function ProfileSettingsPage() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['user-profile'] });
       router.refresh();
+      showSuccess('Profil enregistré.');
     },
+    onError: (error) => showError(toUserFacingError(error.message)),
   });
 
   if (profileQuery.isLoading) {

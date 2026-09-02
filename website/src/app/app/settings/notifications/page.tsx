@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import { AppTopBar } from '@/components/app/app-shell';
 import { FormActions, PrimaryButton } from '@/components/app/form-fields';
 import { Panel } from '@/components/app/ui';
+import { useToast } from '@/providers/toast-provider';
 
 type NotificationPrefs = {
   invoicePaid: boolean;
@@ -36,6 +37,7 @@ const PREF_ITEMS: { key: keyof NotificationPrefs; label: string; description: st
 export default function NotificationsSettingsPage() {
   const [prefs, setPrefs] = useState<NotificationPrefs>(DEFAULT_PREFS);
   const [saved, setSaved] = useState(false);
+  const { showSuccess } = useToast();
 
   useEffect(() => {
     try {
@@ -54,6 +56,7 @@ export default function NotificationsSettingsPage() {
   function handleSave() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(prefs));
     setSaved(true);
+    showSuccess('Préférences de notification enregistrées.');
   }
 
   return (

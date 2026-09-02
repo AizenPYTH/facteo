@@ -11,18 +11,23 @@ import { updateSettings } from '@/lib/supabase/settings';
 import { settingsQueryKeys } from '@/lib/domain/supabase/query-keys';
 import { requireScope } from '@/lib/domain/tenant/scope';
 import { useTenant } from '@/providers/company-provider';
+import { useToast } from '@/providers/toast-provider';
+import { toUserFacingError } from '@/lib/errors/messages';
 import type { SettingsFormValues } from '@/types/settings';
 
 export default function NumberingSettingsPage() {
   const { scope } = useTenant();
   const { formValues, loading } = useSettings();
   const queryClient = useQueryClient();
+  const { showSuccess, showError } = useToast();
 
   const mutation = useMutation({
     mutationFn: (values: SettingsFormValues) => updateSettings(requireScope(scope), values),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: settingsQueryKeys.all });
+      showSuccess('Paramètres de numérotation enregistrés.');
     },
+    onError: (error) => showError(toUserFacingError(error.message)),
   });
 
   if (loading) {

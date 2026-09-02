@@ -34,6 +34,8 @@ import {
 import { Badge, LoadingState } from '@/components/app/ui';
 import { useAuth } from '@/providers/auth-provider';
 import { useTenant } from '@/providers/company-provider';
+import { useToast } from '@/providers/toast-provider';
+import { toUserFacingError } from '@/lib/errors/messages';
 import {
   createProduct,
   deleteProduct,
@@ -1113,6 +1115,7 @@ function CatalogWorkspaceInner({ type }: { type: ProductType }) {
   const selectedId = searchParams.get('selected');
   const { user } = useAuth();
   const { scope } = useTenant();
+  const { showSuccess, showError } = useToast();
   const queryClient = useQueryClient();
 
   const setSelectedId = useCallback(
@@ -1147,7 +1150,9 @@ function CatalogWorkspaceInner({ type }: { type: ProductType }) {
     onSuccess: () => {
       setSelectedId(null);
       void queryClient.invalidateQueries({ queryKey: productsQueryKeys.all });
+      showSuccess('Élément supprimé.');
     },
+    onError: (error) => showError(toUserFacingError(error.message)),
   });
   const bulkDeleteMutation = useMutation({
     mutationFn: async (ids: string[]) => {
@@ -1156,11 +1161,13 @@ function CatalogWorkspaceInner({ type }: { type: ProductType }) {
         await deleteProduct(activeScope, id);
       }
     },
-    onSuccess: () => {
+    onSuccess: (_data, ids) => {
       setSelectedIds([]);
       setSelectedId(null);
       void queryClient.invalidateQueries({ queryKey: productsQueryKeys.all });
+      showSuccess(`${ids.length} élément(s) supprimé(s).`);
     },
+    onError: (error) => showError(toUserFacingError(error.message)),
   });
 
   useEffect(() => {

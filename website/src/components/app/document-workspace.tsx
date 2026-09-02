@@ -32,6 +32,8 @@ import { formatCurrency } from '@/lib/domain/format/currency';
 import { formatDate } from '@/lib/domain/format/date';
 import { useAuth } from '@/providers/auth-provider';
 import { useTenant } from '@/providers/company-provider';
+import { useToast } from '@/providers/toast-provider';
+import { toUserFacingError } from '@/lib/errors/messages';
 import { duplicateInvoice, updateInvoiceStatus } from '@/lib/domain/supabase/invoices';
 import { duplicateQuote, updateQuoteStatus } from '@/lib/domain/supabase/quotes';
 import { invoicesQueryKeys, quotesQueryKeys } from '@/lib/domain/supabase/query-keys';
@@ -340,6 +342,7 @@ export function InvoicesWorkspace() {
   const { user } = useAuth();
   const { scope } = useTenant();
   const { settings } = useSettings();
+  const { showSuccess, showError } = useToast();
   const queryClient = useQueryClient();
   const listQuery = useInfiniteInvoices(search, status);
   const detailQuery = useInvoiceDetail(selectedId);
@@ -386,14 +389,18 @@ export function InvoicesWorkspace() {
     onSuccess: (invoice) => {
       void queryClient.invalidateQueries({ queryKey: invoicesQueryKeys.all });
       setSelectedId(invoice.id);
+      showSuccess(`Facture dupliquée en ${invoice.number}.`);
     },
+    onError: (error) => showError(toUserFacingError(error.message)),
   });
 
   const sendMutation = useMutation({
     mutationFn: () => updateInvoiceStatus(requireScope(scope), detail!.id, 'sent'),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: invoicesQueryKeys.all });
+      showSuccess('Facture marquée comme envoyée.');
     },
+    onError: (error) => showError(toUserFacingError(error.message)),
   });
 
   return (
@@ -515,6 +522,7 @@ export function QuotesWorkspace() {
   const { user } = useAuth();
   const { scope } = useTenant();
   const { settings } = useSettings();
+  const { showSuccess, showError } = useToast();
   const queryClient = useQueryClient();
   const listQuery = useInfiniteQuotes(search, status);
   const detailQuery = useQuoteDetail(selectedId);
@@ -561,14 +569,18 @@ export function QuotesWorkspace() {
     onSuccess: (quote) => {
       void queryClient.invalidateQueries({ queryKey: quotesQueryKeys.all });
       setSelectedId(quote.id);
+      showSuccess(`Devis dupliqué en ${quote.number}.`);
     },
+    onError: (error) => showError(toUserFacingError(error.message)),
   });
 
   const sendMutation = useMutation({
     mutationFn: () => updateQuoteStatus(requireScope(scope), detail!.id, 'sent'),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: quotesQueryKeys.all });
+      showSuccess('Devis marqué comme envoyé.');
     },
+    onError: (error) => showError(toUserFacingError(error.message)),
   });
 
   return (
