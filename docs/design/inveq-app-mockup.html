@@ -1,0 +1,1613 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com" rel="preconnect" />
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<script src="https://unpkg.com/lucide@0.462.0/dist/umd/lucide.min.js"></script>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: Inter, system-ui, sans-serif; color: #0f1533; background: #f6f7fb; -webkit-font-smoothing: antialiased; }
+  a { color: #4f46e5; text-decoration: none; }
+  a:hover { color: #4338ca; }
+  svg.lucide { width: 18px; height: 18px; stroke-width: 1.75; }
+  i[data-lucide] { display: inline-block; width: 18px; height: 18px; }
+  ::selection { background: #e6e2ff; color: #2b2170; }
+  .sb::-webkit-scrollbar { width: 8px; height: 8px; }
+  .sb::-webkit-scrollbar-thumb { background: #d7dbe8; border-radius: 8px; }
+  .sb::-webkit-scrollbar-track { background: transparent; }
+  @keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+  .skel { background: linear-gradient(90deg,#e8ebf3 25%,#f3f5fa 50%,#e8ebf3 75%); background-size: 200% 100%; animation: shimmer 1.4s infinite; border-radius: 8px; }
+  @keyframes pop { from { opacity: 0; transform: translateY(6px) scale(.99); } to { opacity: 1; transform: none; } }
+</style>
+</helmet>
+<div style="display:flex;height:100vh;overflow:hidden;background:#f6f7fb">
+
+  <aside style="width:248px;flex:0 0 248px;display:flex;flex-direction:column;background:#fff;border-right:1px solid #e6e9f2">
+    <div style="padding:16px 16px 12px">
+      <img alt="INVEQ" src="website/public/logo-inveq.png" style="width:132px;height:auto;display:block" />
+    </div>
+    <div style="padding:0 12px 12px">
+      <button onClick="{{ toggleSwitcher }}" style="width:100%;display:flex;align-items:center;gap:10px;padding:8px 10px;border:1px solid #e6e9f2;background:#fff;border-radius:10px;cursor:pointer;text-align:left" style-hover="background:#f7f8fd;border-color:#d7dbe8" type="button">
+        <span style="width:28px;height:28px;flex:0 0 28px;border-radius:8px;background:linear-gradient(140deg,#7c3aed,#4f46e5);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700">AN</span>
+        <span style="min-width:0;flex:1">
+          <span style="display:block;font-size:13px;font-weight:600;color:#0f1533;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Atelier Nord</span>
+          <span style="display:block;font-size:11px;color:#8a92a8">Espace actif</span>
+        </span>
+        <i data-lucide="chevrons-up-down" style="width:15px;height:15px;color:#8a92a8"></i>
+      </button>
+      <sc-if value="{{ switcherOpen }}">
+        <div style="margin-top:6px;border:1px solid #e6e9f2;border-radius:10px;background:#fff;box-shadow:0 16px 40px -24px rgba(15,21,51,.4);overflow:hidden">
+          <sc-for hint-placeholder-count="2" list="{{ companies }}" as="co">
+            <button onClick="{{ co.pick }}" style="width:100%;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:9px 11px;border:0;background:#fff;cursor:pointer;font-size:13px;color:#0f1533;text-align:left" style-hover="background:#f7f8fd" type="button">
+              <span>{{ co.name }}</span>
+              <span style="font-size:11px;color:#8a92a8">{{ co.tag }}</span>
+            </button>
+          </sc-for>
+          <div style="border-top:1px solid #eef0f6;padding:8px">
+            <button onClick="{{ goCompanies }}" style="width:100%;display:flex;align-items:center;gap:8px;padding:7px 8px;border:0;background:transparent;border-radius:8px;cursor:pointer;font-size:12.5px;font-weight:600;color:#4f46e5" style-hover="background:#f1efff" type="button">
+              <i data-lucide="settings-2" style="width:15px;height:15px"></i>Gérer les entreprises
+            </button>
+          </div>
+        </div>
+      </sc-if>
+    </div>
+
+    <div style="padding:0 12px 10px">
+      <button onClick="{{ openCreate }}" style="width:100%;display:flex;align-items:center;justify-content:center;gap:8px;padding:10px 12px;border:0;border-radius:10px;background:#4f46e5;color:#fff;font-size:13.5px;font-weight:600;font-family:inherit;cursor:pointer;box-shadow:0 10px 22px -12px rgba(79,70,229,.85)" style-hover="background:#4338ca" type="button">
+        <i data-lucide="plus" style="width:16px;height:16px"></i>Créer
+      </button>
+      <button onClick="{{ openSearch }}" style="width:100%;margin-top:8px;display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid #e6e9f2;border-radius:10px;background:#fbfcfe;color:#8a92a8;font-size:13px;font-family:inherit;cursor:pointer" style-hover="background:#f7f8fd;color:#6b7490" type="button">
+        <i data-lucide="search" style="width:15px;height:15px"></i>Rechercher
+        <span style="margin-left:auto;font-size:10.5px;font-weight:600;color:#a3aabd;border:1px solid #e6e9f2;border-radius:5px;padding:1px 5px">⌘K</span>
+      </button>
+    </div>
+
+    <nav class="sb" style="flex:1;overflow-y:auto;padding:6px 12px 12px">
+      <sc-for hint-placeholder-count="9" list="{{ nav }}" as="item">
+        <div style="margin-bottom:2px">
+          <sc-if value="{{ item.isHeading }}">
+            <p style="margin:14px 0 6px;padding:0 10px;font-size:10.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#a3aabd">{{ item.label }}</p>
+          </sc-if>
+          <sc-if hint-placeholder-val="{{ true }}" value="{{ item.isLink }}">
+            <button onClick="{{ item.go }}" style="position:relative;width:100%;display:flex;align-items:center;gap:10px;padding:8px 10px;border:0;border-radius:9px;font-family:inherit;font-size:13.5px;cursor:pointer;text-align:left;background:{{ item.bg }};color:{{ item.fg }};font-weight:{{ item.weight }}" style-hover="background:#f7f8fd" type="button">
+              <i data-lucide="{{ item.icon }}" style="width:17px;height:17px;color:{{ item.iconColor }}"></i>
+              <span style="flex:1">{{ item.label }}</span>
+              <sc-if value="{{ item.count }}">
+                <span style="font-size:11px;font-weight:600;color:{{ item.countColor }};background:{{ item.countBg }};border-radius:20px;padding:1px 7px">{{ item.count }}</span>
+              </sc-if>
+            </button>
+          </sc-if>
+        </div>
+      </sc-for>
+    </nav>
+
+    <div style="border-top:1px solid #eef0f6;padding:10px 12px">
+      <button onClick="{{ goSettings }}" style="width:100%;display:flex;align-items:center;gap:10px;padding:8px 10px;border:0;border-radius:9px;background:transparent;font-family:inherit;font-size:13.5px;color:#4a5268;cursor:pointer;text-align:left" style-hover="background:#f7f8fd" type="button">
+        <i data-lucide="settings" style="width:17px;height:17px;color:#8a92a8"></i>Paramètres
+      </button>
+      <div style="display:flex;align-items:center;gap:10px;padding:8px 10px;margin-top:2px;border-radius:9px" style-hover="background:#f7f8fd">
+        <span style="width:26px;height:26px;border-radius:50%;background:#eef0f6;color:#4a5268;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700">AD</span>
+        <span style="min-width:0;flex:1">
+          <span style="display:block;font-size:12.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Alex Dupont</span>
+          <span style="display:block;font-size:11px;color:#8a92a8">Offre Standard</span>
+        </span>
+        <i data-lucide="log-out" style="width:15px;height:15px;color:#a3aabd"></i>
+      </div>
+    </div>
+  </aside>
+
+  <main class="sb" style="flex:1;min-width:0;display:flex;flex-direction:column;overflow:hidden">
+    <sc-if hint-placeholder-val="{{ true }}" value="{{ isDashboard }}">
+      <div style="display:flex;flex-direction:column;height:100%;min-height:0">
+        <header style="flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:16px 24px;background:#fff;border-bottom:1px solid #e6e9f2">
+          <div style="min-width:0">
+            <h1 style="margin:0;font-size:19px;font-weight:600;letter-spacing:-.01em">Bonjour Alex</h1>
+            <p style="margin:2px 0 0;font-size:13px;color:#6b7490">Atelier Nord · mardi 2 septembre</p>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <button onClick="{{ goQuoteNew }}" style="display:flex;align-items:center;gap:7px;padding:9px 14px;border:1px solid #e6e9f2;border-radius:10px;background:#fff;font-family:inherit;font-size:13px;font-weight:600;color:#3b4256;cursor:pointer" style-hover="background:#f7f8fd" type="button">
+              <i data-lucide="file-text" style="width:15px;height:15px;color:#7c3aed"></i>Nouveau devis
+            </button>
+            <button onClick="{{ goInvoiceNew }}" style="display:flex;align-items:center;gap:7px;padding:9px 14px;border:0;border-radius:10px;background:#4f46e5;color:#fff;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;box-shadow:0 10px 22px -12px rgba(79,70,229,.85)" style-hover="background:#4338ca" type="button">
+              <i data-lucide="plus" style="width:15px;height:15px"></i>Nouvelle facture
+            </button>
+          </div>
+        </header>
+
+        <div class="sb" style="flex:1;min-height:0;overflow-y:auto;padding:20px 24px 32px">
+          <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px">
+            <div style="background:#fff;border:1px solid #e6e9f2;border-radius:14px;padding:16px 18px">
+              <div style="display:flex;align-items:center;gap:8px">
+                <span style="width:26px;height:26px;border-radius:8px;background:#ecfdf5;color:#059669;display:flex;align-items:center;justify-content:center"><i data-lucide="wallet" style="width:15px;height:15px"></i></span>
+                <p style="margin:0;font-size:12px;font-weight:600;color:#6b7490">Encaissé ce mois</p>
+              </div>
+              <p style="margin:12px 0 0;font-size:28px;font-weight:600;letter-spacing:-.03em;font-variant-numeric:tabular-nums">12 480,00 €</p>
+              <p style="margin:6px 0 0;font-size:12.5px;color:#6b7490"><span style="color:#059669;font-weight:600">+18 %</span> vs août · 9 factures</p>
+            </div>
+            <div style="background:#fff;border:1px solid #e6e9f2;border-radius:14px;padding:16px 18px">
+              <div style="display:flex;align-items:center;gap:8px">
+                <span style="width:26px;height:26px;border-radius:8px;background:#f1efff;color:#4f46e5;display:flex;align-items:center;justify-content:center"><i data-lucide="hourglass" style="width:15px;height:15px"></i></span>
+                <p style="margin:0;font-size:12px;font-weight:600;color:#6b7490">En attente de paiement</p>
+              </div>
+              <p style="margin:12px 0 0;font-size:28px;font-weight:600;letter-spacing:-.03em;font-variant-numeric:tabular-nums">4 260,00 €</p>
+              <p style="margin:6px 0 0;font-size:12.5px;color:#6b7490">6 factures envoyées · délai moyen 27 j</p>
+            </div>
+            <div style="background:#fff;border:1px solid #f3d3d3;border-radius:14px;padding:16px 18px">
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+                <div style="display:flex;align-items:center;gap:8px">
+                  <span style="width:26px;height:26px;border-radius:8px;background:#fef2f2;color:#dc2626;display:flex;align-items:center;justify-content:center"><i data-lucide="alert-circle" style="width:15px;height:15px"></i></span>
+                  <p style="margin:0;font-size:12px;font-weight:600;color:#6b7490">En retard</p>
+                </div>
+                <button onClick="{{ goInvoicesOverdue }}" style="border:0;background:transparent;font-family:inherit;font-size:12px;font-weight:600;color:#dc2626;cursor:pointer;padding:0" type="button">Traiter</button>
+              </div>
+              <p style="margin:12px 0 0;font-size:28px;font-weight:600;letter-spacing:-.03em;font-variant-numeric:tabular-nums;color:#b91c1c">1 850,00 €</p>
+              <p style="margin:6px 0 0;font-size:12.5px;color:#6b7490">2 factures · la plus ancienne 21 j</p>
+            </div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:minmax(0,1.62fr) minmax(0,1fr);gap:14px;margin-top:14px;align-items:start">
+            <sc-if hint-placeholder-val="{{ true }}" value="{{ showTaskQueue }}">
+            <section style="background:#fff;border:1px solid #e6e9f2;border-radius:14px;overflow:hidden">
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 18px;border-bottom:1px solid #eef0f6">
+                <div style="display:flex;align-items:center;gap:9px">
+                  <h2 style="margin:0;font-size:14.5px;font-weight:600">À traiter aujourd'hui</h2>
+                  <span style="font-size:11px;font-weight:700;color:#4f46e5;background:#f1efff;border-radius:20px;padding:2px 8px">5</span>
+                </div>
+                <button style="border:0;background:transparent;font-family:inherit;font-size:12.5px;font-weight:600;color:#6b7490;cursor:pointer" style-hover="color:#4f46e5" type="button">Tout voir</button>
+              </div>
+              <sc-for hint-placeholder-count="5" list="{{ tasks }}" as="t">
+                <div style="display:flex;align-items:center;gap:12px;padding:12px 18px;border-bottom:1px solid #f3f5fa" style-hover="background:#fafbfe">
+                  <span style="width:30px;height:30px;flex:0 0 30px;border-radius:9px;display:flex;align-items:center;justify-content:center;background:{{ t.tintBg }};color:{{ t.tintFg }}">
+                    <i data-lucide="{{ t.icon }}" style="width:15px;height:15px"></i>
+                  </span>
+                  <div style="min-width:0;flex:1">
+                    <p style="margin:0;font-size:13.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ t.title }}</p>
+                    <p style="margin:2px 0 0;font-size:12px;color:#6b7490;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ t.meta }}</p>
+                  </div>
+                  <p style="margin:0;font-size:13.5px;font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap">{{ t.amount }}</p>
+                  <button onClick="{{ t.act }}" style="flex:0 0 auto;padding:7px 12px;border:1px solid #e6e9f2;border-radius:9px;background:#fff;font-family:inherit;font-size:12.5px;font-weight:600;color:#3b4256;cursor:pointer;white-space:nowrap" style-hover="border-color:#c9c4f5;background:#f7f6ff;color:#4f46e5" type="button">{{ t.action }}</button>
+                </div>
+              </sc-for>
+              <div style="padding:11px 18px;font-size:12.5px;color:#8a92a8">Tout est à jour au-delà de ces 5 éléments.</div>
+            </section>
+            </sc-if>
+
+            <div style="display:flex;flex-direction:column;gap:14px">
+              <section style="background:#fff;border:1px solid #e6e9f2;border-radius:14px;padding:16px 18px">
+                <h2 style="margin:0 0 12px;font-size:14.5px;font-weight:600">Créer</h2>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+                  <button onClick="{{ goQuoteNew }}" style="display:flex;flex-direction:column;gap:8px;padding:12px;border:1px solid #e6e9f2;border-radius:11px;background:#fff;font-family:inherit;cursor:pointer;text-align:left" style-hover="border-color:#c9c4f5;background:#f7f6ff" type="button">
+                    <i data-lucide="file-text" style="width:17px;height:17px;color:#7c3aed"></i>
+                    <span style="font-size:13px;font-weight:600;color:#0f1533">Devis</span>
+                  </button>
+                  <button onClick="{{ goInvoiceNew }}" style="display:flex;flex-direction:column;gap:8px;padding:12px;border:1px solid #e6e9f2;border-radius:11px;background:#fff;font-family:inherit;cursor:pointer;text-align:left" style-hover="border-color:#c9c4f5;background:#f7f6ff" type="button">
+                    <i data-lucide="receipt" style="width:17px;height:17px;color:#4f46e5"></i>
+                    <span style="font-size:13px;font-weight:600;color:#0f1533">Facture</span>
+                  </button>
+                  <button onClick="{{ goClientNew }}" style="display:flex;flex-direction:column;gap:8px;padding:12px;border:1px solid #e6e9f2;border-radius:11px;background:#fff;font-family:inherit;cursor:pointer;text-align:left" style-hover="border-color:#c9c4f5;background:#f7f6ff" type="button">
+                    <i data-lucide="user-plus" style="width:17px;height:17px;color:#4f46e5"></i>
+                    <span style="font-size:13px;font-weight:600;color:#0f1533">Client</span>
+                  </button>
+                  <button onClick="{{ goProducts }}" style="display:flex;flex-direction:column;gap:8px;padding:12px;border:1px solid #e6e9f2;border-radius:11px;background:#fff;font-family:inherit;cursor:pointer;text-align:left" style-hover="border-color:#c9c4f5;background:#f7f6ff" type="button">
+                    <i data-lucide="package" style="width:17px;height:17px;color:#4f46e5"></i>
+                    <span style="font-size:13px;font-weight:600;color:#0f1533">Produit</span>
+                  </button>
+                </div>
+              </section>
+
+              <section style="background:#fff;border:1px solid #e6e9f2;border-radius:14px;padding:16px 18px">
+                <h2 style="margin:0 0 4px;font-size:14.5px;font-weight:600">Ce mois</h2>
+                <div style="display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid #f3f5fa">
+                  <span style="font-size:13px;color:#6b7490">Devis envoyés</span><span style="font-size:13.5px;font-weight:600;font-variant-numeric:tabular-nums">7</span>
+                </div>
+                <div style="display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid #f3f5fa">
+                  <span style="font-size:13px;color:#6b7490">Taux d'acceptation</span><span style="font-size:13.5px;font-weight:600;font-variant-numeric:tabular-nums">71 %</span>
+                </div>
+                <div style="display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid #f3f5fa">
+                  <span style="font-size:13px;color:#6b7490">Panier moyen</span><span style="font-size:13.5px;font-weight:600;font-variant-numeric:tabular-nums">1 386,67 €</span>
+                </div>
+                <div style="display:flex;align-items:center;justify-content:space-between;padding:9px 0">
+                  <span style="font-size:13px;color:#6b7490">Meilleur client</span><span style="font-size:13.5px;font-weight:600">Menuiserie Vasseur</span>
+                </div>
+              </section>
+            </div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:minmax(0,1.62fr) minmax(0,1fr);gap:14px;margin-top:14px;align-items:start">
+            <section style="background:#fff;border:1px solid #e6e9f2;border-radius:14px;padding:16px 18px">
+              <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px">
+                <div>
+                  <h2 style="margin:0;font-size:14.5px;font-weight:600">Chiffre d'affaires encaissé</h2>
+                  <p style="margin:3px 0 0;font-size:12.5px;color:#6b7490">12 derniers mois · 98 340 € au total</p>
+                </div>
+                <div style="display:flex;gap:4px;padding:3px;background:#f3f5fa;border-radius:9px">
+                  <span style="padding:5px 10px;border-radius:7px;background:#fff;font-size:12px;font-weight:600;color:#0f1533;box-shadow:0 1px 2px rgba(15,21,51,.08)">12 mois</span>
+                  <span style="padding:5px 10px;border-radius:7px;font-size:12px;font-weight:600;color:#8a92a8">6 mois</span>
+                  <span style="padding:5px 10px;border-radius:7px;font-size:12px;font-weight:600;color:#8a92a8">Année</span>
+                </div>
+              </div>
+              <div style="display:flex;align-items:flex-end;gap:10px;height:172px;margin-top:18px">
+                <sc-for hint-placeholder-count="12" list="{{ months }}" as="m">
+                  <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:7px">
+                    <div style="width:100%;height:{{ m.h }}px;border-radius:6px 6px 3px 3px;background:{{ m.fill }}"></div>
+                    <span style="font-size:10.5px;font-weight:500;color:#a3aabd">{{ m.label }}</span>
+                  </div>
+                </sc-for>
+              </div>
+            </section>
+
+            <section style="background:#fff;border:1px solid #e6e9f2;border-radius:14px;overflow:hidden">
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid #eef0f6">
+                <h2 style="margin:0;font-size:14.5px;font-weight:600">Activité récente</h2>
+                <button onClick="{{ goInvoices }}" style="border:0;background:transparent;font-family:inherit;font-size:12.5px;font-weight:600;color:#6b7490;cursor:pointer" style-hover="color:#4f46e5" type="button">Voir tout</button>
+              </div>
+              <sc-for hint-placeholder-count="5" list="{{ activity }}" as="a">
+                <div style="display:flex;align-items:center;gap:11px;padding:11px 18px;border-bottom:1px solid #f3f5fa" style-hover="background:#fafbfe">
+                  <span style="width:28px;height:28px;flex:0 0 28px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:{{ a.tintBg }};color:{{ a.tintFg }}">
+                    <i data-lucide="{{ a.icon }}" style="width:14px;height:14px"></i>
+                  </span>
+                  <div style="min-width:0;flex:1">
+                    <p style="margin:0;font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ a.title }}</p>
+                    <p style="margin:1px 0 0;font-size:11.5px;color:#8a92a8">{{ a.when }}</p>
+                  </div>
+                  <span style="font-size:12.5px;font-weight:600;font-variant-numeric:tabular-nums;color:#3b4256">{{ a.amount }}</span>
+                </div>
+              </sc-for>
+            </section>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+    <sc-if value="{{ isDocs }}">
+      <div style="display:flex;flex-direction:column;height:100%;min-height:0">
+        <header style="flex:0 0 auto;background:#fff;border-bottom:1px solid #e6e9f2">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 24px 12px">
+            <div style="display:flex;align-items:center;gap:10px;min-width:0">
+              <h1 style="margin:0;font-size:19px;font-weight:600;letter-spacing:-.01em">{{ docTitle }}</h1>
+              <span style="font-size:12px;font-weight:600;color:#6b7490;background:#f3f5fa;border-radius:20px;padding:3px 9px">{{ docCount }}</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px">
+              <button style="display:flex;align-items:center;gap:7px;padding:9px 12px;border:1px solid #e6e9f2;border-radius:10px;background:#fff;font-family:inherit;font-size:13px;font-weight:600;color:#3b4256;cursor:pointer" style-hover="background:#f7f8fd" type="button">
+                <i data-lucide="download" style="width:15px;height:15px;color:#8a92a8"></i>Exporter
+              </button>
+              <button onClick="{{ docNewAction }}" style="display:flex;align-items:center;gap:7px;padding:9px 14px;border:0;border-radius:10px;background:#4f46e5;color:#fff;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;box-shadow:0 10px 22px -12px rgba(79,70,229,.85)" style-hover="background:#4338ca" type="button">
+                <i data-lucide="plus" style="width:15px;height:15px"></i>{{ docNewLabel }}
+              </button>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;padding:0 24px 12px;flex-wrap:wrap">
+            <div style="position:relative;flex:1;min-width:220px;max-width:340px">
+              <i data-lucide="search" style="position:absolute;left:11px;top:9px;width:16px;height:16px;color:#a3aabd"></i>
+              <input placeholder="{{ docSearchPlaceholder }}" style="width:100%;padding:9px 12px 9px 34px;border:1px solid #e6e9f2;border-radius:10px;background:#fbfcfe;font-family:inherit;font-size:13px;color:#0f1533;outline:none" style-focus="border-color:#4f46e5;background:#fff;box-shadow:0 0 0 3px rgba(79,70,229,.14)" />
+            </div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap">
+              <sc-for hint-placeholder-count="5" list="{{ docFilters }}" as="f">
+                <button onClick="{{ f.pick }}" style="display:flex;align-items:center;gap:6px;padding:7px 11px;border:1px solid {{ f.border }};border-radius:20px;background:{{ f.bg }};font-family:inherit;font-size:12.5px;font-weight:600;color:{{ f.fg }};cursor:pointer" style-hover="border-color:#c9c4f5" type="button">
+                  {{ f.label }}<span style="font-size:11px;font-weight:600;color:{{ f.countFg }}">{{ f.count }}</span>
+                </button>
+              </sc-for>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;margin-left:auto">
+              <button style="display:flex;align-items:center;gap:7px;padding:8px 11px;border:1px solid #e6e9f2;border-radius:10px;background:#fff;font-family:inherit;font-size:12.5px;font-weight:600;color:#4a5268;cursor:pointer" style-hover="background:#f7f8fd" type="button">
+                <i data-lucide="sliders-horizontal" style="width:15px;height:15px;color:#8a92a8"></i>Filtres
+              </button>
+              <button style="display:flex;align-items:center;gap:7px;padding:8px 11px;border:1px solid #e6e9f2;border-radius:10px;background:#fff;font-family:inherit;font-size:12.5px;font-weight:600;color:#4a5268;cursor:pointer" style-hover="background:#f7f8fd" type="button">
+                <i data-lucide="arrow-down-wide-narrow" style="width:15px;height:15px;color:#8a92a8"></i>Date d'émission
+              </button>
+            </div>
+          </div>
+        </header>
+
+        <div style="flex:1;min-height:0;display:flex">
+          <div class="sb" style="flex:1;min-width:0;overflow:auto">
+            <table style="width:100%;border-collapse:collapse;font-size:13.5px">
+              <thead>
+                <tr style="background:#fafbfe">
+                  <th style="position:sticky;top:0;background:#fafbfe;width:38px;padding:9px 0 9px 24px;border-bottom:1px solid #e6e9f2">
+                    <input aria-label="Tout sélectionner" style="width:15px;height:15px;accent-color:#4f46e5" type="checkbox" />
+                  </th>
+                  <th style="position:sticky;top:0;background:#fafbfe;text-align:left;padding:9px 12px;border-bottom:1px solid #e6e9f2;font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:#8a92a8">Numéro</th>
+                  <th style="position:sticky;top:0;background:#fafbfe;text-align:left;padding:9px 12px;border-bottom:1px solid #e6e9f2;font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:#8a92a8">Client</th>
+                  <th style="position:sticky;top:0;background:#fafbfe;text-align:left;padding:9px 12px;border-bottom:1px solid #e6e9f2;font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:#8a92a8">Émission</th>
+                  <th style="position:sticky;top:0;background:#fafbfe;text-align:left;padding:9px 12px;border-bottom:1px solid #e6e9f2;font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:#8a92a8">{{ docDueLabel }}</th>
+                  <th style="position:sticky;top:0;background:#fafbfe;text-align:right;padding:9px 12px;border-bottom:1px solid #e6e9f2;font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:#8a92a8">Total TTC</th>
+                  <th style="position:sticky;top:0;background:#fafbfe;text-align:left;padding:9px 12px;border-bottom:1px solid #e6e9f2;font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:#8a92a8">Statut</th>
+                  <th style="position:sticky;top:0;background:#fafbfe;width:96px;padding:9px 24px 9px 12px;border-bottom:1px solid #e6e9f2"></th>
+                </tr>
+              </thead>
+              <tbody>
+                <sc-for hint-placeholder-count="8" list="{{ docRows }}" as="r">
+                  <tr onClick="{{ r.select }}" style="cursor:pointer;background:{{ r.rowBg }};border-left:3px solid {{ r.rowBar }}" style-hover="background:#f7f8fd">
+                    <td style="padding:0 0 0 21px;border-bottom:1px solid #f3f5fa">
+                      <input aria-label="Sélectionner" style="width:15px;height:15px;accent-color:#4f46e5" type="checkbox" />
+                    </td>
+                    <td style="padding:11px 12px;border-bottom:1px solid #f3f5fa;font-weight:600;font-variant-numeric:tabular-nums">{{ r.number }}</td>
+                    <td style="padding:11px 12px;border-bottom:1px solid #f3f5fa;color:#3b4256">{{ r.client }}</td>
+                    <td style="padding:11px 12px;border-bottom:1px solid #f3f5fa;color:#6b7490;font-variant-numeric:tabular-nums">{{ r.issued }}</td>
+                    <td style="padding:11px 12px;border-bottom:1px solid #f3f5fa;color:{{ r.dueFg }};font-variant-numeric:tabular-nums">{{ r.due }}</td>
+                    <td style="padding:11px 12px;border-bottom:1px solid #f3f5fa;text-align:right;font-weight:600;font-variant-numeric:tabular-nums">{{ r.amount }}</td>
+                    <td style="padding:11px 12px;border-bottom:1px solid #f3f5fa">
+                      <span style="display:inline-flex;align-items:center;gap:6px;padding:3px 9px;border-radius:20px;font-size:11.5px;font-weight:600;background:{{ r.statusBg }};color:{{ r.statusFg }}">
+                        <span style="width:5px;height:5px;border-radius:50%;background:{{ r.statusDot }}"></span>{{ r.status }}
+                      </span>
+                    </td>
+                    <td style="padding:11px 24px 11px 12px;border-bottom:1px solid #f3f5fa">
+                      <div style="display:flex;align-items:center;justify-content:flex-end;gap:2px">
+                        <span style="width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#8a92a8" style-hover="background:#eef0f6;color:#4f46e5"><i data-lucide="eye" style="width:15px;height:15px"></i></span>
+                        <span style="width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#8a92a8" style-hover="background:#eef0f6;color:#4f46e5"><i data-lucide="download" style="width:15px;height:15px"></i></span>
+                        <span style="width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#8a92a8" style-hover="background:#eef0f6;color:#4f46e5"><i data-lucide="more-horizontal" style="width:15px;height:15px"></i></span>
+                      </div>
+                    </td>
+                  </tr>
+                </sc-for>
+              </tbody>
+            </table>
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 24px">
+              <p style="margin:0;font-size:12.5px;color:#8a92a8">8 sur 24 documents</p>
+              <button style="padding:8px 14px;border:1px solid #e6e9f2;border-radius:10px;background:#fff;font-family:inherit;font-size:12.5px;font-weight:600;color:#4f46e5;cursor:pointer" style-hover="background:#f7f6ff;border-color:#c9c4f5" type="button">Charger 16 de plus</button>
+            </div>
+          </div>
+
+          <aside class="sb" style="width:392px;flex:0 0 392px;background:#fff;border-left:1px solid #e6e9f2;overflow-y:auto;display:flex;flex-direction:column">
+            <div style="padding:18px 20px 16px;border-bottom:1px solid #eef0f6">
+              <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px">
+                <div style="min-width:0">
+                  <p style="margin:0;font-size:10.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#a3aabd">{{ docKindLabel }}</p>
+                  <h2 style="margin:3px 0 0;font-size:18px;font-weight:600;letter-spacing:-.01em">{{ detailNumber }}</h2>
+                  <p style="margin:3px 0 0;font-size:13px;color:#6b7490">{{ detailClient }}</p>
+                </div>
+                <span style="display:inline-flex;align-items:center;gap:6px;padding:3px 9px;border-radius:20px;font-size:11.5px;font-weight:600;background:{{ detailStatusBg }};color:{{ detailStatusFg }};white-space:nowrap">
+                  <span style="width:5px;height:5px;border-radius:50%;background:{{ detailStatusFg }}"></span>{{ detailStatus }}
+                </span>
+              </div>
+              <p style="margin:16px 0 0;font-size:27px;font-weight:600;letter-spacing:-.03em;font-variant-numeric:tabular-nums">{{ detailAmount }}</p>
+              <p style="margin:4px 0 0;font-size:12.5px;color:#6b7490">{{ detailAmountMeta }}</p>
+              <div style="display:flex;gap:8px;margin-top:16px">
+                <button style="flex:1;display:flex;align-items:center;justify-content:center;gap:7px;padding:10px;border:0;border-radius:10px;background:#4f46e5;color:#fff;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;box-shadow:0 10px 22px -12px rgba(79,70,229,.85)" style-hover="background:#4338ca" type="button">
+                  <i data-lucide="{{ detailPrimaryIcon }}" style="width:15px;height:15px"></i>{{ detailPrimary }}
+                </button>
+                <button style="width:40px;display:flex;align-items:center;justify-content:center;border:1px solid #e6e9f2;border-radius:10px;background:#fff;color:#6b7490;cursor:pointer" style-hover="background:#f7f8fd" type="button"><i data-lucide="download" style="width:16px;height:16px"></i></button>
+                <button style="width:40px;display:flex;align-items:center;justify-content:center;border:1px solid #e6e9f2;border-radius:10px;background:#fff;color:#6b7490;cursor:pointer" style-hover="background:#f7f8fd" type="button"><i data-lucide="more-horizontal" style="width:16px;height:16px"></i></button>
+              </div>
+            </div>
+
+            <div style="padding:16px 20px;border-bottom:1px solid #eef0f6">
+              <div style="display:flex;align-items:center;gap:0">
+                <sc-for hint-placeholder-count="4" list="{{ detailSteps }}" as="s">
+                  <div style="flex:1;display:flex;flex-direction:column;gap:6px">
+                    <div style="display:flex;align-items:center">
+                      <span style="width:9px;height:9px;border-radius:50%;background:{{ s.dot }};flex:0 0 9px"></span>
+                      <span style="flex:1;height:2px;background:{{ s.line }}"></span>
+                    </div>
+                    <span style="font-size:11px;font-weight:600;color:{{ s.fg }}">{{ s.label }}</span>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+
+            <div style="padding:16px 20px;border-bottom:1px solid #eef0f6">
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+                <div><p style="margin:0;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#a3aabd">Émission</p><p style="margin:3px 0 0;font-size:13px;font-weight:500">{{ detailIssued }}</p></div>
+                <div><p style="margin:0;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#a3aabd">{{ docDueLabel }}</p><p style="margin:3px 0 0;font-size:13px;font-weight:500;color:{{ detailDueFg }}">{{ detailDue }}</p></div>
+                <div><p style="margin:0;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#a3aabd">Total HT</p><p style="margin:3px 0 0;font-size:13px;font-weight:500;font-variant-numeric:tabular-nums">{{ detailHt }}</p></div>
+                <div><p style="margin:0;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#a3aabd">TVA</p><p style="margin:3px 0 0;font-size:13px;font-weight:500;font-variant-numeric:tabular-nums">{{ detailVat }}</p></div>
+              </div>
+            </div>
+
+            <sc-if hint-placeholder-val="{{ true }}" value="{{ showPdfPreview }}">
+            <div style="padding:16px 20px;border-bottom:1px solid #eef0f6">
+              <p style="margin:0 0 10px;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#a3aabd">Aperçu PDF</p>
+              <div style="position:relative;border:1px solid #e6e9f2;border-radius:10px;background:#fbfcfe;height:172px;overflow:hidden">
+                <div style="position:absolute;inset:0;background-image:repeating-linear-gradient(45deg,#f1f2f8 0 8px,#fbfcfe 8px 16px)"></div>
+                <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px">
+                  <i data-lucide="file-text" style="width:22px;height:22px;color:#a3aabd"></i>
+                  <p style="margin:0;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px;color:#8a92a8">aperçu du PDF · modèle Classique</p>
+                  <button style="padding:6px 11px;border:1px solid #e6e9f2;border-radius:8px;background:#fff;font-family:inherit;font-size:12px;font-weight:600;color:#4f46e5;cursor:pointer" type="button">Ouvrir en grand</button>
+                </div>
+              </div>
+            </div>
+            </sc-if>
+
+            <div style="padding:16px 20px 24px">
+              <p style="margin:0 0 12px;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#a3aabd">Historique</p>
+              <sc-for hint-placeholder-count="3" list="{{ detailHistory }}" as="h">
+                <div style="display:flex;gap:10px;padding-bottom:14px">
+                  <span style="width:24px;height:24px;flex:0 0 24px;border-radius:50%;background:{{ h.tintBg }};color:{{ h.tintFg }};display:flex;align-items:center;justify-content:center"><i data-lucide="{{ h.icon }}" style="width:13px;height:13px"></i></span>
+                  <div style="min-width:0">
+                    <p style="margin:0;font-size:12.5px;font-weight:500">{{ h.label }}</p>
+                    <p style="margin:1px 0 0;font-size:11.5px;color:#8a92a8">{{ h.when }}</p>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+          </aside>
+        </div>
+      </div>
+    </sc-if>
+    <sc-if value="{{ isComposer }}">
+      <div style="display:flex;flex-direction:column;height:100%;min-height:0;background:#f6f7fb">
+        <header style="flex:0 0 auto;background:#fff;border-bottom:1px solid #e6e9f2">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px 20px">
+            <div style="display:flex;align-items:center;gap:12px;min-width:0">
+              <button onClick="{{ composerBack }}" style="display:flex;align-items:center;gap:6px;padding:7px 10px;border:1px solid #e6e9f2;border-radius:9px;background:#fff;font-family:inherit;font-size:12.5px;font-weight:600;color:#4a5268;cursor:pointer" style-hover="background:#f7f8fd" type="button">
+                <i data-lucide="arrow-left" style="width:15px;height:15px"></i>Retour
+              </button>
+              <div style="min-width:0">
+                <h1 style="margin:0;font-size:17px;font-weight:600;letter-spacing:-.01em">{{ composerTitle }}</h1>
+                <p style="margin:1px 0 0;font-size:12px;color:#8a92a8">{{ composerNumber }} · brouillon enregistré à 10:42</p>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px">
+              <span style="display:flex;align-items:center;gap:6px;font-size:12px;color:#059669;background:#ecfdf5;border-radius:20px;padding:5px 10px;font-weight:600">
+                <i data-lucide="check" style="width:14px;height:14px"></i>Enregistré
+              </span>
+              <button style="padding:9px 13px;border:1px solid #e6e9f2;border-radius:10px;background:#fff;font-family:inherit;font-size:13px;font-weight:600;color:#3b4256;cursor:pointer" style-hover="background:#f7f8fd" type="button">Annuler</button>
+              <button onClick="{{ composerSubmit }}" style="display:flex;align-items:center;gap:7px;padding:9px 15px;border:0;border-radius:10px;background:#4f46e5;color:#fff;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;box-shadow:0 10px 22px -12px rgba(79,70,229,.85)" style-hover="background:#4338ca" type="button">
+                <i data-lucide="send" style="width:15px;height:15px"></i>{{ composerCta }}
+              </button>
+            </div>
+          </div>
+        </header>
+
+        <div class="sb" style="flex:1;min-height:0;overflow:auto;padding:16px 20px 24px">
+          <div style="display:grid;grid-template-columns:300px minmax(0,1fr) 300px;gap:14px;align-items:start">
+
+            <div style="display:flex;flex-direction:column;gap:12px">
+              <section style="background:#fff;border:1px solid #e6e9f2;border-radius:14px;padding:14px 16px">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+                  <h2 style="margin:0;font-size:13px;font-weight:600">Client</h2>
+                  <span style="font-size:11px;font-weight:600;color:#dc2626">Obligatoire</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:10px;padding:10px;border:1px solid #e6e9f2;border-radius:10px;background:#fbfcfe">
+                  <span style="width:32px;height:32px;flex:0 0 32px;border-radius:9px;background:#f1efff;color:#4f46e5;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700">BM</span>
+                  <div style="min-width:0;flex:1">
+                    <p style="margin:0;font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Boulangerie Marchand</p>
+                    <p style="margin:1px 0 0;font-size:11.5px;color:#8a92a8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">contact@marchand.fr</p>
+                  </div>
+                  <i data-lucide="pencil" style="width:14px;height:14px;color:#8a92a8"></i>
+                </div>
+                <p style="margin:8px 0 0;font-size:11.5px;color:#8a92a8">12 rue des Lilas, 59100 Roubaix · TVA FR40123456789</p>
+              </section>
+
+              <section style="background:#fff;border:1px solid #e6e9f2;border-radius:14px;padding:14px 16px">
+                <h2 style="margin:0 0 12px;font-size:13px;font-weight:600">Dates et conditions</h2>
+                <label style="display:block;font-size:12px;font-weight:500;color:#4a5268;margin-bottom:5px">Date d'émission</label>
+                <input style="width:100%;padding:8px 10px;border:1px solid #e6e9f2;border-radius:9px;font-family:inherit;font-size:13px;color:#0f1533;outline:none;margin-bottom:12px" style-focus="border-color:#4f46e5;box-shadow:0 0 0 3px rgba(79,70,229,.14)" value="02/09/2026" />
+                <label style="display:block;font-size:12px;font-weight:500;color:#4a5268;margin-bottom:5px">{{ composerDueLabel }}</label>
+                <input style="width:100%;padding:8px 10px;border:1px solid #e6e9f2;border-radius:9px;font-family:inherit;font-size:13px;color:#0f1533;outline:none;margin-bottom:12px" style-focus="border-color:#4f46e5;box-shadow:0 0 0 3px rgba(79,70,229,.14)" value="02/10/2026" />
+                <label style="display:block;font-size:12px;font-weight:500;color:#4a5268;margin-bottom:5px">Délai de paiement</label>
+                <div style="display:flex;gap:6px">
+                  <span style="flex:1;text-align:center;padding:7px 0;border:1px solid #c9c4f5;border-radius:9px;background:#f1efff;font-size:12.5px;font-weight:600;color:#4338ca">30 j</span>
+                  <span style="flex:1;text-align:center;padding:7px 0;border:1px solid #e6e9f2;border-radius:9px;font-size:12.5px;font-weight:600;color:#6b7490">45 j</span>
+                  <span style="flex:1;text-align:center;padding:7px 0;border:1px solid #e6e9f2;border-radius:9px;font-size:12.5px;font-weight:600;color:#6b7490">60 j</span>
+                </div>
+              </section>
+
+              <section style="background:#fff;border:1px solid #e6e9f2;border-radius:14px;padding:14px 16px">
+                <h2 style="margin:0 0 10px;font-size:13px;font-weight:600">Notes affichées sur le document</h2>
+                <textarea placeholder="Conditions, remarques…" style="width:100%;min-height:74px;padding:9px 10px;border:1px solid #e6e9f2;border-radius:9px;font-family:inherit;font-size:13px;color:#0f1533;outline:none;resize:vertical" style-focus="border-color:#4f46e5;box-shadow:0 0 0 3px rgba(79,70,229,.14)"></textarea>
+              </section>
+            </div>
+
+            <section style="background:#fff;border:1px solid #e6e9f2;border-radius:14px;overflow:hidden">
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:13px 16px;border-bottom:1px solid #eef0f6;flex-wrap:wrap">
+                <h2 style="margin:0;font-size:13.5px;font-weight:600">Lignes du document</h2>
+                <div style="display:flex;gap:6px;flex-wrap:wrap">
+                  <button style="display:flex;align-items:center;gap:6px;padding:7px 11px;border:1px solid #e6e9f2;border-radius:9px;background:#fff;font-family:inherit;font-size:12.5px;font-weight:600;color:#3b4256;cursor:pointer" style-hover="background:#f7f8fd" type="button">
+                    <i data-lucide="plus" style="width:14px;height:14px"></i>Ligne libre
+                  </button>
+                  <button style="display:flex;align-items:center;gap:6px;padding:7px 11px;border:1px solid #c9c4f5;border-radius:9px;background:#f1efff;font-family:inherit;font-size:12.5px;font-weight:600;color:#4338ca;cursor:pointer" style-hover="background:#e9e5ff" type="button">
+                    <i data-lucide="library" style="width:14px;height:14px"></i>Catalogue
+                  </button>
+                  <button style="display:flex;align-items:center;gap:6px;padding:7px 11px;border:1px solid #e3d5f9;border-radius:9px;background:#f9f5ff;font-family:inherit;font-size:12.5px;font-weight:600;color:#7c3aed;cursor:pointer" style-hover="background:#f3ebff" type="button">
+                    <i data-lucide="sparkles" style="width:14px;height:14px"></i>Import IA / CSV
+                  </button>
+                </div>
+              </div>
+
+              <table style="width:100%;border-collapse:collapse;font-size:13px">
+                <thead>
+                  <tr style="background:#fafbfe">
+                    <th style="text-align:left;padding:8px 12px;border-bottom:1px solid #e6e9f2;font-size:10.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:#8a92a8">Description</th>
+                    <th style="width:70px;text-align:left;padding:8px 8px;border-bottom:1px solid #e6e9f2;font-size:10.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:#8a92a8">Qté</th>
+                    <th style="width:88px;text-align:left;padding:8px 8px;border-bottom:1px solid #e6e9f2;font-size:10.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:#8a92a8">Unité</th>
+                    <th style="width:104px;text-align:left;padding:8px 8px;border-bottom:1px solid #e6e9f2;font-size:10.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:#8a92a8">Prix HT</th>
+                    <th style="width:74px;text-align:left;padding:8px 8px;border-bottom:1px solid #e6e9f2;font-size:10.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:#8a92a8">TVA</th>
+                    <th style="width:110px;text-align:right;padding:8px 8px;border-bottom:1px solid #e6e9f2;font-size:10.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:#8a92a8">Total TTC</th>
+                    <th style="width:40px;padding:8px 12px 8px 8px;border-bottom:1px solid #e6e9f2"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <sc-for hint-placeholder-count="3" list="{{ composerLines }}" as="l">
+                    <tr style="border-bottom:1px solid #f3f5fa" style-hover="background:#fafbfe">
+                      <td style="padding:8px 12px">
+                        <input style="width:100%;padding:7px 9px;border:1px solid #e6e9f2;border-radius:8px;font-family:inherit;font-size:13px;outline:none" style-focus="border-color:#4f46e5;box-shadow:0 0 0 3px rgba(79,70,229,.14)" value="{{ l.description }}" />
+                        <sc-if value="{{ l.fromCatalog }}">
+                          <span style="display:inline-block;margin-top:5px;padding:1px 6px;border-radius:5px;background:#f1efff;font-size:10.5px;font-weight:700;color:#4f46e5">Catalogue</span>
+                        </sc-if>
+                      </td>
+                      <td style="padding:8px 8px"><input style="width:100%;padding:7px 9px;border:1px solid #e6e9f2;border-radius:8px;font-family:inherit;font-size:13px;text-align:right;font-variant-numeric:tabular-nums;outline:none" style-focus="border-color:#4f46e5;box-shadow:0 0 0 3px rgba(79,70,229,.14)" value="{{ l.qty }}" /></td>
+                      <td style="padding:8px 8px"><input style="width:100%;padding:7px 9px;border:1px solid #e6e9f2;border-radius:8px;font-family:inherit;font-size:13px;outline:none" style-focus="border-color:#4f46e5;box-shadow:0 0 0 3px rgba(79,70,229,.14)" value="{{ l.unit }}" /></td>
+                      <td style="padding:8px 8px"><input style="width:100%;padding:7px 9px;border:1px solid #e6e9f2;border-radius:8px;font-family:inherit;font-size:13px;text-align:right;font-variant-numeric:tabular-nums;outline:none" style-focus="border-color:#4f46e5;box-shadow:0 0 0 3px rgba(79,70,229,.14)" value="{{ l.price }}" /></td>
+                      <td style="padding:8px 8px"><input style="width:100%;padding:7px 9px;border:1px solid #e6e9f2;border-radius:8px;font-family:inherit;font-size:13px;text-align:right;font-variant-numeric:tabular-nums;outline:none" style-focus="border-color:#4f46e5;box-shadow:0 0 0 3px rgba(79,70,229,.14)" value="{{ l.vat }}" /></td>
+                      <td style="padding:8px 8px;text-align:right;font-weight:600;font-variant-numeric:tabular-nums">{{ l.total }}</td>
+                      <td style="padding:8px 12px 8px 8px;text-align:right">
+                        <span style="display:inline-flex;width:26px;height:26px;border-radius:7px;align-items:center;justify-content:center;color:#a3aabd" style-hover="background:#fef2f2;color:#dc2626"><i data-lucide="trash-2" style="width:14px;height:14px"></i></span>
+                      </td>
+                    </tr>
+                  </sc-for>
+                  <tr>
+                    <td colSpan="7" style="padding:10px 12px">
+                      <button style="display:flex;align-items:center;gap:7px;padding:8px 12px;border:1px dashed #cfd5e6;border-radius:9px;background:#fbfcfe;font-family:inherit;font-size:12.5px;font-weight:600;color:#4f46e5;cursor:pointer;width:100%;justify-content:center" style-hover="border-color:#4f46e5;background:#f7f6ff" type="button">
+                        <i data-lucide="plus" style="width:14px;height:14px"></i>Ajouter une ligne
+                      </button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+
+              <div style="display:flex;justify-content:flex-end;padding:14px 16px;border-top:1px solid #eef0f6;background:#fafbfe">
+                <div style="width:280px">
+                  <div style="display:flex;justify-content:space-between;padding:5px 0;font-size:13px;color:#6b7490"><span>Total HT</span><span style="font-weight:600;color:#0f1533;font-variant-numeric:tabular-nums">2 450,00 €</span></div>
+                  <div style="display:flex;justify-content:space-between;padding:5px 0;font-size:13px;color:#6b7490"><span>TVA 20 %</span><span style="font-weight:600;color:#0f1533;font-variant-numeric:tabular-nums">490,00 €</span></div>
+                  <div style="display:flex;justify-content:space-between;padding:10px 0 0;margin-top:6px;border-top:1px solid #e6e9f2;font-size:15px;font-weight:600"><span>Total TTC</span><span style="color:#4f46e5;font-variant-numeric:tabular-nums">2 940,00 €</span></div>
+                </div>
+              </div>
+            </section>
+
+            <div style="display:flex;flex-direction:column;gap:12px">
+              <section style="background:#fff;border:1px solid #e6e9f2;border-radius:14px;padding:14px 16px">
+                <h2 style="margin:0 0 10px;font-size:13px;font-weight:600">Modèle PDF</h2>
+                <div style="display:flex;gap:8px">
+                  <div style="flex:1;border:2px solid #4f46e5;border-radius:10px;padding:6px;background:#f7f6ff">
+                    <div style="height:52px;border-radius:6px;background-image:repeating-linear-gradient(45deg,#eceaff 0 6px,#f7f6ff 6px 12px)"></div>
+                    <p style="margin:6px 0 0;font-size:11.5px;font-weight:600;text-align:center;color:#4338ca">Classique</p>
+                  </div>
+                  <div style="flex:1;border:1px solid #e6e9f2;border-radius:10px;padding:6px">
+                    <div style="height:52px;border-radius:6px;background-image:repeating-linear-gradient(45deg,#f1f2f8 0 6px,#fbfcfe 6px 12px)"></div>
+                    <p style="margin:6px 0 0;font-size:11.5px;font-weight:600;text-align:center;color:#6b7490">Moderne</p>
+                  </div>
+                </div>
+              </section>
+
+              <section style="background:#fff;border:1px solid #e6e9f2;border-radius:14px;padding:14px 16px">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+                  <h2 style="margin:0;font-size:13px;font-weight:600">Aperçu en direct</h2>
+                  <button style="border:0;background:transparent;font-family:inherit;font-size:12px;font-weight:600;color:#4f46e5;cursor:pointer;padding:0" type="button">Plein écran</button>
+                </div>
+                <div style="position:relative;border:1px solid #e6e9f2;border-radius:10px;background:#fbfcfe;aspect-ratio:210/297;overflow:hidden">
+                  <div style="position:absolute;inset:0;background-image:repeating-linear-gradient(45deg,#f1f2f8 0 8px,#fbfcfe 8px 16px)"></div>
+                  <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:16px;text-align:center">
+                    <i data-lucide="file-text" style="width:20px;height:20px;color:#a3aabd"></i>
+                    <p style="margin:0;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px;color:#8a92a8">aperçu A4 du document<br />mis à jour à chaque frappe</p>
+                  </div>
+                </div>
+              </section>
+            </div>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+    <sc-if value="{{ isClients }}">
+      <div style="display:flex;flex-direction:column;height:100%;min-height:0">
+        <header style="flex:0 0 auto;background:#fff;border-bottom:1px solid #e6e9f2">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 24px 12px">
+            <div style="display:flex;align-items:center;gap:10px">
+              <h1 style="margin:0;font-size:19px;font-weight:600;letter-spacing:-.01em">Clients</h1>
+              <span style="font-size:12px;font-weight:600;color:#6b7490;background:#f3f5fa;border-radius:20px;padding:3px 9px">38 clients</span>
+            </div>
+            <div style="display:flex;gap:8px">
+              <button style="display:flex;align-items:center;gap:7px;padding:9px 12px;border:1px solid #e6e9f2;border-radius:10px;background:#fff;font-family:inherit;font-size:13px;font-weight:600;color:#3b4256;cursor:pointer" style-hover="background:#f7f8fd" type="button">
+                <i data-lucide="upload" style="width:15px;height:15px;color:#8a92a8"></i>Importer
+              </button>
+              <button style="display:flex;align-items:center;gap:7px;padding:9px 14px;border:0;border-radius:10px;background:#4f46e5;color:#fff;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;box-shadow:0 10px 22px -12px rgba(79,70,229,.85)" style-hover="background:#4338ca" type="button">
+                <i data-lucide="plus" style="width:15px;height:15px"></i>Nouveau client
+              </button>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;padding:0 24px 12px">
+            <div style="position:relative;flex:1;max-width:340px">
+              <i data-lucide="search" style="position:absolute;left:11px;top:9px;width:16px;height:16px;color:#a3aabd"></i>
+              <input placeholder="Nom, société, e-mail, ville…" style="width:100%;padding:9px 12px 9px 34px;border:1px solid #e6e9f2;border-radius:10px;background:#fbfcfe;font-family:inherit;font-size:13px;outline:none" style-focus="border-color:#4f46e5;background:#fff;box-shadow:0 0 0 3px rgba(79,70,229,.14)" />
+            </div>
+            <div style="display:flex;gap:6px">
+              <span style="padding:7px 11px;border:1px solid #c9c4f5;border-radius:20px;background:#f1efff;font-size:12.5px;font-weight:600;color:#4338ca">Tous</span>
+              <span style="padding:7px 11px;border:1px solid #e6e9f2;border-radius:20px;font-size:12.5px;font-weight:600;color:#4a5268">Professionnels</span>
+              <span style="padding:7px 11px;border:1px solid #e6e9f2;border-radius:20px;font-size:12.5px;font-weight:600;color:#4a5268">Particuliers</span>
+              <span style="padding:7px 11px;border:1px solid #e6e9f2;border-radius:20px;font-size:12.5px;font-weight:600;color:#4a5268">Impayés</span>
+            </div>
+          </div>
+        </header>
+
+        <div style="flex:1;min-height:0;display:flex">
+          <div class="sb" style="flex:1;min-width:0;overflow:auto">
+            <table style="width:100%;border-collapse:collapse;font-size:13.5px">
+              <thead>
+                <tr style="background:#fafbfe">
+                  <th style="position:sticky;top:0;background:#fafbfe;text-align:left;padding:9px 12px 9px 24px;border-bottom:1px solid #e6e9f2;font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:#8a92a8">Client</th>
+                  <th style="position:sticky;top:0;background:#fafbfe;text-align:left;padding:9px 12px;border-bottom:1px solid #e6e9f2;font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:#8a92a8">Contact</th>
+                  <th style="position:sticky;top:0;background:#fafbfe;text-align:left;padding:9px 12px;border-bottom:1px solid #e6e9f2;font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:#8a92a8">Ville</th>
+                  <th style="position:sticky;top:0;background:#fafbfe;text-align:right;padding:9px 12px;border-bottom:1px solid #e6e9f2;font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:#8a92a8">CA encaissé</th>
+                  <th style="position:sticky;top:0;background:#fafbfe;text-align:right;padding:9px 12px;border-bottom:1px solid #e6e9f2;font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:#8a92a8">En attente</th>
+                  <th style="position:sticky;top:0;background:#fafbfe;text-align:left;padding:9px 24px 9px 12px;border-bottom:1px solid #e6e9f2;font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:#8a92a8">Dernier document</th>
+                </tr>
+              </thead>
+              <tbody>
+                <sc-for hint-placeholder-count="7" list="{{ clientRows }}" as="c">
+                  <tr onClick="{{ c.select }}" style="cursor:pointer;background:{{ c.rowBg }};border-left:3px solid {{ c.rowBar }}" style-hover="background:#f7f8fd">
+                    <td style="padding:10px 12px 10px 21px;border-bottom:1px solid #f3f5fa">
+                      <div style="display:flex;align-items:center;gap:10px">
+                        <span style="width:30px;height:30px;flex:0 0 30px;border-radius:9px;background:#f1efff;color:#4f46e5;display:flex;align-items:center;justify-content:center;font-size:11.5px;font-weight:700">{{ c.initials }}</span>
+                        <div style="min-width:0">
+                          <p style="margin:0;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ c.name }}</p>
+                          <p style="margin:1px 0 0;font-size:11.5px;color:#8a92a8">{{ c.type }}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td style="padding:10px 12px;border-bottom:1px solid #f3f5fa;color:#3b4256">{{ c.email }}</td>
+                    <td style="padding:10px 12px;border-bottom:1px solid #f3f5fa;color:#6b7490">{{ c.city }}</td>
+                    <td style="padding:10px 12px;border-bottom:1px solid #f3f5fa;text-align:right;font-weight:600;font-variant-numeric:tabular-nums">{{ c.revenue }}</td>
+                    <td style="padding:10px 12px;border-bottom:1px solid #f3f5fa;text-align:right;font-variant-numeric:tabular-nums;color:{{ c.pendingFg }}">{{ c.pending }}</td>
+                    <td style="padding:10px 24px 10px 12px;border-bottom:1px solid #f3f5fa;color:#6b7490">{{ c.last }}</td>
+                  </tr>
+                </sc-for>
+              </tbody>
+            </table>
+          </div>
+
+          <aside class="sb" style="width:392px;flex:0 0 392px;background:#fff;border-left:1px solid #e6e9f2;overflow-y:auto">
+            <div style="padding:20px 20px 16px;border-bottom:1px solid #eef0f6">
+              <div style="display:flex;align-items:center;gap:12px">
+                <span style="width:44px;height:44px;flex:0 0 44px;border-radius:12px;background:#f1efff;color:#4f46e5;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700">{{ clientSelInitials }}</span>
+                <div style="min-width:0">
+                  <h2 style="margin:0;font-size:17px;font-weight:600;letter-spacing:-.01em">{{ clientSelName }}</h2>
+                  <p style="margin:2px 0 0;font-size:12.5px;color:#6b7490">{{ clientSelType }}</p>
+                </div>
+              </div>
+              <div style="display:flex;gap:8px;margin-top:14px">
+                <button style="flex:1;display:flex;align-items:center;justify-content:center;gap:7px;padding:9px;border:0;border-radius:10px;background:#4f46e5;color:#fff;font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer" style-hover="background:#4338ca" type="button">
+                  <i data-lucide="file-text" style="width:14px;height:14px"></i>Nouveau devis
+                </button>
+                <button style="flex:1;display:flex;align-items:center;justify-content:center;gap:7px;padding:9px;border:1px solid #e6e9f2;border-radius:10px;background:#fff;font-family:inherit;font-size:12.5px;font-weight:600;color:#3b4256;cursor:pointer" style-hover="background:#f7f8fd" type="button">
+                  <i data-lucide="receipt" style="width:14px;height:14px"></i>Facturer
+                </button>
+                <button style="width:38px;display:flex;align-items:center;justify-content:center;border:1px solid #e6e9f2;border-radius:10px;background:#fff;color:#6b7490;cursor:pointer" style-hover="background:#f7f8fd" type="button"><i data-lucide="pencil" style="width:15px;height:15px"></i></button>
+              </div>
+            </div>
+            <div style="padding:16px 20px;border-bottom:1px solid #eef0f6;display:grid;grid-template-columns:1fr 1fr;gap:12px">
+              <div><p style="margin:0;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#a3aabd">CA encaissé</p><p style="margin:3px 0 0;font-size:15px;font-weight:600;font-variant-numeric:tabular-nums">{{ clientSelRevenue }}</p></div>
+              <div><p style="margin:0;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#a3aabd">En attente</p><p style="margin:3px 0 0;font-size:15px;font-weight:600;font-variant-numeric:tabular-nums;color:{{ clientSelPendingFg }}">{{ clientSelPending }}</p></div>
+            </div>
+            <div style="padding:16px 20px;border-bottom:1px solid #eef0f6">
+              <p style="margin:0 0 10px;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#a3aabd">Coordonnées</p>
+              <div style="display:flex;align-items:center;gap:9px;padding:6px 0"><i data-lucide="mail" style="width:15px;height:15px;color:#a3aabd"></i><span style="font-size:13px">{{ clientSelEmail }}</span></div>
+              <div style="display:flex;align-items:center;gap:9px;padding:6px 0"><i data-lucide="phone" style="width:15px;height:15px;color:#a3aabd"></i><span style="font-size:13px">06 12 34 56 78</span></div>
+              <div style="display:flex;align-items:flex-start;gap:9px;padding:6px 0"><i data-lucide="map-pin" style="width:15px;height:15px;color:#a3aabd"></i><span style="font-size:13px">12 rue des Lilas, 59100 {{ clientSelCity }}</span></div>
+              <div style="display:flex;align-items:center;gap:9px;padding:6px 0"><i data-lucide="hash" style="width:15px;height:15px;color:#a3aabd"></i><span style="font-size:13px">TVA FR40123456789</span></div>
+            </div>
+            <div style="padding:16px 20px 24px">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+                <p style="margin:0;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#a3aabd">Documents</p>
+                <button style="border:0;background:transparent;font-family:inherit;font-size:12px;font-weight:600;color:#4f46e5;cursor:pointer;padding:0" type="button">Tout voir</button>
+              </div>
+              <sc-for hint-placeholder-count="4" list="{{ clientDocs }}" as="d">
+                <div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid #f3f5fa">
+                  <span style="width:26px;height:26px;flex:0 0 26px;border-radius:8px;background:{{ d.tintBg }};color:{{ d.tintFg }};display:flex;align-items:center;justify-content:center"><i data-lucide="{{ d.icon }}" style="width:13px;height:13px"></i></span>
+                  <div style="min-width:0;flex:1">
+                    <p style="margin:0;font-size:12.5px;font-weight:600">{{ d.number }}</p>
+                    <p style="margin:1px 0 0;font-size:11.5px;color:#8a92a8">{{ d.meta }}</p>
+                  </div>
+                  <span style="font-size:12.5px;font-weight:600;font-variant-numeric:tabular-nums">{{ d.amount }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </aside>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isPayments }}">
+      <div style="display:flex;flex-direction:column;height:100%;min-height:0">
+        <header style="flex:0 0 auto;background:#fff;border-bottom:1px solid #e6e9f2;padding:14px 24px 12px">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:16px">
+            <div style="display:flex;align-items:center;gap:10px">
+              <h1 style="margin:0;font-size:19px;font-weight:600;letter-spacing:-.01em">Paiements</h1>
+              <span style="font-size:12px;font-weight:600;color:#6b7490;background:#f3f5fa;border-radius:20px;padding:3px 9px">17 encaissements</span>
+            </div>
+            <button style="display:flex;align-items:center;gap:7px;padding:9px 14px;border:0;border-radius:10px;background:#4f46e5;color:#fff;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;box-shadow:0 10px 22px -12px rgba(79,70,229,.85)" style-hover="background:#4338ca" type="button">
+              <i data-lucide="plus" style="width:15px;height:15px"></i>Enregistrer un paiement
+            </button>
+          </div>
+        </header>
+        <div class="sb" style="flex:1;min-height:0;overflow-y:auto;padding:18px 24px 28px">
+          <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px">
+            <div style="background:#fff;border:1px solid #e6e9f2;border-radius:14px;padding:15px 17px">
+              <p style="margin:0;font-size:12px;font-weight:600;color:#6b7490">Encaissé en septembre</p>
+              <p style="margin:9px 0 0;font-size:24px;font-weight:600;letter-spacing:-.03em;font-variant-numeric:tabular-nums">12 480,00 €</p>
+            </div>
+            <div style="background:#fff;border:1px solid #e6e9f2;border-radius:14px;padding:15px 17px">
+              <p style="margin:0;font-size:12px;font-weight:600;color:#6b7490">Attendu sous 30 jours</p>
+              <p style="margin:9px 0 0;font-size:24px;font-weight:600;letter-spacing:-.03em;font-variant-numeric:tabular-nums">4 260,00 €</p>
+            </div>
+            <div style="background:#fff;border:1px solid #f3d3d3;border-radius:14px;padding:15px 17px">
+              <p style="margin:0;font-size:12px;font-weight:600;color:#6b7490">Impayés à relancer</p>
+              <p style="margin:9px 0 0;font-size:24px;font-weight:600;letter-spacing:-.03em;font-variant-numeric:tabular-nums;color:#b91c1c">1 850,00 €</p>
+            </div>
+          </div>
+          <div style="margin-top:14px;background:#fff;border:1px solid #e6e9f2;border-radius:14px;overflow:hidden">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 18px;border-bottom:1px solid #eef0f6">
+              <h2 style="margin:0;font-size:14px;font-weight:600">Encaissements</h2>
+              <div style="display:flex;gap:6px">
+                <span style="padding:6px 10px;border:1px solid #c9c4f5;border-radius:20px;background:#f1efff;font-size:12px;font-weight:600;color:#4338ca">Ce mois</span>
+                <span style="padding:6px 10px;border:1px solid #e6e9f2;border-radius:20px;font-size:12px;font-weight:600;color:#4a5268">Trimestre</span>
+                <span style="padding:6px 10px;border:1px solid #e6e9f2;border-radius:20px;font-size:12px;font-weight:600;color:#4a5268">Année</span>
+              </div>
+            </div>
+            <table style="width:100%;border-collapse:collapse;font-size:13.5px">
+              <thead>
+                <tr style="background:#fafbfe">
+                  <th style="text-align:left;padding:9px 18px;border-bottom:1px solid #e6e9f2;font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:#8a92a8">Date</th>
+                  <th style="text-align:left;padding:9px 12px;border-bottom:1px solid #e6e9f2;font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:#8a92a8">Facture</th>
+                  <th style="text-align:left;padding:9px 12px;border-bottom:1px solid #e6e9f2;font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:#8a92a8">Client</th>
+                  <th style="text-align:left;padding:9px 12px;border-bottom:1px solid #e6e9f2;font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:#8a92a8">Moyen</th>
+                  <th style="text-align:right;padding:9px 12px;border-bottom:1px solid #e6e9f2;font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:#8a92a8">Montant</th>
+                  <th style="text-align:left;padding:9px 18px 9px 12px;border-bottom:1px solid #e6e9f2;font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:#8a92a8">Statut</th>
+                </tr>
+              </thead>
+              <tbody>
+                <sc-for hint-placeholder-count="6" list="{{ paymentRows }}" as="p">
+                  <tr style-hover="background:#fafbfe">
+                    <td style="padding:11px 18px;border-bottom:1px solid #f3f5fa;color:#6b7490;font-variant-numeric:tabular-nums">{{ p.date }}</td>
+                    <td style="padding:11px 12px;border-bottom:1px solid #f3f5fa;font-weight:600">{{ p.number }}</td>
+                    <td style="padding:11px 12px;border-bottom:1px solid #f3f5fa;color:#3b4256">{{ p.client }}</td>
+                    <td style="padding:11px 12px;border-bottom:1px solid #f3f5fa;color:#6b7490">{{ p.method }}</td>
+                    <td style="padding:11px 12px;border-bottom:1px solid #f3f5fa;text-align:right;font-weight:600;font-variant-numeric:tabular-nums">{{ p.amount }}</td>
+                    <td style="padding:11px 18px 11px 12px;border-bottom:1px solid #f3f5fa">
+                      <span style="display:inline-flex;align-items:center;gap:6px;padding:3px 9px;border-radius:20px;font-size:11.5px;font-weight:600;background:{{ p.statusBg }};color:{{ p.statusFg }}">
+                        <span style="width:5px;height:5px;border-radius:50%;background:{{ p.statusFg }}"></span>{{ p.status }}
+                      </span>
+                    </td>
+                  </tr>
+                </sc-for>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isCatalog }}">
+      <div style="display:flex;flex-direction:column;height:100%;min-height:0">
+        <header style="flex:0 0 auto;background:#fff;border-bottom:1px solid #e6e9f2">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 24px 12px">
+            <div style="display:flex;align-items:center;gap:10px">
+              <h1 style="margin:0;font-size:19px;font-weight:600;letter-spacing:-.01em">{{ catalogTitle }}</h1>
+              <span style="font-size:12px;font-weight:600;color:#6b7490;background:#f3f5fa;border-radius:20px;padding:3px 9px">{{ catalogCount }}</span>
+            </div>
+            <div style="display:flex;gap:8px">
+              <button style="display:flex;align-items:center;gap:7px;padding:9px 12px;border:1px solid #e6e9f2;border-radius:10px;background:#fff;font-family:inherit;font-size:13px;font-weight:600;color:#3b4256;cursor:pointer" style-hover="background:#f7f8fd" type="button">
+                <i data-lucide="upload" style="width:15px;height:15px;color:#8a92a8"></i>Importer CSV
+              </button>
+              <button style="display:flex;align-items:center;gap:7px;padding:9px 14px;border:0;border-radius:10px;background:#4f46e5;color:#fff;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;box-shadow:0 10px 22px -12px rgba(79,70,229,.85)" style-hover="background:#4338ca" type="button">
+                <i data-lucide="plus" style="width:15px;height:15px"></i>{{ catalogNew }}
+              </button>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;padding:0 24px 12px">
+            <div style="position:relative;flex:1;max-width:320px">
+              <i data-lucide="search" style="position:absolute;left:11px;top:9px;width:16px;height:16px;color:#a3aabd"></i>
+              <input placeholder="Nom, référence, SKU…" style="width:100%;padding:9px 12px 9px 34px;border:1px solid #e6e9f2;border-radius:10px;background:#fbfcfe;font-family:inherit;font-size:13px;outline:none" style-focus="border-color:#4f46e5;background:#fff;box-shadow:0 0 0 3px rgba(79,70,229,.14)" />
+            </div>
+            <span style="padding:7px 11px;border:1px solid #c9c4f5;border-radius:20px;background:#f1efff;font-size:12.5px;font-weight:600;color:#4338ca">Actifs</span>
+            <span style="padding:7px 11px;border:1px solid #e6e9f2;border-radius:20px;font-size:12.5px;font-weight:600;color:#4a5268">Stock bas</span>
+            <span style="padding:7px 11px;border:1px solid #e6e9f2;border-radius:20px;font-size:12.5px;font-weight:600;color:#4a5268">Archivés</span>
+          </div>
+        </header>
+        <div style="flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 24px;background:#f1efff;border-bottom:1px solid #ddd8fb">
+          <p style="margin:0;font-size:12.5px;font-weight:600;color:#4338ca">2 éléments sélectionnés</p>
+          <div style="display:flex;gap:7px">
+            <button style="display:flex;align-items:center;gap:6px;padding:6px 11px;border:1px solid #c9c4f5;border-radius:9px;background:#fff;font-family:inherit;font-size:12.5px;font-weight:600;color:#4338ca;cursor:pointer" type="button"><i data-lucide="file-text" style="width:14px;height:14px"></i>Créer un devis</button>
+            <button style="display:flex;align-items:center;gap:6px;padding:6px 11px;border:1px solid #c9c4f5;border-radius:9px;background:#fff;font-family:inherit;font-size:12.5px;font-weight:600;color:#4338ca;cursor:pointer" type="button"><i data-lucide="copy" style="width:14px;height:14px"></i>Dupliquer</button>
+            <button onClick="{{ openConfirm }}" style="display:flex;align-items:center;gap:6px;padding:6px 11px;border:1px solid #f3d3d3;border-radius:9px;background:#fff;font-family:inherit;font-size:12.5px;font-weight:600;color:#dc2626;cursor:pointer" type="button"><i data-lucide="trash-2" style="width:14px;height:14px"></i>Supprimer</button>
+          </div>
+        </div>
+        <div class="sb" style="flex:1;min-height:0;overflow:auto">
+          <table style="width:100%;border-collapse:collapse;font-size:13.5px">
+            <thead>
+              <tr style="background:#fafbfe">
+                <th style="position:sticky;top:0;background:#fafbfe;width:38px;padding:9px 0 9px 24px;border-bottom:1px solid #e6e9f2"><input aria-label="Tout sélectionner" style="width:15px;height:15px;accent-color:#4f46e5" type="checkbox" /></th>
+                <th style="position:sticky;top:0;background:#fafbfe;text-align:left;padding:9px 12px;border-bottom:1px solid #e6e9f2;font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:#8a92a8">Désignation</th>
+                <th style="position:sticky;top:0;background:#fafbfe;text-align:left;padding:9px 12px;border-bottom:1px solid #e6e9f2;font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:#8a92a8">Référence</th>
+                <th style="position:sticky;top:0;background:#fafbfe;text-align:left;padding:9px 12px;border-bottom:1px solid #e6e9f2;font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:#8a92a8">Unité</th>
+                <th style="position:sticky;top:0;background:#fafbfe;text-align:right;padding:9px 12px;border-bottom:1px solid #e6e9f2;font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:#8a92a8">Prix HT</th>
+                <th style="position:sticky;top:0;background:#fafbfe;text-align:right;padding:9px 12px;border-bottom:1px solid #e6e9f2;font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:#8a92a8">TVA</th>
+                <th style="position:sticky;top:0;background:#fafbfe;text-align:left;padding:9px 24px 9px 12px;border-bottom:1px solid #e6e9f2;font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:#8a92a8">{{ catalogLastCol }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <sc-for hint-placeholder-count="7" list="{{ catalogRows }}" as="p">
+                <tr style-hover="background:#f7f8fd">
+                  <td style="padding:0 0 0 24px;border-bottom:1px solid #f3f5fa"><input aria-label="Sélectionner" style="width:15px;height:15px;accent-color:#4f46e5" type="checkbox" /></td>
+                  <td style="padding:10px 12px;border-bottom:1px solid #f3f5fa">
+                    <div style="display:flex;align-items:center;gap:10px">
+                      <span style="width:30px;height:30px;flex:0 0 30px;border-radius:8px;background:#f3f5fa;color:#8a92a8;display:flex;align-items:center;justify-content:center"><i data-lucide="{{ p.icon }}" style="width:14px;height:14px"></i></span>
+                      <div style="min-width:0">
+                        <p style="margin:0;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ p.name }}</p>
+                        <p style="margin:1px 0 0;font-size:11.5px;color:#8a92a8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ p.category }}</p>
+                      </div>
+                    </div>
+                  </td>
+                  <td style="padding:10px 12px;border-bottom:1px solid #f3f5fa;color:#6b7490;font-variant-numeric:tabular-nums">{{ p.ref }}</td>
+                  <td style="padding:10px 12px;border-bottom:1px solid #f3f5fa;color:#6b7490">{{ p.unit }}</td>
+                  <td style="padding:10px 12px;border-bottom:1px solid #f3f5fa;text-align:right;font-weight:600;font-variant-numeric:tabular-nums">{{ p.price }}</td>
+                  <td style="padding:10px 12px;border-bottom:1px solid #f3f5fa;text-align:right;color:#6b7490;font-variant-numeric:tabular-nums">{{ p.vat }}</td>
+                  <td style="padding:10px 24px 10px 12px;border-bottom:1px solid #f3f5fa">
+                    <span style="display:inline-flex;align-items:center;gap:6px;padding:3px 9px;border-radius:20px;font-size:11.5px;font-weight:600;background:{{ p.stockBg }};color:{{ p.stockFg }}">{{ p.stock }}</span>
+                  </td>
+                </tr>
+              </sc-for>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isCompanies }}">
+      <div style="display:flex;flex-direction:column;height:100%;min-height:0">
+        <header style="flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:16px 24px;background:#fff;border-bottom:1px solid #e6e9f2">
+          <div>
+            <h1 style="margin:0;font-size:19px;font-weight:600;letter-spacing:-.01em">Entreprises</h1>
+            <p style="margin:2px 0 0;font-size:13px;color:#6b7490">Chaque espace a ses clients, documents et numérotation</p>
+          </div>
+          <button style="display:flex;align-items:center;gap:7px;padding:9px 14px;border:0;border-radius:10px;background:#4f46e5;color:#fff;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;box-shadow:0 10px 22px -12px rgba(79,70,229,.85)" style-hover="background:#4338ca" type="button">
+            <i data-lucide="plus" style="width:15px;height:15px"></i>Nouvel espace
+          </button>
+        </header>
+        <div class="sb" style="flex:1;min-height:0;overflow-y:auto;padding:20px 24px 28px">
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px">
+            <sc-for hint-placeholder-count="3" list="{{ companyCards }}" as="co">
+              <div style="background:#fff;border:1px solid {{ co.border }};border-radius:14px;padding:16px 18px">
+                <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px">
+                  <div style="display:flex;align-items:center;gap:11px;min-width:0">
+                    <span style="width:38px;height:38px;flex:0 0 38px;border-radius:11px;background:linear-gradient(140deg,#7c3aed,#4f46e5);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700">{{ co.initials }}</span>
+                    <div style="min-width:0">
+                      <p style="margin:0;font-size:14.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ co.name }}</p>
+                      <p style="margin:2px 0 0;font-size:12px;color:#8a92a8">{{ co.role }}</p>
+                    </div>
+                  </div>
+                  <sc-if value="{{ co.isActive }}">
+                    <span style="display:inline-flex;align-items:center;gap:6px;padding:3px 9px;border-radius:20px;font-size:11.5px;font-weight:600;background:#ecfdf5;color:#047857;white-space:nowrap">
+                      <span style="width:5px;height:5px;border-radius:50%;background:#059669"></span>Actif
+                    </span>
+                  </sc-if>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:16px;padding-top:14px;border-top:1px solid #f3f5fa">
+                  <div><p style="margin:0;font-size:11px;color:#a3aabd">Clients</p><p style="margin:2px 0 0;font-size:14px;font-weight:600;font-variant-numeric:tabular-nums">{{ co.clients }}</p></div>
+                  <div><p style="margin:0;font-size:11px;color:#a3aabd">Documents</p><p style="margin:2px 0 0;font-size:14px;font-weight:600;font-variant-numeric:tabular-nums">{{ co.docs }}</p></div>
+                  <div><p style="margin:0;font-size:11px;color:#a3aabd">CA 2026</p><p style="margin:2px 0 0;font-size:14px;font-weight:600;font-variant-numeric:tabular-nums">{{ co.revenue }}</p></div>
+                </div>
+                <div style="display:flex;gap:8px;margin-top:14px">
+                  <button style="flex:1;padding:8px;border:1px solid {{ co.ctaBorder }};border-radius:9px;background:{{ co.ctaBg }};font-family:inherit;font-size:12.5px;font-weight:600;color:{{ co.ctaFg }};cursor:pointer" type="button">{{ co.cta }}</button>
+                  <button style="padding:8px 12px;border:1px solid #e6e9f2;border-radius:9px;background:#fff;font-family:inherit;font-size:12.5px;font-weight:600;color:#3b4256;cursor:pointer" style-hover="background:#f7f8fd" type="button">Profil</button>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isSettings }}">
+      <div style="display:flex;flex-direction:column;height:100%;min-height:0">
+        <header style="flex:0 0 auto;padding:16px 24px;background:#fff;border-bottom:1px solid #e6e9f2">
+          <h1 style="margin:0;font-size:19px;font-weight:600;letter-spacing:-.01em">Paramètres</h1>
+          <p style="margin:2px 0 0;font-size:13px;color:#6b7490">Atelier Nord · Offre Standard</p>
+        </header>
+        <div style="flex:1;min-height:0;display:flex">
+          <nav class="sb" style="width:236px;flex:0 0 236px;background:#fff;border-right:1px solid #e6e9f2;overflow-y:auto;padding:14px 12px">
+            <sc-for hint-placeholder-count="12" list="{{ settingsNav }}" as="s">
+              <div>
+                <sc-if value="{{ s.isHeading }}">
+                  <p style="margin:14px 0 6px;padding:0 10px;font-size:10.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#a3aabd">{{ s.label }}</p>
+                </sc-if>
+                <sc-if hint-placeholder-val="{{ true }}" value="{{ s.isLink }}">
+                  <div style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:9px;font-size:13px;background:{{ s.bg }};color:{{ s.fg }};font-weight:{{ s.weight }};cursor:pointer;margin-bottom:2px" style-hover="background:#f7f8fd">
+                    <i data-lucide="{{ s.icon }}" style="width:16px;height:16px;color:{{ s.iconColor }}"></i>{{ s.label }}
+                  </div>
+                </sc-if>
+              </div>
+            </sc-for>
+          </nav>
+          <div class="sb" style="flex:1;min-width:0;overflow-y:auto;padding:20px 24px 28px">
+            <div style="max-width:720px">
+              <section style="background:#fff;border:1px solid #e6e9f2;border-radius:14px;padding:20px 22px">
+                <h2 style="margin:0;font-size:15px;font-weight:600">Profil entreprise</h2>
+                <p style="margin:3px 0 18px;font-size:13px;color:#6b7490">Ces informations apparaissent sur vos devis et factures.</p>
+                <div style="display:flex;align-items:center;gap:14px;padding:14px;border:1px dashed #cfd5e6;border-radius:11px;background:#fbfcfe">
+                  <div style="width:64px;height:64px;border-radius:11px;background-image:repeating-linear-gradient(45deg,#f1f2f8 0 6px,#fbfcfe 6px 12px);display:flex;align-items:center;justify-content:center"><i data-lucide="image" style="width:18px;height:18px;color:#a3aabd"></i></div>
+                  <div style="flex:1">
+                    <p style="margin:0;font-size:13px;font-weight:600">Logo de l'entreprise</p>
+                    <p style="margin:2px 0 0;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px;color:#8a92a8">PNG ou SVG · 400×400 px minimum</p>
+                  </div>
+                  <button style="padding:8px 12px;border:1px solid #e6e9f2;border-radius:9px;background:#fff;font-family:inherit;font-size:12.5px;font-weight:600;color:#4f46e5;cursor:pointer" type="button">Remplacer</button>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:18px">
+                  <div><label style="display:block;font-size:12px;font-weight:500;color:#4a5268;margin-bottom:5px">Raison sociale</label><input style="width:100%;padding:9px 11px;border:1px solid #e6e9f2;border-radius:9px;font-family:inherit;font-size:13px;outline:none" style-focus="border-color:#4f46e5;box-shadow:0 0 0 3px rgba(79,70,229,.14)" value="Atelier Nord" /></div>
+                  <div><label style="display:block;font-size:12px;font-weight:500;color:#4a5268;margin-bottom:5px">SIRET</label><input style="width:100%;padding:9px 11px;border:1px solid #e6e9f2;border-radius:9px;font-family:inherit;font-size:13px;outline:none" style-focus="border-color:#4f46e5;box-shadow:0 0 0 3px rgba(79,70,229,.14)" value="812 345 678 00019" /></div>
+                  <div><label style="display:block;font-size:12px;font-weight:500;color:#4a5268;margin-bottom:5px">E-mail</label><input style="width:100%;padding:9px 11px;border:1px solid #e6e9f2;border-radius:9px;font-family:inherit;font-size:13px;outline:none" style-focus="border-color:#4f46e5;box-shadow:0 0 0 3px rgba(79,70,229,.14)" value="contact@ateliernord.fr" /></div>
+                  <div><label style="display:block;font-size:12px;font-weight:500;color:#4a5268;margin-bottom:5px">Téléphone</label><input style="width:100%;padding:9px 11px;border:1px solid #e6e9f2;border-radius:9px;font-family:inherit;font-size:13px;outline:none" style-focus="border-color:#4f46e5;box-shadow:0 0 0 3px rgba(79,70,229,.14)" value="03 20 11 22 33" /></div>
+                  <div style="grid-column:1/-1"><label style="display:block;font-size:12px;font-weight:500;color:#4a5268;margin-bottom:5px">Adresse</label><input style="width:100%;padding:9px 11px;border:1px solid #e6e9f2;border-radius:9px;font-family:inherit;font-size:13px;outline:none" style-focus="border-color:#4f46e5;box-shadow:0 0 0 3px rgba(79,70,229,.14)" value="8 rue de l'Industrie, 59100 Roubaix" /></div>
+                  <div><label style="display:block;font-size:12px;font-weight:500;color:#4a5268;margin-bottom:5px">N° TVA intracom.</label><input style="width:100%;padding:9px 11px;border:1px solid #e6e9f2;border-radius:9px;font-family:inherit;font-size:13px;outline:none" style-focus="border-color:#4f46e5;box-shadow:0 0 0 3px rgba(79,70,229,.14)" value="FR76812345678" /></div>
+                  <div><label style="display:block;font-size:12px;font-weight:500;color:#4a5268;margin-bottom:5px">Mentions de pied de page</label><input placeholder="Escompte, pénalités…" style="width:100%;padding:9px 11px;border:1px solid #e6e9f2;border-radius:9px;font-family:inherit;font-size:13px;outline:none" style-focus="border-color:#4f46e5;box-shadow:0 0 0 3px rgba(79,70,229,.14)" /></div>
+                </div>
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:20px;padding-top:16px;border-top:1px solid #f3f5fa">
+                  <p style="margin:0;font-size:12.5px;color:#8a92a8">Dernière modification il y a 3 jours</p>
+                  <div style="display:flex;gap:8px">
+                    <button style="padding:9px 13px;border:1px solid #e6e9f2;border-radius:10px;background:#fff;font-family:inherit;font-size:13px;font-weight:600;color:#3b4256;cursor:pointer" style-hover="background:#f7f8fd" type="button">Annuler</button>
+                    <button onClick="{{ showToast }}" style="padding:9px 15px;border:0;border-radius:10px;background:#4f46e5;color:#fff;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer" style-hover="background:#4338ca" type="button">Enregistrer</button>
+                  </div>
+                </div>
+              </section>
+
+              <section style="margin-top:14px;background:#fff;border:1px solid #e6e9f2;border-radius:14px;padding:18px 22px">
+                <h2 style="margin:0 0 4px;font-size:15px;font-weight:600">Numérotation</h2>
+                <p style="margin:0 0 16px;font-size:13px;color:#6b7490">Prochain devis : DV-2026-023 · Prochaine facture : FA-2026-048</p>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+                  <div><label style="display:block;font-size:12px;font-weight:500;color:#4a5268;margin-bottom:5px">Préfixe devis</label><input style="width:100%;padding:9px 11px;border:1px solid #e6e9f2;border-radius:9px;font-family:inherit;font-size:13px;outline:none" value="DV-{AAAA}-" /></div>
+                  <div><label style="display:block;font-size:12px;font-weight:500;color:#4a5268;margin-bottom:5px">Préfixe factures</label><input style="width:100%;padding:9px 11px;border:1px solid #e6e9f2;border-radius:9px;font-family:inherit;font-size:13px;outline:none" value="FA-{AAAA}-" /></div>
+                </div>
+              </section>
+            </div>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+    <sc-if value="{{ isStates }}">
+      <div class="sb" style="height:100%;overflow-y:auto;padding:24px">
+        <h1 style="margin:0;font-size:19px;font-weight:600;letter-spacing:-.01em">États, chargement et messages</h1>
+        <p style="margin:3px 0 20px;font-size:13px;color:#6b7490">Les mêmes règles s'appliquent à tous les écrans : un état vide propose toujours l'action suivante.</p>
+
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:14px">
+          <section style="background:#fff;border:1px solid #e6e9f2;border-radius:14px;padding:18px">
+            <p style="margin:0 0 12px;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#a3aabd">État vide — première utilisation</p>
+            <div style="display:flex;flex-direction:column;align-items:center;text-align:center;padding:28px 20px;border:1px dashed #cfd5e6;border-radius:12px;background:#fbfcfe">
+              <span style="width:44px;height:44px;border-radius:13px;background:#f1efff;color:#4f46e5;display:flex;align-items:center;justify-content:center"><i data-lucide="file-text" style="width:20px;height:20px"></i></span>
+              <p style="margin:14px 0 0;font-size:14.5px;font-weight:600">Aucun devis pour le moment</p>
+              <p style="margin:5px 0 0;max-width:290px;font-size:13px;color:#6b7490">Créez votre premier devis : sélectionnez un client, ajoutez vos lignes depuis le catalogue, envoyez-le en un clic.</p>
+              <div style="display:flex;gap:8px;margin-top:16px">
+                <button style="padding:9px 14px;border:0;border-radius:10px;background:#4f46e5;color:#fff;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer" type="button">Créer un devis</button>
+                <button style="padding:9px 14px;border:1px solid #e6e9f2;border-radius:10px;background:#fff;font-family:inherit;font-size:13px;font-weight:600;color:#3b4256;cursor:pointer" type="button">Importer un CSV</button>
+              </div>
+            </div>
+          </section>
+
+          <section style="background:#fff;border:1px solid #e6e9f2;border-radius:14px;padding:18px">
+            <p style="margin:0 0 12px;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#a3aabd">Aucun résultat de recherche</p>
+            <div style="display:flex;flex-direction:column;align-items:center;text-align:center;padding:28px 20px;border:1px dashed #cfd5e6;border-radius:12px;background:#fbfcfe">
+              <span style="width:44px;height:44px;border-radius:13px;background:#f3f5fa;color:#8a92a8;display:flex;align-items:center;justify-content:center"><i data-lucide="search-x" style="width:20px;height:20px"></i></span>
+              <p style="margin:14px 0 0;font-size:14.5px;font-weight:600">Aucun résultat pour « vasseu »</p>
+              <p style="margin:5px 0 0;max-width:280px;font-size:13px;color:#6b7490">Vérifiez l'orthographe ou retirez le filtre « En retard ».</p>
+              <button style="margin-top:16px;padding:9px 14px;border:1px solid #e6e9f2;border-radius:10px;background:#fff;font-family:inherit;font-size:13px;font-weight:600;color:#4f46e5;cursor:pointer" type="button">Effacer les filtres</button>
+            </div>
+          </section>
+
+          <section style="background:#fff;border:1px solid #e6e9f2;border-radius:14px;padding:18px">
+            <p style="margin:0 0 12px;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#a3aabd">Chargement — squelette de tableau</p>
+            <div style="border:1px solid #eef0f6;border-radius:12px;overflow:hidden">
+              <div style="display:flex;gap:12px;padding:11px 14px;background:#fafbfe;border-bottom:1px solid #eef0f6">
+                <div class="skel" style="height:9px;width:74px"></div>
+                <div class="skel" style="height:9px;width:110px"></div>
+                <div class="skel" style="height:9px;width:64px;margin-left:auto"></div>
+              </div>
+              <div style="display:flex;align-items:center;gap:12px;padding:13px 14px;border-bottom:1px solid #f3f5fa"><div class="skel" style="height:11px;width:88px"></div><div class="skel" style="height:11px;width:140px"></div><div class="skel" style="height:11px;width:70px;margin-left:auto"></div></div>
+              <div style="display:flex;align-items:center;gap:12px;padding:13px 14px;border-bottom:1px solid #f3f5fa"><div class="skel" style="height:11px;width:88px"></div><div class="skel" style="height:11px;width:112px"></div><div class="skel" style="height:11px;width:70px;margin-left:auto"></div></div>
+              <div style="display:flex;align-items:center;gap:12px;padding:13px 14px;border-bottom:1px solid #f3f5fa"><div class="skel" style="height:11px;width:88px"></div><div class="skel" style="height:11px;width:158px"></div><div class="skel" style="height:11px;width:70px;margin-left:auto"></div></div>
+              <div style="display:flex;align-items:center;gap:12px;padding:13px 14px"><div class="skel" style="height:11px;width:88px"></div><div class="skel" style="height:11px;width:126px"></div><div class="skel" style="height:11px;width:70px;margin-left:auto"></div></div>
+            </div>
+          </section>
+
+          <section style="background:#fff;border:1px solid #e6e9f2;border-radius:14px;padding:18px">
+            <p style="margin:0 0 12px;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#a3aabd">Erreur de chargement</p>
+            <div style="display:flex;gap:12px;padding:16px;border:1px solid #f3d3d3;border-radius:12px;background:#fffafa">
+              <span style="width:32px;height:32px;flex:0 0 32px;border-radius:10px;background:#fef2f2;color:#dc2626;display:flex;align-items:center;justify-content:center"><i data-lucide="alert-triangle" style="width:16px;height:16px"></i></span>
+              <div>
+                <p style="margin:0;font-size:14px;font-weight:600;color:#991b1b">Impossible de charger les factures</p>
+                <p style="margin:4px 0 0;font-size:13px;color:#a15656">La connexion au serveur a échoué. Vos données ne sont pas perdues.</p>
+                <div style="display:flex;gap:8px;margin-top:12px">
+                  <button style="padding:8px 13px;border:1px solid #f3d3d3;border-radius:9px;background:#fff;font-family:inherit;font-size:12.5px;font-weight:600;color:#b91c1c;cursor:pointer" type="button">Réessayer</button>
+                  <button style="padding:8px 13px;border:0;border-radius:9px;background:transparent;font-family:inherit;font-size:12.5px;font-weight:600;color:#a15656;cursor:pointer" type="button">Contacter le support</button>
+                </div>
+              </div>
+            </div>
+            <p style="margin:18px 0 12px;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#a3aabd">Erreur de formulaire</p>
+            <div>
+              <label style="display:block;font-size:12px;font-weight:500;color:#4a5268;margin-bottom:5px">Prix HT</label>
+              <input style="width:100%;padding:9px 11px;border:1px solid #e88b8b;border-radius:9px;font-family:inherit;font-size:13px;outline:none;box-shadow:0 0 0 3px rgba(220,38,38,.1)" value="-25" />
+              <p style="margin:6px 0 0;display:flex;align-items:center;gap:6px;font-size:12px;font-weight:500;color:#dc2626"><i data-lucide="alert-circle" style="width:14px;height:14px"></i>Le prix doit être supérieur à 0.</p>
+            </div>
+          </section>
+
+          <section style="background:#fff;border:1px solid #e6e9f2;border-radius:14px;padding:18px">
+            <p style="margin:0 0 12px;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#a3aabd">Confirmations et notifications</p>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <button onClick="{{ openConfirm }}" style="padding:9px 14px;border:1px solid #e6e9f2;border-radius:10px;background:#fff;font-family:inherit;font-size:13px;font-weight:600;color:#3b4256;cursor:pointer" style-hover="background:#f7f8fd" type="button">Voir la modale de suppression</button>
+              <button onClick="{{ showToast }}" style="padding:9px 14px;border:1px solid #e6e9f2;border-radius:10px;background:#fff;font-family:inherit;font-size:13px;font-weight:600;color:#3b4256;cursor:pointer" style-hover="background:#f7f8fd" type="button">Voir la notification</button>
+            </div>
+            <div style="margin-top:16px;display:flex;align-items:center;gap:10px;padding:12px 14px;border:1px solid #d6f0e3;border-radius:11px;background:#f4fdf8">
+              <span style="width:26px;height:26px;border-radius:8px;background:#ecfdf5;color:#059669;display:flex;align-items:center;justify-content:center"><i data-lucide="check" style="width:15px;height:15px"></i></span>
+              <p style="margin:0;font-size:13px;font-weight:500;color:#065f46">Facture FA-2026-046 envoyée à contact@lelievre.fr</p>
+            </div>
+            <div style="margin-top:8px;display:flex;align-items:center;gap:10px;padding:12px 14px;border:1px solid #f5e2c0;border-radius:11px;background:#fffdf6">
+              <span style="width:26px;height:26px;border-radius:8px;background:#fffbeb;color:#b45309;display:flex;align-items:center;justify-content:center"><i data-lucide="info" style="width:15px;height:15px"></i></span>
+              <p style="margin:0;font-size:13px;font-weight:500;color:#92400e">Un devis converti ne peut plus être modifié.</p>
+            </div>
+          </section>
+
+          <section style="background:#fff;border:1px solid #e6e9f2;border-radius:14px;padding:18px">
+            <p style="margin:0 0 12px;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#a3aabd">Statuts</p>
+            <div style="display:flex;flex-wrap:wrap;gap:8px">
+              <sc-for hint-placeholder-count="10" list="{{ statusChips }}" as="s">
+                <span style="display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600;background:{{ s.bg }};color:{{ s.fg }}">
+                  <span style="width:5px;height:5px;border-radius:50%;background:{{ s.dot }}"></span>{{ s.label }}
+                </span>
+              </sc-for>
+            </div>
+            <p style="margin:18px 0 12px;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#a3aabd">Boutons</p>
+            <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
+              <button style="padding:9px 15px;border:0;border-radius:10px;background:#4f46e5;color:#fff;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer" type="button">Principal</button>
+              <button style="padding:9px 15px;border:1px solid #e6e9f2;border-radius:10px;background:#fff;font-family:inherit;font-size:13px;font-weight:600;color:#3b4256;cursor:pointer" type="button">Secondaire</button>
+              <button style="padding:9px 15px;border:0;border-radius:10px;background:transparent;font-family:inherit;font-size:13px;font-weight:600;color:#4f46e5;cursor:pointer" type="button">Discret</button>
+              <button style="padding:9px 15px;border:1px solid #f3d3d3;border-radius:10px;background:#fff;font-family:inherit;font-size:13px;font-weight:600;color:#dc2626;cursor:pointer" type="button">Destructif</button>
+              <button disabled="" style="padding:9px 15px;border:0;border-radius:10px;background:#c9c4f5;color:#fff;font-family:inherit;font-size:13px;font-weight:600;opacity:.7" type="button">Désactivé</button>
+            </div>
+          </section>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isResponsive }}">
+      <div class="sb" style="height:100%;overflow-y:auto;padding:24px">
+        <h1 style="margin:0;font-size:19px;font-weight:600;letter-spacing:-.01em">Tablette et mobile</h1>
+        <p style="margin:3px 0 20px;font-size:13px;color:#6b7490">Sous 1280 px la colonne de détail passe en panneau superposé ; sous 900 px la navigation devient une barre basse et les tableaux deviennent des cartes.</p>
+
+        <div style="display:flex;gap:20px;flex-wrap:wrap;align-items:flex-start">
+          <div>
+            <p style="margin:0 0 8px;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#a3aabd">Tablette · 900 px — navigation en icônes</p>
+            <div style="width:640px;height:440px;border:1px solid #dfe3ee;border-radius:14px;overflow:hidden;display:flex;background:#f6f7fb;box-shadow:0 22px 50px -34px rgba(15,21,51,.5)">
+              <div style="width:64px;flex:0 0 64px;background:#fff;border-right:1px solid #e6e9f2;display:flex;flex-direction:column;align-items:center;padding:12px 0;gap:6px">
+                <img alt="INVEQ" src="website/public/icon.png" style="width:26px;height:26px;border-radius:7px;margin-bottom:6px" />
+                <span style="width:36px;height:36px;border-radius:10px;background:#4f46e5;color:#fff;display:flex;align-items:center;justify-content:center"><i data-lucide="plus" style="width:17px;height:17px"></i></span>
+                <span style="width:36px;height:36px;border-radius:10px;background:#f1efff;color:#4f46e5;display:flex;align-items:center;justify-content:center"><i data-lucide="layout-dashboard" style="width:17px;height:17px"></i></span>
+                <span style="width:36px;height:36px;border-radius:10px;color:#8a92a8;display:flex;align-items:center;justify-content:center"><i data-lucide="users" style="width:17px;height:17px"></i></span>
+                <span style="width:36px;height:36px;border-radius:10px;color:#8a92a8;display:flex;align-items:center;justify-content:center"><i data-lucide="file-text" style="width:17px;height:17px"></i></span>
+                <span style="width:36px;height:36px;border-radius:10px;color:#8a92a8;display:flex;align-items:center;justify-content:center"><i data-lucide="receipt" style="width:17px;height:17px"></i></span>
+              </div>
+              <div style="flex:1;min-width:0;display:flex;flex-direction:column">
+                <div style="padding:12px 16px;background:#fff;border-bottom:1px solid #e6e9f2;display:flex;align-items:center;justify-content:space-between">
+                  <div><p style="margin:0;font-size:15px;font-weight:600">Factures</p><p style="margin:1px 0 0;font-size:11.5px;color:#8a92a8">24 documents · 2 en retard</p></div>
+                  <span style="padding:7px 11px;border-radius:9px;background:#4f46e5;color:#fff;font-size:12px;font-weight:600">Nouvelle</span>
+                </div>
+                <div style="padding:10px 16px;background:#fff;border-bottom:1px solid #e6e9f2;display:flex;gap:6px">
+                  <span style="flex:1;padding:7px 10px;border:1px solid #e6e9f2;border-radius:9px;background:#fbfcfe;font-size:12px;color:#a3aabd">Rechercher…</span>
+                  <span style="padding:7px 10px;border:1px solid #c9c4f5;border-radius:20px;background:#f1efff;font-size:11.5px;font-weight:600;color:#4338ca">En retard 2</span>
+                </div>
+                <div style="flex:1;overflow:hidden">
+                  <sc-for hint-placeholder-count="5" list="{{ tabletRows }}" as="r">
+                    <div style="display:flex;align-items:center;gap:10px;padding:11px 16px;border-bottom:1px solid #f3f5fa;background:#fff">
+                      <div style="min-width:0;flex:1">
+                        <p style="margin:0;font-size:12.5px;font-weight:600">{{ r.number }}</p>
+                        <p style="margin:1px 0 0;font-size:11.5px;color:#8a92a8">{{ r.client }}</p>
+                      </div>
+                      <span style="font-size:12.5px;font-weight:600;font-variant-numeric:tabular-nums">{{ r.amount }}</span>
+                      <span style="padding:2px 8px;border-radius:20px;font-size:10.5px;font-weight:600;background:{{ r.statusBg }};color:{{ r.statusFg }}">{{ r.status }}</span>
+                    </div>
+                  </sc-for>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div style="display:flex;gap:16px;flex-wrap:wrap">
+            <div>
+              <p style="margin:0 0 8px;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#a3aabd">Mobile · tableau de bord</p>
+              <div style="width:300px;height:560px;border:1px solid #dfe3ee;border-radius:22px;overflow:hidden;background:#f6f7fb;display:flex;flex-direction:column;box-shadow:0 22px 50px -34px rgba(15,21,51,.5)">
+                <div style="padding:14px 16px 12px;background:#fff;border-bottom:1px solid #e6e9f2;display:flex;align-items:center;justify-content:space-between">
+                  <div><p style="margin:0;font-size:15px;font-weight:600">Bonjour Alex</p><p style="margin:1px 0 0;font-size:11.5px;color:#8a92a8">Atelier Nord</p></div>
+                  <span style="width:30px;height:30px;border-radius:50%;background:#eef0f6;color:#4a5268;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700">AD</span>
+                </div>
+                <div class="sb" style="flex:1;overflow-y:auto;padding:12px 14px 14px">
+                  <div style="background:#fff;border:1px solid #e6e9f2;border-radius:13px;padding:14px">
+                    <p style="margin:0;font-size:11.5px;font-weight:600;color:#6b7490">Encaissé ce mois</p>
+                    <p style="margin:6px 0 0;font-size:24px;font-weight:600;letter-spacing:-.03em;font-variant-numeric:tabular-nums">12 480 €</p>
+                    <div style="display:flex;gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid #f3f5fa">
+                      <div style="flex:1"><p style="margin:0;font-size:11px;color:#a3aabd">En attente</p><p style="margin:2px 0 0;font-size:13.5px;font-weight:600">4 260 €</p></div>
+                      <div style="flex:1"><p style="margin:0;font-size:11px;color:#a3aabd">En retard</p><p style="margin:2px 0 0;font-size:13.5px;font-weight:600;color:#b91c1c">1 850 €</p></div>
+                    </div>
+                  </div>
+                  <p style="margin:14px 0 8px;font-size:12px;font-weight:700;color:#4a5268">À traiter · 5</p>
+                  <div style="background:#fff;border:1px solid #e6e9f2;border-radius:13px;overflow:hidden">
+                    <sc-for hint-placeholder-count="3" list="{{ mobileTasks }}" as="t">
+                      <div style="display:flex;align-items:center;gap:10px;padding:11px 12px;border-bottom:1px solid #f3f5fa">
+                        <span style="width:26px;height:26px;flex:0 0 26px;border-radius:8px;background:{{ t.tintBg }};color:{{ t.tintFg }};display:flex;align-items:center;justify-content:center"><i data-lucide="{{ t.icon }}" style="width:13px;height:13px"></i></span>
+                        <div style="min-width:0;flex:1">
+                          <p style="margin:0;font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ t.title }}</p>
+                          <p style="margin:1px 0 0;font-size:11px;color:#8a92a8">{{ t.amount }}</p>
+                        </div>
+                        <span style="padding:5px 9px;border:1px solid #e6e9f2;border-radius:8px;font-size:11px;font-weight:600;color:#4f46e5">{{ t.action }}</span>
+                      </div>
+                    </sc-for>
+                  </div>
+                </div>
+                <div style="display:flex;align-items:center;justify-content:space-around;padding:8px 6px 12px;background:#fff;border-top:1px solid #e6e9f2">
+                  <span style="display:flex;flex-direction:column;align-items:center;gap:3px;color:#4f46e5;font-size:10px;font-weight:600"><i data-lucide="layout-dashboard" style="width:19px;height:19px"></i>Accueil</span>
+                  <span style="display:flex;flex-direction:column;align-items:center;gap:3px;color:#a3aabd;font-size:10px;font-weight:600"><i data-lucide="file-text" style="width:19px;height:19px"></i>Devis</span>
+                  <span style="width:44px;height:44px;border-radius:14px;background:#4f46e5;color:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 10px 20px -10px rgba(79,70,229,.9)"><i data-lucide="plus" style="width:21px;height:21px"></i></span>
+                  <span style="display:flex;flex-direction:column;align-items:center;gap:3px;color:#a3aabd;font-size:10px;font-weight:600"><i data-lucide="receipt" style="width:19px;height:19px"></i>Factures</span>
+                  <span style="display:flex;flex-direction:column;align-items:center;gap:3px;color:#a3aabd;font-size:10px;font-weight:600"><i data-lucide="users" style="width:19px;height:19px"></i>Clients</span>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <p style="margin:0 0 8px;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#a3aabd">Mobile · création de facture</p>
+              <div style="width:300px;height:560px;border:1px solid #dfe3ee;border-radius:22px;overflow:hidden;background:#f6f7fb;display:flex;flex-direction:column;box-shadow:0 22px 50px -34px rgba(15,21,51,.5)">
+                <div style="padding:12px 14px;background:#fff;border-bottom:1px solid #e6e9f2;display:flex;align-items:center;gap:10px">
+                  <i data-lucide="arrow-left" style="width:17px;height:17px;color:#4a5268"></i>
+                  <div style="flex:1"><p style="margin:0;font-size:14px;font-weight:600">Nouvelle facture</p><p style="margin:1px 0 0;font-size:11px;color:#8a92a8">Étape 2 sur 3 · Lignes</p></div>
+                </div>
+                <div style="display:flex;gap:4px;padding:10px 14px;background:#fff;border-bottom:1px solid #e6e9f2">
+                  <span style="flex:1;height:4px;border-radius:4px;background:#4f46e5"></span>
+                  <span style="flex:1;height:4px;border-radius:4px;background:#4f46e5"></span>
+                  <span style="flex:1;height:4px;border-radius:4px;background:#e6e9f2"></span>
+                </div>
+                <div class="sb" style="flex:1;overflow-y:auto;padding:12px 14px">
+                  <div style="background:#fff;border:1px solid #e6e9f2;border-radius:12px;padding:12px;margin-bottom:10px">
+                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+                      <p style="margin:0;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#a3aabd">Ligne 1</p>
+                      <i data-lucide="trash-2" style="width:14px;height:14px;color:#a3aabd"></i>
+                    </div>
+                    <p style="margin:0;font-size:13px;font-weight:600">Plan de travail chêne</p>
+                    <div style="display:flex;gap:8px;margin-top:10px">
+                      <div style="flex:1;padding:7px 9px;border:1px solid #e6e9f2;border-radius:8px"><p style="margin:0;font-size:10px;color:#a3aabd">Qté</p><p style="margin:1px 0 0;font-size:13px;font-weight:600">1</p></div>
+                      <div style="flex:1.4;padding:7px 9px;border:1px solid #e6e9f2;border-radius:8px"><p style="margin:0;font-size:10px;color:#a3aabd">Prix HT</p><p style="margin:1px 0 0;font-size:13px;font-weight:600">1 850,00</p></div>
+                      <div style="flex:.8;padding:7px 9px;border:1px solid #e6e9f2;border-radius:8px"><p style="margin:0;font-size:10px;color:#a3aabd">TVA</p><p style="margin:1px 0 0;font-size:13px;font-weight:600">20</p></div>
+                    </div>
+                    <div style="display:flex;align-items:center;justify-content:space-between;margin-top:10px;padding-top:9px;border-top:1px solid #f3f5fa">
+                      <span style="font-size:11.5px;color:#6b7490">Total TTC</span><span style="font-size:13px;font-weight:600">2 220,00 €</span>
+                    </div>
+                  </div>
+                  <button style="width:100%;display:flex;align-items:center;justify-content:center;gap:7px;padding:11px;border:1px dashed #cfd5e6;border-radius:11px;background:#fff;font-family:inherit;font-size:12.5px;font-weight:600;color:#4f46e5" type="button"><i data-lucide="plus" style="width:15px;height:15px"></i>Ajouter une ligne</button>
+                </div>
+                <div style="padding:12px 14px;background:#fff;border-top:1px solid #e6e9f2">
+                  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+                    <span style="font-size:12px;color:#6b7490">Total TTC</span>
+                    <span style="font-size:17px;font-weight:600;color:#4f46e5;font-variant-numeric:tabular-nums">2 940,00 €</span>
+                  </div>
+                  <button style="width:100%;padding:13px;border:0;border-radius:12px;background:#4f46e5;color:#fff;font-family:inherit;font-size:14px;font-weight:600" type="button">Continuer</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+  </main>
+
+  <sc-if value="{{ searchOpen }}">
+    <div style="position:fixed;inset:0;z-index:60;display:flex;align-items:flex-start;justify-content:center;padding-top:12vh;background:rgba(15,21,51,.34);backdrop-filter:blur(3px)">
+      <div style="width:560px;max-width:92vw;background:#fff;border:1px solid #e6e9f2;border-radius:16px;box-shadow:0 40px 90px -30px rgba(15,21,51,.55);overflow:hidden;animation:pop .16s ease-out">
+        <div style="display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid #eef0f6">
+          <i data-lucide="search" style="width:17px;height:17px;color:#a3aabd"></i>
+          <input autoFocus="" placeholder="Rechercher un client, un devis, une facture…" style="flex:1;border:0;outline:none;font-family:inherit;font-size:14px;color:#0f1533" />
+          <button onClick="{{ closeSearch }}" style="border:0;background:#f3f5fa;border-radius:6px;padding:3px 7px;font-family:inherit;font-size:10.5px;font-weight:600;color:#8a92a8;cursor:pointer" type="button">Échap</button>
+        </div>
+        <div style="padding:8px">
+          <p style="margin:6px 10px;font-size:10.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#a3aabd">Actions</p>
+          <sc-for hint-placeholder-count="4" list="{{ paletteActions }}" as="a">
+            <button onClick="{{ a.run }}" style="width:100%;display:flex;align-items:center;gap:11px;padding:9px 10px;border:0;border-radius:9px;background:transparent;font-family:inherit;font-size:13.5px;color:#0f1533;cursor:pointer;text-align:left" style-hover="background:#f7f6ff" type="button">
+              <span style="width:26px;height:26px;border-radius:8px;background:#f1efff;color:#4f46e5;display:flex;align-items:center;justify-content:center"><i data-lucide="{{ a.icon }}" style="width:14px;height:14px"></i></span>
+              <span style="flex:1">{{ a.label }}</span>
+              <span style="font-size:10.5px;font-weight:600;color:#a3aabd">{{ a.hint }}</span>
+            </button>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ confirmOpen }}">
+    <div style="position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;padding:24px;background:rgba(15,21,51,.34);backdrop-filter:blur(3px)">
+      <div style="width:440px;max-width:92vw;background:#fff;border-radius:16px;box-shadow:0 40px 90px -30px rgba(15,21,51,.55);overflow:hidden;animation:pop .16s ease-out">
+        <div style="padding:20px 22px 16px">
+          <span style="width:38px;height:38px;border-radius:11px;background:#fef2f2;color:#dc2626;display:flex;align-items:center;justify-content:center"><i data-lucide="trash-2" style="width:18px;height:18px"></i></span>
+          <h3 style="margin:14px 0 0;font-size:16px;font-weight:600">Supprimer 2 produits ?</h3>
+          <p style="margin:6px 0 0;font-size:13px;line-height:1.5;color:#6b7490">Les produits seront retirés du catalogue. Les devis et factures déjà émis ne sont pas modifiés.</p>
+        </div>
+        <div style="display:flex;justify-content:flex-end;gap:8px;padding:14px 22px;background:#fafbfe;border-top:1px solid #eef0f6">
+          <button onClick="{{ closeConfirm }}" style="padding:9px 14px;border:1px solid #e6e9f2;border-radius:10px;background:#fff;font-family:inherit;font-size:13px;font-weight:600;color:#3b4256;cursor:pointer" style-hover="background:#f7f8fd" type="button">Annuler</button>
+          <button onClick="{{ confirmDelete }}" style="padding:9px 14px;border:0;border-radius:10px;background:#dc2626;color:#fff;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer" style-hover="background:#b91c1c" type="button">Supprimer</button>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ toast }}">
+    <div style="position:fixed;right:22px;bottom:78px;z-index:70;display:flex;align-items:center;gap:11px;padding:12px 15px;background:#fff;border:1px solid #d6f0e3;border-radius:12px;box-shadow:0 24px 50px -24px rgba(15,21,51,.45);animation:pop .18s ease-out">
+      <span style="width:26px;height:26px;border-radius:8px;background:#ecfdf5;color:#059669;display:flex;align-items:center;justify-content:center"><i data-lucide="check" style="width:15px;height:15px"></i></span>
+      <p style="margin:0;font-size:13px;font-weight:500;color:#065f46">Modifications enregistrées</p>
+      <button onClick="{{ hideToast }}" style="border:0;background:transparent;color:#a3aabd;cursor:pointer;padding:0;display:flex" type="button"><i data-lucide="x" style="width:15px;height:15px"></i></button>
+    </div>
+  </sc-if>
+
+  <div style="position:fixed;right:22px;bottom:22px;z-index:50;display:flex;gap:4px;padding:4px;background:#0f1533;border-radius:12px;box-shadow:0 20px 44px -20px rgba(15,21,51,.6)">
+    <sc-for hint-placeholder-count="3" list="{{ viewTabs }}" as="v">
+      <button onClick="{{ v.go }}" style="padding:7px 12px;border:0;border-radius:9px;font-family:inherit;font-size:12px;font-weight:600;cursor:pointer;background:{{ v.bg }};color:{{ v.fg }}" type="button">{{ v.label }}</button>
+    </sc-for>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;showTaskQueue&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Tableau de bord&quot;},&quot;showPdfPreview&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Devis &amp; factures&quot;},&quot;navCounts&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Navigation&quot;}}">
+const NAV = [
+  { id: 'dashboard', label: 'Tableau de bord', icon: 'layout-dashboard' },
+  { id: 'clients', label: 'Clients', icon: 'users' },
+  { id: 'quotes', label: 'Devis', icon: 'file-text', count: '3' },
+  { id: 'invoices', label: 'Factures', icon: 'receipt', count: '2', alert: true },
+  { id: 'payments', label: 'Paiements', icon: 'credit-card' },
+  { heading: 'Catalogue' },
+  { id: 'products', label: 'Produits', icon: 'package' },
+  { id: 'prestations', label: 'Prestations', icon: 'wrench' },
+  { id: 'companies', label: 'Entreprises', icon: 'building-2' },
+];
+
+const MONTHS = [
+  { label: 'oct', v: 38 }, { label: 'nov', v: 54 }, { label: 'déc', v: 41 },
+  { label: 'jan', v: 62 }, { label: 'fév', v: 47 }, { label: 'mar', v: 71 },
+  { label: 'avr', v: 58 }, { label: 'mai', v: 84 }, { label: 'jui', v: 66 },
+  { label: 'jui', v: 52 }, { label: 'aoû', v: 74 }, { label: 'sep', v: 92 },
+];
+
+const STATUS = {
+  draft: { label: 'Brouillon', bg: '#f3f5fa', fg: '#4a5268', dot: '#a3aabd' },
+  sent: { label: 'Envoyée', bg: '#f1efff', fg: '#4338ca', dot: '#4f46e5' },
+  sentM: { label: 'Envoyé', bg: '#f1efff', fg: '#4338ca', dot: '#4f46e5' },
+  paid: { label: 'Payée', bg: '#ecfdf5', fg: '#047857', dot: '#059669' },
+  partial: { label: 'Partielle', bg: '#fffbeb', fg: '#b45309', dot: '#f59e0b' },
+  overdue: { label: 'En retard', bg: '#fef2f2', fg: '#b91c1c', dot: '#dc2626' },
+  accepted: { label: 'Accepté', bg: '#ecfdf5', fg: '#047857', dot: '#059669' },
+  rejected: { label: 'Refusé', bg: '#fef2f2', fg: '#b91c1c', dot: '#dc2626' },
+  expired: { label: 'Expiré', bg: '#fffbeb', fg: '#b45309', dot: '#f59e0b' },
+  converted: { label: 'Converti', bg: '#ecfdf5', fg: '#047857', dot: '#059669' },
+};
+
+const INVOICE_ROWS = [
+  { number: 'FA-2026-047', client: 'Atelier Vasseur', issued: '01/09/2026', due: '01/10/2026', amount: '860,00 €', status: 'draft' },
+  { number: 'FA-2026-046', client: 'SCI Lelièvre', issued: '27/08/2026', due: '27/08/2026', amount: '610,00 €', status: 'overdue', late: true },
+  { number: 'FA-2026-045', client: 'Boulangerie Marchand', issued: '24/08/2026', due: '23/09/2026', amount: '2 940,00 €', status: 'sent' },
+  { number: 'FA-2026-044', client: 'Cabinet Roussel', issued: '20/08/2026', due: '19/09/2026', amount: '1 890,00 €', status: 'paid' },
+  { number: 'FA-2026-043', client: 'Garage Bertin', issued: '18/08/2026', due: '17/09/2026', amount: '1 120,00 €', status: 'partial' },
+  { number: 'FA-2026-042', client: 'Ville de Roubaix', issued: '12/08/2026', due: '11/09/2026', amount: '5 400,00 €', status: 'sent' },
+  { number: 'FA-2026-041', client: 'Menuiserie Vasseur', issued: '08/08/2026', due: '12/08/2026', amount: '1 240,00 €', status: 'overdue', late: true },
+  { number: 'FA-2026-040', client: 'Épicerie Nord', issued: '04/08/2026', due: '03/09/2026', amount: '430,00 €', status: 'paid' },
+];
+
+const QUOTE_ROWS = [
+  { number: 'DV-2026-022', client: 'Atelier Vasseur', issued: '01/09/2026', due: '01/10/2026', amount: '3 260,00 €', status: 'draft' },
+  { number: 'DV-2026-021', client: 'Cabinet Roussel', issued: '18/08/2026', due: '05/09/2026', amount: '4 180,00 €', status: 'sentM', late: true },
+  { number: 'DV-2026-020', client: 'Ville de Roubaix', issued: '14/08/2026', due: '13/09/2026', amount: '7 900,00 €', status: 'sentM' },
+  { number: 'DV-2026-019', client: 'Garage Bertin', issued: '11/08/2026', due: '10/09/2026', amount: '1 480,00 €', status: 'rejected' },
+  { number: 'DV-2026-018', client: 'Boulangerie Marchand', issued: '08/08/2026', due: '07/09/2026', amount: '2 940,00 €', status: 'accepted' },
+  { number: 'DV-2026-017', client: 'SCI Lelièvre', issued: '02/08/2026', due: '01/09/2026', amount: '960,00 €', status: 'expired' },
+  { number: 'DV-2026-016', client: 'Épicerie Nord', issued: '28/07/2026', due: '27/08/2026', amount: '1 250,00 €', status: 'converted' },
+  { number: 'DV-2026-015', client: 'Menuiserie Vasseur', issued: '21/07/2026', due: '20/08/2026', amount: '5 380,00 €', status: 'accepted' },
+];
+
+const CLIENT_ROWS = [
+  { name: 'Boulangerie Marchand', initials: 'BM', type: 'Professionnel', email: 'contact@marchand.fr', city: 'Roubaix', revenue: '14 320 €', pending: '2 940 €', last: 'FA-2026-045 · 24/08' },
+  { name: 'Menuiserie Vasseur', initials: 'MV', type: 'Professionnel', email: 'compta@vasseur.fr', city: 'Tourcoing', revenue: '22 860 €', pending: '1 240 €', late: true, last: 'FA-2026-041 · 08/08' },
+  { name: 'Cabinet Roussel', initials: 'CR', type: 'Professionnel', email: 'k.roussel@cabinet.fr', city: 'Lille', revenue: '9 480 €', pending: '4 180 €', last: 'DV-2026-021 · 18/08' },
+  { name: 'Ville de Roubaix', initials: 'VR', type: 'Secteur public', email: 'marches@roubaix.fr', city: 'Roubaix', revenue: '18 900 €', pending: '—', last: 'FA-2026-042 · 12/08' },
+  { name: 'Garage Bertin', initials: 'GB', type: 'Professionnel', email: 'garage.bertin@mail.fr', city: 'Wattrelos', revenue: '6 240 €', pending: '520 €', last: 'FA-2026-043 · 18/08' },
+  { name: 'SCI Lelièvre', initials: 'SL', type: 'Professionnel', email: 'sci.lelievre@mail.fr', city: 'Lille', revenue: '4 110 €', pending: '610 €', late: true, last: 'FA-2026-046 · 27/08' },
+  { name: 'Épicerie Nord', initials: 'EN', type: 'Professionnel', email: 'epicerie.nord@mail.fr', city: 'Croix', revenue: '2 890 €', pending: '—', last: 'FA-2026-040 · 04/08' },
+];
+
+const PRODUCT_ROWS = [
+  { name: 'Plan de travail chêne massif', category: 'Menuiserie', ref: 'PDT-CH-38', unit: 'm²', price: '185,00 €', vat: '20 %', stock: '12 en stock' },
+  { name: 'Quincaillerie inox (lot)', category: 'Fournitures', ref: 'QNC-INX-04', unit: 'lot', price: '85,00 €', vat: '20 %', stock: '3 en stock', low: true },
+  { name: 'Panneau MDF 19 mm', category: 'Panneaux', ref: 'MDF-19', unit: 'panneau', price: '42,50 €', vat: '20 %', stock: '48 en stock' },
+  { name: 'Vernis mat 2,5 L', category: 'Finitions', ref: 'VRN-MAT-25', unit: 'bidon', price: '38,90 €', vat: '20 %', stock: '9 en stock' },
+  { name: 'Charnière invisible', category: 'Quincaillerie', ref: 'CHR-INV', unit: 'unité', price: '6,40 €', vat: '20 %', stock: '2 en stock', low: true },
+  { name: 'Poignée aluminium 128 mm', category: 'Quincaillerie', ref: 'PGN-AL-128', unit: 'unité', price: '11,20 €', vat: '20 %', stock: '76 en stock' },
+  { name: 'Colle bois D3 1 kg', category: 'Fournitures', ref: 'CLB-D3', unit: 'pot', price: '14,60 €', vat: '20 %', stock: '21 en stock' },
+];
+
+const PRESTATION_ROWS = [
+  { name: 'Pose de plan de travail', category: 'Chantier', ref: 'PRS-POSE', unit: 'forfait', price: '480,00 €', vat: '20 %', stock: '1 journée' },
+  { name: 'Prise de mesures sur site', category: 'Étude', ref: 'PRS-MES', unit: 'heure', price: '65,00 €', vat: '20 %', stock: '2 heures' },
+  { name: 'Conception plan 3D', category: 'Étude', ref: 'PRS-3D', unit: 'forfait', price: '350,00 €', vat: '20 %', stock: '3 jours' },
+  { name: 'Déplacement métropole lilloise', category: 'Chantier', ref: 'PRS-DEP', unit: 'heure', price: '130,00 €', vat: '20 %', stock: '1 heure' },
+  { name: 'Rénovation de façade bois', category: 'Chantier', ref: 'PRS-RENO', unit: 'm²', price: '96,00 €', vat: '20 %', stock: '—' },
+  { name: 'Maintenance annuelle', category: 'Entretien', ref: 'PRS-MAINT', unit: 'contrat', price: '540,00 €', vat: '20 %', stock: '1 an' },
+  { name: 'Intervention urgente', category: 'Entretien', ref: 'PRS-URG', unit: 'heure', price: '150,00 €', vat: '20 %', stock: '—' },
+];
+
+const SETTINGS_NAV = [
+  { heading: 'Compte' },
+  { label: 'Profil', icon: 'user' },
+  { label: 'Notifications', icon: 'bell' },
+  { heading: 'Entreprise' },
+  { label: 'Profil entreprise', icon: 'building-2', active: true },
+  { label: 'Entreprises', icon: 'layers' },
+  { heading: 'Facturation' },
+  { label: 'Numérotation', icon: 'hash' },
+  { label: 'Modèles PDF', icon: 'palette' },
+  { label: 'Facturation électronique', icon: 'receipt' },
+  { heading: 'Abonnement' },
+  { label: 'Offre et paiement', icon: 'credit-card' },
+  { label: 'Historique', icon: 'history' },
+];
+
+class Component extends DCLogic {
+  state = { screen: 'dashboard', switcherOpen: false, docFilter: 'all', selectedRow: 1, selectedClient: 0, confirmOpen: false, toast: false, overlay: 'none' };
+
+  componentDidMount() {
+    this.icons();
+    this.onKey = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); this.setState({ searchOpen: true }); }
+      if (e.key === 'Escape') this.setState({ searchOpen: false, confirmOpen: false });
+    };
+    window.addEventListener('keydown', this.onKey);
+  }
+  componentWillUnmount() { window.removeEventListener('keydown', this.onKey); }
+  componentDidUpdate() { this.icons(); }
+  icons() {
+    if (window.lucide) window.lucide.createIcons();
+    else setTimeout(() => window.lucide && window.lucide.createIcons(), 300);
+  }
+
+  go(screen) { this.setState({ screen, switcherOpen: false }); }
+
+  renderVals() {
+    const screen = this.state.screen;
+    const showCounts = this.props.navCounts ?? true;
+    const nav = NAV.map((item) => {
+      if (item.heading) return { isHeading: true, isLink: false, label: item.heading };
+      const active = screen === item.id;
+      return {
+        isHeading: false, isLink: true, label: item.label, icon: item.icon,
+        count: showCounts ? item.count : undefined, go: () => this.go(item.id),
+        bg: active ? '#f1efff' : 'transparent',
+        fg: active ? '#4f46e5' : '#4a5268',
+        weight: active ? '600' : '500',
+        iconColor: active ? '#4f46e5' : '#8a92a8',
+        countBg: item.alert ? '#fef2f2' : '#eef0f6',
+        countColor: item.alert ? '#dc2626' : '#6b7490',
+      };
+    });
+
+    const isInvoices = screen === 'invoices';
+    const isQuotes = screen === 'quotes';
+    const isDocs = isInvoices || isQuotes;
+    const rows = isInvoices ? INVOICE_ROWS : QUOTE_ROWS;
+    const filters = isInvoices
+      ? [['all', 'Tous', '24'], ['draft', 'Brouillons', '1'], ['sent', 'Envoyées', '6'], ['overdue', 'En retard', '2'], ['paid', 'Payées', '15']]
+      : [['all', 'Tous', '22'], ['draft', 'Brouillons', '1'], ['sent', 'Envoyés', '3'], ['accepted', 'Acceptés', '9'], ['expired', 'Expirés', '2']];
+    const sel = rows[Math.min(this.state.selectedRow, rows.length - 1)];
+    const selStatus = STATUS[sel.status];
+
+    return {
+      nav,
+      isDashboard: screen === 'dashboard',
+      isStates: screen === 'states',
+      isResponsive: screen === 'responsive',
+      searchOpen: this.state.searchOpen,
+      closeSearch: () => this.setState({ searchOpen: false }),
+      paletteActions: [
+        { icon: 'file-text', label: 'Créer un devis', hint: 'D', run: () => this.setState({ searchOpen: false, screen: 'quoteNew' }) },
+        { icon: 'receipt', label: 'Créer une facture', hint: 'F', run: () => this.setState({ searchOpen: false, screen: 'invoiceNew' }) },
+        { icon: 'user-plus', label: 'Ajouter un client', hint: 'C', run: () => this.setState({ searchOpen: false, screen: 'clients' }) },
+        { icon: 'building-2', label: 'Changer d\u2019entreprise', hint: 'E', run: () => this.setState({ searchOpen: false, screen: 'companies' }) },
+      ],
+      confirmOpen: this.state.confirmOpen,
+      openConfirm: () => this.setState({ confirmOpen: true }),
+      closeConfirm: () => this.setState({ confirmOpen: false }),
+      confirmDelete: () => this.setState({ confirmOpen: false, toast: true }),
+      toast: this.state.toast,
+      showToast: () => this.setState({ toast: true }),
+      hideToast: () => this.setState({ toast: false }),
+      statusChips: ['draft', 'sent', 'partial', 'paid', 'overdue', 'accepted', 'rejected', 'expired', 'converted'].map((k) => STATUS[k]),
+      tabletRows: INVOICE_ROWS.slice(0, 5).map((r) => ({ ...r, status: STATUS[r.status].label, statusBg: STATUS[r.status].bg, statusFg: STATUS[r.status].fg })),
+      mobileTasks: [
+        { icon: 'alert-circle', tintBg: '#fef2f2', tintFg: '#dc2626', title: 'FA-2026-041 en retard 21 j', amount: '1 240,00 €', action: 'Relancer' },
+        { icon: 'check-circle-2', tintBg: '#ecfdf5', tintFg: '#059669', title: 'DV-2026-018 accepté', amount: '2 940,00 €', action: 'Facturer' },
+        { icon: 'clock', tintBg: '#f5f3ff', tintFg: '#7c3aed', title: 'DV-2026-021 expire dans 3 j', amount: '4 180,00 €', action: 'Relancer' },
+      ],
+      viewTabs: [
+        ['App', 'dashboard'], ['États', 'states'], ['Responsive', 'responsive'],
+      ].map(([label, id]) => {
+        const on = id === 'dashboard' ? !['states', 'responsive'].includes(screen) : screen === id;
+        return { label, go: () => this.go(id), bg: on ? '#4f46e5' : 'transparent', fg: on ? '#fff' : '#b9bed4' };
+      }),
+      isClients: screen === 'clients',
+      isPayments: screen === 'payments',
+      isCatalog: screen === 'products' || screen === 'prestations',
+      isCompanies: screen === 'companies',
+      isSettings: screen === 'settings',
+      catalogTitle: screen === 'prestations' ? 'Prestations' : 'Produits',
+      catalogNew: screen === 'prestations' ? 'Nouvelle prestation' : 'Nouveau produit',
+      catalogCount: screen === 'prestations' ? '19 prestations' : '64 produits',
+      catalogLastCol: screen === 'prestations' ? 'Durée' : 'Stock',
+      catalogRows: (screen === 'prestations' ? PRESTATION_ROWS : PRODUCT_ROWS).map((p) => ({
+        ...p,
+        icon: screen === 'prestations' ? 'wrench' : 'package',
+        stockBg: p.low ? '#fffbeb' : '#f3f5fa',
+        stockFg: p.low ? '#b45309' : '#4a5268',
+      })),
+      clientRows: CLIENT_ROWS.map((c, i) => {
+        const active = i === this.state.selectedClient;
+        return {
+          ...c,
+          pendingFg: c.late ? '#b91c1c' : '#6b7490',
+          rowBg: active ? '#f7f6ff' : 'transparent',
+          rowBar: active ? '#4f46e5' : 'transparent',
+          select: () => this.setState({ selectedClient: i }),
+        };
+      }),
+      clientSelName: CLIENT_ROWS[this.state.selectedClient].name,
+      clientSelInitials: CLIENT_ROWS[this.state.selectedClient].initials,
+      clientSelType: CLIENT_ROWS[this.state.selectedClient].type,
+      clientSelEmail: CLIENT_ROWS[this.state.selectedClient].email,
+      clientSelCity: CLIENT_ROWS[this.state.selectedClient].city,
+      clientSelRevenue: CLIENT_ROWS[this.state.selectedClient].revenue,
+      clientSelPending: CLIENT_ROWS[this.state.selectedClient].pending,
+      clientSelPendingFg: CLIENT_ROWS[this.state.selectedClient].late ? '#b91c1c' : '#0f1533',
+      clientDocs: [
+        { icon: 'receipt', tintBg: '#f1efff', tintFg: '#4f46e5', number: 'FA-2026-045', meta: 'Envoyée le 24/08 · échéance 23/09', amount: '2 940,00 €' },
+        { icon: 'check-circle-2', tintBg: '#ecfdf5', tintFg: '#059669', number: 'DV-2026-018', meta: 'Accepté le 01/09', amount: '2 940,00 €' },
+        { icon: 'wallet', tintBg: '#ecfdf5', tintFg: '#059669', number: 'FA-2026-038', meta: 'Payée le 02/08', amount: '1 460,00 €' },
+        { icon: 'file-text', tintBg: '#eef0f6', tintFg: '#6b7490', number: 'DV-2026-012', meta: 'Expiré le 15/07', amount: '780,00 €' },
+      ],
+      paymentRows: [
+        { date: '02/09/2026', number: 'FA-2026-044', client: 'Cabinet Roussel', method: 'Virement', amount: '1 890,00 €', status: 'Encaissé', statusBg: '#ecfdf5', statusFg: '#047857' },
+        { date: '28/08/2026', number: 'FA-2026-043', client: 'Garage Bertin', method: 'Virement', amount: '600,00 €', status: 'Partiel', statusBg: '#fffbeb', statusFg: '#b45309' },
+        { date: '26/08/2026', number: 'FA-2026-040', client: 'Épicerie Nord', method: 'Carte', amount: '430,00 €', status: 'Encaissé', statusBg: '#ecfdf5', statusFg: '#047857' },
+        { date: '20/08/2026', number: 'FA-2026-039', client: 'Ville de Roubaix', method: 'Virement', amount: '5 400,00 €', status: 'Encaissé', statusBg: '#ecfdf5', statusFg: '#047857' },
+        { date: '14/08/2026', number: 'FA-2026-037', client: 'Menuiserie Vasseur', method: 'Chèque', amount: '2 260,00 €', status: 'Encaissé', statusBg: '#ecfdf5', statusFg: '#047857' },
+        { date: '08/08/2026', number: 'FA-2026-036', client: 'SCI Lelièvre', method: 'Virement', amount: '1 900,00 €', status: 'Encaissé', statusBg: '#ecfdf5', statusFg: '#047857' },
+      ],
+      companyCards: [
+        { name: 'Atelier Nord', initials: 'AN', role: 'Propriétaire', isActive: true, clients: '38', docs: '46', revenue: '98 340 €', border: '#c9c4f5', cta: 'Espace actif', ctaBg: '#f1efff', ctaBorder: '#c9c4f5', ctaFg: '#4338ca' },
+        { name: 'Nord Rénovation', initials: 'NR', role: 'Propriétaire', isActive: false, clients: '12', docs: '19', revenue: '31 120 €', border: '#e6e9f2', cta: 'Activer', ctaBg: '#fff', ctaBorder: '#e6e9f2', ctaFg: '#4f46e5' },
+        { name: 'Studio Lelièvre', initials: 'SL', role: 'Collaborateur', isActive: false, clients: '5', docs: '7', revenue: '8 640 €', border: '#e6e9f2', cta: 'Activer', ctaBg: '#fff', ctaBorder: '#e6e9f2', ctaFg: '#4f46e5' },
+      ],
+      settingsNav: SETTINGS_NAV.map((s) => {
+        if (s.heading) return { isHeading: true, isLink: false, label: s.heading };
+        return {
+          isHeading: false, isLink: true, label: s.label, icon: s.icon,
+          bg: s.active ? '#f1efff' : 'transparent',
+          fg: s.active ? '#4f46e5' : '#4a5268',
+          weight: s.active ? '600' : '500',
+          iconColor: s.active ? '#4f46e5' : '#8a92a8',
+        };
+      }),
+      isDocs,
+      isComposer: screen === 'quoteNew' || screen === 'invoiceNew',
+      composerTitle: screen === 'invoiceNew' ? 'Nouvelle facture' : 'Nouveau devis',
+      composerNumber: screen === 'invoiceNew' ? 'FA-2026-048' : 'DV-2026-023',
+      composerCta: screen === 'invoiceNew' ? 'Créer et envoyer' : 'Créer et envoyer',
+      composerDueLabel: screen === 'invoiceNew' ? 'Échéance' : 'Valable jusqu\u2019au',
+      composerBack: () => this.go(screen === 'invoiceNew' ? 'invoices' : 'quotes'),
+      composerSubmit: () => this.go(screen === 'invoiceNew' ? 'invoices' : 'quotes'),
+      composerLines: [
+        { description: 'Fabrication et pose plan de travail chêne', qty: '1', unit: 'forfait', price: '1 850,00', vat: '20', total: '2 220,00 €', fromCatalog: true },
+        { description: 'Quincaillerie et fixations', qty: '4', unit: 'unité', price: '85,00', vat: '20', total: '408,00 €', fromCatalog: true },
+        { description: 'Déplacement chantier Roubaix', qty: '2', unit: 'heure', price: '130,00', vat: '20', total: '312,00 €', fromCatalog: false },
+      ],
+      docTitle: isInvoices ? 'Factures' : 'Devis',
+      docKindLabel: isInvoices ? 'Facture' : 'Devis',
+      docCount: isInvoices ? '24 documents' : '22 documents',
+      docNewLabel: isInvoices ? 'Nouvelle facture' : 'Nouveau devis',
+      docNewAction: () => this.go(isInvoices ? 'invoiceNew' : 'quoteNew'),
+      docSearchPlaceholder: isInvoices ? 'Numéro, client, montant…' : 'Numéro, client, montant…',
+      docDueLabel: isInvoices ? 'Échéance' : 'Validité',
+      docFilters: filters.map(([id, label, count]) => {
+        const on = this.state.docFilter === id;
+        return {
+          label, count, pick: () => this.setState({ docFilter: id }),
+          bg: on ? '#f1efff' : '#fff', border: on ? '#c9c4f5' : '#e6e9f2',
+          fg: on ? '#4338ca' : '#4a5268', countFg: on ? '#7c6df2' : '#a3aabd',
+        };
+      }),
+      docRows: rows.map((r, i) => {
+        const st = STATUS[r.status];
+        const active = i === Math.min(this.state.selectedRow, rows.length - 1);
+        return {
+          ...r, status: st.label, statusBg: st.bg, statusFg: st.fg, statusDot: st.dot,
+          dueFg: r.late ? '#b91c1c' : '#6b7490',
+          rowBg: active ? '#f7f6ff' : 'transparent',
+          rowBar: active ? '#4f46e5' : 'transparent',
+          select: () => this.setState({ selectedRow: i }),
+        };
+      }),
+      detailNumber: sel.number,
+      detailClient: sel.client,
+      detailStatus: selStatus.label,
+      detailStatusBg: selStatus.bg,
+      detailStatusFg: selStatus.fg,
+      detailAmount: sel.amount,
+      detailAmountMeta: isInvoices
+        ? (sel.status === 'paid' ? 'Réglée intégralement' : sel.status === 'partial' ? 'Reste à payer 520,00 € sur 1 120,00 €' : 'Montant TTC · TVA 20 %')
+        : 'Montant TTC · TVA 20 %',
+      detailIssued: sel.issued,
+      detailDue: sel.due,
+      detailDueFg: sel.late ? '#b91c1c' : '#0f1533',
+      detailHt: '716,67 €',
+      detailVat: '143,33 €',
+      detailPrimary: isInvoices
+        ? (sel.status === 'draft' ? 'Envoyer la facture' : sel.status === 'paid' ? 'Télécharger le PDF' : 'Marquer comme payée')
+        : (sel.status === 'accepted' ? 'Convertir en facture' : sel.status === 'draft' ? 'Envoyer le devis' : 'Relancer le client'),
+      detailPrimaryIcon: isInvoices
+        ? (sel.status === 'draft' ? 'send' : sel.status === 'paid' ? 'download' : 'check-circle-2')
+        : (sel.status === 'accepted' ? 'receipt' : 'send'),
+      detailSteps: (isInvoices
+        ? [['Créée', 1], ['Envoyée', sel.status !== 'draft' ? 1 : 0], ['Payée', sel.status === 'paid' ? 1 : 0], ['Clôturée', sel.status === 'paid' ? 1 : 0]]
+        : [['Créé', 1], ['Envoyé', sel.status !== 'draft' ? 1 : 0], ['Accepté', ['accepted', 'converted'].includes(sel.status) ? 1 : 0], ['Facturé', sel.status === 'converted' ? 1 : 0]]
+      ).map(([label, done]) => ({
+        label, dot: done ? '#4f46e5' : '#dfe3ee', line: done ? '#c9c4f5' : '#eef0f6',
+        fg: done ? '#3b4256' : '#a3aabd',
+      })),
+      detailHistory: [
+        { icon: 'send', tintBg: '#f1efff', tintFg: '#4f46e5', label: 'Document envoyé par e-mail', when: '27/08/2026 · 16:42' },
+        { icon: 'eye', tintBg: '#eef0f6', tintFg: '#6b7490', label: 'Ouvert par le client', when: '27/08/2026 · 18:07' },
+        { icon: 'file-text', tintBg: '#eef0f6', tintFg: '#6b7490', label: 'Créé par Alex Dupont', when: '27/08/2026 · 15:58' },
+      ],
+      switcherOpen: this.state.switcherOpen,
+      toggleSwitcher: () => this.setState((s) => ({ switcherOpen: !s.switcherOpen })),
+      showTaskQueue: this.props.showTaskQueue ?? true,
+      showPdfPreview: this.props.showPdfPreview ?? true,
+      openCreate: () => this.go('quoteNew'),
+      openSearch: () => this.setState({ searchOpen: true }),
+      goSettings: () => this.go('settings'),
+      goCompanies: () => this.go('companies'),
+      goInvoices: () => this.go('invoices'),
+      goInvoicesOverdue: () => this.go('invoices'),
+      goQuoteNew: () => this.go('quoteNew'),
+      goInvoiceNew: () => this.go('invoiceNew'),
+      goClientNew: () => this.go('clients'),
+      goProducts: () => this.go('products'),
+      companies: [
+        { name: 'Atelier Nord', tag: 'Actif', pick: () => this.setState({ switcherOpen: false }) },
+        { name: 'Nord Rénovation', tag: 'Propriétaire', pick: () => this.setState({ switcherOpen: false }) },
+      ],
+      months: MONTHS.map((m) => ({
+        label: m.label, h: Math.round(m.v * 1.55) + 8,
+        fill: m.v > 80 ? 'linear-gradient(180deg,#7c3aed,#4f46e5)' : '#dcd9fb',
+      })),
+      tasks: [
+        { icon: 'alert-circle', tintBg: '#fef2f2', tintFg: '#dc2626', title: 'Facture FA-2026-041 en retard de 21 jours', meta: 'Menuiserie Vasseur · échéance 12 août', amount: '1 240,00 €', action: 'Relancer', act: () => this.go('invoices') },
+        { icon: 'alert-circle', tintBg: '#fef2f2', tintFg: '#dc2626', title: 'Facture FA-2026-046 en retard de 6 jours', meta: 'SCI Lelièvre · échéance 27 août', amount: '610,00 €', action: 'Relancer', act: () => this.go('invoices') },
+        { icon: 'check-circle-2', tintBg: '#ecfdf5', tintFg: '#059669', title: 'Devis DV-2026-018 accepté', meta: 'Boulangerie Marchand · accepté hier', amount: '2 940,00 €', action: 'Facturer', act: () => this.go('invoiceNew') },
+        { icon: 'clock', tintBg: '#f5f3ff', tintFg: '#7c3aed', title: 'Devis DV-2026-021 expire dans 3 jours', meta: 'Cabinet Roussel · envoyé le 18 août', amount: '4 180,00 €', action: 'Relancer', act: () => this.go('quotes') },
+        { icon: 'file-text', tintBg: '#eef0f6', tintFg: '#6b7490', title: 'Brouillon FA-2026-047 à finaliser', meta: 'Créé il y a 2 jours · 3 lignes', amount: '860,00 €', action: 'Reprendre', act: () => this.go('invoiceNew') },
+      ],
+      activity: [
+        { icon: 'wallet', tintBg: '#ecfdf5', tintFg: '#059669', title: 'Paiement reçu · FA-2026-044', when: 'il y a 2 heures', amount: '1 890,00 €' },
+        { icon: 'send', tintBg: '#f1efff', tintFg: '#4f46e5', title: 'Facture FA-2026-046 envoyée', when: 'hier, 16:42', amount: '610,00 €' },
+        { icon: 'check-circle-2', tintBg: '#ecfdf5', tintFg: '#059669', title: 'Devis DV-2026-018 accepté', when: 'hier, 11:05', amount: '2 940,00 €' },
+        { icon: 'file-text', tintBg: '#f5f3ff', tintFg: '#7c3aed', title: 'Devis DV-2026-021 envoyé', when: '18 août', amount: '4 180,00 €' },
+        { icon: 'user-plus', tintBg: '#eef0f6', tintFg: '#6b7490', title: 'Client Cabinet Roussel ajouté', when: '17 août', amount: '—' },
+      ],
+    };
+  }
+}
+</script>
+</body>
+</html>
