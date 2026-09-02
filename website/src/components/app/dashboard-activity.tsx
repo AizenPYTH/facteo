@@ -3,18 +3,13 @@
 import { useQuery } from '@tanstack/react-query';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import {
-  CheckCircle2,
-  FileText,
-  Lightbulb,
-  Package,
-  Receipt,
-  UserPlus,
-  Wallet,
-} from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
+import { CheckCircle2, FileText, Package, Receipt, Send, UserPlus, Wallet } from 'lucide-react';
 import Link from 'next/link';
 
-import { Badge, Panel } from '@/components/app/ui';
+import { EmptyState } from '@/components/app/empty-state';
+import { PrimaryLink, SecondaryLink } from '@/components/app/form-fields';
+import { Panel } from '@/components/app/ui';
 import { formatCurrency } from '@/lib/domain/format/currency';
 import { formatDate } from '@/lib/domain/format/date';
 import { fetchProducts } from '@/lib/domain/supabase/products';
@@ -25,41 +20,84 @@ import { useTenant } from '@/providers/company-provider';
 import type { ActivityItem, Invoice, TopClient } from '@/types/dashboard';
 import { cn } from '@/lib/utils';
 
+export type DashboardTone = 'accent' | 'violet' | 'success' | 'danger' | 'neutral';
+
+const TONE_CLASSES: Record<DashboardTone, string> = {
+  accent: 'bg-app-accent-tint text-app-accent',
+  violet: 'bg-app-accent-violet-tint text-app-accent-violet',
+  success: 'bg-app-success-tint text-app-success',
+  danger: 'bg-app-danger-tint text-app-danger',
+  neutral: 'bg-app-border-soft text-app-muted',
+};
+
+const ROW_ACTION =
+  'shrink-0 rounded-app-field border border-app-border bg-app-surface px-3 py-[7px] text-[12.5px] font-semibold text-app-text-2 transition-colors duration-150 hover:border-app-accent-border hover:bg-app-accent-soft hover:text-app-accent';
+
+const PANEL_ACTION =
+  'text-[12.5px] font-semibold text-app-muted transition-colors duration-150 hover:text-app-accent';
+
+/** Ligne de la file « À traiter aujourd'hui ». À placer dans une `<ul>`. */
+export function DashboardTaskRow({
+  icon: Icon,
+  tone = 'neutral',
+  title,
+  meta,
+  amount,
+  actionLabel,
+  href,
+}: {
+  icon: LucideIcon;
+  tone?: DashboardTone;
+  title: string;
+  meta: string;
+  amount?: string;
+  actionLabel: string;
+  href: string;
+}) {
+  return (
+    <li className="flex items-center gap-3 border-b border-app-border-soft px-[18px] py-3 transition-colors duration-150 last:border-b-0 hover:bg-app-subtle">
+      <span
+        className={cn(
+          'flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-app-field',
+          TONE_CLASSES[tone],
+        )}>
+        <Icon size={15} strokeWidth={1.75} />
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-[13.5px] font-semibold text-app-text">{title}</p>
+        <p className="mt-0.5 truncate text-[12px] text-app-muted">{meta}</p>
+      </div>
+      {amount ? (
+        <p className="app-num hidden shrink-0 text-[13.5px] font-semibold text-app-text sm:block">
+          {amount}
+        </p>
+      ) : null}
+      <Link className={ROW_ACTION} href={href}>
+        {actionLabel}
+      </Link>
+    </li>
+  );
+}
+
 function enrichActivity(
   item: ActivityItem,
   invoices: Invoice[],
-): { icon: React.ReactNode; title: string; tone: string } {
+): { icon: LucideIcon; title: string; tone: DashboardTone } {
   const invoice = invoices.find((entry) => entry.id === item.id);
 
   if (item.type === 'quote') {
-    return {
-      icon: <FileText size={14} />,
-      title: item.label.replace(' · ', ' — '),
-      tone: 'bg-violet-50 text-violet-600',
-    };
+    return { icon: FileText, title: item.label.replace(' · ', ' — '), tone: 'violet' };
   }
 
   if (invoice?.status === 'paid') {
-    return {
-      icon: <Wallet size={14} />,
-      title: `Paiement reçu · ${invoice.number}`,
-      tone: 'bg-emerald-50 text-emerald-600',
-    };
+    return { icon: Wallet, title: `Paiement reçu · ${invoice.number}`, tone: 'success' };
   }
 
   if (invoice?.status === 'sent' || invoice?.status === 'overdue') {
-    return {
-      icon: <CheckCircle2 size={14} />,
-      title: `Facture ${invoice.number} envoyée`,
-      tone: 'bg-blue-50 text-primary',
-    };
+    return { icon: Send, title: `Facture ${invoice.number} envoyée`, tone: 'accent' };
   }
 
-  return {
-    icon: <Receipt size={14} />,
-    title: item.label.replace(' · ', ' — '),
-    tone: 'bg-slate-100 text-slate-600',
-  };
+  return { icon: Receipt, title: item.label.replace(' · ', ' — '), tone: 'neutral' };
 }
 
 export function DashboardActivityFeed({
@@ -70,51 +108,59 @@ export function DashboardActivityFeed({
   invoices: Invoice[];
 }) {
   return (
-    <Panel title="Centre d’activité">
+    <Panel
+      action={
+        <Link className={PANEL_ACTION} href="/app/invoices">
+          Voir tout
+        </Link>
+      }
+      bodyClassName={activity.length === 0 ? undefined : 'p-0'}
+      title="Activité récente">
       {activity.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/70 px-4 py-8 text-center">
-          <p className="text-sm font-medium text-slate-700">Aucune activité pour le moment</p>
-          <p className="mt-1 text-xs text-slate-500">
-            Créez une facture ou un devis pour animer ce fil.
-          </p>
-          <Link
-            className="mt-4 inline-flex rounded-xl bg-primary px-3.5 py-2 text-xs font-semibold text-white transition hover:bg-primary-dark"
-            href="/app/invoices?create=1">
-            Créer une facture
-          </Link>
-        </div>
+        <EmptyState
+          action={<PrimaryLink href="/app/invoices?create=1">Créer une facture</PrimaryLink>}
+          description="Vos envois, paiements et devis signés apparaîtront ici au fil de l’eau."
+          icon={Receipt}
+          secondaryAction={<SecondaryLink href="/app/quotes?create=1">Créer un devis</SecondaryLink>}
+          title="Aucune activité pour le moment"
+        />
       ) : (
-        <ul className="relative space-y-0">
-          <span
-            aria-hidden
-            className="absolute bottom-3 left-[15px] top-3 w-px bg-slate-200"
-          />
-          {activity.slice(0, 8).map((item) => {
+        <ul>
+          {activity.slice(0, 6).map((item) => {
             const meta = enrichActivity(item, invoices);
+            const Icon = meta.icon;
+            const invoice = invoices.find((entry) => entry.id === item.id);
+            const href =
+              item.type === 'invoice'
+                ? `/app/invoices?selected=${item.id}`
+                : `/app/quotes?selected=${item.id}`;
+
             return (
-              <li className="relative flex gap-3 pb-4 last:pb-0" key={item.id}>
-                <span
-                  className={cn(
-                    'relative z-[1] flex h-8 w-8 shrink-0 items-center justify-center rounded-full ring-4 ring-white',
-                    meta.tone,
-                  )}>
-                  {meta.icon}
-                </span>
-                <div className="min-w-0 flex-1 pt-0.5">
-                  <div className="flex items-start justify-between gap-2">
-                    <p className="truncate text-sm font-medium text-slate-900">{meta.title}</p>
-                    <Badge className="shrink-0" variant={item.type === 'invoice' ? 'info' : 'default'}>
-                      {item.type === 'invoice' ? 'Facture' : 'Devis'}
-                    </Badge>
-                  </div>
-                  <p className="mt-0.5 text-xs text-slate-400">
-                    {formatDate(item.date)} ·{' '}
-                    {formatDistanceToNow(new Date(item.date), {
-                      addSuffix: true,
-                      locale: fr,
-                    })}
-                  </p>
-                </div>
+              <li className="border-b border-app-border-soft last:border-b-0" key={item.id}>
+                <Link
+                  className="flex items-center gap-[11px] px-[18px] py-[11px] transition-colors duration-150 hover:bg-app-subtle"
+                  href={href}>
+                  <span
+                    className={cn(
+                      'flex h-7 w-7 shrink-0 items-center justify-center rounded-full',
+                      TONE_CLASSES[meta.tone],
+                    )}>
+                    <Icon size={14} strokeWidth={1.75} />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-[13px] font-medium text-app-text">
+                      {meta.title}
+                    </span>
+                    <span
+                      className="block truncate text-[11.5px] text-app-muted-2"
+                      title={formatDate(item.date)}>
+                      {formatDistanceToNow(new Date(item.date), { addSuffix: true, locale: fr })}
+                    </span>
+                  </span>
+                  <span className="app-num shrink-0 text-[12.5px] font-semibold text-app-text-2">
+                    {invoice ? formatCurrency(invoice.amount) : '—'}
+                  </span>
+                </Link>
               </li>
             );
           })}
@@ -124,6 +170,10 @@ export function DashboardActivityFeed({
   );
 }
 
+/**
+ * Conseils d'onboarding affichés à la place de la file de tâches quand tous les
+ * compteurs sont à zéro (§4.1 du handoff).
+ */
 export function DashboardTips({
   totalClients,
   invoiceCount,
@@ -143,65 +193,85 @@ export function DashboardTips({
   });
 
   const productCount = productsQuery.data?.length ?? 0;
-  const tips: { id: string; text: string; href: string; icon: React.ReactNode }[] = [];
+  const tips: {
+    id: string;
+    icon: LucideIcon;
+    tone: DashboardTone;
+    title: string;
+    meta: string;
+    actionLabel: string;
+    href: string;
+  }[] = [];
 
   if (totalClients === 0) {
     tips.push({
       id: 'client',
-      text: 'Ajoutez votre premier client.',
+      icon: UserPlus,
+      tone: 'accent',
+      title: 'Ajoutez votre premier client',
+      meta: 'Un client est nécessaire pour émettre un devis ou une facture.',
+      actionLabel: 'Ajouter',
       href: '/app/clients/new',
-      icon: <UserPlus size={14} />,
     });
   }
 
   if (!productsQuery.isLoading && productCount === 0) {
     tips.push({
       id: 'product',
-      text: 'Vous n’avez encore créé aucun produit.',
+      icon: Package,
+      tone: 'neutral',
+      title: 'Créez votre premier produit',
+      meta: 'Le catalogue accélère la saisie des lignes de vos documents.',
+      actionLabel: 'Ouvrir',
       href: '/app/products',
-      icon: <Package size={14} />,
     });
   }
 
   if (invoiceCount === 0) {
     tips.push({
       id: 'invoice',
-      text: 'Envoyez votre première facture.',
+      icon: Receipt,
+      tone: 'violet',
+      title: 'Envoyez votre première facture',
+      meta: 'Quelques lignes suffisent : le PDF et la numérotation sont automatiques.',
+      actionLabel: 'Créer',
       href: '/app/invoices?create=1',
-      icon: <Receipt size={14} />,
     });
   }
 
-  if (tips.length === 0 && topClient) {
+  if (tips.length === 0) {
     return (
-      <div className="rounded-2xl border border-emerald-100 bg-gradient-to-br from-emerald-50/80 to-white px-4 py-3.5 text-sm text-emerald-800">
-        <span className="font-semibold">Meilleur client du mois :</span>{' '}
-        {topClient.name} · {formatCurrency(topClient.revenue)}
+      <div className="px-[18px] py-4">
+        <EmptyState
+          action={<PrimaryLink href="/app/quotes?create=1">Créer un devis</PrimaryLink>}
+          description={
+            topClient
+              ? `Rien à relancer aujourd’hui. Meilleur client : ${topClient.name} · ${formatCurrency(topClient.revenue)}.`
+              : 'Rien à relancer aujourd’hui : aucun retard de paiement ni devis en attente.'
+          }
+          icon={CheckCircle2}
+          secondaryAction={
+            <SecondaryLink href="/app/invoices?create=1">Créer une facture</SecondaryLink>
+          }
+          title="Tout est à jour"
+        />
       </div>
     );
   }
 
-  if (tips.length === 0) return null;
-
   return (
-    <div className="space-y-2">
+    <ul>
       {tips.map((tip) => (
-        <Link
-          className="flex items-start gap-3 rounded-2xl border border-amber-100/90 bg-gradient-to-br from-amber-50/90 to-white px-4 py-3.5 text-sm text-amber-950 transition duration-150 hover:border-amber-200"
+        <DashboardTaskRow
+          actionLabel={tip.actionLabel}
           href={tip.href}
-          key={tip.id}>
-          <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-white text-amber-600 shadow-sm ring-1 ring-amber-100">
-            <Lightbulb size={14} />
-          </span>
-          <span className="min-w-0">
-            <span className="font-medium">{tip.text}</span>
-            <span className="mt-0.5 flex items-center gap-1 text-xs text-amber-700/80">
-              {tip.icon}
-              Voir
-            </span>
-          </span>
-        </Link>
+          icon={tip.icon}
+          key={tip.id}
+          meta={tip.meta}
+          title={tip.title}
+          tone={tip.tone}
+        />
       ))}
-    </div>
+    </ul>
   );
 }
