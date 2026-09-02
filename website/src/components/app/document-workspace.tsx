@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 
 import { useMutation, useQueryClient, type QueryKey } from '@tanstack/react-query';
 import {
   ArrowDownWideNarrow,
+  CheckCircle2,
   Copy,
   Download,
   Eye,
@@ -12,9 +13,17 @@ import {
   Mail,
   Plus,
   Printer,
+  Receipt,
   Send,
   Share2,
+  type LucideIcon,
 } from 'lucide-react';
+import {
+  canConvertQuoteToInvoice,
+  canMarkInvoiceAsPaid,
+  type InvoiceDetail,
+} from '@inveq/types/invoice';
+import type { QuoteDetail } from '@inveq/types/quote';
 import type { InvoiceStatusFilter } from '@inveq/types/invoices-list';
 import type { QuoteStatusFilter } from '@inveq/types/quotes-list';
 
@@ -49,11 +58,15 @@ import { useTenant } from '@/providers/company-provider';
 import { useToast } from '@/providers/toast-provider';
 import { toUserFacingError } from '@/lib/errors/messages';
 import {
+  convertQuoteToInvoice,
   duplicateInvoice,
   fetchInvoiceById,
+  markInvoiceAsPaid,
   updateInvoiceStatus,
 } from '@/lib/domain/supabase/invoices';
 import { duplicateQuote, fetchQuoteById, updateQuoteStatus } from '@/lib/domain/supabase/quotes';
+import { getInvoiceErrorMessage } from '@/lib/invoices/errors';
+import { getQuoteErrorMessage } from '@/lib/quotes/errors';
 import { invoicesQueryKeys, quotesQueryKeys } from '@/lib/domain/supabase/query-keys';
 import { buildInvoicePdfHtml, buildQuotePdfHtml } from '@/lib/domain/pdf/document-pdf';
 import {
@@ -79,6 +92,14 @@ type ListItem = {
 };
 
 type StatusFilter = { value: string; label: string };
+
+type PrimaryAction = {
+  label: string;
+  icon: LucideIcon;
+  onClick: () => void;
+  pending?: boolean;
+  disabled?: boolean;
+};
 
 /** Mêmes valeurs que `InvoiceStatusFilter`, dans l'ordre de lecture de la maquette. */
 const INVOICE_FILTERS: StatusFilter[] = [
@@ -494,45 +515,55 @@ function DocumentListPanel({
   );
 }
 
-function DocumentSidebar({
+function DetailField({ label, value, tone }: { label: string; value: string; tone?: 'danger' }) {
+  return (
+    <div>
+      <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-app-faint">
+        {label}
+      </p>
+      <p
+        className={cn(
+          'app-num mt-[3px] text-[13px] font-medium',
+          tone === 'danger' ? 'text-app-danger-text' : 'text-app-text',
+        )}>
+        {value}
+      </p>
+    </div>
+  );
+}
+
+/** Ordre imposé par le handoff §4.2 : identité → montant → action primaire → frise → dates et totaux → aperçu → historique. */
+function DocumentDetailPanel({
   kind,
-  documentId,
-  number,
-  clientName,
-  totalTtc,
-  status,
-  issuedAt,
+  document,
+  amountMeta,
   dueOrValid,
-  onSend,
+  dueIsLate,
+  primaryAction,
+  menuItems,
   onDownload,
-  onPrint,
-  onShare,
-  onEmail,
-  onDuplicate,
-  actionLoading,
+  downloadBusy,
   templateId,
   onTemplateChange,
+  onOpenPreview,
 }: {
   kind: DocumentKind;
-  documentId: string;
-  number: string;
-  clientName: string;
-  totalTtc: number;
-  status: string;
-  issuedAt: string | null;
+  document: InvoiceDetail | QuoteDetail;
+  amountMeta: string;
   dueOrValid: string | null;
-  onSend?: () => void;
-  onDownload?: () => void;
-  onPrint?: () => void;
-  onShare?: () => void;
-  onEmail?: () => void;
-  onDuplicate?: () => void;
-  actionLoading?: string | null;
-  templateId?: string;
-  onTemplateChange?: (id: string) => void;
+  dueIsLate: boolean;
+  primaryAction: PrimaryAction;
+  menuItems: ActionMenuItem[];
+  onDownload: () => void;
+  downloadBusy: boolean;
+  templateId: string;
+  onTemplateChange: (id: string) => void;
+  onOpenPreview: () => void;
 }) {
+  const PrimaryIcon = primaryAction.icon;
+
   return (
-    <div className="flex h-full min-h-0 flex-col overflow-y-auto">
+    <div className="flex flex-col">
       <div className="border-b border-app-border-soft px-5 py-[18px]">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
@@ -540,64 +571,75 @@ function DocumentSidebar({
               {kind === 'invoice' ? 'Facture' : 'Devis'}
             </p>
             <h2 className="mt-[3px] truncate text-[18px] font-semibold tracking-[-0.01em] text-app-text">
-              {number}
+              {document.number}
             </h2>
-            <p className="mt-[3px] truncate text-[13px] text-app-muted">{clientName}</p>
+            <p className="mt-[3px] truncate text-[13px] text-app-muted">{document.clientName}</p>
           </div>
-          <StatusBadge kind={kind} status={status} />
+          <StatusBadge kind={kind} status={document.status} />
         </div>
+
         <p className="app-num mt-4 text-[27px] font-semibold tracking-[-0.03em] text-app-text">
-          {formatCurrency(totalTtc)}
+          {formatCurrency(document.totalTtc)}
         </p>
-        <dl className="mt-4 grid grid-cols-2 gap-3">
-          <div>
-            <dt className="text-[11px] font-semibold uppercase tracking-[0.06em] text-app-faint">
-              Émission
-            </dt>
-            <dd className="app-num mt-[3px] text-[13px] font-medium text-app-text">
-              {formatDate(issuedAt)}
-            </dd>
-          </div>
-          <div>
-            <dt className="text-[11px] font-semibold uppercase tracking-[0.06em] text-app-faint">
-              {kind === 'invoice' ? 'Échéance' : 'Validité'}
-            </dt>
-            <dd className="app-num mt-[3px] text-[13px] font-medium text-app-text">
-              {formatDate(dueOrValid)}
-            </dd>
-          </div>
-        </dl>
-        <DocumentStatusTimeline className="mt-4" kind={kind} status={status} />
-      </div>
+        <p className="mt-1 text-[12.5px] text-app-muted">{amountMeta}</p>
 
-      <div className="border-b border-app-border-soft p-4">
-        {templateId && onTemplateChange ? (
-          <ComposerTemplateSidebar onChange={onTemplateChange} value={templateId} />
-        ) : null}
-        <p className="mb-3 text-[11px] font-bold uppercase tracking-[0.1em] text-app-faint">
-          Actions rapides
-        </p>
-        <div className="grid grid-cols-2 gap-2">
-          {[
-            { icon: Send, label: 'Envoyer', key: 'send', onClick: onSend },
-            { icon: Download, label: 'PDF', key: 'download', onClick: onDownload },
-            { icon: Printer, label: 'Imprimer', key: 'print', onClick: onPrint },
-            { icon: Share2, label: 'Partager', key: 'share', onClick: onShare },
-            { icon: Mail, label: 'E-mail', key: 'email', onClick: onEmail },
-            { icon: Copy, label: 'Dupliquer', key: 'duplicate', onClick: onDuplicate },
-          ].map((action) => (
-            <SecondaryButton
-              disabled={actionLoading === action.key}
-              key={action.label}
-              onClick={action.onClick}>
-              <action.icon className="text-app-muted-2" size={15} />
-              {actionLoading === action.key ? '…' : action.label}
-            </SecondaryButton>
-          ))}
+        <div className="mt-4 flex items-center gap-2">
+          <PrimaryButton
+            className="flex-1 py-2.5"
+            disabled={primaryAction.pending || primaryAction.disabled}
+            onClick={primaryAction.onClick}>
+            <PrimaryIcon size={15} />
+            {primaryAction.label}
+          </PrimaryButton>
+          <SecondaryButton
+            aria-label="Télécharger le PDF"
+            className="w-10 shrink-0 px-0"
+            disabled={downloadBusy}
+            onClick={onDownload}
+            title="Télécharger le PDF">
+            <Download size={16} />
+          </SecondaryButton>
+          <ActionMenu
+            iconSize={16}
+            items={menuItems}
+            triggerClassName="h-[38px] w-10 shrink-0 rounded-app-control border border-app-border text-app-muted hover:bg-app-hover"
+          />
         </div>
       </div>
 
-      <ActivityTimeline documentId={documentId} documentType={kind} />
+      <div className="border-b border-app-border-soft px-5 py-4">
+        <DocumentStatusTimeline kind={kind} status={document.status} />
+      </div>
+
+      <div className="grid grid-cols-2 gap-3 border-b border-app-border-soft px-5 py-4">
+        <DetailField label="Émission" value={formatDate(document.issuedAt)} />
+        <DetailField
+          label={kind === 'invoice' ? 'Échéance' : 'Validité'}
+          tone={dueIsLate ? 'danger' : undefined}
+          value={formatDate(dueOrValid)}
+        />
+        <DetailField label="Total HT" value={formatCurrency(document.subtotalHt)} />
+        <DetailField label="TVA" value={formatCurrency(document.totalVat)} />
+      </div>
+
+      <div className="border-b border-app-border-soft px-5 py-4">
+        <div className="mb-2.5 flex items-center justify-between gap-2">
+          <p className="text-[11px] font-bold uppercase tracking-[0.1em] text-app-faint">
+            Aperçu PDF
+          </p>
+          <GhostButton className="px-2.5 py-1.5 text-[12px]" onClick={onOpenPreview}>
+            Ouvrir en grand
+          </GhostButton>
+        </div>
+        <div className="h-[220px] overflow-hidden rounded-app-control border border-app-border">
+          <PdfPreviewPanel document={document} kind={kind} templateId={templateId} />
+        </div>
+        <div className="mt-3">
+          <ComposerTemplateSidebar onChange={onTemplateChange} value={templateId} />
+        </div>
+      </div>
+
+      <ActivityTimeline documentId={document.id} documentType={kind} />
     </div>
   );
 }
@@ -688,12 +730,21 @@ export function InvoicesWorkspace() {
   });
 
   const sendMutation = useMutation({
-    mutationFn: () => updateInvoiceStatus(requireScope(scope), detail!.id, 'sent'),
+    mutationFn: (invoiceId: string) => updateInvoiceStatus(requireScope(scope), invoiceId, 'sent'),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: invoicesQueryKeys.all });
       showSuccess('Facture marquée comme envoyée.');
     },
     onError: (error) => showError(toUserFacingError(error.message)),
+  });
+
+  const markPaidMutation = useMutation({
+    mutationFn: (invoiceId: string) => markInvoiceAsPaid(requireScope(scope), invoiceId),
+    onSuccess: (invoice) => {
+      void queryClient.invalidateQueries({ queryKey: invoicesQueryKeys.all });
+      showSuccess(`Facture ${invoice.number} marquée comme payée.`);
+    },
+    onError: (error) => showError(getInvoiceErrorMessage(error.message)),
   });
 
   const bulkDuplicateMutation = useMutation({
@@ -750,6 +801,85 @@ export function InvoicesWorkspace() {
     setCheckedIds([]);
   }
 
+  function invoicePrimaryAction(invoice: InvoiceDetail): PrimaryAction {
+    if (invoice.status === 'draft') {
+      return {
+        label: 'Envoyer la facture',
+        icon: Send,
+        onClick: () => sendMutation.mutate(invoice.id),
+        pending: sendMutation.isPending,
+      };
+    }
+
+    if (canMarkInvoiceAsPaid(invoice.status)) {
+      return {
+        label: 'Marquer comme payée',
+        icon: CheckCircle2,
+        onClick: () => markPaidMutation.mutate(invoice.id),
+        pending: markPaidMutation.isPending,
+      };
+    }
+
+    return {
+      label: 'Télécharger le PDF',
+      icon: Download,
+      onClick: () => void runPdfAction('download'),
+      pending: actionLoading === 'download',
+    };
+  }
+
+  /** Les six actions de l'ancienne grille : elles vivent désormais dans le menu « … ». */
+  function invoiceMenuItems(invoice: InvoiceDetail): ActionMenuItem[] {
+    return [
+      {
+        key: 'send',
+        label: 'Envoyer la facture',
+        icon: Send,
+        onSelect: () => sendMutation.mutate(invoice.id),
+        disabled: sendMutation.isPending,
+      },
+      {
+        key: 'download',
+        label: 'Télécharger le PDF',
+        icon: Download,
+        onSelect: () => void runPdfAction('download'),
+        disabled: actionLoading !== null,
+      },
+      {
+        key: 'print',
+        label: 'Imprimer',
+        icon: Printer,
+        onSelect: () => void runPdfAction('print'),
+        disabled: actionLoading !== null,
+      },
+      {
+        key: 'share',
+        label: 'Partager',
+        icon: Share2,
+        onSelect: () => void runPdfAction('share'),
+        disabled: actionLoading !== null,
+      },
+      {
+        key: 'email',
+        label: 'Envoyer par e-mail',
+        icon: Mail,
+        onSelect: () =>
+          openMailto(
+            invoice.clientEmail,
+            `Facture ${invoice.number}`,
+            `Bonjour,\n\nVeuillez trouver ci-joint la facture ${invoice.number}.\n\nCordialement`,
+          ),
+      },
+      {
+        key: 'duplicate',
+        label: 'Dupliquer',
+        icon: Copy,
+        onSelect: () => duplicateMutation.mutate(invoice.id),
+        disabled: duplicateMutation.isPending,
+      },
+    ];
+  }
+
   return (
     <>
       <AppTopBar
@@ -799,49 +929,26 @@ export function InvoicesWorkspace() {
                 />
               </div>
             ) : (
-              <div className="flex h-full min-h-0 flex-col">
-                <div className="min-h-0 flex-1">
-                  <DocumentSidebar
-                    actionLoading={
-                      actionLoading ??
-                      (duplicateMutation.isPending
-                        ? 'duplicate'
-                        : sendMutation.isPending
-                          ? 'send'
-                          : null)
-                    }
-                    clientName={detail.clientName}
-                    documentId={detail.id}
-                    dueOrValid={detail.dueAt}
-                    issuedAt={detail.issuedAt}
-                    kind="invoice"
-                    number={detail.number}
-                    onDownload={() => void runPdfAction('download')}
-                    onDuplicate={() => duplicateMutation.mutate(detail.id)}
-                    onEmail={() =>
-                      openMailto(
-                        detail.clientEmail,
-                        `Facture ${detail.number}`,
-                        `Bonjour,\n\nVeuillez trouver ci-joint la facture ${detail.number}.\n\nCordialement`,
-                      )
-                    }
-                    onPrint={() => void runPdfAction('print')}
-                    onSend={() => sendMutation.mutate()}
-                    onShare={() => void runPdfAction('share')}
-                    onTemplateChange={setPreviewTemplateId}
-                    status={detail.status}
-                    templateId={previewTemplateId}
-                    totalTtc={detail.totalTtc}
-                  />
-                </div>
-                <div className="h-[320px] shrink-0 border-t border-app-border">
-                  <PdfPreviewPanel
-                    document={detail}
-                    kind="invoice"
-                    templateId={previewTemplateId}
-                  />
-                </div>
-              </div>
+              <DocumentDetailPanel
+                amountMeta={
+                  detail.status === 'paid'
+                    ? 'Réglée intégralement'
+                    : detail.amountPaid > 0
+                      ? `Reste à payer ${formatCurrency(detail.amountDue)} sur ${formatCurrency(detail.totalTtc)}`
+                      : 'Montant TTC'
+                }
+                document={detail}
+                downloadBusy={actionLoading === 'download'}
+                dueIsLate={detail.status === 'overdue'}
+                dueOrValid={detail.dueAt}
+                kind="invoice"
+                menuItems={invoiceMenuItems(detail)}
+                onDownload={() => void runPdfAction('download')}
+                onOpenPreview={() => setQuickPreviewId(detail.id)}
+                onTemplateChange={setPreviewTemplateId}
+                primaryAction={invoicePrimaryAction(detail)}
+                templateId={previewTemplateId}
+              />
             )
           }
           detailOpen={Boolean(selectedId)}
@@ -910,6 +1017,7 @@ export function QuotesWorkspace() {
   const [checkedIds, setCheckedIds] = useState<string[]>([]);
   const [duplicateConfirmOpen, setDuplicateConfirmOpen] = useState(false);
   const { selectedId, setSelectedId, status, setStatus } = useWorkspaceParams(QUOTE_FILTER_VALUES);
+  const router = useRouter();
   const { user } = useAuth();
   const { scope } = useTenant();
   const { settings } = useSettings();
@@ -986,12 +1094,23 @@ export function QuotesWorkspace() {
   });
 
   const sendMutation = useMutation({
-    mutationFn: () => updateQuoteStatus(requireScope(scope), detail!.id, 'sent'),
+    mutationFn: (quoteId: string) => updateQuoteStatus(requireScope(scope), quoteId, 'sent'),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: quotesQueryKeys.all });
       showSuccess('Devis marqué comme envoyé.');
     },
     onError: (error) => showError(toUserFacingError(error.message)),
+  });
+
+  const convertMutation = useMutation({
+    mutationFn: (quoteId: string) => convertQuoteToInvoice(requireScope(scope), quoteId),
+    onSuccess: (invoice) => {
+      void queryClient.invalidateQueries({ queryKey: quotesQueryKeys.all });
+      void queryClient.invalidateQueries({ queryKey: invoicesQueryKeys.all });
+      showSuccess(`Devis converti en facture ${invoice.number}.`);
+      router.push(`/app/invoices?selected=${invoice.id}`);
+    },
+    onError: (error) => showError(getQuoteErrorMessage(error.message)),
   });
 
   const bulkDuplicateMutation = useMutation({
@@ -1042,10 +1161,100 @@ export function QuotesWorkspace() {
     }
   }
 
+  function relanceMailto(quote: QuoteDetail) {
+    openMailto(
+      quote.clientEmail,
+      `Devis ${quote.number}`,
+      `Bonjour,\n\nVeuillez trouver ci-joint le devis ${quote.number}.\n\nCordialement`,
+    );
+  }
+
   function clearFilters() {
     setSearch('');
     setStatus('all');
     setCheckedIds([]);
+  }
+
+  function quotePrimaryAction(quote: QuoteDetail): PrimaryAction {
+    if (quote.status === 'draft') {
+      return {
+        label: 'Envoyer le devis',
+        icon: Send,
+        onClick: () => sendMutation.mutate(quote.id),
+        pending: sendMutation.isPending,
+      };
+    }
+
+    if (canConvertQuoteToInvoice(quote.status)) {
+      return {
+        label: 'Convertir en facture',
+        icon: Receipt,
+        onClick: () => convertMutation.mutate(quote.id),
+        pending: convertMutation.isPending,
+      };
+    }
+
+    if (quote.status === 'sent' || quote.status === 'expired') {
+      return {
+        label: 'Relancer le client',
+        icon: Mail,
+        onClick: () => relanceMailto(quote),
+      };
+    }
+
+    return {
+      label: 'Télécharger le PDF',
+      icon: Download,
+      onClick: () => void runPdfAction('download'),
+      pending: actionLoading === 'download',
+    };
+  }
+
+  /** Les six actions de l'ancienne grille : elles vivent désormais dans le menu « … ». */
+  function quoteMenuItems(quote: QuoteDetail): ActionMenuItem[] {
+    return [
+      {
+        key: 'send',
+        label: 'Envoyer le devis',
+        icon: Send,
+        onSelect: () => sendMutation.mutate(quote.id),
+        disabled: sendMutation.isPending,
+      },
+      {
+        key: 'download',
+        label: 'Télécharger le PDF',
+        icon: Download,
+        onSelect: () => void runPdfAction('download'),
+        disabled: actionLoading !== null,
+      },
+      {
+        key: 'print',
+        label: 'Imprimer',
+        icon: Printer,
+        onSelect: () => void runPdfAction('print'),
+        disabled: actionLoading !== null,
+      },
+      {
+        key: 'share',
+        label: 'Partager',
+        icon: Share2,
+        onSelect: () => void runPdfAction('share'),
+        disabled: actionLoading !== null,
+      },
+      {
+        key: 'email',
+        label: 'Envoyer par e-mail',
+        icon: Mail,
+        onSelect: () => relanceMailto(quote),
+      },
+      {
+        key: 'duplicate',
+        label: 'Dupliquer',
+        icon: Copy,
+        onSelect: () => duplicateMutation.mutate(quote.id),
+        disabled: duplicateMutation.isPending,
+      },
+    ];
   }
 
   return (
@@ -1097,45 +1306,20 @@ export function QuotesWorkspace() {
                 />
               </div>
             ) : (
-              <div className="flex h-full min-h-0 flex-col">
-                <div className="min-h-0 flex-1">
-                  <DocumentSidebar
-                    actionLoading={
-                      actionLoading ??
-                      (duplicateMutation.isPending
-                        ? 'duplicate'
-                        : sendMutation.isPending
-                          ? 'send'
-                          : null)
-                    }
-                    clientName={detail.clientName}
-                    documentId={detail.id}
-                    dueOrValid={detail.validUntil}
-                    issuedAt={detail.issuedAt}
-                    kind="quote"
-                    number={detail.number}
-                    onDownload={() => void runPdfAction('download')}
-                    onDuplicate={() => duplicateMutation.mutate(detail.id)}
-                    onEmail={() =>
-                      openMailto(
-                        detail.clientEmail,
-                        `Devis ${detail.number}`,
-                        `Bonjour,\n\nVeuillez trouver ci-joint le devis ${detail.number}.\n\nCordialement`,
-                      )
-                    }
-                    onPrint={() => void runPdfAction('print')}
-                    onSend={() => sendMutation.mutate()}
-                    onShare={() => void runPdfAction('share')}
-                    onTemplateChange={setPreviewTemplateId}
-                    status={detail.status}
-                    templateId={previewTemplateId}
-                    totalTtc={detail.totalTtc}
-                  />
-                </div>
-                <div className="h-[320px] shrink-0 border-t border-app-border">
-                  <PdfPreviewPanel document={detail} kind="quote" templateId={previewTemplateId} />
-                </div>
-              </div>
+              <DocumentDetailPanel
+                amountMeta="Montant TTC"
+                document={detail}
+                downloadBusy={actionLoading === 'download'}
+                dueIsLate={detail.status === 'expired'}
+                dueOrValid={detail.validUntil}
+                kind="quote"
+                menuItems={quoteMenuItems(detail)}
+                onDownload={() => void runPdfAction('download')}
+                onOpenPreview={() => setQuickPreviewId(detail.id)}
+                onTemplateChange={setPreviewTemplateId}
+                primaryAction={quotePrimaryAction(detail)}
+                templateId={previewTemplateId}
+              />
             )
           }
           detailOpen={Boolean(selectedId)}
