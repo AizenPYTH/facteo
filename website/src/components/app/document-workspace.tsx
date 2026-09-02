@@ -1,8 +1,13 @@
 'use client';
 
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
-import { useMutation, useQueryClient, type QueryKey } from '@tanstack/react-query';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import {
+  useMutation,
+  useQueryClient,
+  type QueryClient,
+  type QueryKey,
+} from '@tanstack/react-query';
 import {
   ArrowDownWideNarrow,
   CheckCircle2,
@@ -168,42 +173,26 @@ function useWorkspaceParams(allowedStatuses: string[]) {
 
 /**
  * Compteurs des chips lus dans le cache TanStack Query : chaque filtre de statut a sa
- * propre entrée de liste et `totalCount` y est déjà renvoyé par la page. Aucune requête
- * n'est déclenchée — un statut jamais consulté n'affiche donc pas de compteur.
+ * propre entrée de liste et `totalCount` y est déjà renvoyé par la page. Lecture seule,
+ * sans abonnement au cache (s'abonner déclencherait un rendu pendant celui d'un autre
+ * composant) : un statut jamais consulté n'affiche pas de compteur.
  */
-function useCachedStatusCounts(buildKey: (status: string) => QueryKey, statuses: string[]) {
-  const queryClient = useQueryClient();
+function readStatusCounts(
+  queryClient: QueryClient,
+  buildKey: (status: string) => QueryKey,
+  statuses: string[],
+): Record<string, number | undefined> {
+  const counts: Record<string, number | undefined> = {};
 
-  const subscribe = useCallback(
-    (onStoreChange: () => void) => queryClient.getQueryCache().subscribe(onStoreChange),
-    [queryClient],
-  );
+  for (const status of statuses) {
+    const cached = queryClient.getQueryData<{ pages: { totalCount: number | null }[] }>(
+      buildKey(status),
+    );
+    const total = cached?.pages[0]?.totalCount;
+    counts[status] = typeof total === 'number' ? total : undefined;
+  }
 
-  const readSignature = useCallback(
-    () =>
-      statuses
-        .map((status) => {
-          const cached = queryClient.getQueryData<{ pages: { totalCount: number | null }[] }>(
-            buildKey(status),
-          );
-          const total = cached?.pages[0]?.totalCount;
-          return typeof total === 'number' ? String(total) : '';
-        })
-        .join('|'),
-    [buildKey, queryClient, statuses],
-  );
-
-  const emptySignature = useMemo(() => statuses.map(() => '').join('|'), [statuses]);
-  const signature = useSyncExternalStore(subscribe, readSignature, () => emptySignature);
-
-  return useMemo(() => {
-    const parts = signature.split('|');
-    const counts: Record<string, number | undefined> = {};
-    statuses.forEach((status, index) => {
-      counts[status] = parts[index] === '' ? undefined : Number(parts[index]);
-    });
-    return counts;
-  }, [signature, statuses]);
+  return counts;
 }
 
 function DocumentFilterBar({
@@ -444,7 +433,11 @@ function DocumentListPanel({
       <div className="p-6">
         {isFiltered ? (
           <NoResultsState
-            description={`Aucun ${noun} ne correspond à cette recherche ou à ce filtre de statut.`}
+            description={
+              kind === 'invoice'
+                ? 'Aucune facture ne correspond à cette recherche ou à ce filtre de statut.'
+                : 'Aucun devis ne correspond à cette recherche ou à ce filtre de statut.'
+            }
             onClear={onClearFilters}
             query={search}
           />
@@ -681,11 +674,11 @@ export function InvoicesWorkspace() {
   const totalCount = listQuery.data?.pages[0]?.totalCount ?? null;
   const companyId = scope?.companyId ?? 'anonymous';
 
-  const buildStatusKey = useCallback(
-    (value: string) => invoicesQueryKeys.infiniteList(companyId, search, value),
-    [companyId, search],
+  const statusCounts = readStatusCounts(
+    queryClient,
+    (value) => invoicesQueryKeys.infiniteList(companyId, search, value),
+    INVOICE_FILTER_VALUES,
   );
-  const statusCounts = useCachedStatusCounts(buildStatusKey, INVOICE_FILTER_VALUES);
 
   /** La sélection ne survit pas à un changement de filtre : elle est recalculée sur les lignes visibles. */
   const selection = useMemo(
@@ -1045,11 +1038,11 @@ export function QuotesWorkspace() {
   const totalCount = listQuery.data?.pages[0]?.totalCount ?? null;
   const companyId = scope?.companyId ?? 'anonymous';
 
-  const buildStatusKey = useCallback(
-    (value: string) => quotesQueryKeys.infiniteList(companyId, search, value),
-    [companyId, search],
+  const statusCounts = readStatusCounts(
+    queryClient,
+    (value) => quotesQueryKeys.infiniteList(companyId, search, value),
+    QUOTE_FILTER_VALUES,
   );
-  const statusCounts = useCachedStatusCounts(buildStatusKey, QUOTE_FILTER_VALUES);
 
   /** La sélection ne survit pas à un changement de filtre : elle est recalculée sur les lignes visibles. */
   const selection = useMemo(
