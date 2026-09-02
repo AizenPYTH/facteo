@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Monitor, Smartphone } from 'lucide-react';
 
+import { AppStoreQrSection } from '@/components/sections/app-store-qr';
 import { PageHero } from '@/components/sections/landing-sections';
 import { Button } from '@/components/ui/button';
 import { FadeIn, Stagger, StaggerItem } from '@/components/ui/fade-in';
@@ -46,6 +47,8 @@ export default function DownloadPage() {
               </StaggerItem>
             ))}
           </Stagger>
+
+          <AppStoreQrSection />
 
           <FadeIn className="mt-16 rounded-2xl border border-border bg-slate-50 p-8 text-center">
             <h3 className="text-lg font-semibold text-foreground">Déjà un compte ?</h3>
