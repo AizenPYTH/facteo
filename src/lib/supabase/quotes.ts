@@ -1,9 +1,10 @@
-import { supabase } from '@/lib/supabase';
-import { logSupabaseError } from '@/lib/supabase/errors';
 import {
   mapCreateQuoteInputToInsert,
   mapUpdateQuoteInputToInsert,
 } from '@/lib/quotes/mappers';
+import { demoQuotes, isScreenshotDemo } from '@/lib/screenshot-demo';
+import { supabase } from '@/lib/supabase';
+import { logSupabaseError } from '@/lib/supabase/errors';
 import { mapQuoteDetail, mapQuoteRowToQuote } from '@/lib/supabase/mappers';
 import { reserveNextQuoteNumber } from '@/lib/supabase/settings';
 import type {
@@ -90,6 +91,27 @@ export async function fetchQuotesPage(
   scope: DataScope,
   { search = '', status = 'all', page = 0, pageSize = QUOTES_PAGE_SIZE }: QuotesPageParams = {},
 ): Promise<QuotesPage> {
+  if (isScreenshotDemo()) {
+    void scope;
+    const needle = search.trim().toLowerCase();
+    let filtered = status === 'all' ? demoQuotes : demoQuotes.filter((row) => row.status === status);
+    if (needle) {
+      filtered = filtered.filter((quote) =>
+        [quote.number, quote.clientName, quote.clientEmail]
+          .filter(Boolean)
+          .some((value) => String(value).toLowerCase().includes(needle)),
+      );
+    }
+    const from = page * pageSize;
+    const quotes = filtered.slice(from, from + pageSize);
+    const loadedCount = from + quotes.length;
+    return {
+      quotes,
+      nextPage: loadedCount < filtered.length ? page + 1 : null,
+      totalCount: filtered.length,
+    };
+  }
+
   const from = page * pageSize;
   const to = from + pageSize - 1;
 
@@ -130,6 +152,39 @@ export async function fetchQuoteById(
   scope: DataScope,
   quoteId: string,
 ): Promise<QuoteDetail | null> {
+  if (isScreenshotDemo()) {
+    void scope;
+    const quote = demoQuotes.find((row) => row.id === quoteId);
+    if (!quote) {
+      return null;
+    }
+    return {
+      ...quote,
+      lines: [
+        {
+          id: 'quote-line-1',
+          productId: null,
+          description: 'Conception logo & charte',
+          quantity: '1',
+          unit: 'forfait',
+          unitPrice: '850',
+          vatRate: '20',
+          discountPercent: '0',
+        },
+        {
+          id: 'quote-line-2',
+          productId: null,
+          description: 'Déclinaisons print',
+          quantity: '3',
+          unit: 'unité',
+          unitPrice: '120',
+          vatRate: '20',
+          discountPercent: '0',
+        },
+      ],
+    };
+  }
+
   const { data: quoteRow, error: quoteError } = await supabase
     .from('quotes')
     .select(QUOTE_LIST_COLUMNS)
