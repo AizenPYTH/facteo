@@ -2,6 +2,7 @@ import { router, type Href } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 
 import { InvoiceScreenHeader } from '@/components/invoices/invoice-screen-header';
+import { FeatureIntroModal } from '@/components/feature-intros';
 import { DocumentFinalizeStep } from '@/components/quotes/document-finalize-step';
 import { QuoteAddLinesStep } from '@/components/quotes/quote-add-lines-step';
 import { QuoteClientStep } from '@/components/quotes/quote-client-step';
@@ -9,6 +10,7 @@ import { QuoteWizardProgress } from '@/components/quotes/quote-wizard-progress';
 import { WizardActionBar } from '@/components/ui/wizard-action-bar';
 import { WizardScreen } from '@/components/ui/wizard-screen';
 import { useCompanyProfile } from '@/hooks/use-company-profile';
+import { useFeatureIntro } from '@/hooks/use-feature-intro';
 import { useInvoiceMutations } from '@/hooks/use-invoice-mutations';
 import { useSettings } from '@/hooks/use-settings';
 import {
@@ -59,12 +61,14 @@ export function InvoiceWizardScreen({
   const { showError, showSuccess } = useToast();
   const { data: companyProfile } = useCompanyProfile();
   const { data: settings } = useSettings();
+  const invoiceIntro = useFeatureIntro('invoice');
 
   const [step, setStep] = useState(1);
 
   useEffect(() => {
     onStepChange?.(step);
   }, [onStepChange, step]);
+
   const [state, setState] = useState<InvoiceWizardState>(
     initialState ?? createEmptyInvoiceWizardState(),
   );
@@ -358,6 +362,13 @@ export function InvoiceWizardScreen({
       }
       variant={variant}>
       {renderStep()}
+      <FeatureIntroModal
+        config={invoiceIntro.config}
+        onClose={invoiceIntro.onClose}
+        onCta={invoiceIntro.onCta}
+        onDontShowAgain={invoiceIntro.onDontShowAgain}
+        visible={invoiceIntro.visible}
+      />
     </WizardScreen>
   );
 }

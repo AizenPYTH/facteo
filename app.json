@@ -1,8 +1,9 @@
 {
   "expo": {
     "name": "INVEQ",
-    "slug": "FACTEO",
-    "version": "1.0.0",
+    "slug": "inveq",
+    "owner": "influence1s-team",
+    "version": "1.0.3",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "inveq",
@@ -10,6 +11,7 @@
     "ios": {
       "icon": "./assets/images/icon.png",
       "bundleIdentifier": "com.inveq.app",
+      "buildNumber": "48",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
@@ -48,10 +50,11 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "INVEQ a besoin d’accéder à vos photos pour importer le logo et la signature.",
-          "cameraPermission": "INVEQ a besoin d’accéder à l’appareil photo pour importer le logo et la signature."
+          "photosPermission": "INVEQ a besoin d’accéder à vos photos pour importer des produits, le logo et la signature.",
+          "cameraPermission": "INVEQ a besoin d’accéder à l’appareil photo pour scanner des produits, le logo et la signature."
         }
       ],
+      "expo-document-picker",
       [
         "expo-notifications",
         {
@@ -68,7 +71,7 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "55dde7c8-8d60-4b90-a665-53d800d2aa22"
+        "projectId": "2431d113-6d0f-465b-b268-902ab04c5f35"
       }
     }
   }

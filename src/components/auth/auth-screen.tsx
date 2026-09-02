@@ -53,7 +53,7 @@ export function AuthScreen({
             <Image
               accessibilityIgnoresInvertColors
               accessibilityLabel="INVEQ"
-              source={require('@/assets/images/INVEQ-logo.png')}
+              source={require('@/assets/images/inveq-logo.png')}
               style={styles.logo}
             />
             <Animated.View entering={FadeInDown.delay(80).duration(motion.normal).springify()}>

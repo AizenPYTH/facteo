@@ -15,6 +15,7 @@ import {
   TopClientsSection,
   TopPrestationsSection,
 } from '@/components/dashboard';
+import { FeatureIntroModal } from '@/components/feature-intros';
 import { PremiumGatedSection } from '@/components/subscription/premium-gated-section';
 import { DashboardDesktopScreen } from '@/components/web/desktop/screens/dashboard-desktop-screen';
 import { LoadingView } from '@/components/ui/loading-view';
@@ -23,6 +24,7 @@ import { useBreakpoint } from '@/hooks/use-breakpoint';
 import { useThemedStyles } from '@/hooks/use-colors';
 import { spacing } from '@/constants/theme/spacing';
 import { useDashboard } from '@/hooks/use-dashboard';
+import { useFeatureIntro } from '@/hooks/use-feature-intro';
 import { useSubscription } from '@/hooks/use-subscription';
 import { useTenant } from '@/hooks/use-tenant';
 
@@ -44,6 +46,7 @@ function DashboardMobileScreen() {
   const advancedStatsLocked = !hasFeature('advanced_stats');
   const insets = useSafeAreaInsets();
   const hasNoActivity = stats.totalClients === 0 && recentInvoices.length === 0;
+  const statsIntro = useFeatureIntro('statistics');
 
   return (
     <SafeAreaView edges={['top']} style={styles.safeArea}>
@@ -99,6 +102,13 @@ function DashboardMobileScreen() {
           onInvoicePress={(invoice) => router.push(`/invoices/${invoice.id}` as Href)}
         />
       </ScrollView>
+      <FeatureIntroModal
+        config={statsIntro.config}
+        onClose={statsIntro.onClose}
+        onCta={statsIntro.onCta}
+        onDontShowAgain={statsIntro.onDontShowAgain}
+        visible={statsIntro.visible}
+      />
     </SafeAreaView>
   );
 }
