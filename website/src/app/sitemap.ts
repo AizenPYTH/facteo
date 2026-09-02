@@ -5,6 +5,7 @@ import { SITE_URL } from '@/lib/constants';
 const ROUTES = [
   '',
   '/fonctionnalites',
+  '/facturation-electronique',
   '/tarifs',
   '/faq',
   '/contact',
