@@ -1,10 +1,8 @@
 'use client';
 
-import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
-import { AppTopBar } from '@/components/app/app-shell';
-import { FormActions, PrimaryButton } from '@/components/app/form-fields';
+import { FormActions, PrimaryButton, SecondaryButton } from '@/components/app/form-fields';
 import { Panel } from '@/components/app/ui';
 import { useToast } from '@/providers/toast-provider';
 
@@ -59,39 +57,45 @@ export default function NotificationsSettingsPage() {
     showSuccess('Préférences de notification enregistrées.');
   }
 
+  function handleCancel() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      setPrefs(raw ? { ...DEFAULT_PREFS, ...JSON.parse(raw) } : DEFAULT_PREFS);
+    } catch {
+      setPrefs(DEFAULT_PREFS);
+    }
+    setSaved(false);
+  }
+
   return (
-    <>
-      <AppTopBar subtitle="E-mails, alertes et notifications" title="Notifications">
-        <Link className="text-sm font-medium text-primary hover:underline" href="/app/settings">
-          ← Paramètres
-        </Link>
-      </AppTopBar>
-      <div className="flex-1 overflow-y-auto p-6 xl:p-8">
-        <div className="mx-auto max-w-2xl space-y-4">
-          {PREF_ITEMS.map((item) => (
-            <Panel key={item.key}>
-              <label className="flex cursor-pointer items-start justify-between gap-4">
-                <div>
-                  <p className="font-semibold text-slate-900">{item.label}</p>
-                  <p className="mt-1 text-sm text-slate-500">{item.description}</p>
-                </div>
-                <input
-                  checked={prefs[item.key]}
-                  className="mt-1 h-5 w-5 rounded border-slate-300 text-primary focus:ring-primary/20"
-                  onChange={() => toggle(item.key)}
-                  type="checkbox"
-                />
-              </label>
-            </Panel>
-          ))}
-          <FormActions>
-            {saved ? <span className="text-sm text-emerald-600">Préférences enregistrées</span> : null}
-            <PrimaryButton onClick={handleSave} type="button">
-              Enregistrer
-            </PrimaryButton>
-          </FormActions>
-        </div>
-      </div>
-    </>
+    <div className="mx-auto max-w-[720px] space-y-3 p-5 sm:p-6">
+      {PREF_ITEMS.map((item) => (
+        <Panel key={item.key}>
+          <label className="flex min-h-11 cursor-pointer items-start justify-between gap-4">
+            <div>
+              <p className="font-semibold text-app-text">{item.label}</p>
+              <p className="mt-1 text-[13px] text-app-muted">{item.description}</p>
+            </div>
+            <input
+              checked={prefs[item.key]}
+              className="mt-1 h-5 w-5 [accent-color:var(--app-accent)]"
+              onChange={() => toggle(item.key)}
+              type="checkbox"
+            />
+          </label>
+        </Panel>
+      ))}
+      <FormActions>
+        {saved ? (
+          <span className="mr-auto text-[13px] text-app-success-text">Préférences enregistrées</span>
+        ) : null}
+        <SecondaryButton onClick={handleCancel} type="button">
+          Annuler
+        </SecondaryButton>
+        <PrimaryButton onClick={handleSave} type="button">
+          Enregistrer
+        </PrimaryButton>
+      </FormActions>
+    </div>
   );
 }

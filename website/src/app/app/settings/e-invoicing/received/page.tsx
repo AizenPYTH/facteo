@@ -1,9 +1,8 @@
 'use client';
 
-import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
 
-import { AppTopBar } from '@/components/app/app-shell';
+import { PrimaryButton, SecondaryLink } from '@/components/app/form-fields';
 import { LoadingState, Panel } from '@/components/app/ui';
 import { getSupabaseBrowserClient } from '@/lib/supabase/browser';
 import { syncSuperPdp } from '@/lib/superpdp/api';
@@ -73,60 +72,50 @@ export default function ReceivedEInvoicesPage() {
   }
 
   return (
-    <>
-      <AppTopBar subtitle="Réception SUPER PDP" title="Factures reçues">
-        <Link
-          className="text-sm font-medium text-primary hover:underline"
-          href="/app/settings/e-invoicing">
-          ← Facturation électronique
-        </Link>
-      </AppTopBar>
-      <div className="flex-1 overflow-y-auto p-6 xl:p-8">
-        <div className="mx-auto max-w-4xl space-y-4">
-          <Panel>
-            <p className="text-sm text-muted-foreground">
-              Factures électroniques reçues via SUPER PDP. Elles ne sont jamais marquées comme
-              payées automatiquement. Le module achats n’existe pas encore dans INVEQ.
-            </p>
-            <button
-              className="mt-4 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground disabled:opacity-60"
-              disabled={busy || !companyId}
-              onClick={() => void handleSync()}
-              type="button">
-              {busy ? 'Synchronisation…' : 'Synchroniser'}
-            </button>
-            {error ? <p className="mt-3 text-sm text-red-600">{error}</p> : null}
-          </Panel>
+    <div className="mx-auto max-w-[720px] space-y-4 p-5 sm:p-6">
+      <SecondaryLink href="/app/settings/e-invoicing">← Facturation électronique</SecondaryLink>
+      <Panel>
+        <p className="text-[13px] text-app-muted">
+          Factures électroniques reçues via SUPER PDP. Elles ne sont jamais marquées comme
+          payées automatiquement. Le module achats n’existe pas encore dans INVEQ.
+        </p>
+        <PrimaryButton
+          className="mt-4"
+          disabled={busy || !companyId}
+          onClick={() => void handleSync()}
+          type="button">
+          {busy ? 'Synchronisation…' : 'Synchroniser'}
+        </PrimaryButton>
+        {error ? <p className="mt-3 text-[13px] text-app-danger">{error}</p> : null}
+      </Panel>
 
-          {rows.length === 0 ? (
-            <Panel>
-              <p className="text-sm text-muted-foreground">Aucune facture reçue pour le moment.</p>
-            </Panel>
-          ) : (
-            rows.map((item) => (
-              <Panel key={item.id}>
-                <h3 className="font-semibold">{item.supplier_name || 'Fournisseur'}</h3>
-                <div className="mt-2 space-y-1 text-sm text-muted-foreground">
-                  <p>N° {item.invoice_number || '—'}</p>
-                  <p>Date {item.issue_date || '—'}</p>
-                  <p>
-                    HT {item.subtotal_ht ?? '—'} · TVA {item.total_vat ?? '—'} · TTC{' '}
-                    {item.total_ttc ?? '—'}
-                  </p>
-                  <p>
-                    Statut {item.electronic_invoice_status || '—'}
-                    {item.latest_status_code ? ` (${item.latest_status_code})` : ''}
-                  </p>
-                  <p>
-                    Réception{' '}
-                    {item.received_at ? new Date(item.received_at).toLocaleString('fr-FR') : '—'}
-                  </p>
-                </div>
-              </Panel>
-            ))
-          )}
-        </div>
-      </div>
-    </>
+      {rows.length === 0 ? (
+        <Panel>
+          <p className="text-[13px] text-app-muted">Aucune facture reçue pour le moment.</p>
+        </Panel>
+      ) : (
+        rows.map((item) => (
+          <Panel key={item.id}>
+            <h3 className="font-semibold text-app-text">{item.supplier_name || 'Fournisseur'}</h3>
+            <div className="mt-2 space-y-1 text-[13px] text-app-muted">
+              <p>N° {item.invoice_number || '—'}</p>
+              <p>Date {item.issue_date || '—'}</p>
+              <p>
+                HT {item.subtotal_ht ?? '—'} · TVA {item.total_vat ?? '—'} · TTC{' '}
+                {item.total_ttc ?? '—'}
+              </p>
+              <p>
+                Statut {item.electronic_invoice_status || '—'}
+                {item.latest_status_code ? ` (${item.latest_status_code})` : ''}
+              </p>
+              <p>
+                Réception{' '}
+                {item.received_at ? new Date(item.received_at).toLocaleString('fr-FR') : '—'}
+              </p>
+            </div>
+          </Panel>
+        ))
+      )}
+    </div>
   );
 }

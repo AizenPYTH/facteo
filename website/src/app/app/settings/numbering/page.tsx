@@ -1,11 +1,9 @@
 'use client';
 
-import Link from 'next/link';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
-import { AppTopBar } from '@/components/app/app-shell';
 import { SettingsNumberingForm } from '@/components/app/company-profile-form';
-import { LoadingState, Panel } from '@/components/app/ui';
+import { LoadingState } from '@/components/app/ui';
 import { useSettings } from '@/hooks/use-settings';
 import { updateSettings } from '@/lib/supabase/settings';
 import { settingsQueryKeys } from '@/lib/domain/supabase/query-keys';
@@ -15,9 +13,14 @@ import { useToast } from '@/providers/toast-provider';
 import { toUserFacingError } from '@/lib/errors/messages';
 import type { SettingsFormValues } from '@/types/settings';
 
+/** Même formule que le composer (`reserve_next_*_number` sans requête supplémentaire). */
+function forecastNumber(prefix: string | null | undefined, next: number | string, fallback: string) {
+  return `${(prefix ?? '').trim() || fallback}-${new Date().getUTCFullYear()}-${String(next).padStart(6, '0')}`;
+}
+
 export default function NumberingSettingsPage() {
   const { scope } = useTenant();
-  const { formValues, loading } = useSettings();
+  const { settings, formValues, loading } = useSettings();
   const queryClient = useQueryClient();
   const { showSuccess, showError } = useToast();
 
@@ -34,25 +37,30 @@ export default function NumberingSettingsPage() {
     return <LoadingState message="Chargement des paramètres…" />;
   }
 
+  const nextQuote = forecastNumber(
+    settings?.quotePrefix ?? formValues.quotePrefix,
+    settings?.nextQuoteNumber ?? formValues.nextQuoteNumber,
+    'DEV',
+  );
+  const nextInvoice = forecastNumber(
+    settings?.invoicePrefix ?? formValues.invoicePrefix,
+    settings?.nextInvoiceNumber ?? formValues.nextInvoiceNumber,
+    'FAC',
+  );
+
   return (
-    <>
-      <AppTopBar subtitle="Préfixes, numérotation et conditions par défaut" title="Numérotation">
-        <Link className="text-sm font-medium text-primary hover:underline" href="/app/settings">
-          ← Paramètres
-        </Link>
-      </AppTopBar>
-      <div className="flex-1 overflow-y-auto p-6 xl:p-8">
-        <div className="mx-auto max-w-3xl">
-          <Panel>
-            <SettingsNumberingForm
-              defaultValues={formValues}
-              onSubmit={async (values) => {
-                await mutation.mutateAsync(values);
-              }}
-            />
-          </Panel>
-        </div>
-      </div>
-    </>
+    <div className="mx-auto max-w-[720px] p-5 sm:p-6">
+      <p className="mb-4 text-[13px] text-app-muted">
+        Prochain devis : <span className="app-num font-semibold text-app-text">{nextQuote}</span>
+        {' · '}
+        Prochaine facture : <span className="app-num font-semibold text-app-text">{nextInvoice}</span>
+      </p>
+      <SettingsNumberingForm
+        defaultValues={formValues}
+        onSubmit={async (values) => {
+          await mutation.mutateAsync(values);
+        }}
+      />
+    </div>
   );
 }

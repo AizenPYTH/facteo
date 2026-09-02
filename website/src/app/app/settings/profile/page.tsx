@@ -1,12 +1,10 @@
 'use client';
 
-import Link from 'next/link';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 
-import { AppTopBar } from '@/components/app/app-shell';
 import { CompanyProfileForm } from '@/components/app/company-profile-form';
-import { LoadingState, Panel } from '@/components/app/ui';
+import { LoadingState } from '@/components/app/ui';
 import { useAuth } from '@/providers/auth-provider';
 import { useToast } from '@/providers/toast-provider';
 import { toUserFacingError } from '@/lib/errors/messages';
@@ -51,25 +49,14 @@ export default function ProfileSettingsPage() {
   );
 
   return (
-    <>
-      <AppTopBar subtitle="Informations personnelles de votre compte" title="Profil">
-        <Link className="text-sm font-medium text-primary hover:underline" href="/app/settings">
-          ← Paramètres
-        </Link>
-      </AppTopBar>
-      <div className="flex-1 overflow-y-auto p-6 xl:p-8">
-        <div className="mx-auto max-w-3xl space-y-6">
-          <Panel>
-            <CompanyProfileForm
-              defaultValues={defaults}
-              onSubmit={async (values) => {
-                await mutation.mutateAsync(values);
-              }}
-              showPersonalFields
-            />
-          </Panel>
-        </div>
-      </div>
-    </>
+    <div className="mx-auto max-w-[720px] p-5 sm:p-6">
+      <CompanyProfileForm
+        defaultValues={defaults}
+        onSubmit={async (values) => {
+          await mutation.mutateAsync(values);
+        }}
+        showPersonalFields
+      />
+    </div>
   );
 }

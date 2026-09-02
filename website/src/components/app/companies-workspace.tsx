@@ -1,21 +1,134 @@
 'use client';
 
-import { Suspense, useCallback } from 'react';
+import { Suspense, useCallback, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Building2, Check, Mail, MapPin, Phone } from 'lucide-react';
+import { Building2, Check, Plus } from 'lucide-react';
 
-import { MasterDetailLayout, WorkspaceToolbar } from '@/components/app/master-detail';
+import { AppDialog } from '@/components/app/app-dialog';
+import { AppTopBar } from '@/components/app/app-shell';
 import { EmptyState } from '@/components/app/empty-state';
+import {
+  PrimaryButton,
+  SecondaryButton,
+  SecondaryLink,
+  TextInput,
+} from '@/components/app/form-fields';
 import { Badge, LoadingState } from '@/components/app/ui';
-import { useTenant } from '@/providers/company-provider';
+import { useCompany } from '@/providers/company-provider';
+import type { CompanyMemberRole, TenantCompany } from '@/types/tenant';
 import { cn } from '@/lib/utils';
 
+const ROLE_LABELS: Record<CompanyMemberRole, string> = {
+  owner: 'Propriétaire',
+  admin: 'Administrateur',
+  member: 'Membre',
+};
+
+function companyInitials(name: string): string {
+  return (
+    name
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((part) => part.charAt(0).toUpperCase())
+      .join('') || '·'
+  );
+}
+
+function CompanyCard({
+  company,
+  active,
+  highlighted,
+  switching,
+  onActivate,
+  onSelect,
+}: {
+  company: TenantCompany;
+  active: boolean;
+  highlighted: boolean;
+  switching: boolean;
+  onActivate: () => void;
+  onSelect: () => void;
+}) {
+  const place = [company.city, company.country].filter(Boolean).join(', ');
+
+  return (
+    <article
+      className={cn(
+        'rounded-[14px] border bg-app-surface p-4',
+        active ? 'border-app-accent-border' : highlighted ? 'border-app-accent/40' : 'border-app-border',
+      )}>
+      <button
+        className="flex w-full items-start justify-between gap-3 text-left"
+        onClick={onSelect}
+        type="button">
+        <div className="flex min-w-0 items-center gap-2.5">
+          <span className="flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-[11px] bg-gradient-to-br from-app-accent-violet to-app-accent text-[13px] font-bold text-white">
+            {companyInitials(company.name)}
+          </span>
+          <div className="min-w-0">
+            <p className="truncate text-[14.5px] font-semibold tracking-[-0.01em] text-app-text">
+              {company.name}
+            </p>
+            <p className="mt-0.5 truncate text-[12px] text-app-muted-2">
+              {ROLE_LABELS[company.role]}
+              {place ? ` · ${place}` : ''}
+            </p>
+          </div>
+        </div>
+        {active ? <Badge variant="success">Actif</Badge> : null}
+      </button>
+
+      {(company.email || company.siret) ? (
+        <dl className="mt-4 grid grid-cols-2 gap-2.5 border-t border-app-border-soft pt-3.5">
+          <div>
+            <dt className="text-[11px] text-app-faint">E-mail</dt>
+            <dd className="mt-0.5 truncate text-[13px] font-medium text-app-text">
+              {company.email || '—'}
+            </dd>
+          </div>
+          <div>
+            <dt className="text-[11px] text-app-faint">SIRET</dt>
+            <dd className="app-num mt-0.5 truncate text-[13px] font-medium text-app-text">
+              {company.siret || '—'}
+            </dd>
+          </div>
+        </dl>
+      ) : null}
+
+      <div className="mt-3.5 flex gap-2">
+        {active ? (
+          <span className="flex flex-1 items-center justify-center rounded-app-field border border-app-success/20 bg-app-success-tint px-3 py-2 text-[12.5px] font-semibold text-app-success-text">
+            <Check className="mr-1.5" size={14} />
+            Espace actif
+          </span>
+        ) : (
+          <PrimaryButton
+            className="flex-1 py-2 text-[12.5px]"
+            disabled={switching}
+            onClick={onActivate}
+            type="button">
+            Activer
+          </PrimaryButton>
+        )}
+        <SecondaryLink className="px-3 py-2 text-[12.5px]" href="/app/settings/company">
+          Profil
+        </SecondaryLink>
+      </div>
+    </article>
+  );
+}
+
 function CompaniesWorkspaceInner() {
-  const { companies, activeCompany, switchCompany, loading } = useTenant();
+  const { companies, activeCompany, switchCompany, createNewCompany, loading, isSwitching } =
+    useCompany();
   const searchParams = useSearchParams();
   const router = useRouter();
-  const selectedParam = searchParams.get('selected');
-  const selectedId = selectedParam ?? activeCompany?.id ?? null;
+  const selectedId = searchParams.get('selected');
+  const [createOpen, setCreateOpen] = useState(false);
+  const [name, setName] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
 
   const setSelectedId = useCallback(
     (id: string | null) => {
@@ -28,125 +141,113 @@ function CompaniesWorkspaceInner() {
     [router, searchParams],
   );
 
-  const selected = companies.find((c) => c.id === selectedId) ?? null;
+  async function handleCreate(event: React.FormEvent) {
+    event.preventDefault();
+    const trimmed = name.trim();
+    if (!trimmed) {
+      setError('Indiquez un nom d’entreprise.');
+      return;
+    }
+    setSaving(true);
+    setError(null);
+    try {
+      await createNewCompany({ name: trimmed });
+      setName('');
+      setCreateOpen(false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Impossible de créer l’entreprise.');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  function closeCreate() {
+    if (saving) return;
+    setCreateOpen(false);
+    setError(null);
+    setName('');
+  }
 
   if (loading) {
     return <LoadingState message="Chargement des entreprises…" />;
   }
 
   return (
-    <div className="flex h-full min-h-0 flex-col">
-      <WorkspaceToolbar subtitle={`${companies.length} espace(s)`} title="Entreprises" />
+    <>
+      <AppTopBar
+        count={companies.length}
+        subtitle="Chaque espace a ses clients, documents et numérotation"
+        title="Entreprises">
+        <PrimaryButton onClick={() => setCreateOpen(true)} type="button">
+          <Plus size={16} />
+          Nouvel espace
+        </PrimaryButton>
+      </AppTopBar>
 
-      <div className="min-h-0 flex-1">
-        <MasterDetailLayout
-          detail={
-            !selected ? (
-              <div className="flex h-full items-center justify-center p-8">
-                <EmptyState title="Aucune entreprise sélectionnée" />
-              </div>
-            ) : (
-              <div className="h-full overflow-y-auto p-8">
-                <div className="mx-auto max-w-3xl rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
-                  <div className="flex items-start gap-4">
-                    <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-50 text-primary">
-                      <Building2 size={28} />
-                    </div>
-                    <div>
-                      <h2 className="text-2xl font-bold text-slate-900">{selected.name}</h2>
-                      <Badge className="mt-2" variant="info">
-                        {selected.role === 'owner' ? 'Propriétaire' : selected.role}
-                      </Badge>
-                    </div>
-                  </div>
-
-                  <dl className="mt-8 grid gap-5 sm:grid-cols-2">
-                    {selected.email ? (
-                      <div className="flex gap-3">
-                        <Mail className="text-slate-400" size={18} />
-                        <div>
-                          <dt className="text-xs text-slate-400">E-mail</dt>
-                          <dd className="font-medium text-slate-800">{selected.email}</dd>
-                        </div>
-                      </div>
-                    ) : null}
-                    {selected.phone ? (
-                      <div className="flex gap-3">
-                        <Phone className="text-slate-400" size={18} />
-                        <div>
-                          <dt className="text-xs text-slate-400">Téléphone</dt>
-                          <dd className="font-medium text-slate-800">{selected.phone}</dd>
-                        </div>
-                      </div>
-                    ) : null}
-                    {selected.address || selected.city ? (
-                      <div className="flex gap-3 sm:col-span-2">
-                        <MapPin className="text-slate-400" size={18} />
-                        <div>
-                          <dt className="text-xs text-slate-400">Adresse</dt>
-                          <dd className="font-medium text-slate-800">
-                            {[selected.address, selected.postalCode, selected.city, selected.country]
-                              .filter(Boolean)
-                              .join(', ')}
-                          </dd>
-                        </div>
-                      </div>
-                    ) : null}
-                  </dl>
-                </div>
-
-                <div className="mx-auto mt-6 max-w-3xl">
-                  <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-400">
-                    Actions
-                  </h3>
-                  <div className="mt-4 space-y-2">
-                    {selected.id !== activeCompany?.id ? (
-                      <button
-                        className="flex w-full items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white hover:bg-primary-dark"
-                        onClick={() => void switchCompany(selected.id)}
-                        type="button">
-                        <Check size={16} />
-                        Activer cet espace
-                      </button>
-                    ) : (
-                      <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700">
-                        Espace actif
-                      </div>
-                    )}
-                    <a
-                      className="flex w-full items-center justify-center rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
-                      href="/app/settings/company">
-                      Modifier le profil
-                    </a>
-                  </div>
-                </div>
-              </div>
-            )
-          }
-          detailOpen={Boolean(selectedParam && selected)}
-          detailTitle="Entreprise"
-          list={
-            <ul className="divide-y divide-slate-100 overflow-y-auto">
-              {companies.map((company) => (
-                <li key={company.id}>
-                  <button
-                    className={cn(
-                      'w-full px-4 py-3.5 text-left transition',
-                      company.id === selectedId ? 'bg-blue-50/80' : 'hover:bg-slate-50',
-                    )}
-                    onClick={() => setSelectedId(company.id)}
-                    type="button">
-                    <p className="font-semibold text-slate-900">{company.name}</p>
-                    <p className="text-sm text-slate-500">{company.city ?? '—'}</p>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          }
-          onCloseDetail={() => setSelectedId(null)}
-        />
+      <div className="min-h-0 flex-1 overflow-y-auto p-5 sm:p-6">
+        {companies.length === 0 ? (
+          <EmptyState
+            action={
+              <PrimaryButton onClick={() => setCreateOpen(true)} type="button">
+                <Plus size={15} />
+                Créer un espace
+              </PrimaryButton>
+            }
+            description="Créez un premier espace pour isoler clients, devis et factures."
+            icon={Building2}
+            title="Aucune entreprise"
+          />
+        ) : (
+          <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 xl:grid-cols-[repeat(auto-fill,minmax(320px,1fr))]">
+            {companies.map((company) => (
+              <CompanyCard
+                active={company.id === activeCompany?.id}
+                company={company}
+                highlighted={company.id === selectedId}
+                key={company.id}
+                onActivate={() => void switchCompany(company.id)}
+                onSelect={() => setSelectedId(company.id)}
+                switching={isSwitching}
+              />
+            ))}
+          </div>
+        )}
       </div>
-    </div>
+
+      <AppDialog
+        description="Ajoutez un nouvel espace de travail."
+        footer={
+          <>
+            <SecondaryButton disabled={saving} onClick={closeCreate} type="button">
+              Annuler
+            </SecondaryButton>
+            <PrimaryButton form="company-workspace-create" loading={saving} type="submit">
+              Créer
+            </PrimaryButton>
+          </>
+        }
+        onClose={closeCreate}
+        open={createOpen}
+        size="sm"
+        title="Nouvelle entreprise">
+        <form
+          className="space-y-4 px-[22px] pb-2"
+          id="company-workspace-create"
+          onSubmit={(event) => void handleCreate(event)}>
+          <label className="block text-xs font-medium text-app-text-3" htmlFor="company-workspace-name">
+            Nom de l’entreprise
+          </label>
+          <TextInput
+            autoFocus
+            id="company-workspace-name"
+            onChange={(event) => setName(event.target.value)}
+            placeholder="ex. Atelier Nord"
+            value={name}
+          />
+          {error ? <p className="text-[12px] font-medium text-app-danger">{error}</p> : null}
+        </form>
+      </AppDialog>
+    </>
   );
 }
 
