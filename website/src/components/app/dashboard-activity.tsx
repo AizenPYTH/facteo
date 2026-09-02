@@ -13,7 +13,6 @@ import {
   Wallet,
 } from 'lucide-react';
 import Link from 'next/link';
-import { motion, useReducedMotion } from 'framer-motion';
 
 import { Badge, Panel } from '@/components/app/ui';
 import { formatCurrency } from '@/lib/domain/format/currency';
@@ -70,8 +69,6 @@ export function DashboardActivityFeed({
   activity: ActivityItem[];
   invoices: Invoice[];
 }) {
-  const reduceMotion = useReducedMotion();
-
   return (
     <Panel title="Centre d’activité">
       {activity.length === 0 ? (
@@ -92,16 +89,10 @@ export function DashboardActivityFeed({
             aria-hidden
             className="absolute bottom-3 left-[15px] top-3 w-px bg-slate-200"
           />
-          {activity.slice(0, 8).map((item, index) => {
+          {activity.slice(0, 8).map((item) => {
             const meta = enrichActivity(item, invoices);
             return (
-              <motion.li
-                className="relative flex gap-3 pb-4 last:pb-0"
-                initial={reduceMotion ? false : { opacity: 0, x: -6 }}
-                key={item.id}
-                transition={{ duration: 0.2, delay: index * 0.03 }}
-                viewport={{ once: true }}
-                whileInView={reduceMotion ? undefined : { opacity: 1, x: 0 }}>
+              <li className="relative flex gap-3 pb-4 last:pb-0" key={item.id}>
                 <span
                   className={cn(
                     'relative z-[1] flex h-8 w-8 shrink-0 items-center justify-center rounded-full ring-4 ring-white',
@@ -124,7 +115,7 @@ export function DashboardActivityFeed({
                     })}
                   </p>
                 </div>
-              </motion.li>
+              </li>
             );
           })}
         </ul>
@@ -196,7 +187,7 @@ export function DashboardTips({
     <div className="space-y-2">
       {tips.map((tip) => (
         <Link
-          className="flex items-start gap-3 rounded-2xl border border-amber-100/90 bg-gradient-to-br from-amber-50/90 to-white px-4 py-3.5 text-sm text-amber-950 transition duration-150 hover:-translate-y-0.5 hover:border-amber-200"
+          className="flex items-start gap-3 rounded-2xl border border-amber-100/90 bg-gradient-to-br from-amber-50/90 to-white px-4 py-3.5 text-sm text-amber-950 transition duration-150 hover:border-amber-200"
           href={tip.href}
           key={tip.id}>
           <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-white text-amber-600 shadow-sm ring-1 ring-amber-100">

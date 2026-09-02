@@ -574,13 +574,13 @@ export function DocumentComposer({ kind }: { kind: 'invoice' | 'quote' }) {
           </div>
           <div className="flex shrink-0 items-center gap-2">
             <button
-              className="rounded-xl border border-slate-200/90 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition duration-150 hover:-translate-y-0.5 hover:bg-slate-50"
+              className="rounded-xl border border-slate-200/90 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition duration-150 hover:bg-slate-50"
               onClick={handleCancel}
               type="button">
               Annuler
             </button>
             <button
-              className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white shadow-[0_10px_24px_-10px_rgba(37,99,235,0.65)] transition duration-150 hover:-translate-y-0.5 hover:bg-primary-dark disabled:opacity-60 disabled:hover:translate-y-0"
+              className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white shadow-[0_10px_24px_-10px_rgba(37,99,235,0.65)] transition duration-150 hover:bg-primary-dark disabled:opacity-60"
               disabled={createMutation.isPending}
               onClick={handleSubmit}
               type="button">
