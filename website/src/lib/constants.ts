@@ -17,4 +17,9 @@ export const SUPPORT_EMAIL =
 
 export const SITE_NAME = 'INVEQ';
 
+/** Fiche App Store de l’application iOS (publiée) */
+export const IOS_APP_STORE_URL = 'https://apps.apple.com/fr/app/inveq-factures-devis/id6794705229';
+export const IOS_APP_NAME = 'INVEQ – Factures & Devis';
+export const IOS_MIN_VERSION = '16.4';
+
 export const DEFAULT_OG_IMAGE = `${SITE_URL}/opengraph-image`;

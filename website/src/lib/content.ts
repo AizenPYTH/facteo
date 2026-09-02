@@ -1,4 +1,4 @@
-import { APP_DASHBOARD_URL, APP_REGISTER_URL, SUPPORT_EMAIL } from './constants';
+import { APP_DASHBOARD_URL, APP_REGISTER_URL, IOS_APP_STORE_URL, SUPPORT_EMAIL } from './constants';
 
 export const NAV_LINKS = [
   { label: 'Fonctionnalités', href: '/fonctionnalites' },
@@ -103,9 +103,9 @@ export const DOWNLOAD = {
       id: 'ios',
       name: 'iOS',
       description: 'Application native pour iPhone et iPad. Idéale sur le terrain.',
-      cta: 'Bientôt sur l’App Store',
-      href: '#',
-      available: false,
+      cta: 'Télécharger sur l’App Store',
+      href: IOS_APP_STORE_URL,
+      available: true,
     },
     {
       id: 'android',
