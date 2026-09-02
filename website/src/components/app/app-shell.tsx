@@ -2,20 +2,85 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { LogOut, Search } from 'lucide-react';
-import { motion, useReducedMotion } from 'framer-motion';
+import { useQueryClient, type QueryKey } from '@tanstack/react-query';
+import type { LucideIcon } from 'lucide-react';
+import { FileText, LogOut, Plus, Receipt, Search, UserPlus } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 
+import { useCommandPalette } from '@/components/app/command-palette';
 import { CompanySwitcher } from '@/components/app/company-switcher';
+import { PrimaryButton } from '@/components/app/form-fields';
 import { BrandWordmark } from '@/components/brand/brand-logo';
 import { APP_NAV_FOOTER, APP_NAV_SECTIONS, isAppNavActive } from '@/lib/app-nav';
+import { extractAuthIdentity } from '@/lib/domain/auth/identity';
+import type { DashboardData } from '@/lib/domain/supabase/dashboard';
+import { dashboardQueryKeys, subscriptionQueryKeys } from '@/lib/domain/supabase/query-keys';
 import { useAuth } from '@/providers/auth-provider';
+import { useTenant } from '@/providers/company-provider';
+import type { SubscriptionSnapshot } from '@/types/subscription';
 import { cn } from '@/lib/utils';
+
+const CREATE_ITEMS: { href: string; label: string; icon: LucideIcon }[] = [
+  { href: '/app/quotes?create=1', label: 'Devis', icon: FileText },
+  { href: '/app/invoices?create=1', label: 'Facture', icon: Receipt },
+  { href: '/app/clients/new', label: 'Client', icon: UserPlus },
+];
+
+const NAV_ITEM_BASE =
+  'flex h-9 w-full items-center gap-2.5 rounded-app-field px-2.5 text-[13.5px] transition-colors duration-150';
+
+/** Lit une entrée déjà en cache sans jamais déclencher de requête : la nav ne charge aucune donnée. */
+function useCachedQueryData<T>(queryKey: QueryKey): T | undefined {
+  const queryClient = useQueryClient();
+
+  const subscribe = useCallback(
+    (onStoreChange: () => void) => queryClient.getQueryCache().subscribe(onStoreChange),
+    [queryClient],
+  );
+
+  const getSnapshot = useCallback(
+    () => queryClient.getQueryData<T>(queryKey),
+    [queryClient, queryKey],
+  );
+
+  return useSyncExternalStore(subscribe, getSnapshot, () => undefined);
+}
 
 export function AppSidebar() {
   const pathname = usePathname();
   const router = useRouter();
-  const { signOut } = useAuth();
-  const reduceMotion = useReducedMotion();
+  const { signOut, user } = useAuth();
+  const { scope } = useTenant();
+  const { openPalette } = useCommandPalette();
+
+  const companyId = scope?.companyId ?? 'anonymous';
+  const userId = user?.id ?? 'anonymous';
+  const dashboardKey = useMemo(() => dashboardQueryKeys.byCompany(companyId), [companyId]);
+  const subscriptionKey = useMemo(() => subscriptionQueryKeys.snapshot(userId), [userId]);
+  const dashboard = useCachedQueryData<DashboardData>(dashboardKey);
+  const subscription = useCachedQueryData<SubscriptionSnapshot>(subscriptionKey);
+
+  const identity = user ? extractAuthIdentity(user) : null;
+  const displayName =
+    [identity?.firstName, identity?.lastName].filter(Boolean).join(' ') ||
+    identity?.email ||
+    'Mon compte';
+  const initials =
+    [identity?.firstName, identity?.lastName]
+      .filter(Boolean)
+      .map((part) => part!.charAt(0).toUpperCase())
+      .join('') || (identity?.email?.charAt(0).toUpperCase() ?? '·');
+  const planLabel = subscription?.plan.displayName
+    ? `Offre ${subscription.plan.displayName}`
+    : identity?.email;
+
+  const stats = dashboard?.stats;
+  const navCounts: Record<string, { value: number; tone: 'neutral' | 'danger' } | undefined> = {
+    '/app/quotes':
+      stats && stats.pendingQuotes > 0 ? { value: stats.pendingQuotes, tone: 'neutral' } : undefined,
+    '/app/invoices':
+      stats && stats.lateInvoices > 0 ? { value: stats.lateInvoices, tone: 'danger' } : undefined,
+  };
 
   async function handleSignOut() {
     await signOut();
@@ -24,20 +89,36 @@ export function AppSidebar() {
   }
 
   return (
-    <aside className="flex h-screen w-64 shrink-0 flex-col border-r border-slate-200/90 bg-white/95 backdrop-blur-sm">
-      <div className="border-b border-slate-100 px-5 py-5">
-        <Link className="group flex items-center" href="/app">
-          <BrandWordmark className="w-[188px] sm:w-[188px] lg:w-[188px]" />
+    <aside className="flex h-screen w-[248px] shrink-0 flex-col border-r border-app-border bg-app-surface max-lg:w-[212px]">
+      <div className="px-4 pt-4">
+        <Link className="flex items-center" href="/app">
+          <BrandWordmark className="w-[132px] sm:w-[132px] lg:w-[132px]" />
         </Link>
+      </div>
 
+      <div className="px-3 pb-3">
         <CompanySwitcher />
       </div>
 
-      <nav className="flex-1 overflow-y-auto px-3 py-4">
+      <div className="px-3 pb-2.5">
+        <CreateMenu />
+        <button
+          className="mt-2 flex w-full items-center gap-2 rounded-app-control border border-app-border bg-app-subtle px-2.5 py-2 text-[13px] text-app-muted-2 transition-colors duration-150 hover:bg-app-hover hover:text-app-muted"
+          onClick={openPalette}
+          type="button">
+          <Search className="shrink-0" size={15} />
+          Rechercher
+          <span className="ml-auto rounded-[5px] border border-app-border px-[5px] py-px text-[10.5px] font-semibold text-app-faint">
+            ⌘K
+          </span>
+        </button>
+      </div>
+
+      <nav className="sb flex-1 overflow-y-auto px-3 pb-3 pt-1.5">
         {APP_NAV_SECTIONS.map((section) => (
-          <div className="mb-6" key={section.id}>
+          <div key={section.id}>
             {section.label ? (
-              <p className="mb-2 px-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
+              <p className="px-2.5 pb-1.5 pt-3.5 text-[10.5px] font-bold uppercase tracking-[0.12em] text-app-faint">
                 {section.label}
               </p>
             ) : null}
@@ -45,29 +126,34 @@ export function AppSidebar() {
               {section.items.map((item) => {
                 const active = isAppNavActive(pathname, item);
                 const Icon = item.icon;
+                const count = navCounts[item.href];
                 return (
-                  <li className="relative" key={item.href}>
-                    {active ? (
-                      <motion.span
-                        className="absolute inset-y-1 left-0 w-[3px] rounded-full bg-primary"
-                        layoutId={reduceMotion ? undefined : 'app-nav-indicator'}
-                        transition={{ type: 'spring', stiffness: 380, damping: 32 }}
-                      />
-                    ) : null}
+                  <li key={item.href}>
                     <Link
                       className={cn(
-                        'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors duration-150',
+                        NAV_ITEM_BASE,
                         active
-                          ? 'bg-blue-50/90 text-primary'
-                          : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900',
+                          ? 'bg-app-accent-tint font-semibold text-app-accent'
+                          : 'text-app-text-3 hover:bg-app-hover',
                       )}
                       href={item.href}>
                       <Icon
-                        className={cn(active ? 'text-primary' : 'text-slate-400')}
-                        size={18}
-                        strokeWidth={active ? 2.25 : 2}
+                        className={cn('shrink-0', active ? 'text-app-accent' : 'text-app-muted-2')}
+                        size={17}
+                        strokeWidth={1.75}
                       />
-                      {item.label}
+                      <span className="min-w-0 flex-1 truncate">{item.label}</span>
+                      {count ? (
+                        <span
+                          className={cn(
+                            'app-num shrink-0 rounded-app-chip px-[7px] py-px text-[11px] font-semibold',
+                            count.tone === 'danger'
+                              ? 'bg-app-danger-tint text-app-danger-text'
+                              : 'bg-app-border-soft text-app-muted',
+                          )}>
+                          {count.value}
+                        </span>
+                      ) : null}
                     </Link>
                   </li>
                 );
@@ -77,7 +163,7 @@ export function AppSidebar() {
         ))}
       </nav>
 
-      <div className="border-t border-slate-100 px-3 py-4">
+      <div className="border-t border-app-border-soft px-3 py-2.5">
         <ul className="space-y-0.5">
           {APP_NAV_FOOTER.map((item) => {
             const active = isAppNavActive(pathname, item);
@@ -86,33 +172,104 @@ export function AppSidebar() {
               <li key={item.href}>
                 <Link
                   className={cn(
-                    'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors duration-150',
+                    NAV_ITEM_BASE,
                     active
-                      ? 'bg-blue-50/90 text-primary'
-                      : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900',
+                      ? 'bg-app-accent-tint font-semibold text-app-accent'
+                      : 'text-app-text-3 hover:bg-app-hover',
                   )}
                   href={item.href}>
                   <Icon
-                    className={cn(active ? 'text-primary' : 'text-slate-400')}
-                    size={18}
+                    className={cn('shrink-0', active ? 'text-app-accent' : 'text-app-muted-2')}
+                    size={17}
+                    strokeWidth={1.75}
                   />
                   {item.label}
                 </Link>
               </li>
             );
           })}
-          <li>
-            <button
-              className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-50 hover:text-slate-900"
-              onClick={() => void handleSignOut()}
-              type="button">
-              <LogOut className="text-slate-400" size={18} />
-              Déconnexion
-            </button>
-          </li>
         </ul>
+
+        <div className="mt-0.5 flex items-center gap-2.5 rounded-app-field px-2.5 py-2 transition-colors duration-150 hover:bg-app-hover">
+          <span className="flex h-[26px] w-[26px] shrink-0 items-center justify-center rounded-full bg-app-border-soft text-[11px] font-bold text-app-text-3">
+            {initials}
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block truncate text-[12.5px] font-semibold text-app-text">
+              {displayName}
+            </span>
+            {planLabel ? (
+              <span className="block truncate text-[11px] text-app-muted-2">{planLabel}</span>
+            ) : null}
+          </span>
+          <button
+            aria-label="Déconnexion"
+            className="shrink-0 rounded-md p-1 text-app-faint transition-colors duration-150 hover:bg-app-border-soft hover:text-app-danger"
+            onClick={() => void handleSignOut()}
+            title="Déconnexion"
+            type="button">
+            <LogOut size={15} />
+          </button>
+        </div>
       </div>
     </aside>
+  );
+}
+
+function CreateMenu() {
+  const [open, setOpen] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+
+    function onPointerDown(event: MouseEvent) {
+      if (!rootRef.current?.contains(event.target as Node)) setOpen(false);
+    }
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') setOpen(false);
+    }
+
+    document.addEventListener('mousedown', onPointerDown);
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', onPointerDown);
+      document.removeEventListener('keydown', onKeyDown);
+    };
+  }, [open]);
+
+  return (
+    <div className="relative" ref={rootRef}>
+      <PrimaryButton
+        aria-expanded={open}
+        aria-haspopup="menu"
+        className="w-full py-2.5 text-[13.5px]"
+        onClick={() => setOpen((value) => !value)}>
+        <Plus size={16} strokeWidth={2.25} />
+        Créer
+      </PrimaryButton>
+
+      {open ? (
+        <div
+          className="absolute left-0 right-0 z-40 mt-1.5 overflow-hidden rounded-app-control border border-app-border bg-app-surface p-1.5 shadow-app-float"
+          role="menu">
+          {CREATE_ITEMS.map((item) => {
+            const Icon = item.icon;
+            return (
+              <Link
+                className="flex items-center gap-2.5 rounded-app-field px-2.5 py-2 text-[13px] font-medium text-app-text-2 transition-colors duration-150 hover:bg-app-accent-soft hover:text-app-accent"
+                href={item.href}
+                key={item.href}
+                onClick={() => setOpen(false)}
+                role="menuitem">
+                <Icon className="shrink-0 text-app-accent" size={15} strokeWidth={1.75} />
+                {item.label}
+              </Link>
+            );
+          })}
+        </div>
+      ) : null}
+    </div>
   );
 }
 
