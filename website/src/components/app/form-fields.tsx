@@ -1,6 +1,7 @@
 'use client';
 
 import { AlertCircle } from 'lucide-react';
+import Link from 'next/link';
 import { forwardRef } from 'react';
 
 import { cn } from '@/lib/utils';
@@ -165,6 +166,42 @@ export function GhostButton({
       {...props}>
       {children}
     </button>
+  );
+}
+
+export function PrimaryLink({
+  children,
+  className,
+  ...props
+}: React.ComponentProps<typeof Link>) {
+  return (
+    <Link
+      className={cn(
+        BUTTON_BASE,
+        'bg-app-accent text-white shadow-app-primary hover:bg-app-accent-strong',
+        className,
+      )}
+      {...props}>
+      {children}
+    </Link>
+  );
+}
+
+export function SecondaryLink({
+  children,
+  className,
+  ...props
+}: React.ComponentProps<typeof Link>) {
+  return (
+    <Link
+      className={cn(
+        BUTTON_BASE,
+        'border border-app-border bg-app-surface text-app-text-2 hover:bg-app-hover',
+        className,
+      )}
+      {...props}>
+      {children}
+    </Link>
   );
 }
 
