@@ -1,6 +1,10 @@
+import { mapFormValuesToClientInsert, mapFormValuesToClientUpdate } from '@/lib/clients/mappers';
+import {
+  demoClients,
+} from '@/lib/screenshot-demo';
+import { isOfflineDemoData } from '@/lib/demo-data-mode';
 import { supabase } from '@/lib/supabase';
 import { logSupabaseError } from '@/lib/supabase/errors';
-import { mapFormValuesToClientInsert, mapFormValuesToClientUpdate } from '@/lib/clients/mappers';
 import { mapClientRowToClient } from '@/lib/supabase/mappers';
 import type { Client, ClientFormValues } from '@/types/client';
 import type { DataScope } from '@/types/tenant';
@@ -37,6 +41,26 @@ export async function fetchClientsPage(
   scope: DataScope,
   { search = '', page = 0, pageSize = CLIENTS_PAGE_SIZE }: ClientsPageParams = {},
 ): Promise<ClientsPage> {
+  if (isOfflineDemoData()) {
+    void scope;
+    const needle = search.trim().toLowerCase();
+    const filtered = needle
+      ? demoClients.filter((client) =>
+          [client.company, client.firstName, client.lastName, client.email, client.city]
+            .filter(Boolean)
+            .some((value) => String(value).toLowerCase().includes(needle)),
+        )
+      : demoClients;
+    const from = page * pageSize;
+    const clients = filtered.slice(from, from + pageSize);
+    const loadedCount = from + clients.length;
+    return {
+      clients,
+      nextPage: loadedCount < filtered.length ? page + 1 : null,
+      totalCount: filtered.length,
+    };
+  }
+
   const from = page * pageSize;
   const to = from + pageSize - 1;
 
@@ -69,6 +93,11 @@ export async function fetchClientsPage(
 }
 
 export async function fetchClientById(scope: DataScope, clientId: string): Promise<Client | null> {
+  if (isOfflineDemoData()) {
+    void scope;
+    return demoClients.find((client) => client.id === clientId) ?? null;
+  }
+
   const { data, error } = await supabase
     .from('clients')
     .select(CLIENT_COLUMNS)

@@ -1,6 +1,12 @@
+import {
+  demoPlans,
+  demoSubscription,
+  getDemoSubscriptionSnapshot,
+} from '@/lib/screenshot-demo';
+import { isOfflineDemoData } from '@/lib/demo-data-mode';
+import { resolveEffectivePlanId } from '@/lib/subscription/plans';
 import { supabase } from '@/lib/supabase';
 import { logSupabaseError } from '@/lib/supabase/errors';
-import { resolveEffectivePlanId } from '@/lib/subscription/plans';
 import type {
   EffectivePlanId,
   PlanFeatures,
@@ -114,6 +120,10 @@ export function isPlanLimitError(error: unknown): error is PlanLimitError {
 }
 
 export async function ensureUserSubscription(): Promise<void> {
+  if (isOfflineDemoData()) {
+    return;
+  }
+
   const { error } = await supabase.rpc('ensure_user_subscription');
 
   if (error) {
@@ -123,6 +133,10 @@ export async function ensureUserSubscription(): Promise<void> {
 }
 
 export async function fetchSubscriptionPlans(): Promise<SubscriptionPlan[]> {
+  if (isOfflineDemoData()) {
+    return demoPlans;
+  }
+
   const { data, error } = await supabase
     .from('subscription_plans')
     .select(PLAN_COLUMNS)
@@ -138,6 +152,11 @@ export async function fetchSubscriptionPlans(): Promise<SubscriptionPlan[]> {
 }
 
 export async function fetchUserSubscription(userId: string): Promise<UserSubscription | null> {
+  if (isOfflineDemoData()) {
+    void userId;
+    return demoSubscription;
+  }
+
   await ensureUserSubscription();
 
   const { data, error } = await supabase
@@ -155,6 +174,10 @@ export async function fetchUserSubscription(userId: string): Promise<UserSubscri
 }
 
 export async function fetchSubscriptionUsage(): Promise<SubscriptionUsage> {
+  if (isOfflineDemoData()) {
+    return getDemoSubscriptionSnapshot().usage;
+  }
+
   const { data, error } = await supabase.rpc('get_subscription_usage');
 
   if (error) {
@@ -206,6 +229,11 @@ export async function consumeSirenSearch(): Promise<PlanLimitCheck> {
 }
 
 export async function fetchSubscriptionSnapshot(userId: string): Promise<SubscriptionSnapshot> {
+  if (isOfflineDemoData()) {
+    void userId;
+    return getDemoSubscriptionSnapshot();
+  }
+
   const [subscription, plans, usage] = await Promise.all([
     fetchUserSubscription(userId),
     fetchSubscriptionPlans(),
@@ -261,6 +289,12 @@ export async function fetchDocumentSignature(
   documentType: 'quote' | 'invoice',
   documentId: string,
 ): Promise<DocumentSignature | null> {
+  if (isOfflineDemoData()) {
+    void documentType;
+    void documentId;
+    return null;
+  }
+
   const { data, error } = await supabase
     .from('document_signatures')
     .select('*')
