@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowRight, Building2, CheckCircle2, RefreshCw, Send, ShieldCheck } from 'lucide-react';
+import { ArrowRight, CheckCircle2, MapPin, RefreshCw, Send, ShieldCheck } from 'lucide-react';
 
 import { AnimatedBackground } from '@/components/marketing/animated-background';
 import { Button } from '@/components/ui/button';
@@ -209,7 +209,7 @@ export function EInvoicingConnectionSection() {
                   <p className="mt-2 text-[15px] leading-relaxed text-muted">{step.description}</p>
                   {step.where ? (
                     <p className="mt-3 inline-flex items-center gap-2 rounded-full border border-border bg-background px-3 py-1 text-xs font-medium text-muted">
-                      <Building2 aria-hidden size={14} /> {step.where}
+                      <MapPin aria-hidden size={14} /> {step.where}
                     </p>
                   ) : null}
                 </div>
