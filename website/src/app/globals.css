@@ -19,6 +19,10 @@
   --app-accent: #4f46e5;
   --app-accent-strong: #4338ca;
   --app-accent-violet: #7c3aed;
+  --app-accent-violet-tint: #f5f3ff;
+  /* Barre neutre du graphique de chiffre d'affaires (§4.1) ; le mois courant
+     utilise le dégradé --app-accent-violet → --app-accent. */
+  --app-chart-bar: #dcd9fb;
 
   --app-canvas: #f6f7fb;
   --app-surface: #ffffff;
@@ -68,6 +72,8 @@
   --color-app-accent: var(--app-accent);
   --color-app-accent-strong: var(--app-accent-strong);
   --color-app-accent-violet: var(--app-accent-violet);
+  --color-app-accent-violet-tint: var(--app-accent-violet-tint);
+  --color-app-chart-bar: var(--app-chart-bar);
   --color-app-canvas: var(--app-canvas);
   --color-app-surface: var(--app-surface);
   --color-app-subtle: var(--app-subtle);

@@ -11,7 +11,7 @@ const STAT_ACCENTS: Record<StatAccent, string> = {
   warning: 'bg-app-warning-tint text-app-warning-text',
   success: 'bg-app-success-tint text-app-success',
   muted: 'bg-app-border-soft text-app-muted',
-  info: 'bg-[#f5f3ff] text-app-accent-violet',
+  info: 'bg-app-accent-violet-tint text-app-accent-violet',
 };
 
 export function StatCard({
