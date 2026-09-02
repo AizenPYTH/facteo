@@ -783,25 +783,28 @@ export function DocumentComposer({ kind }: { kind: 'invoice' | 'quote' }) {
           ) : null}
         </ComposerWizardShell>
       ) : (
-        <div className="sb min-h-0 flex-1 overflow-auto px-4 pb-6 pt-4 lg:px-5">
-          {errorBanner}
-          <div className="grid grid-cols-1 items-start gap-3.5 min-[900px]:grid-cols-[280px_minmax(0,1fr)] xl:grid-cols-[300px_minmax(0,1fr)_300px]">
-            <div className="flex min-w-0 flex-col gap-3">
-              {clientCard}
-              {termsCard}
-              {notesCard}
+        <div className="sb min-h-0 flex-1 overflow-auto px-4 pb-6 lg:px-5">
+          {/* Le retrait haut vit dans le contenu : sur le conteneur, il décalerait l’ancrage de l’en-tête collant des lignes. */}
+          <div className="pt-4">
+            {errorBanner}
+            <div className="grid grid-cols-1 items-start gap-3.5 min-[900px]:grid-cols-[280px_minmax(0,1fr)] xl:grid-cols-[300px_minmax(0,1fr)_300px]">
+              <div className="flex min-w-0 flex-col gap-3">
+                {clientCard}
+                {termsCard}
+                {notesCard}
+              </div>
+
+              {linesCard}
+
+              <ComposerPreviewColumn
+                className="min-[900px]:col-span-2 min-[900px]:grid min-[900px]:grid-cols-2 xl:col-span-1 xl:flex"
+                draft={draft}
+                onTemplateChange={setTemplateId}
+                scope={scope}
+                templateId={templateId}
+                userEmail={user?.email}
+              />
             </div>
-
-            {linesCard}
-
-            <ComposerPreviewColumn
-              className="min-[900px]:col-span-2 min-[900px]:grid min-[900px]:grid-cols-2 xl:col-span-1 xl:flex"
-              draft={draft}
-              onTemplateChange={setTemplateId}
-              scope={scope}
-              templateId={templateId}
-              userEmail={user?.email}
-            />
           </div>
         </div>
       )}

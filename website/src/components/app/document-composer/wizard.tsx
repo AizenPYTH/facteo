@@ -40,8 +40,9 @@ export function ComposerWizardShell({
 }) {
   return (
     <>
-      <div className="sb min-h-0 flex-1 overflow-y-auto bg-app-canvas px-3.5 py-3">
-        <div className="flex flex-col gap-2.5">{children}</div>
+      {/* Idem composer : le retrait haut reste dans le contenu pour ne pas décaler l’en-tête collant. */}
+      <div className="sb min-h-0 flex-1 overflow-y-auto bg-app-canvas px-3.5 pb-3">
+        <div className="flex flex-col gap-2.5 pt-3">{children}</div>
       </div>
 
       <div className="shrink-0 border-t border-app-border bg-app-surface px-3.5 py-3">
