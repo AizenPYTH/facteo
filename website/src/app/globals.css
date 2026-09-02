@@ -11,6 +11,53 @@
   --surface: #ffffff;
   --accent: #6366f1;
   --brand-gradient: linear-gradient(145deg, #a855f7 0%, #6366f1 45%, #2563eb 100%);
+
+  /* Espace connecté (/app) — cf. docs/design/APP-DESIGN-HANDOFF.md §1.
+     --app-accent double volontairement --primary : le site vitrine peut repointer
+     --primary sans déplacer l'accent de l'app. Les composants de components/app/**
+     n'utilisent que les jetons --app-*. */
+  --app-accent: #4f46e5;
+  --app-accent-strong: #4338ca;
+  --app-accent-violet: #7c3aed;
+  --app-accent-violet-tint: #f5f3ff;
+  /* Bordure des actions violettes (import IA / CSV du composer, §4.3). */
+  --app-accent-violet-border: #e3d5f9;
+  /* Barre neutre du graphique de chiffre d'affaires (§4.1) ; le mois courant
+     utilise le dégradé --app-accent-violet → --app-accent. */
+  --app-chart-bar: #dcd9fb;
+
+  --app-canvas: #f6f7fb;
+  --app-surface: #ffffff;
+  --app-subtle: #fafbfe;
+  --app-border: #e6e9f2;
+  --app-border-soft: #f3f5fa;
+  --app-border-dashed: #cfd5e6;
+  --app-text: #0f1533;
+  --app-text-2: #3b4256;
+  --app-text-3: #4a5268;
+  --app-muted: #6b7490;
+  --app-muted-2: #8a92a8;
+  --app-faint: #a3aabd;
+  --app-hover: #f7f8fd;
+  --app-accent-tint: #f1efff;
+  --app-accent-soft: #f7f6ff;
+  --app-accent-border: #c9c4f5;
+  --app-success: #059669;
+  --app-success-tint: #ecfdf5;
+  --app-success-text: #047857;
+  --app-warning: #f59e0b;
+  --app-warning-tint: #fffbeb;
+  --app-warning-text: #b45309;
+  --app-danger: #dc2626;
+  --app-danger-tint: #fef2f2;
+  --app-danger-text: #b91c1c;
+  --app-danger-border: #f3d3d3;
+  --app-danger-field: #e88b8b;
+  /* Voile des couches flottantes : modales, palette, panneau de détail superposé. */
+  --app-scrim: rgba(15, 21, 51, 0.34);
+
+  --app-shadow-primary: 0 10px 22px -12px rgba(79, 70, 229, 0.85);
+  --app-shadow-float: 0 24px 50px -24px rgba(15, 21, 51, 0.45);
 }
 
 @theme inline {
@@ -23,6 +70,51 @@
   --color-surface: var(--surface);
   --color-accent: var(--accent);
   --font-sans: var(--font-inter);
+
+  --color-app-accent: var(--app-accent);
+  --color-app-accent-strong: var(--app-accent-strong);
+  --color-app-accent-violet: var(--app-accent-violet);
+  --color-app-accent-violet-tint: var(--app-accent-violet-tint);
+  --color-app-accent-violet-border: var(--app-accent-violet-border);
+  --color-app-chart-bar: var(--app-chart-bar);
+  --color-app-canvas: var(--app-canvas);
+  --color-app-surface: var(--app-surface);
+  --color-app-subtle: var(--app-subtle);
+  --color-app-border: var(--app-border);
+  --color-app-border-soft: var(--app-border-soft);
+  --color-app-border-dashed: var(--app-border-dashed);
+  --color-app-text: var(--app-text);
+  --color-app-text-2: var(--app-text-2);
+  --color-app-text-3: var(--app-text-3);
+  --color-app-muted: var(--app-muted);
+  --color-app-muted-2: var(--app-muted-2);
+  --color-app-faint: var(--app-faint);
+  --color-app-hover: var(--app-hover);
+  --color-app-accent-tint: var(--app-accent-tint);
+  --color-app-accent-soft: var(--app-accent-soft);
+  --color-app-accent-border: var(--app-accent-border);
+  --color-app-success: var(--app-success);
+  --color-app-success-tint: var(--app-success-tint);
+  --color-app-success-text: var(--app-success-text);
+  --color-app-warning: var(--app-warning);
+  --color-app-warning-tint: var(--app-warning-tint);
+  --color-app-warning-text: var(--app-warning-text);
+  --color-app-danger: var(--app-danger);
+  --color-app-danger-tint: var(--app-danger-tint);
+  --color-app-danger-text: var(--app-danger-text);
+  --color-app-danger-border: var(--app-danger-border);
+  --color-app-danger-field: var(--app-danger-field);
+  --color-app-scrim: var(--app-scrim);
+
+  --shadow-app-primary: var(--app-shadow-primary);
+  --shadow-app-float: var(--app-shadow-float);
+
+  --radius-app-chip: 20px;
+  --radius-app-card: 14px;
+  --radius-app-modal: 12px;
+  --radius-app-control: 10px;
+  --radius-app-field: 9px;
+  --radius-app-icon: 8px;
 }
 
 html {
@@ -85,6 +177,29 @@ body {
 .app-workspace {
   height: 100%;
   min-height: 0;
+}
+
+.app-num {
+  font-variant-numeric: tabular-nums;
+}
+
+.sb {
+  scrollbar-width: thin;
+  scrollbar-color: #d7dbe8 transparent;
+}
+
+.sb::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.sb::-webkit-scrollbar-thumb {
+  background: #d7dbe8;
+  border-radius: 8px;
+}
+
+.sb::-webkit-scrollbar-track {
+  background: transparent;
 }
 
 @keyframes shimmer {

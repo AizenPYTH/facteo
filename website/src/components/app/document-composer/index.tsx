@@ -2,22 +2,35 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  ArrowLeft,
-  FileSpreadsheet,
-  Library,
-  Plus,
-  Save,
-  Sparkles,
-  Trash2,
-  Upload,
-} from 'lucide-react';
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from 'react';
+import { Send } from 'lucide-react';
 
 import { CatalogPicker } from '@/components/app/catalog-picker';
-import { ClientPicker } from '@/components/app/client-picker';
-import { ComposerErrorBanner, InlineFieldError } from '@/components/app/document-composer/field-errors';
+import { ComposerClientCard, composerClientLabel } from '@/components/app/document-composer/client-card';
+import { ComposerCard } from '@/components/app/document-composer/composer-card';
+import {
+  ComposerHeader,
+  ComposerSaveIndicator,
+  type ComposerSaveState,
+} from '@/components/app/document-composer/composer-header';
+import { ComposerErrorBanner } from '@/components/app/document-composer/field-errors';
+import { ComposerLinesCard, type LineFieldName } from '@/components/app/document-composer/lines-card';
+import { ComposerPreviewColumn } from '@/components/app/document-composer/preview-column';
 import { ComposerTemplateBar } from '@/components/app/document-composer/template-bar';
+import { ComposerTermsCard } from '@/components/app/document-composer/terms-card';
+import {
+  COMPOSER_WIZARD_STEPS,
+  ComposerRecapCard,
+  ComposerWizardProgress,
+  ComposerWizardShell,
+} from '@/components/app/document-composer/wizard';
 import {
   getFirstErrorTarget,
   hasValidationErrors,
@@ -26,7 +39,7 @@ import {
   type LineValue,
 } from '@/components/app/document-composer/validation';
 import { LoadingState } from '@/components/app/ui';
-import { TextArea, TextInput } from '@/components/app/form-fields';
+import { PrimaryButton, SecondaryButton, TextArea } from '@/components/app/form-fields';
 import { useAuth } from '@/providers/auth-provider';
 import { useTenant } from '@/providers/company-provider';
 import { useSettings } from '@/hooks/use-settings';
@@ -40,13 +53,17 @@ import { clientsQueryKeys, invoicesQueryKeys, quotesQueryKeys } from '@/lib/doma
 import { analyzeProductImage, type ProductImageAnalysis } from '@/lib/domain/ai/product-image-analysis';
 import { calculateLineTotals } from '@/lib/calculations/totals';
 import { getDefaultComposerTemplateId } from '@/lib/domain/pdf/composer-templates';
+import type { DraftDocumentInput } from '@/lib/domain/pdf/draft-pdf';
 import { requireScope } from '@/lib/domain/tenant/scope';
-import { formatCurrency } from '@/lib/domain/format/currency';
 import { createEmptyInvoiceLine } from '@inveq/types/invoice';
 import { createEmptyQuoteLine, createLocalLineId } from '@inveq/types/quote';
 import type { Product } from '@/types/product';
 import { CLIENTS_PAGE_SIZE } from '@inveq/types/clients-list';
-import { cn } from '@/lib/utils';
+
+/** Sous ce palier le composer devient un assistant en 3 étapes (handoff §5). */
+const WIZARD_QUERY = '(max-width: 899px)';
+
+const DEFAULT_PAYMENT_TERMS_DAYS = 30;
 
 function parseDecimal(value: string): number {
   const normalized = value.replace(/\s/g, '').replace(',', '.');
@@ -230,6 +247,20 @@ async function parseExcelLines(file: File, kind: 'invoice' | 'quote'): Promise<L
   return buildLinesFromTabularRows(headers, rows, kind);
 }
 
+function useWizardLayout(): boolean {
+  const subscribe = useCallback((onStoreChange: () => void) => {
+    const query = window.matchMedia(WIZARD_QUERY);
+    query.addEventListener('change', onStoreChange);
+    return () => query.removeEventListener('change', onStoreChange);
+  }, []);
+
+  return useSyncExternalStore(
+    subscribe,
+    () => window.matchMedia(WIZARD_QUERY).matches,
+    () => false,
+  );
+}
+
 export function DocumentComposer({ kind }: { kind: 'invoice' | 'quote' }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -239,6 +270,7 @@ export function DocumentComposer({ kind }: { kind: 'invoice' | 'quote' }) {
   const { scope, loading: tenantLoading } = useTenant();
   const { settings, loading: settingsLoading } = useSettings();
   const queryClient = useQueryClient();
+  const isWizard = useWizardLayout();
 
   const [clientId, setClientId] = useState(preselectedClient);
   const [notes, setNotes] = useState('');
@@ -251,12 +283,15 @@ export function DocumentComposer({ kind }: { kind: 'invoice' | 'quote' }) {
   const [submitAttempted, setSubmitAttempted] = useState(false);
   const [isImportingAi, setIsImportingAi] = useState(false);
   const [importFeedback, setImportFeedback] = useState<string | null>(null);
+  const [step, setStep] = useState(0);
   const importInputRef = useRef<HTMLInputElement | null>(null);
   const initializedFromProductsRef = useRef(false);
 
-  const clientRef = useRef<HTMLDivElement>(null);
-  const linesRef = useRef<HTMLDivElement>(null);
-  const lineFieldRefs = useRef<Record<string, Partial<Record<string, HTMLInputElement | null>>>>({});
+  const clientRef = useRef<HTMLElement>(null);
+  const linesRef = useRef<HTMLElement>(null);
+  const lineFieldRefs = useRef<
+    Record<string, Partial<Record<LineFieldName, HTMLInputElement[]>>>
+  >({});
 
   useEffect(() => {
     if (settings && !templateId) {
@@ -298,38 +333,65 @@ export function DocumentComposer({ kind }: { kind: 'invoice' | 'quote' }) {
   const totals = useMemo(() => {
     let subtotal = 0;
     let vat = 0;
+    const perLine: Record<string, number> = {};
     for (const line of lines) {
-      if (!line.description.trim()) continue;
+      if (!line.description.trim()) {
+        perLine[line.id] = 0;
+        continue;
+      }
       const result = calculateLineTotals(
         parseDecimal(line.quantity),
         parseDecimal(line.unitPrice),
         parseDecimal(line.vatRate),
         parseDecimal(line.discountPercent),
       );
+      perLine[line.id] = result.lineTotalTtc;
       subtotal += result.lineTotalHt;
       vat += result.lineVat;
     }
-    return { subtotal, vat, total: subtotal + vat };
+    return { subtotal, vat, total: subtotal + vat, perLine };
   }, [lines]);
+
+  const registerLineField = useCallback(
+    (lineId: string, field: LineFieldName, element: HTMLInputElement | null) => {
+      const fields = (lineFieldRefs.current[lineId] ??= {});
+      const kept = (fields[field] ?? []).filter(
+        (node) => node.isConnected && node !== element,
+      );
+      if (element) {
+        kept.push(element);
+      }
+      fields[field] = kept;
+    },
+    [],
+  );
 
   const scrollToFirstError = useCallback(
     (errors: FieldErrors) => {
       const target = getFirstErrorTarget(errors, lines);
       if (!target) return;
 
-      if (target.type === 'client') {
-        clientRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        return;
-      }
+      // En assistant, le champ fautif peut appartenir à une autre étape.
+      setStep(target.type === 'client' ? 0 : 1);
 
-      if (target.type === 'lines') {
-        linesRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        return;
-      }
+      const reveal = () => {
+        if (target.type === 'client') {
+          clientRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          return;
+        }
 
-      const input = lineFieldRefs.current[target.lineId]?.[target.field];
-      input?.focus();
-      input?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        if (target.type === 'lines') {
+          linesRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          return;
+        }
+
+        const candidates = lineFieldRefs.current[target.lineId]?.[target.field] ?? [];
+        const input = candidates.find((node) => node.offsetParent !== null) ?? candidates[0];
+        input?.focus();
+        input?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      };
+
+      requestAnimationFrame(() => requestAnimationFrame(reveal));
     },
     [lines],
   );
@@ -535,6 +597,13 @@ export function DocumentComposer({ kind }: { kind: 'invoice' | 'quote' }) {
     });
   }
 
+  function handleClientChange(id: string) {
+    setClientId(id);
+    if (submitAttempted) {
+      setFieldErrors(validateDocumentDraft(id, lines));
+    }
+  }
+
   function handleCancel() {
     router.replace(kind === 'quote' ? '/app/quotes' : '/app/invoices');
   }
@@ -545,376 +614,200 @@ export function DocumentComposer({ kind }: { kind: 'invoice' | 'quote' }) {
 
   const clients = clientsQuery.data?.clients ?? [];
   const title = kind === 'invoice' ? 'Nouvelle facture' : 'Nouveau devis';
-  const label = kind === 'invoice' ? 'facture' : 'devis';
+  const submitLabel = kind === 'invoice' ? 'Créer la facture' : 'Créer le devis';
+  const paymentTermsDays = settings?.paymentTermsDays ?? DEFAULT_PAYMENT_TERMS_DAYS;
+  const selectedClient = clients.find((client) => client.id === clientId) ?? null;
 
-  const bannerMessages = [
-    fieldErrors.clientId,
-    fieldErrors.linesGlobal,
-  ].filter((m): m is string => Boolean(m));
+  /** Reproduit le format de `reserve_next_*_number` sans requête supplémentaire. */
+  const forecastNumber = settings
+    ? `${
+        (kind === 'invoice' ? settings.invoicePrefix : settings.quotePrefix)?.trim() ||
+        (kind === 'invoice' ? 'FAC' : 'DEV')
+      }-${new Date().getUTCFullYear()}-${String(
+        kind === 'invoice' ? settings.nextInvoiceNumber : settings.nextQuoteNumber,
+      ).padStart(6, '0')}`
+    : null;
+
+  const saveState: ComposerSaveState = createMutation.isPending
+    ? 'saving'
+    : createMutation.isSuccess
+      ? 'saved'
+      : 'draft';
+
+  const draft: DraftDocumentInput = {
+    kind,
+    clientId,
+    notes,
+    templateId,
+    lines: lines.map((line) => ({
+      description: line.description,
+      quantity: line.quantity,
+      unit: line.unit,
+      unitPrice: line.unitPrice,
+      vatRate: line.vatRate,
+      discountPercent: line.discountPercent,
+    })),
+  };
+
+  const bannerMessages = [fieldErrors.clientId, fieldErrors.linesGlobal].filter(
+    (message): message is string => Boolean(message),
+  );
+
+  const errorBanner =
+    submitAttempted && bannerMessages.length > 0 ? (
+      <ComposerErrorBanner className="mb-3" messages={bannerMessages} />
+    ) : null;
+
+  const clientCard = (
+    <ComposerClientCard
+      clients={clients}
+      containerRef={clientRef}
+      errorMessage={submitAttempted ? fieldErrors.clientId : undefined}
+      hasError={submitAttempted && Boolean(fieldErrors.clientId)}
+      loading={clientsQuery.isLoading}
+      onChange={handleClientChange}
+      value={clientId}
+    />
+  );
+
+  const termsCard = <ComposerTermsCard kind={kind} paymentTermsDays={paymentTermsDays} />;
+
+  const notesCard = (
+    <ComposerCard title="Notes affichées sur le document">
+      <TextArea
+        className="min-h-[74px]"
+        onChange={(event) => setNotes(event.target.value)}
+        placeholder="Conditions, remarques…"
+        rows={3}
+        value={notes}
+      />
+    </ComposerCard>
+  );
+
+  const linesCard = (
+    <ComposerLinesCard
+      containerRef={linesRef}
+      fieldErrors={fieldErrors}
+      importFeedback={importFeedback}
+      isImporting={isImportingAi}
+      lineTotals={totals.perLine}
+      lines={lines}
+      onAddLine={addLine}
+      onOpenCatalog={() => setCatalogOpen(true)}
+      onOpenImport={() => importInputRef.current?.click()}
+      onRemoveLine={removeLine}
+      onUpdateLine={updateLine}
+      registerLineField={registerLineField}
+      submitAttempted={submitAttempted}
+      totals={totals}
+    />
+  );
 
   return (
-    <div className="flex h-full min-h-0 flex-col overflow-hidden bg-[#F4F6F9]">
-      <CatalogPicker onClose={() => setCatalogOpen(false)} onSelectMany={addFromCatalogMany} open={catalogOpen} />
+    <div className="flex h-full min-h-0 flex-col overflow-hidden bg-app-canvas">
+      <CatalogPicker
+        onClose={() => setCatalogOpen(false)}
+        onSelectMany={addFromCatalogMany}
+        open={catalogOpen}
+      />
 
-      {/* Barre supérieure */}
-      <header className="shrink-0 border-b border-slate-200/90 bg-white/95 backdrop-blur-sm">
-        <div className="flex items-center justify-between gap-4 px-4 py-3 lg:px-5">
-          <div className="flex min-w-0 items-center gap-3">
-            <button
-              className="flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-sm font-medium text-slate-600 transition hover:bg-slate-100"
-              onClick={handleCancel}
-              type="button">
-              <ArrowLeft size={16} />
-              Retour
-            </button>
-            <div className="min-w-0">
-              <h1 className="truncate text-lg font-semibold tracking-tight text-slate-900">{title}</h1>
-              <p className="text-xs text-slate-500">Éditeur clair et simplifié</p>
-            </div>
-          </div>
-          <div className="flex shrink-0 items-center gap-2">
-            <button
-              className="rounded-xl border border-slate-200/90 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition duration-150 hover:-translate-y-0.5 hover:bg-slate-50"
-              onClick={handleCancel}
-              type="button">
-              Annuler
-            </button>
-            <button
-              className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white shadow-[0_10px_24px_-10px_rgba(37,99,235,0.65)] transition duration-150 hover:-translate-y-0.5 hover:bg-primary-dark disabled:opacity-60 disabled:hover:translate-y-0"
-              disabled={createMutation.isPending}
-              onClick={handleSubmit}
-              type="button">
-              <Save size={16} />
-              {createMutation.isPending ? 'Création…' : `Créer la ${label}`}
-            </button>
-          </div>
-        </div>
-        <div className="border-t border-slate-100 bg-slate-50/60 px-4 py-2.5 lg:px-5">
-          <ComposerTemplateBar onChange={setTemplateId} value={templateId} />
-        </div>
-      </header>
+      <input
+        accept="image/*,.csv,.txt,.xlsx,.xls"
+        className="hidden"
+        multiple
+        onChange={(event) => {
+          void handleImportFiles(event.target.files);
+          event.target.value = '';
+        }}
+        ref={importInputRef}
+        type="file"
+      />
 
-      <div className="flex min-h-0 flex-1">
-        <div className="grid min-w-0 flex-1 grid-cols-1 md:grid-cols-[260px_minmax(0,1fr)] xl:grid-cols-[300px_minmax(0,1fr)]">
-        {/* Colonne gauche — Client & totaux */}
-        <aside className="flex min-h-0 flex-col border-b border-slate-200 bg-white lg:border-b-0 lg:border-r">
-          <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-4">
-            {submitAttempted && bannerMessages.length > 0 ? (
-              <ComposerErrorBanner messages={bannerMessages} />
-            ) : null}
+      <ComposerHeader
+        actions={
+          isWizard ? null : (
+            <>
+              <ComposerSaveIndicator className="hidden min-[1180px]:flex" state={saveState} />
+              <SecondaryButton onClick={handleCancel}>Annuler</SecondaryButton>
+              <PrimaryButton disabled={createMutation.isPending} onClick={handleSubmit}>
+                <Send size={15} strokeWidth={1.9} />
+                {createMutation.isPending ? 'Création…' : submitLabel}
+              </PrimaryButton>
+            </>
+          )
+        }
+        meta={
+          isWizard
+            ? `Étape ${step + 1} sur ${COMPOSER_WIZARD_STEPS.length} · ${COMPOSER_WIZARD_STEPS[step]}`
+            : (forecastNumber ?? undefined)
+        }
+        onBack={isWizard && step > 0 ? () => setStep(step - 1) : handleCancel}
+        title={title}>
+        {isWizard ? <ComposerWizardProgress step={step} /> : null}
+      </ComposerHeader>
 
-            <section ref={clientRef}>
-              <h2 className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-400">
-                Client
-              </h2>
-              <ClientPicker
-                clients={clients}
-                error={Boolean(fieldErrors.clientId)}
-                loading={clientsQuery.isLoading}
-                onChange={(id) => {
-                  setClientId(id);
-                  if (submitAttempted) {
-                    setFieldErrors(validateDocumentDraft(id, lines));
-                  }
-                }}
-                value={clientId}
-              />
-              <InlineFieldError message={submitAttempted ? fieldErrors.clientId : undefined} />
-            </section>
-
-            <section>
-              <h2 className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-400">
-                Notes
-              </h2>
-              <TextArea
-                className="min-h-[72px] text-sm"
-                onChange={(e) => setNotes(e.target.value)}
-                placeholder="Conditions, remarques…"
-                rows={2}
-                value={notes}
-              />
-            </section>
-          </div>
-
-          <div className="shrink-0 border-t border-slate-100 bg-slate-50 p-4">
-            <dl className="grid grid-cols-3 gap-2 text-center">
-              <div>
-                <dt className="text-[10px] uppercase text-slate-400">HT</dt>
-                <dd className="text-sm font-bold text-slate-900">{formatCurrency(totals.subtotal)}</dd>
-              </div>
-              <div>
-                <dt className="text-[10px] uppercase text-slate-400">TVA</dt>
-                <dd className="text-sm font-bold text-slate-900">{formatCurrency(totals.vat)}</dd>
-              </div>
-              <div>
-                <dt className="text-[10px] uppercase text-slate-400">TTC</dt>
-                <dd className="text-base font-bold text-primary">{formatCurrency(totals.total)}</dd>
-              </div>
-            </dl>
-          </div>
-        </aside>
-
-        {/* Colonne centrale — Lignes */}
-        <main className="flex min-h-0 flex-col border-b border-slate-200 bg-white lg:border-b-0" ref={linesRef}>
-          <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-4 py-3">
-            <h2 className="text-xs font-semibold uppercase tracking-wider text-slate-400">
-              Prestations & produits
-            </h2>
-            <div className="flex flex-wrap gap-2">
-              <button
-                className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
-                onClick={addLine}
-                type="button">
-                <Plus size={14} />
-                Manuel
-              </button>
-              <button
-                className="inline-flex items-center gap-1.5 rounded-lg border border-primary/30 bg-blue-50 px-3 py-1.5 text-xs font-semibold text-primary transition hover:bg-blue-100"
-                onClick={() => setCatalogOpen(true)}
-                type="button">
-                <Library size={14} />
-                Catalogue (multi)
-              </button>
-              <button
-                className="inline-flex items-center gap-1.5 rounded-lg border border-violet-200 bg-violet-50 px-3 py-1.5 text-xs font-semibold text-violet-700 transition hover:bg-violet-100"
-                onClick={() => importInputRef.current?.click()}
-                type="button">
-                <Sparkles size={14} />
-                IA (image/CSV)
-              </button>
-            </div>
-          </div>
-
-          <input
-            accept="image/*,.csv,.txt,.xlsx,.xls"
-            className="hidden"
-            multiple
-            onChange={(event) => {
-              void handleImportFiles(event.target.files);
-              event.target.value = '';
-            }}
-            ref={importInputRef}
-            type="file"
-          />
-          {importFeedback ? (
-            <div className="flex items-center gap-2 border-b border-slate-100 bg-slate-50 px-4 py-2 text-xs text-slate-600">
-              <Upload size={14} />
-              <span>{importFeedback}</span>
-            </div>
+      {isWizard ? (
+        <ComposerWizardShell
+          onPrimary={step < COMPOSER_WIZARD_STEPS.length - 1 ? () => setStep(step + 1) : handleSubmit}
+          primaryDisabled={createMutation.isPending}
+          primaryLabel={
+            step < COMPOSER_WIZARD_STEPS.length - 1
+              ? 'Continuer'
+              : createMutation.isPending
+                ? 'Création…'
+                : submitLabel
+          }
+          total={totals.total}>
+          {errorBanner}
+          {step === 0 ? (
+            <>
+              {clientCard}
+              {termsCard}
+              {notesCard}
+            </>
           ) : null}
-          {isImportingAi ? (
-            <div className="flex items-center gap-2 border-b border-slate-100 bg-blue-50 px-4 py-2 text-xs font-medium text-primary">
-              <FileSpreadsheet size={14} />
-              Analyse IA/import en cours...
-            </div>
+          {step === 1 ? linesCard : null}
+          {step === 2 ? (
+            <>
+              <ComposerRecapCard
+                clientName={selectedClient ? composerClientLabel(selectedClient) : null}
+                kind={kind}
+                lineCount={lines.filter((line) => line.description.trim()).length}
+                paymentTermsDays={paymentTermsDays}
+                totals={totals}
+              />
+              <ComposerCard title="Modèle PDF">
+                <ComposerTemplateBar onChange={setTemplateId} value={templateId} />
+              </ComposerCard>
+            </>
           ) : null}
+        </ComposerWizardShell>
+      ) : (
+        <div className="sb min-h-0 flex-1 overflow-auto px-4 pb-6 lg:px-5">
+          {/* Le retrait haut vit dans le contenu : sur le conteneur, il décalerait l’ancrage de l’en-tête collant des lignes. */}
+          <div className="pt-4">
+            {errorBanner}
+            <div className="grid grid-cols-1 items-start gap-3.5 min-[900px]:grid-cols-[280px_minmax(0,1fr)] xl:grid-cols-[300px_minmax(0,1fr)_300px]">
+              <div className="flex min-w-0 flex-col gap-3">
+                {clientCard}
+                {termsCard}
+                {notesCard}
+              </div>
 
-          <InlineFieldError
-            message={submitAttempted ? fieldErrors.linesGlobal : undefined}
-          />
+              {linesCard}
 
-          <div className="min-h-0 flex-1 overflow-auto">
-            <div className="hidden xl:block">
-            <table className="w-full min-w-[860px] text-left text-sm">
-              <thead className="sticky top-0 z-10 border-b border-slate-200 bg-slate-50/95 text-xs font-semibold uppercase tracking-wider text-slate-500 backdrop-blur-sm">
-                <tr>
-                  <th className="px-3 py-2.5">Description</th>
-                  <th className="w-20 px-2 py-2.5">Qté</th>
-                  <th className="w-24 px-2 py-2.5">Unité</th>
-                  <th className="w-28 px-2 py-2.5">Prix HT</th>
-                  <th className="w-20 px-2 py-2.5">TVA</th>
-                  <th className="w-28 px-2 py-2.5 text-right">Total TTC</th>
-                  <th className="w-10 px-2 py-2.5" />
-                </tr>
-              </thead>
-              <tbody>
-                {lines.map((line) => {
-                  const lineTotal = line.description.trim()
-                    ? calculateLineTotals(
-                        parseDecimal(line.quantity),
-                        parseDecimal(line.unitPrice),
-                        parseDecimal(line.vatRate),
-                        parseDecimal(line.discountPercent),
-                      ).lineTotalTtc
-                    : 0;
-                  const rowErrors = fieldErrors.lineErrors?.[line.id];
-
-                  return (
-                    <tr className="border-b border-slate-100/90 align-top transition-colors duration-150 hover:bg-slate-50/80" key={line.id}>
-                      <td className="px-3 py-2">
-                        <TextInput
-                          className={cn('py-1.5 text-sm', rowErrors?.description && 'border-red-300')}
-                          onChange={(e) => updateLine(line.id, { description: e.target.value })}
-                          placeholder="Description"
-                          ref={(el) => {
-                            if (!lineFieldRefs.current[line.id]) {
-                              lineFieldRefs.current[line.id] = {};
-                            }
-                            lineFieldRefs.current[line.id].description = el;
-                          }}
-                          value={line.description}
-                        />
-                        {line.productId ? (
-                          <span className="mt-1 inline-block rounded bg-blue-50 px-1.5 py-0.5 text-[10px] font-semibold text-primary">
-                            Catalogue
-                          </span>
-                        ) : null}
-                      </td>
-                      <td className="px-2 py-2">
-                        <TextInput
-                          className={cn('py-1.5 text-sm', rowErrors?.quantity && 'border-red-300')}
-                          onChange={(e) => updateLine(line.id, { quantity: e.target.value })}
-                          ref={(el) => {
-                            if (!lineFieldRefs.current[line.id]) {
-                              lineFieldRefs.current[line.id] = {};
-                            }
-                            lineFieldRefs.current[line.id].quantity = el;
-                          }}
-                          value={line.quantity}
-                        />
-                        <InlineFieldError message={submitAttempted ? rowErrors?.quantity : undefined} />
-                      </td>
-                      <td className="px-2 py-2">
-                        <TextInput
-                          className="py-1.5 text-sm"
-                          onChange={(e) => updateLine(line.id, { unit: e.target.value })}
-                          value={line.unit}
-                        />
-                      </td>
-                      <td className="px-2 py-2">
-                        <TextInput
-                          className={cn('py-1.5 text-sm', rowErrors?.unitPrice && 'border-red-300')}
-                          onChange={(e) => updateLine(line.id, { unitPrice: e.target.value })}
-                          ref={(el) => {
-                            if (!lineFieldRefs.current[line.id]) {
-                              lineFieldRefs.current[line.id] = {};
-                            }
-                            lineFieldRefs.current[line.id].unitPrice = el;
-                          }}
-                          value={line.unitPrice}
-                        />
-                        <InlineFieldError message={submitAttempted ? rowErrors?.unitPrice : undefined} />
-                      </td>
-                      <td className="px-2 py-2">
-                        <TextInput
-                          className="py-1.5 text-sm"
-                          onChange={(e) => updateLine(line.id, { vatRate: e.target.value })}
-                          value={line.vatRate}
-                        />
-                      </td>
-                      <td className="px-2 py-2 text-right font-semibold tabular-nums text-slate-800">
-                        {formatCurrency(lineTotal)}
-                      </td>
-                      <td className="px-2 py-2">
-                        <button
-                          className="rounded p-1 text-slate-400 hover:bg-red-50 hover:text-red-500 disabled:opacity-30"
-                          disabled={lines.length <= 1}
-                          onClick={() => removeLine(line.id)}
-                          type="button">
-                          <Trash2 size={14} />
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-            </div>
-
-            <div className="space-y-3 p-3 xl:hidden">
-              {lines.map((line, index) => {
-                const lineTotal = line.description.trim()
-                  ? calculateLineTotals(
-                      parseDecimal(line.quantity),
-                      parseDecimal(line.unitPrice),
-                      parseDecimal(line.vatRate),
-                      parseDecimal(line.discountPercent),
-                    ).lineTotalTtc
-                  : 0;
-                const rowErrors = fieldErrors.lineErrors?.[line.id];
-
-                return (
-                  <article className="rounded-xl border border-slate-200 p-3 shadow-sm" key={line.id}>
-                    <div className="mb-2 flex items-center justify-between gap-2">
-                      <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-                        Ligne {index + 1}
-                      </p>
-                      <button
-                        className="rounded p-1 text-slate-400 hover:bg-red-50 hover:text-red-500 disabled:opacity-30"
-                        disabled={lines.length <= 1}
-                        onClick={() => removeLine(line.id)}
-                        type="button">
-                        <Trash2 size={14} />
-                      </button>
-                    </div>
-
-                    <div className="space-y-3">
-                      <div>
-                        <TextInput
-                          className={cn(rowErrors?.description && 'border-red-300')}
-                          onChange={(e) => updateLine(line.id, { description: e.target.value })}
-                          placeholder="Description"
-                          ref={(el) => {
-                            if (!lineFieldRefs.current[line.id]) {
-                              lineFieldRefs.current[line.id] = {};
-                            }
-                            lineFieldRefs.current[line.id].description = el;
-                          }}
-                          value={line.description}
-                        />
-                        {line.productId ? (
-                          <span className="mt-1 inline-block rounded bg-blue-50 px-1.5 py-0.5 text-[10px] font-semibold text-primary">
-                            Catalogue
-                          </span>
-                        ) : null}
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-2">
-                        <div>
-                          <TextInput
-                            className={cn(rowErrors?.quantity && 'border-red-300')}
-                            onChange={(e) => updateLine(line.id, { quantity: e.target.value })}
-                            placeholder="Qté"
-                            value={line.quantity}
-                          />
-                          <InlineFieldError message={submitAttempted ? rowErrors?.quantity : undefined} />
-                        </div>
-                        <TextInput
-                          onChange={(e) => updateLine(line.id, { unit: e.target.value })}
-                          placeholder="Unité"
-                          value={line.unit}
-                        />
-                        <div>
-                          <TextInput
-                            className={cn(rowErrors?.unitPrice && 'border-red-300')}
-                            onChange={(e) => updateLine(line.id, { unitPrice: e.target.value })}
-                            placeholder="Prix HT"
-                            value={line.unitPrice}
-                          />
-                          <InlineFieldError message={submitAttempted ? rowErrors?.unitPrice : undefined} />
-                        </div>
-                        <TextInput
-                          onChange={(e) => updateLine(line.id, { vatRate: e.target.value })}
-                          placeholder="TVA %"
-                          value={line.vatRate}
-                        />
-                      </div>
-
-                      <div className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2">
-                        <span className="text-xs font-medium text-slate-500">Total TTC</span>
-                        <span className="text-sm font-semibold tabular-nums text-slate-900">
-                          {formatCurrency(lineTotal)}
-                        </span>
-                      </div>
-                    </div>
-                  </article>
-                );
-              })}
+              <ComposerPreviewColumn
+                className="min-[900px]:col-span-2 min-[900px]:grid min-[900px]:grid-cols-2 xl:col-span-1 xl:flex"
+                draft={draft}
+                onTemplateChange={setTemplateId}
+                scope={scope}
+                templateId={templateId}
+                userEmail={user?.email}
+              />
             </div>
           </div>
-        </main>
         </div>
-      </div>
+      )}
     </div>
   );
 }

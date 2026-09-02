@@ -1,43 +1,61 @@
 'use client';
 
-import { AnimatePresence, motion } from 'framer-motion';
 import { AlertCircle } from 'lucide-react';
 
-export function InlineFieldError({ message }: { message?: string }) {
+import { cn } from '@/lib/utils';
+
+export function InlineFieldError({
+  className,
+  message,
+}: {
+  className?: string;
+  message?: string;
+}) {
+  if (!message) {
+    return null;
+  }
+
   return (
-    <AnimatePresence>
-      {message ? (
-        <motion.p
-          animate={{ opacity: 1, y: 0 }}
-          className="mt-1.5 flex items-center gap-1.5 text-xs font-medium text-red-600"
-          exit={{ opacity: 0, y: -4 }}
-          initial={{ opacity: 0, y: -4 }}
-          role="alert">
-          <AlertCircle className="shrink-0" size={14} />
-          {message}
-        </motion.p>
-      ) : null}
-    </AnimatePresence>
+    <p
+      className={cn(
+        'mt-1.5 flex items-start gap-1.5 text-[12px] font-medium text-app-danger',
+        className,
+      )}
+      role="alert">
+      <AlertCircle className="mt-[1px] shrink-0" size={13} strokeWidth={1.75} />
+      <span>{message}</span>
+    </p>
   );
 }
 
-export function ComposerErrorBanner({ messages }: { messages: string[] }) {
-  if (messages.length === 0) return null;
+export function ComposerErrorBanner({
+  className,
+  messages,
+}: {
+  className?: string;
+  messages: string[];
+}) {
+  if (messages.length === 0) {
+    return null;
+  }
 
   return (
-    <motion.div
-      animate={{ opacity: 1, y: 0 }}
-      className="rounded-xl border border-red-200 bg-red-50 px-4 py-3"
-      initial={{ opacity: 0, y: -8 }}
+    <div
+      className={cn(
+        'rounded-app-card border border-app-danger-border bg-app-danger-tint px-4 py-3',
+        className,
+      )}
       role="alert">
       <ul className="space-y-1.5">
-        {messages.map((msg) => (
-          <li className="flex items-center gap-2 text-sm font-medium text-red-700" key={msg}>
-            <AlertCircle className="shrink-0" size={16} />
-            {msg}
+        {messages.map((message) => (
+          <li
+            className="flex items-start gap-2 text-[13px] font-medium text-app-danger-text"
+            key={message}>
+            <AlertCircle className="mt-[1px] shrink-0" size={15} strokeWidth={1.75} />
+            <span>{message}</span>
           </li>
         ))}
       </ul>
-    </motion.div>
+    </div>
   );
 }

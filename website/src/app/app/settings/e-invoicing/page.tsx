@@ -1,9 +1,15 @@
 'use client';
 
-import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
+import { Unplug } from 'lucide-react';
 
-import { AppTopBar } from '@/components/app/app-shell';
+import { AppDialog } from '@/components/app/app-dialog';
+import {
+  DangerButton,
+  PrimaryButton,
+  SecondaryButton,
+  SecondaryLink,
+} from '@/components/app/form-fields';
 import { LoadingState, Panel } from '@/components/app/ui';
 import {
   disconnectSuperPdp,
@@ -32,6 +38,8 @@ export default function EInvoicingSettingsPage() {
   const [message, setMessage] = useState<string | null>(null);
   const [connected, setConnected] = useState(false);
   const [connection, setConnection] = useState<SuperPdpConnectionPublic | null>(null);
+
+  const [confirmDisconnect, setConfirmDisconnect] = useState(false);
 
   const refresh = useCallback(async () => {
     if (!companyId) {
@@ -104,8 +112,8 @@ export default function EInvoicingSettingsPage() {
 
   async function handleDisconnect() {
     if (!companyId) return;
-    if (!window.confirm('Déconnecter SUPER PDP pour cette entreprise ?')) return;
     setBusy(true);
+    setConfirmDisconnect(false);
     try {
       await disconnectSuperPdp(companyId);
       setConnected(false);
@@ -129,35 +137,28 @@ export default function EInvoicingSettingsPage() {
       : '🟢 SUPER PDP connecté';
 
   return (
-    <>
-      <AppTopBar subtitle="Plateforme Agréée SUPER PDP" title="Facturation électronique">
-        <Link className="text-sm font-medium text-primary hover:underline" href="/app/settings">
-          ← Paramètres
-        </Link>
-      </AppTopBar>
-      <div className="flex-1 overflow-y-auto p-6 xl:p-8">
-        <div className="mx-auto max-w-3xl space-y-6">
+    <div className="mx-auto max-w-[720px] space-y-4 p-5 sm:p-6">
           <Panel>
-            <h2 className="text-lg font-semibold text-foreground">Facturation électronique</h2>
-            <p className="mt-2 text-sm text-muted-foreground">
+            <h2 className="text-[15px] font-semibold tracking-[-0.01em] text-app-text">Facturation électronique</h2>
+            <p className="mt-2 text-[13px] text-app-muted">
               Connectez votre entreprise à une Plateforme Agréée pour envoyer et recevoir vos
               factures électroniques.
             </p>
-            <p className="mt-4 text-base font-medium">{statusLabel}</p>
+            <p className="mt-4 text-[14.5px] font-medium text-app-text">{statusLabel}</p>
 
-            {error ? <p className="mt-3 text-sm text-red-600">{error}</p> : null}
-            {message ? <p className="mt-3 text-sm text-emerald-700">{message}</p> : null}
+            {error ? <p className="mt-3 text-[13px] text-app-danger">{error}</p> : null}
+            {message ? <p className="mt-3 text-[13px] text-app-success-text">{message}</p> : null}
 
             {!connected ? (
-              <button
-                className="mt-6 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground disabled:opacity-60"
+              <PrimaryButton
+                className="mt-6"
                 disabled={busy || !companyId}
                 onClick={() => void handleConnect()}
                 type="button">
                 {busy ? 'Connexion…' : 'Connecter SUPER PDP'}
-              </button>
+              </PrimaryButton>
             ) : (
-              <div className="mt-6 space-y-2 text-sm text-foreground">
+              <div className="mt-6 space-y-2 text-[13px] text-app-text-2">
                 <p>Entreprise : {connection?.remote_company_name || activeCompany?.name || '—'}</p>
                 <p>Statut réception : {connection?.reception_enabled ? 'Activé' : 'Non activé'}</p>
                 <p>Statut émission : {connection?.emission_enabled ? 'Activé' : 'Non activé'}</p>
@@ -172,48 +173,64 @@ export default function EInvoicingSettingsPage() {
                 <p>Dernière synchronisation : {formatDate(connection?.last_sync_at)}</p>
                 {connection?.remote_env ? <p>Environnement : {connection.remote_env}</p> : null}
 
-                <div className="flex flex-wrap gap-3 pt-4">
-                  <button
-                    className="rounded-lg border px-4 py-2 text-sm font-medium disabled:opacity-60"
+                <div className="flex flex-wrap gap-2 pt-4">
+                  <SecondaryButton
                     disabled={busy}
                     onClick={() => void handleVerify()}
                     type="button">
                     Vérifier la connexion
-                  </button>
-                  <button
-                    className="rounded-lg border px-4 py-2 text-sm font-medium disabled:opacity-60"
+                  </SecondaryButton>
+                  <SecondaryButton
                     disabled={busy}
                     onClick={() => void handleSync()}
                     type="button">
                     Synchroniser
-                  </button>
-                  <Link
-                    className="rounded-lg border px-4 py-2 text-sm font-medium"
-                    href="/app/settings/e-invoicing/received">
+                  </SecondaryButton>
+                  <SecondaryLink href="/app/settings/e-invoicing/received">
                     Factures reçues
-                  </Link>
-                  <button
-                    className="rounded-lg border border-red-300 px-4 py-2 text-sm font-medium text-red-700 disabled:opacity-60"
+                  </SecondaryLink>
+                  <DangerButton
                     disabled={busy}
-                    onClick={() => void handleDisconnect()}
+                    onClick={() => setConfirmDisconnect(true)}
                     type="button">
                     Déconnecter
-                  </button>
+                  </DangerButton>
                 </div>
               </div>
             )}
           </Panel>
 
           <Panel>
-            <h2 className="text-lg font-semibold text-foreground">Portabilité</h2>
-            <p className="mt-2 text-sm text-muted-foreground">
+            <h2 className="text-[15px] font-semibold tracking-[-0.01em] text-app-text">Portabilité</h2>
+            <p className="mt-2 text-[13px] text-app-muted">
               Si votre entreprise était rattachée à une autre plateforme (ex. Qonto), le transfert
               administratif est géré par SUPER PDP. Utilisez « Vérifier la connexion » après
               migration. Aucune donnée Qonto n’est supprimée dans INVEQ.
             </p>
           </Panel>
-        </div>
-      </div>
-    </>
+
+      <AppDialog
+        description="Déconnecter SUPER PDP pour cette entreprise ?"
+        footer={
+          <>
+            <SecondaryButton disabled={busy} onClick={() => setConfirmDisconnect(false)} type="button">
+              Annuler
+            </SecondaryButton>
+            <DangerButton
+              disabled={busy}
+              onClick={() => void handleDisconnect()}
+              type="button"
+              variant="solid">
+              Déconnecter
+            </DangerButton>
+          </>
+        }
+        icon={Unplug}
+        onClose={() => setConfirmDisconnect(false)}
+        open={confirmDisconnect}
+        title="Déconnecter SUPER PDP"
+        tone="danger"
+      />
+    </div>
   );
 }

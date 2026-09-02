@@ -272,7 +272,7 @@ export function PdfFitPreview({
             <p className="text-sm text-slate-500">Impossible de générer l&apos;aperçu.</p>
             {onRetry ? (
               <button
-                className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white shadow-[0_10px_24px_-10px_rgba(37,99,235,0.65)] transition hover:-translate-y-0.5 hover:bg-primary-dark"
+                className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white shadow-[0_10px_24px_-10px_rgba(37,99,235,0.65)] transition hover:bg-primary-dark"
                 onClick={onRetry}
                 type="button">
                 Réessayer

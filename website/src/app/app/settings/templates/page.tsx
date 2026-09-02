@@ -4,7 +4,6 @@ import Link from 'next/link';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 
-import { AppTopBar } from '@/components/app/app-shell';
 import { FormActions, PrimaryButton } from '@/components/app/form-fields';
 import { Badge, LoadingState, Panel } from '@/components/app/ui';
 import { useSettings } from '@/hooks/use-settings';
@@ -14,12 +13,15 @@ import { updateDocumentTemplates } from '@/lib/supabase/settings';
 import { settingsQueryKeys } from '@/lib/domain/supabase/query-keys';
 import { requireScope } from '@/lib/domain/tenant/scope';
 import { useTenant } from '@/providers/company-provider';
+import { useToast } from '@/providers/toast-provider';
+import { toUserFacingError } from '@/lib/errors/messages';
 import { cn } from '@/lib/utils';
 
 export default function TemplatesSettingsPage() {
   const { scope } = useTenant();
   const { formValues, loading } = useSettings();
   const { hasFeature } = useSubscription();
+  const { showSuccess, showError } = useToast();
   const templatesLocked = !hasFeature('pdf_templates');
   const queryClient = useQueryClient();
   const [quoteTemplateId, setQuoteTemplateId] = useState(formValues.quoteTemplateId);
@@ -35,7 +37,9 @@ export default function TemplatesSettingsPage() {
       updateDocumentTemplates(requireScope(scope), { quoteTemplateId, invoiceTemplateId }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: settingsQueryKeys.all });
+      showSuccess('Modèles PDF enregistrés.');
     },
+    onError: (error) => showError(toUserFacingError(error.message)),
   });
 
   if (loading) {
@@ -43,97 +47,88 @@ export default function TemplatesSettingsPage() {
   }
 
   return (
-    <>
-      <AppTopBar subtitle="Personnalisez l’apparence de vos documents PDF" title="Modèles PDF">
-        <Link className="text-sm font-medium text-primary hover:underline" href="/app/settings">
-          ← Paramètres
-        </Link>
-      </AppTopBar>
-      <div className="flex-1 overflow-y-auto p-6 xl:p-8">
-        <div className="mx-auto max-w-5xl space-y-8">
-          {templatesLocked ? (
-            <Panel title="Offre requise">
-              <p className="text-sm text-slate-600">
-                Les modèles PDF sont disponibles à partir de l’offre Basique. Passez à une offre
-                supérieure pour personnaliser vos documents.
-              </p>
-              <Link className="mt-3 inline-block text-sm font-semibold text-primary hover:underline" href="/tarifs">
-                Voir les offres
-              </Link>
-            </Panel>
-          ) : null}
+    <div className="mx-auto max-w-[720px] space-y-4 p-5 sm:p-6">
+      {templatesLocked ? (
+        <Panel title="Offre requise">
+          <p className="text-[13px] text-app-text-2">
+            Les modèles PDF sont disponibles à partir de l’offre Basique. Passez à une offre
+            supérieure pour personnaliser vos documents.
+          </p>
+          <Link className="mt-3 inline-block text-[13px] font-semibold text-app-accent hover:underline" href="/tarifs">
+            Voir les offres
+          </Link>
+        </Panel>
+      ) : null}
 
-          <Panel title="Modèle devis">
-            <div className={cn('grid gap-4 sm:grid-cols-2 lg:grid-cols-3', templatesLocked && 'pointer-events-none opacity-50')}>
-              {PDF_TEMPLATES.map((template) => (
-                <button
-                  className={cn(
-                    'rounded-xl border p-4 text-left transition',
-                    quoteTemplateId === template.id
-                      ? 'border-primary bg-blue-50/50 ring-2 ring-primary/20'
-                      : 'border-slate-200 hover:border-primary/30',
-                  )}
-                  disabled={templatesLocked}
-                  key={template.id}
-                  onClick={() => setQuoteTemplateId(template.id)}
-                  type="button">
-                  <div
-                    className="mb-3 h-2 rounded-full"
-                    style={{ backgroundColor: template.theme.primary }}
-                  />
-                  <p className="font-semibold text-slate-900">{template.name}</p>
-                  <p className="mt-1 text-xs text-slate-500">{template.description}</p>
-                  {quoteTemplateId === template.id ? (
-                    <Badge className="mt-3" variant="info">
-                      Sélectionné
-                    </Badge>
-                  ) : null}
-                </button>
-              ))}
-            </div>
-          </Panel>
-
-          <Panel title="Modèle facture">
-            <div className={cn('grid gap-4 sm:grid-cols-2 lg:grid-cols-3', templatesLocked && 'pointer-events-none opacity-50')}>
-              {PDF_TEMPLATES.map((template) => (
-                <button
-                  className={cn(
-                    'rounded-xl border p-4 text-left transition',
-                    invoiceTemplateId === template.id
-                      ? 'border-primary bg-blue-50/50 ring-2 ring-primary/20'
-                      : 'border-slate-200 hover:border-primary/30',
-                  )}
-                  disabled={templatesLocked}
-                  key={`inv-${template.id}`}
-                  onClick={() => setInvoiceTemplateId(template.id)}
-                  type="button">
-                  <div
-                    className="mb-3 h-2 rounded-full"
-                    style={{ backgroundColor: template.theme.primary }}
-                  />
-                  <p className="font-semibold text-slate-900">{template.name}</p>
-                  <p className="mt-1 text-xs text-slate-500">{template.description}</p>
-                  {invoiceTemplateId === template.id ? (
-                    <Badge className="mt-3" variant="info">
-                      Sélectionné
-                    </Badge>
-                  ) : null}
-                </button>
-              ))}
-            </div>
-          </Panel>
-
-          <FormActions>
-            <PrimaryButton
+      <Panel title="Modèle devis">
+        <div className={cn('grid gap-3 sm:grid-cols-2', templatesLocked && 'pointer-events-none opacity-50')}>
+          {PDF_TEMPLATES.map((template) => (
+            <button
+              className={cn(
+                'rounded-[12px] border p-4 text-left transition-colors duration-150',
+                quoteTemplateId === template.id
+                  ? 'border-app-accent bg-app-accent-tint/60'
+                  : 'border-app-border hover:border-app-accent-border',
+              )}
               disabled={templatesLocked}
-              loading={mutation.isPending}
-              onClick={() => mutation.mutate()}
+              key={template.id}
+              onClick={() => setQuoteTemplateId(template.id)}
               type="button">
-              Enregistrer les modèles
-            </PrimaryButton>
-          </FormActions>
+              <div
+                className="mb-3 h-2 rounded-full"
+                style={{ backgroundColor: template.theme.primary }}
+              />
+              <p className="font-semibold text-app-text">{template.name}</p>
+              <p className="mt-1 text-[12px] text-app-muted">{template.description}</p>
+              {quoteTemplateId === template.id ? (
+                <Badge className="mt-3" variant="info">
+                  Sélectionné
+                </Badge>
+              ) : null}
+            </button>
+          ))}
         </div>
-      </div>
-    </>
+      </Panel>
+
+      <Panel title="Modèle facture">
+        <div className={cn('grid gap-3 sm:grid-cols-2', templatesLocked && 'pointer-events-none opacity-50')}>
+          {PDF_TEMPLATES.map((template) => (
+            <button
+              className={cn(
+                'rounded-[12px] border p-4 text-left transition-colors duration-150',
+                invoiceTemplateId === template.id
+                  ? 'border-app-accent bg-app-accent-tint/60'
+                  : 'border-app-border hover:border-app-accent-border',
+              )}
+              disabled={templatesLocked}
+              key={`inv-${template.id}`}
+              onClick={() => setInvoiceTemplateId(template.id)}
+              type="button">
+              <div
+                className="mb-3 h-2 rounded-full"
+                style={{ backgroundColor: template.theme.primary }}
+              />
+              <p className="font-semibold text-app-text">{template.name}</p>
+              <p className="mt-1 text-[12px] text-app-muted">{template.description}</p>
+              {invoiceTemplateId === template.id ? (
+                <Badge className="mt-3" variant="info">
+                  Sélectionné
+                </Badge>
+              ) : null}
+            </button>
+          ))}
+        </div>
+      </Panel>
+
+      <FormActions>
+        <PrimaryButton
+          disabled={templatesLocked}
+          loading={mutation.isPending}
+          onClick={() => mutation.mutate()}
+          type="button">
+          Enregistrer
+        </PrimaryButton>
+      </FormActions>
+    </div>
   );
 }

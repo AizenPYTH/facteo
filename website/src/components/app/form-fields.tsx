@@ -1,7 +1,13 @@
 'use client';
 
+import { AlertCircle } from 'lucide-react';
+import Link from 'next/link';
 import { forwardRef } from 'react';
+
 import { cn } from '@/lib/utils';
+
+const CONTROL_BASE =
+  'w-full rounded-[9px] border border-app-border bg-app-surface px-[11px] py-[9px] text-[13px] text-app-text outline-none transition-[background-color,border-color,box-shadow] duration-150 placeholder:text-app-faint hover:border-[#d7dbe8] focus:border-app-accent focus:shadow-[0_0_0_3px_rgba(79,70,229,0.14)] disabled:cursor-not-allowed disabled:bg-app-subtle disabled:text-app-muted aria-invalid:border-app-danger-field aria-invalid:shadow-[0_0_0_3px_rgba(220,38,38,0.1)]';
 
 export function FormField({
   label,
@@ -18,44 +24,32 @@ export function FormField({
 }) {
   return (
     <div className={cn('space-y-1.5', className)}>
-      <label className="text-[13px] font-medium text-slate-700">{label}</label>
+      <label className="block text-xs font-medium text-app-text-3">{label}</label>
       {children}
-      {hint && !error ? <p className="text-xs leading-relaxed text-slate-400">{hint}</p> : null}
-      {error ? <p className="text-xs font-medium text-red-600">{error}</p> : null}
+      {hint && !error ? (
+        <p className="text-[12px] leading-relaxed text-app-muted-2">{hint}</p>
+      ) : null}
+      {error ? (
+        <p className="flex items-center gap-1.5 text-[12px] font-medium text-app-danger">
+          <AlertCircle className="shrink-0" size={14} strokeWidth={1.75} />
+          {error}
+        </p>
+      ) : null}
     </div>
   );
 }
 
-export const TextInput = forwardRef<
-  HTMLInputElement,
-  React.InputHTMLAttributes<HTMLInputElement>
->(function TextInput({ className, ...props }, ref) {
-  return (
-    <input
-      className={cn(
-        'w-full rounded-xl border border-slate-200/90 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 hover:border-slate-300 focus:border-primary focus:ring-2 focus:ring-primary/20',
-        className,
-      )}
-      ref={ref}
-      {...props}
-    />
-  );
-});
+export const TextInput = forwardRef<HTMLInputElement, React.InputHTMLAttributes<HTMLInputElement>>(
+  function TextInput({ className, ...props }, ref) {
+    return <input className={cn(CONTROL_BASE, className)} ref={ref} {...props} />;
+  },
+);
 
 export function TextArea({
   className,
   ...props
 }: React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
-  return (
-    <textarea
-      className={cn(
-        'w-full resize-y rounded-xl border border-slate-200/90 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 hover:border-slate-300 focus:border-primary focus:ring-2 focus:ring-primary/20',
-        className,
-      )}
-      rows={3}
-      {...props}
-    />
-  );
+  return <textarea className={cn(CONTROL_BASE, 'resize-y', className)} rows={3} {...props} />;
 }
 
 export function SelectInput({
@@ -64,12 +58,7 @@ export function SelectInput({
   ...props
 }: React.SelectHTMLAttributes<HTMLSelectElement>) {
   return (
-    <select
-      className={cn(
-        'w-full rounded-xl border border-slate-200/90 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition hover:border-slate-300 focus:border-primary focus:ring-2 focus:ring-primary/20',
-        className,
-      )}
-      {...props}>
+    <select className={cn(CONTROL_BASE, className)} {...props}>
       {children}
     </select>
   );
@@ -79,17 +68,20 @@ export function FormSection({
   title,
   description,
   children,
+  className,
 }: {
   title: string;
   description?: string;
   children: React.ReactNode;
+  className?: string;
 }) {
   return (
-    <section className="rounded-2xl border border-slate-200/90 bg-white p-6 shadow-[0_1px_2px_rgba(15,23,42,0.04),0_8px_24px_-16px_rgba(15,23,42,0.1)]">
-      <div className="mb-6">
-        <h2 className="text-base font-semibold tracking-tight text-slate-900">{title}</h2>
+    <section
+      className={cn('rounded-[14px] border border-app-border bg-app-surface p-[18px]', className)}>
+      <div className="mb-5">
+        <h2 className="text-[15px] font-semibold tracking-[-0.01em] text-app-text">{title}</h2>
         {description ? (
-          <p className="mt-1 text-sm leading-relaxed text-slate-500">{description}</p>
+          <p className="mt-1 text-[13px] leading-relaxed text-app-muted">{description}</p>
         ) : null}
       </div>
       <div className="space-y-5">{children}</div>
@@ -105,11 +97,18 @@ export function FormActions({
   className?: string;
 }) {
   return (
-    <div className={cn('flex items-center justify-end gap-3 border-t border-slate-100 pt-6', className)}>
+    <div
+      className={cn(
+        'flex items-center justify-end gap-2 border-t border-app-border-soft pt-5',
+        className,
+      )}>
       {children}
     </div>
   );
 }
+
+const BUTTON_BASE =
+  'inline-flex items-center justify-center gap-2 rounded-[10px] px-3.5 py-[9px] text-[13px] font-semibold transition-[background-color,border-color,color] duration-150 disabled:cursor-not-allowed disabled:opacity-60';
 
 export function PrimaryButton({
   children,
@@ -120,7 +119,8 @@ export function PrimaryButton({
   return (
     <button
       className={cn(
-        'inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-white shadow-[0_10px_24px_-10px_rgba(37,99,235,0.65)] transition duration-150 hover:-translate-y-0.5 hover:bg-primary-dark hover:shadow-[0_14px_28px_-12px_rgba(37,99,235,0.7)] active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0',
+        BUTTON_BASE,
+        'bg-app-accent text-white shadow-app-primary hover:bg-app-accent-strong disabled:bg-app-accent-border disabled:shadow-none',
         className,
       )}
       disabled={loading || props.disabled}
@@ -139,7 +139,85 @@ export function SecondaryButton({
   return (
     <button
       className={cn(
-        'inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200/90 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition duration-150 hover:-translate-y-0.5 hover:border-slate-300 hover:bg-slate-50 active:translate-y-0',
+        BUTTON_BASE,
+        'border border-app-border bg-app-surface text-app-text-2 hover:bg-app-hover',
+        className,
+      )}
+      type={props.type ?? 'button'}
+      {...props}>
+      {children}
+    </button>
+  );
+}
+
+export function GhostButton({
+  children,
+  className,
+  ...props
+}: React.ButtonHTMLAttributes<HTMLButtonElement>) {
+  return (
+    <button
+      className={cn(
+        BUTTON_BASE,
+        'bg-transparent text-app-accent hover:bg-app-accent-tint',
+        className,
+      )}
+      type={props.type ?? 'button'}
+      {...props}>
+      {children}
+    </button>
+  );
+}
+
+export function PrimaryLink({
+  children,
+  className,
+  ...props
+}: React.ComponentProps<typeof Link>) {
+  return (
+    <Link
+      className={cn(
+        BUTTON_BASE,
+        'bg-app-accent text-white shadow-app-primary hover:bg-app-accent-strong',
+        className,
+      )}
+      {...props}>
+      {children}
+    </Link>
+  );
+}
+
+export function SecondaryLink({
+  children,
+  className,
+  ...props
+}: React.ComponentProps<typeof Link>) {
+  return (
+    <Link
+      className={cn(
+        BUTTON_BASE,
+        'border border-app-border bg-app-surface text-app-text-2 hover:bg-app-hover',
+        className,
+      )}
+      {...props}>
+      {children}
+    </Link>
+  );
+}
+
+export function DangerButton({
+  children,
+  variant = 'outline',
+  className,
+  ...props
+}: React.ButtonHTMLAttributes<HTMLButtonElement> & { variant?: 'outline' | 'solid' }) {
+  return (
+    <button
+      className={cn(
+        BUTTON_BASE,
+        variant === 'solid'
+          ? 'bg-app-danger text-white hover:bg-app-danger-text'
+          : 'border border-app-danger-border bg-app-surface text-app-danger hover:bg-app-danger-tint',
         className,
       )}
       type={props.type ?? 'button'}

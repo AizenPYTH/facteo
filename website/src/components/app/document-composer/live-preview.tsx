@@ -7,6 +7,7 @@ import { PdfFitPreview } from '@/components/app/pdf-fit-preview';
 import { useSettings } from '@/hooks/use-settings';
 import { buildDraftPdfHtml, type DraftDocumentInput } from '@/lib/domain/pdf/draft-pdf';
 import { requireScope } from '@/lib/domain/tenant/scope';
+import { cn } from '@/lib/utils';
 import { useTenant } from '@/providers/company-provider';
 import type { DataScope } from '@/types/tenant';
 
@@ -22,12 +23,16 @@ function useDebouncedValue<T>(value: T, delay = 300): T {
 }
 
 export function ComposerLivePreview({
+  className,
   draft,
   scope,
+  showToolbar = true,
   userEmail,
 }: {
+  className?: string;
   draft: DraftDocumentInput;
   scope: DataScope | null;
+  showToolbar?: boolean;
   userEmail?: string | null;
 }) {
   const debouncedDraft = useDebouncedValue(draft, 280);
@@ -61,12 +66,13 @@ export function ComposerLivePreview({
 
   return (
     <PdfFitPreview
-      className="h-full"
+      className={cn('h-full', className)}
       error={query.error}
       html={query.data}
       isLoading={query.isLoading && !query.data}
       isUpdating={query.isFetching && !query.isLoading}
       onRetry={() => void query.refetch()}
+      showToolbar={showToolbar}
       title="Aperçu document"
     />
   );
