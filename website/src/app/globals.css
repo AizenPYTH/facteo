@@ -20,6 +20,8 @@
   --app-accent-strong: #4338ca;
   --app-accent-violet: #7c3aed;
   --app-accent-violet-tint: #f5f3ff;
+  /* Bordure des actions violettes (import IA / CSV du composer, §4.3). */
+  --app-accent-violet-border: #e3d5f9;
   /* Barre neutre du graphique de chiffre d'affaires (§4.1) ; le mois courant
      utilise le dégradé --app-accent-violet → --app-accent. */
   --app-chart-bar: #dcd9fb;
@@ -73,6 +75,7 @@
   --color-app-accent-strong: var(--app-accent-strong);
   --color-app-accent-violet: var(--app-accent-violet);
   --color-app-accent-violet-tint: var(--app-accent-violet-tint);
+  --color-app-accent-violet-border: var(--app-accent-violet-border);
   --color-app-chart-bar: var(--app-chart-bar);
   --color-app-canvas: var(--app-canvas);
   --color-app-surface: var(--app-surface);

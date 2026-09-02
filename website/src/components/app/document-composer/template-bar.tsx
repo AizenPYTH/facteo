@@ -1,50 +1,54 @@
 'use client';
 
-import { motion, useReducedMotion } from 'framer-motion';
-
 import { COMPOSER_TEMPLATES } from '@/lib/domain/pdf/composer-templates';
 import { cn } from '@/lib/utils';
 
 export function ComposerTemplateBar({
-  value,
+  className,
   onChange,
+  value,
 }: {
-  value: string;
+  className?: string;
   onChange: (templateId: string) => void;
+  value: string;
 }) {
-  const reduceMotion = useReducedMotion();
-
   return (
-    <div className="flex items-center gap-3 overflow-x-auto">
-      <span className="shrink-0 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
-        Modèle
-      </span>
-      <div className="flex gap-1.5">
-        {COMPOSER_TEMPLATES.map((template) => {
-          const active = value === template.id;
-          return (
-            <motion.button
+    <div className={cn('grid grid-cols-2 gap-2', className)}>
+      {COMPOSER_TEMPLATES.map((template) => {
+        const active = value === template.id;
+
+        return (
+          <button
+            aria-pressed={active}
+            className={cn(
+              'rounded-app-control border-2 p-1.5 transition-[background-color,border-color,color] duration-150',
+              active
+                ? 'border-app-accent bg-app-accent-soft'
+                : 'border-app-border-soft hover:bg-app-hover',
+            )}
+            key={template.id}
+            onClick={() => onChange(template.id)}
+            title={template.description}
+            type="button">
+            <span className="block overflow-hidden rounded-md border border-app-border-soft bg-app-surface">
+              <span className="block h-2 w-full" style={{ backgroundColor: template.primary }} />
+              <span className="flex flex-col gap-[3px] px-2 py-2">
+                <span className="h-[3px] w-8 rounded-full bg-app-border" />
+                <span className="h-[3px] w-full rounded-full bg-app-border-soft" />
+                <span className="h-[3px] w-full rounded-full bg-app-border-soft" />
+                <span className="h-[3px] w-2/3 rounded-full bg-app-border-soft" />
+              </span>
+            </span>
+            <span
               className={cn(
-                'flex shrink-0 items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-semibold transition duration-150',
-                active
-                  ? 'border-primary bg-primary text-white shadow-sm'
-                  : 'border-slate-200 bg-white text-slate-600 hover:border-primary/40 hover:text-primary',
-              )}
-              key={template.id}
-              onClick={() => onChange(template.id)}
-              title={template.description}
-              type="button"
-              whileHover={reduceMotion ? undefined : { y: -1 }}
-              whileTap={reduceMotion ? undefined : { scale: 0.97 }}>
-              <span
-                className="h-2.5 w-2.5 rounded-full ring-1 ring-white/50"
-                style={{ backgroundColor: template.primary }}
-              />
+                'mt-1.5 block truncate text-center text-[11.5px] font-semibold',
+                active ? 'text-app-accent-strong' : 'text-app-muted',
+              )}>
               {template.label}
-            </motion.button>
-          );
-        })}
-      </div>
+            </span>
+          </button>
+        );
+      })}
     </div>
   );
 }
