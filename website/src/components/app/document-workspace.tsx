@@ -20,6 +20,7 @@ import type { QuoteStatusFilter } from '@inveq/types/quotes-list';
 
 import { ActionMenu, type ActionMenuItem } from '@/components/app/action-menu';
 import { ActivityTimeline } from '@/components/app/activity-timeline';
+import { AppDialog } from '@/components/app/app-dialog';
 import { EmptyState, ErrorState, NoResultsState } from '@/components/app/empty-state';
 import { DocumentQuickPreviewModal } from '@/components/app/document-quick-preview';
 import { DocumentStatusTimeline } from '@/components/app/document-status-timeline';
@@ -27,7 +28,12 @@ import { MasterDetailLayout } from '@/components/app/master-detail';
 import { PdfPreviewPanel } from '@/components/app/pdf-preview';
 import { DetailSkeleton, TableSkeleton } from '@/components/app/skeleton';
 import { AppSearchInput, AppTopBar } from '@/components/app/app-shell';
-import { PrimaryLink, SecondaryButton } from '@/components/app/form-fields';
+import {
+  GhostButton,
+  PrimaryButton,
+  PrimaryLink,
+  SecondaryButton,
+} from '@/components/app/form-fields';
 import { StatusBadge } from '@/components/app/status-badge';
 import { DataTable, type DataTableColumn } from '@/components/app/ui';
 import { ComposerTemplateSidebar } from '@/components/app/document-composer/template-sidebar';
@@ -244,6 +250,44 @@ function DocumentFilterBar({
   );
 }
 
+function BulkActionsBar({
+  kind,
+  count,
+  busy,
+  onDownload,
+  onDuplicate,
+  onClear,
+}: {
+  kind: DocumentKind;
+  count: number;
+  busy: boolean;
+  onDownload: () => void;
+  onDuplicate: () => void;
+  onClear: () => void;
+}) {
+  const label =
+    kind === 'invoice'
+      ? `${count} facture${count > 1 ? 's' : ''} sélectionnée${count > 1 ? 's' : ''}`
+      : `${count} devis sélectionné${count > 1 ? 's' : ''}`;
+
+  return (
+    <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-app-accent-border bg-app-accent-tint px-6 py-2.5">
+      <p className="app-num text-[12.5px] font-semibold text-app-accent-strong">{label}</p>
+      <div className="ml-auto flex flex-wrap items-center gap-2">
+        <SecondaryButton disabled={busy} onClick={onDownload}>
+          <Download className="text-app-muted-2" size={15} />
+          Télécharger
+        </SecondaryButton>
+        <SecondaryButton disabled={busy} onClick={onDuplicate}>
+          <Copy className="text-app-muted-2" size={15} />
+          Dupliquer
+        </SecondaryButton>
+        <GhostButton onClick={onClear}>Tout désélectionner</GhostButton>
+      </div>
+    </div>
+  );
+}
+
 function DocumentListPanel({
   kind,
   items,
@@ -262,6 +306,11 @@ function DocumentListPanel({
   onDownload,
   onDuplicate,
   busyRowId,
+  selectedIds,
+  onSelectionChange,
+  bulkBusy,
+  onBulkDownload,
+  onBulkDuplicate,
 }: {
   kind: DocumentKind;
   items: ListItem[];
@@ -280,6 +329,11 @@ function DocumentListPanel({
   onDownload: (id: string) => void;
   onDuplicate: (id: string) => void;
   busyRowId: string | null;
+  selectedIds: string[];
+  onSelectionChange: (ids: string[]) => void;
+  bulkBusy: boolean;
+  onBulkDownload: () => void;
+  onBulkDuplicate: () => void;
 }) {
   const noun = kind === 'invoice' ? 'facture' : 'devis';
   const plural = kind === 'invoice' ? 'factures' : 'devis';
@@ -395,12 +449,26 @@ function DocumentListPanel({
 
   return (
     <div className="flex h-full min-h-0 flex-col">
+      {selectedIds.length > 0 ? (
+        <BulkActionsBar
+          busy={bulkBusy}
+          count={selectedIds.length}
+          kind={kind}
+          onClear={() => onSelectionChange([])}
+          onDownload={onBulkDownload}
+          onDuplicate={onBulkDuplicate}
+        />
+      ) : null}
+
       <DataTable
         activeRowId={selectedId}
         className="min-h-0 flex-1 rounded-none border-0"
         columns={columns}
         onRowClick={(row) => onSelect(String(row.id))}
+        onSelectionChange={onSelectionChange}
         rows={rows}
+        selectable
+        selectedIds={selectedIds}
       />
 
       <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-t border-app-border-soft px-6 py-3.5">
@@ -539,7 +607,9 @@ export function InvoicesWorkspace() {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [previewTemplateId, setPreviewTemplateId] = useState('');
   const [quickPreviewId, setQuickPreviewId] = useState<string | null>(null);
-  const [busyRowId, setBusyRowId] = useState<string | null>(null);
+  const [pdfBusyKey, setPdfBusyKey] = useState<string | null>(null);
+  const [checkedIds, setCheckedIds] = useState<string[]>([]);
+  const [duplicateConfirmOpen, setDuplicateConfirmOpen] = useState(false);
   const { selectedId, setSelectedId, status, setStatus } =
     useWorkspaceParams(INVOICE_FILTER_VALUES);
   const { user } = useAuth();
@@ -574,6 +644,12 @@ export function InvoicesWorkspace() {
     [companyId, search],
   );
   const statusCounts = useCachedStatusCounts(buildStatusKey, INVOICE_FILTER_VALUES);
+
+  /** La sélection ne survit pas à un changement de filtre : elle est recalculée sur les lignes visibles. */
+  const selection = useMemo(
+    () => checkedIds.filter((id) => items.some((item) => item.id === id)),
+    [checkedIds, items],
+  );
 
   const detail = detailQuery.data;
 
@@ -620,28 +696,58 @@ export function InvoicesWorkspace() {
     onError: (error) => showError(toUserFacingError(error.message)),
   });
 
-  async function downloadRowPdf(invoiceId: string) {
-    if (!scope) return;
+  const bulkDuplicateMutation = useMutation({
+    mutationFn: async (ids: string[]) => {
+      const activeScope = requireScope(scope);
+      const numbers: string[] = [];
+      for (const id of ids) {
+        const created = await duplicateInvoice(activeScope, id);
+        numbers.push(created.number);
+      }
+      return numbers;
+    },
+    onSuccess: (numbers) => {
+      void queryClient.invalidateQueries({ queryKey: invoicesQueryKeys.all });
+      setCheckedIds([]);
+      showSuccess(
+        numbers.length > 1
+          ? `${numbers.length} factures dupliquées.`
+          : `Facture dupliquée en ${numbers[0]}.`,
+      );
+    },
+    onError: (error) => {
+      void queryClient.invalidateQueries({ queryKey: invoicesQueryKeys.all });
+      showError(toUserFacingError(error.message));
+    },
+  });
+
+  /** Le PDF d'une ligne non sélectionnée passe par le cache de détail déjà utilisé par le panneau. */
+  async function downloadPdfs(ids: string[], busyKey: string) {
+    if (!scope || ids.length === 0) return;
     const activeScope = requireScope(scope);
-    setBusyRowId(invoiceId);
+    setPdfBusyKey(busyKey);
     try {
-      const invoice = await queryClient.fetchQuery({
-        queryKey: invoicesQueryKeys.detail(activeScope.companyId, invoiceId),
-        queryFn: () => fetchInvoiceById(activeScope, invoiceId),
-      });
-      if (!invoice) throw new Error('Facture introuvable.');
-      const html = await buildInvoicePdfHtml(activeScope, invoice, user?.email);
-      await downloadPdfFromHtml(html, invoice.number);
+      for (const id of ids) {
+        const invoice = await queryClient.fetchQuery({
+          queryKey: invoicesQueryKeys.detail(activeScope.companyId, id),
+          queryFn: () => fetchInvoiceById(activeScope, id),
+        });
+        if (!invoice) throw new Error('Facture introuvable.');
+        const html = await buildInvoicePdfHtml(activeScope, invoice, user?.email);
+        await downloadPdfFromHtml(html, invoice.number);
+      }
+      if (ids.length > 1) showSuccess(`${ids.length} PDF téléchargés.`);
     } catch (error) {
       showError(toUserFacingError(error instanceof Error ? error.message : ''));
     } finally {
-      setBusyRowId(null);
+      setPdfBusyKey(null);
     }
   }
 
   function clearFilters() {
     setSearch('');
     setStatus('all');
+    setCheckedIds([]);
   }
 
   return (
@@ -742,7 +848,8 @@ export function InvoicesWorkspace() {
           detailTitle="Facture"
           list={
             <DocumentListPanel
-              busyRowId={busyRowId}
+              bulkBusy={pdfBusyKey !== null || bulkDuplicateMutation.isPending}
+              busyRowId={pdfBusyKey}
               hasMore={Boolean(listQuery.hasNextPage)}
               isFiltered={search.trim().length > 0 || status !== 'all'}
               isLoading={listQuery.isLoading}
@@ -750,20 +857,46 @@ export function InvoicesWorkspace() {
               kind="invoice"
               loadingMore={listQuery.isFetchingNextPage}
               newHref="/app/invoices?create=1"
+              onBulkDownload={() => void downloadPdfs(selection, 'bulk')}
+              onBulkDuplicate={() => setDuplicateConfirmOpen(true)}
               onClearFilters={clearFilters}
-              onDownload={(id) => void downloadRowPdf(id)}
+              onDownload={(id) => void downloadPdfs([id], id)}
               onDuplicate={(id) => duplicateMutation.mutate(id)}
               onLoadMore={() => void listQuery.fetchNextPage()}
               onQuickPreview={setQuickPreviewId}
               onSelect={setSelectedId}
+              onSelectionChange={setCheckedIds}
               search={search}
               selectedId={selectedId}
+              selectedIds={selection}
               totalCount={totalCount}
             />
           }
           onCloseDetail={() => setSelectedId(null)}
         />
       </div>
+
+      <AppDialog
+        description="Chaque facture sélectionnée sera recopiée en brouillon avec un nouveau numéro."
+        footer={
+          <>
+            <SecondaryButton onClick={() => setDuplicateConfirmOpen(false)}>Annuler</SecondaryButton>
+            <PrimaryButton
+              disabled={bulkDuplicateMutation.isPending}
+              onClick={() => {
+                setDuplicateConfirmOpen(false);
+                bulkDuplicateMutation.mutate(selection);
+              }}>
+              Dupliquer
+            </PrimaryButton>
+          </>
+        }
+        icon={Copy}
+        onClose={() => setDuplicateConfirmOpen(false)}
+        open={duplicateConfirmOpen}
+        size="sm"
+        title={`Dupliquer ${selection.length} facture${selection.length > 1 ? 's' : ''} ?`}
+      />
     </>
   );
 }
@@ -773,7 +906,9 @@ export function QuotesWorkspace() {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [previewTemplateId, setPreviewTemplateId] = useState('');
   const [quickPreviewId, setQuickPreviewId] = useState<string | null>(null);
-  const [busyRowId, setBusyRowId] = useState<string | null>(null);
+  const [pdfBusyKey, setPdfBusyKey] = useState<string | null>(null);
+  const [checkedIds, setCheckedIds] = useState<string[]>([]);
+  const [duplicateConfirmOpen, setDuplicateConfirmOpen] = useState(false);
   const { selectedId, setSelectedId, status, setStatus } = useWorkspaceParams(QUOTE_FILTER_VALUES);
   const { user } = useAuth();
   const { scope } = useTenant();
@@ -807,6 +942,12 @@ export function QuotesWorkspace() {
     [companyId, search],
   );
   const statusCounts = useCachedStatusCounts(buildStatusKey, QUOTE_FILTER_VALUES);
+
+  /** La sélection ne survit pas à un changement de filtre : elle est recalculée sur les lignes visibles. */
+  const selection = useMemo(
+    () => checkedIds.filter((id) => items.some((item) => item.id === id)),
+    [checkedIds, items],
+  );
 
   const detail = detailQuery.data;
 
@@ -853,28 +994,58 @@ export function QuotesWorkspace() {
     onError: (error) => showError(toUserFacingError(error.message)),
   });
 
-  async function downloadRowPdf(quoteId: string) {
-    if (!scope) return;
+  const bulkDuplicateMutation = useMutation({
+    mutationFn: async (ids: string[]) => {
+      const activeScope = requireScope(scope);
+      const numbers: string[] = [];
+      for (const id of ids) {
+        const created = await duplicateQuote(activeScope, id);
+        numbers.push(created.number);
+      }
+      return numbers;
+    },
+    onSuccess: (numbers) => {
+      void queryClient.invalidateQueries({ queryKey: quotesQueryKeys.all });
+      setCheckedIds([]);
+      showSuccess(
+        numbers.length > 1
+          ? `${numbers.length} devis dupliqués.`
+          : `Devis dupliqué en ${numbers[0]}.`,
+      );
+    },
+    onError: (error) => {
+      void queryClient.invalidateQueries({ queryKey: quotesQueryKeys.all });
+      showError(toUserFacingError(error.message));
+    },
+  });
+
+  /** Le PDF d'une ligne non sélectionnée passe par le cache de détail déjà utilisé par le panneau. */
+  async function downloadPdfs(ids: string[], busyKey: string) {
+    if (!scope || ids.length === 0) return;
     const activeScope = requireScope(scope);
-    setBusyRowId(quoteId);
+    setPdfBusyKey(busyKey);
     try {
-      const quote = await queryClient.fetchQuery({
-        queryKey: quotesQueryKeys.detail(activeScope.companyId, quoteId),
-        queryFn: () => fetchQuoteById(activeScope, quoteId),
-      });
-      if (!quote) throw new Error('Devis introuvable.');
-      const html = await buildQuotePdfHtml(activeScope, quote, user?.email);
-      await downloadPdfFromHtml(html, quote.number);
+      for (const id of ids) {
+        const quote = await queryClient.fetchQuery({
+          queryKey: quotesQueryKeys.detail(activeScope.companyId, id),
+          queryFn: () => fetchQuoteById(activeScope, id),
+        });
+        if (!quote) throw new Error('Devis introuvable.');
+        const html = await buildQuotePdfHtml(activeScope, quote, user?.email);
+        await downloadPdfFromHtml(html, quote.number);
+      }
+      if (ids.length > 1) showSuccess(`${ids.length} PDF téléchargés.`);
     } catch (error) {
       showError(toUserFacingError(error instanceof Error ? error.message : ''));
     } finally {
-      setBusyRowId(null);
+      setPdfBusyKey(null);
     }
   }
 
   function clearFilters() {
     setSearch('');
     setStatus('all');
+    setCheckedIds([]);
   }
 
   return (
@@ -971,7 +1142,8 @@ export function QuotesWorkspace() {
           detailTitle="Devis"
           list={
             <DocumentListPanel
-              busyRowId={busyRowId}
+              bulkBusy={pdfBusyKey !== null || bulkDuplicateMutation.isPending}
+              busyRowId={pdfBusyKey}
               hasMore={Boolean(listQuery.hasNextPage)}
               isFiltered={search.trim().length > 0 || status !== 'all'}
               isLoading={listQuery.isLoading}
@@ -979,20 +1151,46 @@ export function QuotesWorkspace() {
               kind="quote"
               loadingMore={listQuery.isFetchingNextPage}
               newHref="/app/quotes?create=1"
+              onBulkDownload={() => void downloadPdfs(selection, 'bulk')}
+              onBulkDuplicate={() => setDuplicateConfirmOpen(true)}
               onClearFilters={clearFilters}
-              onDownload={(id) => void downloadRowPdf(id)}
+              onDownload={(id) => void downloadPdfs([id], id)}
               onDuplicate={(id) => duplicateMutation.mutate(id)}
               onLoadMore={() => void listQuery.fetchNextPage()}
               onQuickPreview={setQuickPreviewId}
               onSelect={setSelectedId}
+              onSelectionChange={setCheckedIds}
               search={search}
               selectedId={selectedId}
+              selectedIds={selection}
               totalCount={totalCount}
             />
           }
           onCloseDetail={() => setSelectedId(null)}
         />
       </div>
+
+      <AppDialog
+        description="Chaque devis sélectionné sera recopié en brouillon avec un nouveau numéro."
+        footer={
+          <>
+            <SecondaryButton onClick={() => setDuplicateConfirmOpen(false)}>Annuler</SecondaryButton>
+            <PrimaryButton
+              disabled={bulkDuplicateMutation.isPending}
+              onClick={() => {
+                setDuplicateConfirmOpen(false);
+                bulkDuplicateMutation.mutate(selection);
+              }}>
+              Dupliquer
+            </PrimaryButton>
+          </>
+        }
+        icon={Copy}
+        onClose={() => setDuplicateConfirmOpen(false)}
+        open={duplicateConfirmOpen}
+        size="sm"
+        title={`Dupliquer ${selection.length} devis ?`}
+      />
     </>
   );
 }
