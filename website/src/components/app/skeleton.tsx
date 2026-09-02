@@ -2,15 +2,37 @@
 
 import { cn } from '@/lib/utils';
 
-export function Skeleton({ className }: { className?: string }) {
-  return <div className={cn('skeleton-shimmer rounded-lg', className)} />;
+export function Skeleton({
+  className,
+  style,
+}: {
+  className?: string;
+  style?: React.CSSProperties;
+}) {
+  return <div className={cn('skeleton-shimmer rounded-lg', className)} style={style} />;
 }
+
+const ROW_WIDTHS = ['140px', '112px', '158px', '126px', '132px', '104px'];
 
 export function TableSkeleton({ rows = 6 }: { rows?: number }) {
   return (
-    <div className="space-y-2.5">
+    <div className="overflow-hidden rounded-xl border border-app-border-soft">
+      <div className="flex gap-3 border-b border-app-border-soft bg-app-subtle px-3.5 py-[11px]">
+        <Skeleton className="h-[9px] w-[74px]" />
+        <Skeleton className="h-[9px] w-[110px]" />
+        <Skeleton className="ml-auto h-[9px] w-16" />
+      </div>
       {Array.from({ length: rows }).map((_, i) => (
-        <Skeleton className="h-14 w-full rounded-xl" key={i} />
+        <div
+          className="flex items-center gap-3 border-b border-app-border-soft px-3.5 py-[13px] last:border-b-0"
+          key={i}>
+          <Skeleton className="h-[11px] w-[88px]" />
+          <Skeleton
+            className="h-[11px]"
+            style={{ width: ROW_WIDTHS[i % ROW_WIDTHS.length] }}
+          />
+          <Skeleton className="ml-auto h-[11px] w-[70px]" />
+        </div>
       ))}
     </div>
   );

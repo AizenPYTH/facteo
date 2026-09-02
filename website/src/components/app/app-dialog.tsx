@@ -1,6 +1,7 @@
 'use client';
 
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
+import type { LucideIcon } from 'lucide-react';
 import { useEffect } from 'react';
 import { X } from 'lucide-react';
 
@@ -14,6 +15,9 @@ export function AppDialog({
   title,
   description,
   children,
+  footer,
+  icon: Icon,
+  tone = 'default',
   className,
   size = 'md',
 }: {
@@ -21,7 +25,10 @@ export function AppDialog({
   onClose: () => void;
   title: string;
   description?: string;
-  children: React.ReactNode;
+  children?: React.ReactNode;
+  footer?: React.ReactNode;
+  icon?: LucideIcon;
+  tone?: 'default' | 'danger';
   className?: string;
   size?: 'sm' | 'md' | 'lg' | 'xl';
 }) {
@@ -59,7 +66,7 @@ export function AppDialog({
           <motion.button
             animate={{ opacity: 1 }}
             aria-label="Fermer"
-            className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
+            className="absolute inset-0 bg-[rgba(15,21,51,0.34)] backdrop-blur-[3px]"
             exit={{ opacity: 0 }}
             initial={{ opacity: 0 }}
             onClick={onClose}
@@ -69,7 +76,7 @@ export function AppDialog({
           <motion.div
             animate={{ opacity: 1, y: 0, scale: 1 }}
             className={cn(
-              'relative flex max-h-[88vh] w-full flex-col overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-[0_32px_80px_-24px_rgba(15,23,42,0.45)]',
+              'relative flex max-h-[88vh] w-full flex-col overflow-hidden rounded-2xl border border-app-border bg-app-surface shadow-app-float',
               widths[size],
               className,
             )}
@@ -77,21 +84,38 @@ export function AppDialog({
             initial={reduceMotion ? false : { opacity: 0, y: 10, scale: 0.98 }}
             role="dialog"
             transition={{ duration: reduceMotion ? 0 : 0.22, ease }}>
-            <div className="flex shrink-0 items-start justify-between gap-4 border-b border-slate-100 px-5 py-4">
+            <div className="flex shrink-0 items-start justify-between gap-4 px-[22px] pb-4 pt-5">
               <div className="min-w-0">
-                <h3 className="text-base font-semibold tracking-tight text-slate-900">{title}</h3>
+                {Icon ? (
+                  <span
+                    className={cn(
+                      'mb-3.5 flex h-[38px] w-[38px] items-center justify-center rounded-[11px]',
+                      tone === 'danger'
+                        ? 'bg-app-danger-tint text-app-danger'
+                        : 'bg-app-accent-tint text-app-accent',
+                    )}>
+                    <Icon size={18} strokeWidth={1.75} />
+                  </span>
+                ) : null}
+                <h3 className="text-base font-semibold tracking-[-0.01em] text-app-text">{title}</h3>
                 {description ? (
-                  <p className="mt-0.5 text-sm text-slate-500">{description}</p>
+                  <p className="mt-1.5 text-[13px] leading-relaxed text-app-muted">{description}</p>
                 ) : null}
               </div>
               <button
-                className="rounded-lg p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
+                aria-label="Fermer"
+                className="-mr-1 shrink-0 rounded-lg p-2 text-app-muted-2 transition-colors duration-150 hover:bg-app-border-soft hover:text-app-text-2"
                 onClick={onClose}
                 type="button">
                 <X size={18} />
               </button>
             </div>
-            <div className="min-h-0 flex-1 overflow-y-auto">{children}</div>
+            {children ? <div className="min-h-0 flex-1 overflow-y-auto">{children}</div> : null}
+            {footer ? (
+              <div className="flex shrink-0 items-center justify-end gap-2 border-t border-app-border-soft bg-app-subtle px-[22px] py-3.5">
+                {footer}
+              </div>
+            ) : null}
           </motion.div>
         </div>
       ) : null}
