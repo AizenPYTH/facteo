@@ -23,7 +23,8 @@ type ReceivedInvoice = {
 };
 
 export default function ReceivedEInvoicesPage() {
-  const { companyId } = useTenant();
+  const { scope } = useTenant();
+  const companyId = scope?.companyId ?? null;
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
