@@ -28,6 +28,7 @@ import { useInvoice } from '@/hooks/use-invoices';
 import { useInvoiceMutations } from '@/hooks/use-invoice-mutations';
 import { getInvoiceErrorMessage } from '@/lib/invoices/errors';
 import { buildInvoicePdfHtml } from '@/lib/pdf/document-pdf';
+import { sendElectronicInvoice } from '@/lib/superpdp/api';
 import { useAuth } from '@/hooks/use-auth';
 import { useTenant } from '@/hooks/use-tenant';
 import { requireScope } from '@/lib/tenant/scope';
@@ -51,7 +52,7 @@ export default function InvoiceDetailScreen() {
   useDesktopListRedirect('/invoices');
   const invoiceId = Array.isArray(id) ? id[0] : id;
   const { user } = useAuth();
-  const { scope, isSwitching } = useTenant();
+  const { scope, isSwitching, companyId } = useTenant();
   const { data: invoice, isLoading, isFetched, refetch } = useInvoice(invoiceId ?? '');
   const {
     cancelInvoice,
@@ -232,6 +233,27 @@ export default function InvoiceDetailScreen() {
     }
   }
 
+  async function handleSendElectronic() {
+    if (!invoiceId || !companyId || !invoice) {
+      return;
+    }
+    if (invoice.status === 'draft' || invoice.status === 'canceled') {
+      showError('Émettez d’abord la facture (hors brouillon / annulée).');
+      return;
+    }
+    try {
+      const result = await sendElectronicInvoice(companyId, invoiceId);
+      if (result.idempotent) {
+        showSuccess(result.message || 'Facture déjà transmise électroniquement.');
+      } else {
+        showSuccess('Facture envoyée en facturation électronique.');
+      }
+      await refetch();
+    } catch (error) {
+      showError(error instanceof Error ? error.message : 'Envoi électronique impossible.');
+    }
+  }
+
   const actionSections = useMemo(() => {
     if (!invoice) {
       return [];
@@ -250,6 +272,14 @@ export default function InvoiceDetailScreen() {
         icon: { ios: 'paperplane.fill', android: 'send', web: 'send' } as const,
         onPress: () => void documentActions.handleSendEmail(),
         loading: documentActions.emailLoading,
+      },
+      {
+        id: 'e-invoice',
+        label: invoice.superpdpInvoiceId
+          ? `Facture électronique (${invoice.electronicInvoiceStatus || 'envoyée'})`
+          : 'Envoyer en facture électronique',
+        icon: { ios: 'bolt.fill', android: 'bolt', web: 'bolt' } as const,
+        onPress: () => void handleSendElectronic(),
       },
       {
         id: 'pdf',
@@ -361,6 +391,7 @@ export default function InvoiceDetailScreen() {
 
     return [primary, workflow, manage].filter((section) => section.length > 0);
   }, [
+    companyId,
     documentActions,
     hasFeature,
     invoice,
