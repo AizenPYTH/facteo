@@ -2,49 +2,54 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Suspense, useCallback, useEffect, useRef, useState } from 'react';
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  Check,
-  CheckSquare,
+  Copy,
   Download,
   FileText,
   Package,
+  Pencil,
   Plus,
   ReceiptText,
-  Square,
   Sparkles,
-  X,
   Trash2,
   Upload,
   Wrench,
 } from 'lucide-react';
 
-import { MasterDetailLayout, WorkspaceToolbar } from '@/components/app/master-detail';
-import { EmptyState } from '@/components/app/empty-state';
-import { DetailSkeleton, TableSkeleton } from '@/components/app/skeleton';
-import { AppSearchInput } from '@/components/app/app-shell';
+import { ActionMenu } from '@/components/app/action-menu';
+import { AppDialog } from '@/components/app/app-dialog';
+import { AppSearchInput, AppTopBar } from '@/components/app/app-shell';
+import { EmptyState, NoResultsState } from '@/components/app/empty-state';
 import {
+  DangerButton,
   FormActions,
   FormField,
+  FormSection,
+  GhostButton,
   PrimaryButton,
   SecondaryButton,
   TextArea,
   TextInput,
 } from '@/components/app/form-fields';
-import { Badge, LoadingState } from '@/components/app/ui';
-import { useAuth } from '@/providers/auth-provider';
-import { useTenant } from '@/providers/company-provider';
-import { useToast } from '@/providers/toast-provider';
-import { toUserFacingError } from '@/lib/errors/messages';
+import { MasterDetailLayout } from '@/components/app/master-detail';
+import { DetailSkeleton, TableSkeleton } from '@/components/app/skeleton';
+import { Badge, DataTable, LoadingState, type DataTableColumn } from '@/components/app/ui';
+import { analyzeProductImage } from '@/lib/domain/ai/product-image-analysis';
+import { formatCurrency } from '@/lib/domain/format/currency';
+import { productsQueryKeys } from '@/lib/domain/supabase/query-keys';
 import {
   createProduct,
   deleteProduct,
   fetchProducts,
   updateProduct,
 } from '@/lib/domain/supabase/products';
-import { analyzeProductImage } from '@/lib/domain/ai/product-image-analysis';
 import { requireScope } from '@/lib/domain/tenant/scope';
-import { formatCurrency } from '@/lib/domain/format/currency';
+import { toUserFacingError } from '@/lib/errors/messages';
+import { cn } from '@/lib/utils';
+import { useAuth } from '@/providers/auth-provider';
+import { useTenant } from '@/providers/company-provider';
+import { useToast } from '@/providers/toast-provider';
 import {
   createEmptyProductFormValues,
   mapProductToFormValues,
@@ -52,9 +57,6 @@ import {
   type ProductFormValues,
   type ProductType,
 } from '@/types/product';
-import { cn } from '@/lib/utils';
-
-import { productsQueryKeys } from '@/lib/domain/supabase/query-keys';
 
 function formatNumericInput(value: number): string {
   return Number.isInteger(value) ? String(value) : String(Number(value.toFixed(2)));
@@ -574,6 +576,42 @@ async function fileToBase64(file: File): Promise<string> {
   });
 }
 
+type CatalogChip = 'active' | 'low' | 'archived';
+
+function isLowStock(product: Product): boolean {
+  return product.stockAlertThreshold > 0 && product.stockQuantity <= product.stockAlertThreshold;
+}
+
+function productInitials(name: string): string {
+  return (
+    name
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((part) => part.charAt(0).toUpperCase())
+      .join('') || '·'
+  );
+}
+
+function StockChip({ product, kind }: { product: Product; kind: ProductType }) {
+  if (kind === 'service') {
+    return <span className="text-[13px] text-app-muted">{product.unit || '—'}</span>;
+  }
+
+  const low = isLowStock(product);
+  return (
+    <span
+      className={cn(
+        'inline-flex items-center rounded-app-chip px-2 py-0.5 text-[11.5px] font-semibold',
+        low
+          ? 'bg-app-warning-tint text-app-warning-text'
+          : 'bg-app-success-tint text-app-success-text',
+      )}>
+      {low ? `${product.stockQuantity} · seuil ${product.stockAlertThreshold}` : `${product.stockQuantity} en stock`}
+    </span>
+  );
+}
+
 function ProductFormPanel({
   type,
   product,
@@ -888,20 +926,21 @@ function ProductFormPanel({
   }
 
   return (
-    <div className="h-full overflow-y-auto p-6">
-      <div className="mx-auto max-w-xl space-y-5">
+    <div className="h-full overflow-y-auto p-5">
+      <div className="space-y-4">
         <div>
-          <h2 className="text-xl font-bold text-slate-900">
+          <h2 className="text-[16px] font-semibold tracking-[-0.01em] text-app-text">
             {product ? 'Modifier' : 'Nouveau'} {type === 'product' ? 'produit' : 'prestation'}
           </h2>
-          <p className="mt-1 text-sm text-slate-500">
+          <p className="mt-1 text-[13px] text-app-muted">
             Ces éléments peuvent être réutilisés dans vos devis et factures.
           </p>
         </div>
 
         {!product && type === 'product' ? (
-          <div className="space-y-3 rounded-2xl border border-slate-200 bg-slate-50 p-3.5">
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Ajout produit simplifié</p>
+          <FormSection
+            description="Saisie manuelle, photo (IA) ou tableur. Le premier élément détecté pré-remplit le formulaire."
+            title="Ajout simplifié">
             <div className="grid gap-2 sm:grid-cols-2">
               <SecondaryButton
                 onClick={() => {
@@ -916,8 +955,8 @@ function ProductFormPanel({
               </SecondaryButton>
             </div>
 
-            <div className="space-y-2 rounded-xl border border-dashed border-primary/40 bg-white p-3">
-              <p className="text-xs text-slate-500">
+            <div className="space-y-2 rounded-[11px] border border-dashed border-app-accent-border bg-app-subtle p-3">
+              <p className="text-[12px] text-app-muted">
                 Importez une capture d&apos;écran ou une photo (Amazon, fournisseur, etc.).
               </p>
               <input
@@ -932,23 +971,24 @@ function ProductFormPanel({
                 type="file"
               />
               {analysisFileName ? (
-                <p className="text-xs text-slate-500">Fichier : {analysisFileName}</p>
+                <p className="text-[12px] text-app-muted">Fichier : {analysisFileName}</p>
               ) : null}
               {detectedProducts.length > 0 ? (
-                <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-700">
-                  {detectedProducts.length} produit(s) détecté(s). Le premier a été pré-rempli dans le formulaire.
+                <div className="rounded-[9px] border border-app-success/20 bg-app-success-tint px-3 py-2 text-[12px] text-app-success-text">
+                  {detectedProducts.length} produit(s) détecté(s). Le premier a été pré-rempli dans le
+                  formulaire.
                 </div>
               ) : null}
               {analysisError ? (
-                <p className="text-xs font-medium text-red-600">{analysisError}</p>
+                <p className="text-[12px] font-medium text-app-danger">{analysisError}</p>
               ) : null}
               {analysisSuccess ? (
-                <p className="text-xs font-medium text-emerald-700">{analysisSuccess}</p>
+                <p className="text-[12px] font-medium text-app-success-text">{analysisSuccess}</p>
               ) : null}
             </div>
 
-            <div className="space-y-2 rounded-xl border border-dashed border-slate-300 bg-white p-3">
-              <p className="text-xs text-slate-500">
+            <div className="space-y-2 rounded-[11px] border border-dashed border-app-border bg-app-surface p-3">
+              <p className="text-[12px] text-app-muted">
                 Import tableur (.xlsx, .xls, .csv) avec nettoyage automatique TVA/montants.
               </p>
               <input
@@ -972,126 +1012,135 @@ function ProductFormPanel({
                   {isImportingSpreadsheet ? 'Import en cours…' : 'Importer un fichier'}
                 </SecondaryButton>
               </div>
-              <label className="flex items-center gap-2 text-xs text-slate-600">
+              <label className="flex items-center gap-2 text-[12px] text-app-text-2">
                 <input
                   checked={overwriteExistingByReference}
-                  className="rounded border-slate-300"
+                  className="h-[15px] w-[15px] [accent-color:var(--app-accent)]"
                   onChange={(event) => setOverwriteExistingByReference(event.target.checked)}
                   type="checkbox"
                 />
                 Mettre à jour les produits existants (même référence)
               </label>
-              {analysisSuccess ? (
-                <p className="text-xs font-medium text-emerald-700">{analysisSuccess}</p>
-              ) : null}
               {duplicateReferences.length > 0 ? (
-                <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                <div className="rounded-[9px] border border-app-warning/30 bg-app-warning-tint px-3 py-2 text-[12px] text-app-warning-text">
                   <p className="font-semibold">Produits en doublon détectés :</p>
                   <p className="mt-1">{duplicateReferences.join(' | ')}</p>
                 </div>
               ) : null}
             </div>
-          </div>
+          </FormSection>
         ) : null}
 
         {error ? (
-          <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          <div className="rounded-[11px] border border-app-danger-border bg-app-danger-tint px-4 py-3 text-[13px] text-app-danger-text">
             {error}
           </div>
         ) : null}
 
-        <FormField label="Nom *">
-          <TextInput
-            onChange={(e) => setField('name', e.target.value)}
-            placeholder={type === 'product' ? 'Matériel, fourniture…' : 'Prestation, service…'}
-            ref={nameInputRef}
-            value={values.name}
-          />
-        </FormField>
-        <FormField label="Description">
-          <TextArea
-            onChange={(e) => setField('description', e.target.value)}
-            value={values.description}
-          />
-        </FormField>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <FormField label="Prix unitaire HT">
+        <FormSection title="Identité">
+          <FormField label="Nom *">
             <TextInput
-              onChange={(e) => setField('unitPrice', e.target.value)}
-              value={values.unitPrice}
+              onChange={(e) => setField('name', e.target.value)}
+              placeholder={type === 'product' ? 'Matériel, fourniture…' : 'Prestation, service…'}
+              ref={nameInputRef}
+              value={values.name}
             />
           </FormField>
-          <FormField label="Prix TTC">
-            <TextInput
-              onChange={(e) => setField('priceTtc', e.target.value)}
-              value={values.priceTtc}
+          <FormField label="Description">
+            <TextArea
+              onChange={(e) => setField('description', e.target.value)}
+              value={values.description}
             />
           </FormField>
-          <FormField label="TVA (%)">
-            <TextInput onChange={(e) => setField('vatRate', e.target.value)} value={values.vatRate} />
-          </FormField>
-          <FormField label="Unité">
-            <TextInput onChange={(e) => setField('unit', e.target.value)} value={values.unit} />
-          </FormField>
-          <FormField label="Référence">
-            <TextInput onChange={(e) => setField('reference', e.target.value)} value={values.reference} />
-          </FormField>
-          <FormField label="SKU">
-            <TextInput onChange={(e) => setField('sku', e.target.value)} value={values.sku} />
-          </FormField>
-          <FormField label="Code-barres (EAN)">
-            <TextInput
-              onChange={(e) => setField('barcodeEan', e.target.value)}
-              value={values.barcodeEan}
+          <div className="grid gap-4 sm:grid-cols-2">
+            <FormField label="Référence">
+              <TextInput onChange={(e) => setField('reference', e.target.value)} value={values.reference} />
+            </FormField>
+            <FormField label="SKU">
+              <TextInput onChange={(e) => setField('sku', e.target.value)} value={values.sku} />
+            </FormField>
+            <FormField label="Code-barres (EAN)">
+              <TextInput
+                onChange={(e) => setField('barcodeEan', e.target.value)}
+                value={values.barcodeEan}
+              />
+            </FormField>
+            <FormField label="Catégorie">
+              <TextInput onChange={(e) => setField('category', e.target.value)} value={values.category} />
+            </FormField>
+            <FormField label="Marque">
+              <TextInput onChange={(e) => setField('brand', e.target.value)} value={values.brand} />
+            </FormField>
+            <FormField label="Fournisseur">
+              <TextInput onChange={(e) => setField('supplier', e.target.value)} value={values.supplier} />
+            </FormField>
+            <FormField className="sm:col-span-2" label="Image (URL)">
+              <TextInput onChange={(e) => setField('imageUrl', e.target.value)} value={values.imageUrl} />
+            </FormField>
+          </div>
+          <label className="flex items-center gap-2 text-[13px] text-app-text-2">
+            <input
+              checked={values.isActive}
+              className="h-[15px] w-[15px] [accent-color:var(--app-accent)]"
+              onChange={(e) => setField('isActive', e.target.checked)}
+              type="checkbox"
             />
+            Actif
+          </label>
+        </FormSection>
+
+        <FormSection title="Prix et TVA">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <FormField label="Prix unitaire HT">
+              <TextInput
+                onChange={(e) => setField('unitPrice', e.target.value)}
+                value={values.unitPrice}
+              />
+            </FormField>
+            <FormField label="Prix TTC">
+              <TextInput
+                onChange={(e) => setField('priceTtc', e.target.value)}
+                value={values.priceTtc}
+              />
+            </FormField>
+            <FormField label="TVA (%)">
+              <TextInput onChange={(e) => setField('vatRate', e.target.value)} value={values.vatRate} />
+            </FormField>
+            <FormField label="Unité">
+              <TextInput onChange={(e) => setField('unit', e.target.value)} value={values.unit} />
+            </FormField>
+          </div>
+        </FormSection>
+
+        {type === 'product' ? (
+          <FormSection title="Stock">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <FormField label="Stock disponible">
+                <TextInput
+                  onChange={(e) => setField('stockQuantity', e.target.value)}
+                  value={values.stockQuantity}
+                />
+              </FormField>
+              <FormField label="Seuil d’alerte">
+                <TextInput
+                  onChange={(e) => setField('stockAlertThreshold', e.target.value)}
+                  value={values.stockAlertThreshold}
+                />
+              </FormField>
+            </div>
+          </FormSection>
+        ) : null}
+
+        <FormSection title="Notes">
+          <FormField label="Notes">
+            <TextArea onChange={(e) => setField('notes', e.target.value)} value={values.notes} />
           </FormField>
-          <FormField label="Catégorie">
-            <TextInput onChange={(e) => setField('category', e.target.value)} value={values.category} />
-          </FormField>
-          <FormField label="Marque">
-            <TextInput onChange={(e) => setField('brand', e.target.value)} value={values.brand} />
-          </FormField>
-          <FormField label="Fournisseur">
-            <TextInput onChange={(e) => setField('supplier', e.target.value)} value={values.supplier} />
-          </FormField>
-          <FormField label="Stock disponible">
-            <TextInput
-              onChange={(e) => setField('stockQuantity', e.target.value)}
-              value={values.stockQuantity}
-            />
-          </FormField>
-          <FormField label="Stock minimum">
-            <TextInput
-              onChange={(e) => setField('stockAlertThreshold', e.target.value)}
-              value={values.stockAlertThreshold}
-            />
-          </FormField>
-          <FormField label="Image (URL)">
-            <TextInput onChange={(e) => setField('imageUrl', e.target.value)} value={values.imageUrl} />
-          </FormField>
-        </div>
-        <FormField label="Notes">
-          <TextArea
-            onChange={(e) => setField('notes', e.target.value)}
-            value={values.notes}
-          />
-        </FormField>
-        <label className="flex items-center gap-2 text-sm text-slate-700">
-          <input
-            checked={values.isActive}
-            className="rounded border-slate-300"
-            onChange={(e) => setField('isActive', e.target.checked)}
-            type="checkbox"
-          />
-          Actif
-        </label>
+        </FormSection>
 
         <FormActions>
           <SecondaryButton onClick={onClose}>Annuler</SecondaryButton>
           {detectedProducts.length > 1 && !product ? (
-            <SecondaryButton
-              onClick={() => batchMutation.mutate()}
-              type="button">
+            <SecondaryButton onClick={() => batchMutation.mutate()} type="button">
               {batchMutation.isPending
                 ? 'Création du lot…'
                 : `Créer le lot (${detectedProducts.length} produits)`}
@@ -1106,10 +1155,110 @@ function ProductFormPanel({
   );
 }
 
+function CatalogDetailPanel({
+  product,
+  type,
+  onEdit,
+  onDelete,
+  deleting,
+}: {
+  product: Product;
+  type: ProductType;
+  onEdit: () => void;
+  onDelete: () => void;
+  deleting: boolean;
+}) {
+  const Icon = type === 'product' ? Package : Wrench;
+
+  return (
+    <div className="flex flex-col">
+      <div className="border-b border-app-border-soft px-5 py-[18px]">
+        <div className="flex items-start gap-3">
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[12px] bg-app-accent-tint text-app-accent">
+            <Icon size={20} strokeWidth={1.75} />
+          </span>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-start justify-between gap-2">
+              <h2 className="truncate text-[17px] font-semibold tracking-[-0.01em] text-app-text">
+                {product.name}
+              </h2>
+              <Badge variant={product.isActive ? 'success' : 'default'}>
+                {product.isActive ? 'Actif' : 'Archivé'}
+              </Badge>
+            </div>
+            <p className="mt-0.5 truncate text-[12.5px] text-app-muted">
+              {product.category || (type === 'product' ? 'Produit' : 'Prestation')}
+              {product.reference ? ` · Réf. ${product.reference}` : ''}
+            </p>
+          </div>
+        </div>
+        <p className="app-num mt-4 text-[27px] font-semibold tracking-[-0.03em] text-app-text">
+          {formatCurrency(product.unitPrice)}
+          <span className="ml-1 text-[13px] font-medium text-app-muted">HT</span>
+        </p>
+        <div className="mt-3.5 flex items-center gap-2">
+          <PrimaryButton className="flex-1 py-2.5 text-[12.5px]" onClick={onEdit}>
+            <Pencil size={14} />
+            Modifier
+          </PrimaryButton>
+          <DangerButton
+            aria-label="Supprimer"
+            className="w-[38px] shrink-0 px-0 py-2.5"
+            disabled={deleting}
+            onClick={onDelete}>
+            <Trash2 size={15} />
+          </DangerButton>
+        </div>
+      </div>
+
+      <dl className="space-y-0 border-b border-app-border-soft px-5 py-4">
+        <div className="flex items-center justify-between gap-3 py-[3px]">
+          <dt className="text-[13px] text-app-muted">TVA</dt>
+          <dd className="app-num text-[13px] font-medium text-app-text">{product.vatRate} %</dd>
+        </div>
+        <div className="flex items-center justify-between gap-3 py-[3px]">
+          <dt className="text-[13px] text-app-muted">Unité</dt>
+          <dd className="text-[13px] font-medium text-app-text">{product.unit || '—'}</dd>
+        </div>
+        {type === 'product' ? (
+          <div className="flex items-center justify-between gap-3 py-[3px]">
+            <dt className="text-[13px] text-app-muted">Stock</dt>
+            <dd>
+              <StockChip kind={type} product={product} />
+            </dd>
+          </div>
+        ) : null}
+      </dl>
+
+      <div className="px-5 py-4">
+        <p className="mb-1.5 text-[11px] font-bold uppercase tracking-[0.1em] text-app-faint">
+          Références
+        </p>
+        <p className="text-[13px] text-app-text-2">SKU {product.sku || '—'} · EAN {product.barcodeEan || '—'}</p>
+        <p className="mt-1 text-[13px] text-app-text-2">
+          {product.brand || '—'} · {product.supplier || '—'}
+        </p>
+        {product.description ? (
+          <p className="mt-3 whitespace-pre-line text-[13px] leading-relaxed text-app-text-2">
+            {product.description}
+          </p>
+        ) : null}
+        {product.notes ? (
+          <p className="mt-3 whitespace-pre-line text-[13px] leading-relaxed text-app-muted">
+            {product.notes}
+          </p>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
 function CatalogWorkspaceInner({ type }: { type: ProductType }) {
   const [search, setSearch] = useState('');
+  const [chip, setChip] = useState<CatalogChip>('active');
   const [mode, setMode] = useState<'list' | 'form'>('list');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [pendingDelete, setPendingDelete] = useState<'single' | 'bulk' | null>(null);
   const searchParams = useSearchParams();
   const router = useRouter();
   const selectedId = searchParams.get('selected');
@@ -1142,6 +1291,7 @@ function CatalogWorkspaceInner({ type }: { type: ProductType }) {
     mutationFn: (id: string) => deleteProduct(requireScope(scope), id),
     onSuccess: () => {
       setSelectedId(null);
+      setPendingDelete(null);
       void queryClient.invalidateQueries({ queryKey: productsQueryKeys.all });
       showSuccess('Élément supprimé.');
     },
@@ -1157,8 +1307,30 @@ function CatalogWorkspaceInner({ type }: { type: ProductType }) {
     onSuccess: (_data, ids) => {
       setSelectedIds([]);
       setSelectedId(null);
+      setPendingDelete(null);
       void queryClient.invalidateQueries({ queryKey: productsQueryKeys.all });
       showSuccess(`${ids.length} élément(s) supprimé(s).`);
+    },
+    onError: (error) => showError(toUserFacingError(error.message)),
+  });
+  const duplicateMutation = useMutation({
+    mutationFn: async (ids: string[]) => {
+      const activeScope = requireScope(scope);
+      const created: Product[] = [];
+      for (const id of ids) {
+        const source = products.find((item) => item.id === id);
+        if (!source) continue;
+        const values = mapProductToFormValues(source);
+        values.name = `${values.name} (copie)`;
+        values.reference = '';
+        created.push(await createProduct(activeScope, type, values));
+      }
+      return created;
+    },
+    onSuccess: (created) => {
+      setSelectedIds([]);
+      void queryClient.invalidateQueries({ queryKey: productsQueryKeys.all });
+      showSuccess(`${created.length} élément(s) dupliqué(s).`);
     },
     onError: (error) => showError(toUserFacingError(error.message)),
   });
@@ -1167,50 +1339,173 @@ function CatalogWorkspaceInner({ type }: { type: ProductType }) {
     setSelectedIds((prev) => prev.filter((id) => products.some((product) => product.id === id)));
   }, [products]);
 
-  const toggleProductSelection = useCallback((id: string) => {
-    setSelectedIds((prev) => (prev.includes(id) ? prev.filter((entry) => entry !== id) : [...prev, id]));
-  }, []);
+  const counts = useMemo(
+    () => ({
+      active: products.filter((item) => item.isActive).length,
+      low: products.filter(isLowStock).length,
+      archived: products.filter((item) => !item.isActive).length,
+    }),
+    [products],
+  );
 
-  const selectedProducts = products.filter((product) => selectedIds.includes(product.id));
+  const visible = useMemo(() => {
+    if (chip === 'active') return products.filter((item) => item.isActive);
+    if (chip === 'archived') return products.filter((item) => !item.isActive);
+    return products.filter(isLowStock);
+  }, [chip, products]);
+
+  const isFiltered = search.trim().length > 0 || chip !== 'active';
+  const title = type === 'product' ? 'Produits' : 'Prestations';
+  const lastColLabel = type === 'product' ? 'Stock' : 'Durée';
+  const noun = type === 'product' ? 'produit' : 'prestation';
 
   const handleCreateDocumentFromSelection = useCallback(
     (target: 'invoice' | 'quote') => {
-      if (selectedIds.length === 0) {
-        return;
-      }
+      if (selectedIds.length === 0) return;
       const base = target === 'invoice' ? '/app/invoices?create=1' : '/app/quotes?create=1';
-      const queryIds = encodeURIComponent(selectedIds.join(','));
-      router.push(`${base}&fromProducts=${queryIds}`);
+      router.push(`${base}&fromProducts=${encodeURIComponent(selectedIds.join(','))}`);
     },
     [router, selectedIds],
   );
 
-  const handleDeleteSelection = useCallback(() => {
-    if (selectedIds.length === 0) {
-      return;
-    }
-    if (confirm(`Supprimer ${selectedIds.length} produit(s) sélectionné(s) ?`)) {
-      bulkDeleteMutation.mutate(selectedIds);
-    }
-  }, [bulkDeleteMutation, selectedIds]);
+  const openCreate = useCallback(() => {
+    setSelectedId(null);
+    setMode('form');
+  }, [setSelectedId]);
 
-  const title = type === 'product' ? 'Produits' : 'Prestations';
-  const Icon = type === 'product' ? Package : Wrench;
+  const columns: DataTableColumn[] = [
+    { key: 'name', label: 'Désignation' },
+    { key: 'reference', label: 'Référence', className: 'max-lg:hidden' },
+    { key: 'unit', label: 'Unité', className: 'max-[1023px]:hidden' },
+    { key: 'price', label: 'Prix HT', align: 'right' },
+    { key: 'vat', label: 'TVA', align: 'right', className: 'max-md:hidden' },
+    { key: 'stock', label: lastColLabel },
+    { key: 'actions', label: '', className: 'w-[56px]' },
+  ];
+
+  const rows = visible.map((product) => ({
+    id: product.id,
+    name: (
+      <div className="flex items-center gap-2.5">
+        <span className="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-app-icon bg-app-border-soft text-[11px] font-bold text-app-muted-2">
+          {productInitials(product.name)}
+        </span>
+        <div className="min-w-0">
+          <p className="truncate font-semibold text-app-text">{product.name}</p>
+          <p className="truncate text-[11.5px] text-app-muted-2">{product.category || '—'}</p>
+        </div>
+      </div>
+    ),
+    reference: (
+      <span className="app-num text-app-muted">{product.reference || '—'}</span>
+    ),
+    unit: <span className="text-app-muted">{product.unit || '—'}</span>,
+    price: formatCurrency(product.unitPrice),
+    vat: <span className="app-num text-app-muted">{product.vatRate} %</span>,
+    stock: <StockChip kind={type} product={product} />,
+    actions: (
+      <div className="flex items-center justify-end transition-opacity duration-150 max-lg:opacity-100 lg:opacity-0 lg:group-focus-within:opacity-100 lg:group-hover:opacity-100">
+        <ActionMenu
+          items={[
+            {
+              key: 'open',
+              label: 'Ouvrir',
+              icon: type === 'product' ? Package : Wrench,
+              onSelect: () => {
+                setMode('list');
+                setSelectedId(product.id);
+              },
+            },
+            {
+              key: 'edit',
+              label: 'Modifier',
+              icon: Pencil,
+              onSelect: () => {
+                setSelectedId(product.id);
+                setMode('form');
+              },
+            },
+            {
+              key: 'quote',
+              label: 'Créer un devis',
+              icon: FileText,
+              onSelect: () =>
+                router.push(`/app/quotes?create=1&fromProducts=${encodeURIComponent(product.id)}`),
+            },
+            {
+              key: 'delete',
+              label: 'Supprimer',
+              icon: Trash2,
+              tone: 'danger',
+              onSelect: () => {
+                setSelectedId(product.id);
+                setPendingDelete('single');
+              },
+            },
+          ]}
+        />
+      </div>
+    ),
+  }));
+
+  const chips: { value: CatalogChip; label: string }[] = [
+    { value: 'active', label: 'Actifs' },
+    ...(type === 'product' ? [{ value: 'low' as const, label: 'Stock bas' }] : []),
+    { value: 'archived', label: 'Archivés' },
+  ];
 
   return (
-    <div className="flex h-full min-h-0 flex-col">
-      <WorkspaceToolbar subtitle={`${products.length} élément(s)`} title={title}>
-        <button
-          className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white shadow-[0_10px_24px_-10px_rgba(37,99,235,0.65)] transition duration-150 hover:bg-primary-dark"
-          onClick={() => {
-            setSelectedId(null);
-            setMode('form');
-          }}
-          type="button">
+    <>
+      <AppTopBar
+        count={products.length}
+        title={title}
+        toolbar={
+          <>
+            <div className="w-full min-w-[220px] flex-1 sm:max-w-[340px]">
+              <AppSearchInput
+                onChange={setSearch}
+                placeholder="Nom, référence, SKU…"
+                value={search}
+              />
+            </div>
+            <div className="flex flex-wrap items-center gap-1.5">
+              {chips.map((item) => {
+                const active = item.value === chip;
+                return (
+                  <button
+                    aria-pressed={active}
+                    className={cn(
+                      'inline-flex items-center gap-1.5 rounded-app-chip border px-[11px] py-[7px] text-[12.5px] font-semibold transition-colors duration-150',
+                      active
+                        ? 'border-app-accent-border bg-app-accent-tint text-app-accent-strong'
+                        : 'border-app-border bg-app-surface text-app-text-3 hover:border-app-accent-border',
+                    )}
+                    key={item.value}
+                    onClick={() => setChip(item.value)}
+                    type="button">
+                    {item.label}
+                    <span
+                      className={cn(
+                        'app-num text-[11px] font-semibold',
+                        active ? 'text-app-accent' : 'text-app-faint',
+                      )}>
+                      {counts[item.value]}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </>
+        }>
+        <SecondaryButton onClick={openCreate} type="button">
+          <Upload size={15} />
+          Importer CSV
+        </SecondaryButton>
+        <PrimaryButton onClick={openCreate} type="button">
           <Plus size={16} />
-          Ajouter {type === 'product' ? 'un produit' : 'une prestation'}
-        </button>
-      </WorkspaceToolbar>
+          {type === 'product' ? 'Nouveau produit' : 'Nouvelle prestation'}
+        </PrimaryButton>
+      </AppTopBar>
 
       <div className="min-h-0 flex-1">
         <MasterDetailLayout
@@ -1222,244 +1517,164 @@ function CatalogWorkspaceInner({ type }: { type: ProductType }) {
                   setMode('list');
                   setSelectedId(savedProduct.id);
                 }}
-                product={selected}
+                product={selectedId ? (selected ?? null) : null}
                 type={type}
               />
             ) : query.isLoading ? (
               <DetailSkeleton />
             ) : !selected ? (
-              <div className="flex h-full items-center justify-center p-8">
+              <div className="p-5">
                 <EmptyState
-                  description={`Créez votre premier ${type === 'product' ? 'produit' : 'prestation'}.`}
+                  action={
+                    <SecondaryButton onClick={() => setSelectedId(null)}>Fermer</SecondaryButton>
+                  }
+                  description="Sélectionnez un élément dans le tableau."
                   title="Aucune sélection"
                 />
               </div>
             ) : (
-              <div className="h-full overflow-y-auto p-8">
-                <div className="mx-auto max-w-2xl rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
-                  <div className="flex items-start gap-4">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-50 text-primary">
-                      <Icon size={24} />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-start justify-between gap-3">
-                        <h2 className="text-2xl font-bold text-slate-900">{selected.name}</h2>
-                        <Badge variant={selected.isActive ? 'success' : 'default'}>
-                          {selected.isActive ? 'Actif' : 'Inactif'}
-                        </Badge>
-                      </div>
-                      {selected.reference ? (
-                        <p className="mt-1 text-sm text-slate-500">Réf. {selected.reference}</p>
-                      ) : null}
-                    </div>
-                  </div>
-
-                  {selected.description ? (
-                    <p className="mt-6 text-sm leading-relaxed text-slate-600">{selected.description}</p>
-                  ) : null}
-
-                  <dl className="mt-8 grid gap-4 sm:grid-cols-3">
-                    <div className="rounded-xl bg-slate-50 p-4">
-                      <dt className="text-xs text-slate-400">Prix HT</dt>
-                      <dd className="mt-1 text-lg font-bold text-slate-900">
-                        {formatCurrency(selected.unitPrice)}
-                      </dd>
-                    </div>
-                    <div className="rounded-xl bg-slate-50 p-4">
-                      <dt className="text-xs text-slate-400">TVA</dt>
-                      <dd className="mt-1 text-lg font-bold text-slate-900">{selected.vatRate} %</dd>
-                    </div>
-                    <div className="rounded-xl bg-slate-50 p-4">
-                      <dt className="text-xs text-slate-400">Unité</dt>
-                      <dd className="mt-1 text-lg font-bold text-slate-900">{selected.unit}</dd>
-                    </div>
-                  </dl>
-                  <dl className="mt-4 grid gap-4 sm:grid-cols-2">
-                    <div className="rounded-xl bg-slate-50 p-4">
-                      <dt className="text-xs text-slate-400">SKU / EAN</dt>
-                      <dd className="mt-1 text-sm font-semibold text-slate-900">
-                        {selected.sku || '—'} / {selected.barcodeEan || '—'}
-                      </dd>
-                    </div>
-                    <div className="rounded-xl bg-slate-50 p-4">
-                      <dt className="text-xs text-slate-400">Stock</dt>
-                      <dd className="mt-1 text-sm font-semibold text-slate-900">
-                        {selected.stockQuantity} (alerte: {selected.stockAlertThreshold})
-                      </dd>
-                    </div>
-                    <div className="rounded-xl bg-slate-50 p-4">
-                      <dt className="text-xs text-slate-400">Catégorie / Marque</dt>
-                      <dd className="mt-1 text-sm font-semibold text-slate-900">
-                        {selected.category || '—'} / {selected.brand || '—'}
-                      </dd>
-                    </div>
-                    <div className="rounded-xl bg-slate-50 p-4">
-                      <dt className="text-xs text-slate-400">Fournisseur</dt>
-                      <dd className="mt-1 text-sm font-semibold text-slate-900">{selected.supplier || '—'}</dd>
-                    </div>
-                  </dl>
-                  {selected.notes ? (
-                    <p className="mt-4 rounded-xl bg-slate-50 p-4 text-sm text-slate-600">{selected.notes}</p>
-                  ) : null}
-
-                  <div className="mt-8 flex gap-3">
-                    <button
-                      className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
-                      onClick={() => setMode('form')}
-                      type="button">
-                      Modifier
-                    </button>
-                    <button
-                      className="rounded-xl border border-red-200 px-4 py-2.5 text-sm font-semibold text-red-600 hover:bg-red-50"
-                      disabled={deleteMutation.isPending}
-                      onClick={() => {
-                        if (confirm('Supprimer cet élément ?')) {
-                          deleteMutation.mutate(selected.id);
-                        }
-                      }}
-                      type="button">
-                      <Trash2 className="mr-1 inline" size={14} />
-                      Supprimer
-                    </button>
-                  </div>
-                </div>
-              </div>
+              <CatalogDetailPanel
+                deleting={deleteMutation.isPending}
+                onDelete={() => setPendingDelete('single')}
+                onEdit={() => setMode('form')}
+                product={selected}
+                type={type}
+              />
             )
           }
-          detailOpen={mode === 'form' || Boolean(selected)}
+          detailOpen={mode === 'form' || Boolean(selectedId)}
           detailTitle={type === 'product' ? 'Produit' : 'Prestation'}
           list={
-            <div className="flex h-full min-h-0 flex-col">
-              <div className="border-b border-slate-100 p-4">
-                <AppSearchInput
-                  onChange={setSearch}
-                  placeholder={`Rechercher…`}
-                  value={search}
-                />
+            query.isLoading ? (
+              <div className="p-6">
+                <TableSkeleton rows={8} />
               </div>
-              {selectedIds.length > 0 ? (
-                <div className="border-b border-slate-100 bg-slate-50 px-4 py-3">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                      {selectedIds.length} sélectionné(s)
-                    </span>
-                    {type === 'product' ? (
-                      <>
-                        <button
-                          className="inline-flex items-center gap-1.5 rounded-lg border border-primary/30 bg-blue-50 px-3 py-1.5 text-xs font-semibold text-primary hover:bg-blue-100"
-                          disabled={selectedIds.length === 0}
-                          onClick={() => handleCreateDocumentFromSelection('invoice')}
-                          type="button">
-                          <ReceiptText size={13} />
-                          Créer une facture
-                        </button>
-                        <button
-                          className="inline-flex items-center gap-1.5 rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-xs font-semibold text-indigo-700 hover:bg-indigo-100"
-                          disabled={selectedIds.length === 0}
-                          onClick={() => handleCreateDocumentFromSelection('quote')}
-                          type="button">
-                          <FileText size={13} />
-                          Créer un devis
-                        </button>
-                      </>
-                    ) : null}
-                    <button
-                      className="inline-flex items-center gap-1.5 rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-100"
-                      disabled={selectedIds.length === 0 || bulkDeleteMutation.isPending}
-                      onClick={handleDeleteSelection}
-                      type="button">
-                      <Trash2 size={13} />
-                      Supprimer
-                    </button>
-                    <button
-                      className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100"
-                      onClick={() => setSelectedIds([])}
-                      type="button">
-                      <X size={13} />
-                      Désélectionner
-                    </button>
-                  </div>
-                  {selectedProducts.length > 0 ? (
-                    <p className="mt-2 text-xs text-slate-500">
-                      {selectedProducts
-                        .slice(0, 3)
-                        .map((product) => product.name)
-                        .join(', ')}
-                      {selectedProducts.length > 3 ? ` +${selectedProducts.length - 3}` : ''}
-                    </p>
-                  ) : null}
-                </div>
-              ) : null}
-              <div className="min-h-0 flex-1 overflow-y-auto">
-                {query.isLoading ? (
-                  <div className="p-4">
-                    <TableSkeleton rows={8} />
-                  </div>
-                ) : products.length === 0 ? (
-                  <div className="p-4">
-                    <EmptyState title={`Aucun ${type === 'product' ? 'produit' : 'prestation'}`} />
-                  </div>
+            ) : visible.length === 0 ? (
+              <div className="p-6">
+                {isFiltered ? (
+                  <NoResultsState
+                    description={`Aucun ${noun} ne correspond à cette recherche ou à ce filtre.`}
+                    onClear={() => {
+                      setSearch('');
+                      setChip('active');
+                    }}
+                    query={search}
+                  />
                 ) : (
-                  <ul className="divide-y divide-slate-100">
-                    {products.map((product) => (
-                      <li key={product.id}>
-                        <div
-                          className={cn(
-                            'w-full cursor-pointer px-4 py-3.5 text-left transition',
-                            product.id === selectedId ? 'bg-blue-50/80' : 'hover:bg-slate-50',
-                          )}
-                          onClick={() => {
-                            setMode('list');
-                            setSelectedId(product.id);
-                          }}
-                          onKeyDown={(event) => {
-                            if (event.key === 'Enter' || event.key === ' ') {
-                              event.preventDefault();
-                              setMode('list');
-                              setSelectedId(product.id);
-                            }
-                          }}
-                          role="button"
-                          tabIndex={0}>
-                          <div className="flex items-start justify-between gap-2">
-                            <p className="font-semibold text-slate-900">{product.name}</p>
-                            <button
-                              className={cn(
-                                'inline-flex h-6 w-6 items-center justify-center rounded-md border transition',
-                                selectedIds.includes(product.id)
-                                  ? 'border-primary bg-primary text-white'
-                                  : 'border-slate-300 bg-white text-slate-400 hover:border-slate-400',
-                              )}
-                              aria-label={`Sélectionner ${product.name}`}
-                              onClick={(event) => {
-                                event.preventDefault();
-                                event.stopPropagation();
-                                toggleProductSelection(product.id);
-                              }}
-                              type="button">
-                              {selectedIds.includes(product.id) ? (
-                                <CheckSquare size={13} />
-                              ) : (
-                                <Square size={13} />
-                              )}
-                            </button>
-                          </div>
-                          <p className="mt-1 text-sm text-slate-500">
-                            {formatCurrency(product.unitPrice)} HT · TVA {product.vatRate}% · {product.unit}
-                          </p>
-                          <p className="mt-1 text-xs text-slate-400">
-                            SKU {product.sku || '—'} · Stock {product.stockQuantity}
-                          </p>
-                          {product.reference ? (
-                            <p className="mt-1 text-xs text-slate-400">Réf. {product.reference}</p>
-                          ) : null}
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
+                  <EmptyState
+                    action={
+                      <PrimaryButton onClick={openCreate} type="button">
+                        <Plus size={15} />
+                        Ajouter {type === 'product' ? 'un produit' : 'une prestation'}
+                      </PrimaryButton>
+                    }
+                    description="Ajoutez vos articles pour les réutiliser dans vos devis et factures."
+                    icon={type === 'product' ? Package : Wrench}
+                    title={`Aucun ${noun} pour le moment`}
+                  />
                 )}
               </div>
-            </div>
+            ) : (
+              <div className="flex h-full min-h-0 flex-col">
+                {selectedIds.length > 0 ? (
+                  <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-app-accent-border bg-app-accent-tint px-6 py-2.5">
+                    <p className="app-num text-[12.5px] font-semibold text-app-accent-strong">
+                      {selectedIds.length} élément{selectedIds.length > 1 ? 's' : ''} sélectionné
+                      {selectedIds.length > 1 ? 's' : ''}
+                    </p>
+                    <div className="ml-auto flex flex-wrap items-center gap-2">
+                      <SecondaryButton
+                        onClick={() => handleCreateDocumentFromSelection('quote')}
+                        type="button">
+                        <FileText className="text-app-muted-2" size={15} />
+                        Créer un devis
+                      </SecondaryButton>
+                      {type === 'product' ? (
+                        <SecondaryButton
+                          onClick={() => handleCreateDocumentFromSelection('invoice')}
+                          type="button">
+                          <ReceiptText className="text-app-muted-2" size={15} />
+                          Créer une facture
+                        </SecondaryButton>
+                      ) : null}
+                      <SecondaryButton
+                        disabled={duplicateMutation.isPending}
+                        onClick={() => duplicateMutation.mutate(selectedIds)}
+                        type="button">
+                        <Copy className="text-app-muted-2" size={15} />
+                        Dupliquer
+                      </SecondaryButton>
+                      <DangerButton
+                        disabled={bulkDeleteMutation.isPending}
+                        onClick={() => setPendingDelete('bulk')}
+                        type="button">
+                        <Trash2 size={15} />
+                        Supprimer
+                      </DangerButton>
+                      <GhostButton onClick={() => setSelectedIds([])}>Tout désélectionner</GhostButton>
+                    </div>
+                  </div>
+                ) : null}
+
+                <DataTable
+                  activeRowId={mode === 'form' ? null : selectedId}
+                  className="min-h-0 flex-1 rounded-none border-0 max-[899px]:hidden"
+                  columns={columns}
+                  onRowClick={(row) => {
+                    setMode('list');
+                    setSelectedId(String(row.id));
+                  }}
+                  onSelectionChange={setSelectedIds}
+                  rows={rows}
+                  selectable
+                  selectedIds={selectedIds}
+                />
+
+                <ul className="min-h-0 flex-1 divide-y divide-app-border-soft overflow-y-auto min-[900px]:hidden">
+                  {visible.map((product) => (
+                    <li key={product.id}>
+                      <button
+                        className={cn(
+                          'flex min-h-11 w-full items-center gap-3 px-4 py-3 text-left transition-colors duration-150',
+                          product.id === selectedId ? 'bg-app-accent-soft' : 'hover:bg-app-hover',
+                        )}
+                        onClick={() => {
+                          setMode('list');
+                          setSelectedId(product.id);
+                        }}
+                        type="button">
+                        <input
+                          aria-label={`Sélectionner ${product.name}`}
+                          checked={selectedIds.includes(product.id)}
+                          className="h-[15px] w-[15px] shrink-0 [accent-color:var(--app-accent)]"
+                          onChange={() =>
+                            setSelectedIds((prev) =>
+                              prev.includes(product.id)
+                                ? prev.filter((id) => id !== product.id)
+                                : [...prev, product.id],
+                            )
+                          }
+                          onClick={(event) => event.stopPropagation()}
+                          type="checkbox"
+                        />
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-[13.5px] font-semibold text-app-text">
+                            {product.name}
+                          </span>
+                          <span className="block truncate text-[12px] text-app-muted-2">
+                            {product.reference || product.category || '—'}
+                          </span>
+                        </span>
+                        <span className="app-num shrink-0 text-[13px] font-semibold text-app-text">
+                          {formatCurrency(product.unitPrice)}
+                        </span>
+                        <StockChip kind={type} product={product} />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )
           }
           onCloseDetail={() => {
             setMode('list');
@@ -1467,7 +1682,46 @@ function CatalogWorkspaceInner({ type }: { type: ProductType }) {
           }}
         />
       </div>
-    </div>
+
+      <AppDialog
+        description={
+          pendingDelete === 'bulk'
+            ? `Les ${selectedIds.length} éléments seront retirés du catalogue. Les devis et factures déjà émis ne sont pas modifiés.`
+            : 'L’élément sera retiré du catalogue. Les devis et factures déjà émis ne sont pas modifiés.'
+        }
+        footer={
+          <>
+            <SecondaryButton
+              onClick={() => setPendingDelete(null)}
+              type="button">
+              Annuler
+            </SecondaryButton>
+            <DangerButton
+              disabled={deleteMutation.isPending || bulkDeleteMutation.isPending}
+              onClick={() => {
+                if (pendingDelete === 'bulk') {
+                  bulkDeleteMutation.mutate(selectedIds);
+                  return;
+                }
+                if (selectedId) deleteMutation.mutate(selectedId);
+              }}
+              type="button"
+              variant="solid">
+              Supprimer
+            </DangerButton>
+          </>
+        }
+        icon={Trash2}
+        onClose={() => setPendingDelete(null)}
+        open={pendingDelete !== null}
+        title={
+          pendingDelete === 'bulk'
+            ? `Supprimer ${selectedIds.length} ${noun}${selectedIds.length > 1 ? 's' : ''} ?`
+            : `Supprimer ce ${noun} ?`
+        }
+        tone="danger"
+      />
+    </>
   );
 }
 
