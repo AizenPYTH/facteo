@@ -210,7 +210,7 @@ export default function PaymentsPage() {
           ) : (
             <>
               <DataTable
-                className="rounded-none border-0 border-t border-app-border-soft"
+                className="rounded-none border-0 border-t border-app-border-soft max-[899px]:hidden"
                 columns={[
                   { key: 'date', label: 'Date' },
                   { key: 'number', label: 'Facture' },
@@ -221,6 +221,29 @@ export default function PaymentsPage() {
                 ]}
                 rows={rows}
               />
+
+              <ul className="divide-y divide-app-border-soft min-[900px]:hidden">
+                {visible.map((invoice) => (
+                  <li key={invoice.id}>
+                    <Link
+                      className="flex min-h-11 items-center gap-3 px-4 py-3"
+                      href={`/app/invoices?selected=${invoice.id}`}>
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-[13.5px] font-semibold text-app-text">
+                          {invoice.number}
+                        </span>
+                        <span className="block truncate text-[12px] text-app-muted-2">
+                          {invoice.clientName}
+                        </span>
+                      </span>
+                      <span className="app-num shrink-0 text-[13px] font-semibold text-app-text">
+                        {formatCurrency(invoice.totalTtc)}
+                      </span>
+                      <StatusBadge kind="invoice" status={invoice.status} />
+                    </Link>
+                  </li>
+                ))}
+              </ul>
 
               <div className="flex flex-wrap items-center justify-between gap-3 border-t border-app-border-soft px-6 py-3.5">
                 <p className="app-num text-[12.5px] text-app-muted-2">

@@ -1,16 +1,16 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useQueryClient, type QueryKey } from '@tanstack/react-query';
 import type { LucideIcon } from 'lucide-react';
-import { FileText, LogOut, Plus, Receipt, Search, UserPlus } from 'lucide-react';
+import { FileText, LayoutDashboard, LogOut, Plus, Receipt, Search, UserPlus, Users } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 
 import { useCommandPalette } from '@/components/app/command-palette';
 import { CompanySwitcher } from '@/components/app/company-switcher';
 import { PrimaryButton } from '@/components/app/form-fields';
-import { BrandWordmark } from '@/components/brand/brand-logo';
+import { BrandMark, BrandWordmark } from '@/components/brand/brand-logo';
 import { APP_NAV_FOOTER, APP_NAV_SECTIONS, isAppNavActive } from '@/lib/app-nav';
 import { extractAuthIdentity } from '@/lib/domain/auth/identity';
 import type { DashboardData } from '@/lib/domain/supabase/dashboard';
@@ -89,26 +89,28 @@ export function AppSidebar() {
   }
 
   return (
-    <aside className="flex h-screen w-[248px] shrink-0 flex-col border-r border-app-border bg-app-surface max-lg:w-[212px]">
-      <div className="px-4 pt-4">
+    <aside className="group/sidebar hidden h-screen shrink-0 flex-col border-r border-app-border bg-app-surface min-[900px]:flex min-[900px]:w-16 lg:w-[248px]">
+      <div className="flex items-center justify-center px-4 pt-4 lg:justify-start">
         <Link className="flex items-center" href="/app">
-          <BrandWordmark className="w-[132px] sm:w-[132px] lg:w-[132px]" />
+          <BrandMark className="lg:hidden" size={26} />
+          <BrandWordmark className="hidden w-[132px] lg:block" />
         </Link>
       </div>
 
-      <div className="px-3 pb-3">
+      <div className="hidden px-3 pb-3 lg:block">
         <CompanySwitcher />
       </div>
 
-      <div className="px-3 pb-2.5">
-        <CreateMenu />
+      <div className="px-2 pb-2.5 lg:px-3">
+        <CreateMenu compact />
         <button
-          className="mt-2 flex w-full items-center gap-2 rounded-app-control border border-app-border bg-app-subtle px-2.5 py-2 text-[13px] text-app-muted-2 transition-colors duration-150 hover:bg-app-hover hover:text-app-muted"
+          className="mt-2 flex h-9 w-full items-center justify-center gap-2 rounded-app-control border border-app-border bg-app-subtle px-2.5 text-[13px] text-app-muted-2 transition-colors duration-150 hover:bg-app-hover hover:text-app-muted lg:justify-start lg:py-2"
           onClick={openPalette}
+          title="Rechercher"
           type="button">
           <Search className="shrink-0" size={15} />
-          Rechercher
-          <span className="ml-auto rounded-[5px] border border-app-border px-[5px] py-px text-[10.5px] font-semibold text-app-faint">
+          <span className="hidden lg:inline">Rechercher</span>
+          <span className="ml-auto hidden rounded-[5px] border border-app-border px-[5px] py-px text-[10.5px] font-semibold text-app-faint lg:inline">
             ⌘K
           </span>
         </button>
@@ -118,7 +120,7 @@ export function AppSidebar() {
         {APP_NAV_SECTIONS.map((section) => (
           <div key={section.id}>
             {section.label ? (
-              <p className="px-2.5 pb-1.5 pt-3.5 text-[10.5px] font-bold uppercase tracking-[0.12em] text-app-faint">
+              <p className="hidden px-2.5 pb-1.5 pt-3.5 text-[10.5px] font-bold uppercase tracking-[0.12em] text-app-faint lg:block">
                 {section.label}
               </p>
             ) : null}
@@ -132,21 +134,23 @@ export function AppSidebar() {
                     <Link
                       className={cn(
                         NAV_ITEM_BASE,
+                        'min-[900px]:max-lg:justify-center min-[900px]:max-lg:px-0',
                         active
                           ? 'bg-app-accent-tint font-semibold text-app-accent'
                           : 'text-app-text-3 hover:bg-app-hover',
                       )}
-                      href={item.href}>
+                      href={item.href}
+                      title={item.label}>
                       <Icon
                         className={cn('shrink-0', active ? 'text-app-accent' : 'text-app-muted-2')}
                         size={17}
                         strokeWidth={1.75}
                       />
-                      <span className="min-w-0 flex-1 truncate">{item.label}</span>
+                      <span className="min-w-0 flex-1 truncate hidden lg:inline">{item.label}</span>
                       {count ? (
                         <span
                           className={cn(
-                            'app-num shrink-0 rounded-app-chip px-[7px] py-px text-[11px] font-semibold',
+                            'app-num shrink-0 rounded-app-chip px-[7px] py-px text-[11px] font-semibold hidden lg:inline',
                             count.tone === 'danger'
                               ? 'bg-app-danger-tint text-app-danger-text'
                               : 'bg-app-border-soft text-app-muted',
@@ -173,28 +177,30 @@ export function AppSidebar() {
                 <Link
                   className={cn(
                     NAV_ITEM_BASE,
+                    'min-[900px]:max-lg:justify-center min-[900px]:max-lg:px-0',
                     active
                       ? 'bg-app-accent-tint font-semibold text-app-accent'
                       : 'text-app-text-3 hover:bg-app-hover',
                   )}
-                  href={item.href}>
+                  href={item.href}
+                  title={item.label}>
                   <Icon
                     className={cn('shrink-0', active ? 'text-app-accent' : 'text-app-muted-2')}
                     size={17}
                     strokeWidth={1.75}
                   />
-                  {item.label}
+                  <span className="hidden lg:inline">{item.label}</span>
                 </Link>
               </li>
             );
           })}
         </ul>
 
-        <div className="mt-0.5 flex items-center gap-2.5 rounded-app-field px-2.5 py-2 transition-colors duration-150 hover:bg-app-hover">
+        <div className="mt-0.5 flex items-center gap-2.5 rounded-app-field px-2.5 py-2 transition-colors duration-150 hover:bg-app-hover min-[900px]:max-lg:justify-center">
           <span className="flex h-[26px] w-[26px] shrink-0 items-center justify-center rounded-full bg-app-border-soft text-[11px] font-bold text-app-text-3">
             {initials}
           </span>
-          <span className="min-w-0 flex-1">
+          <span className="min-w-0 flex-1 hidden lg:block">
             <span className="block truncate text-[12.5px] font-semibold text-app-text">
               {displayName}
             </span>
@@ -204,7 +210,7 @@ export function AppSidebar() {
           </span>
           <button
             aria-label="Déconnexion"
-            className="shrink-0 rounded-md p-1 text-app-faint transition-colors duration-150 hover:bg-app-border-soft hover:text-app-danger"
+            className="hidden shrink-0 rounded-md p-1 text-app-faint transition-colors duration-150 hover:bg-app-border-soft hover:text-app-danger lg:inline-flex"
             onClick={() => void handleSignOut()}
             title="Déconnexion"
             type="button">
@@ -216,7 +222,7 @@ export function AppSidebar() {
   );
 }
 
-function CreateMenu() {
+function CreateMenu({ compact = false }: { compact?: boolean }) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
 
@@ -243,15 +249,21 @@ function CreateMenu() {
       <PrimaryButton
         aria-expanded={open}
         aria-haspopup="menu"
-        className="w-full py-2.5 text-[13.5px]"
-        onClick={() => setOpen((value) => !value)}>
+        className={cn('w-full py-2.5 text-[13.5px]', compact && 'px-0')}
+        onClick={() => setOpen((value) => !value)}
+        title="Créer">
         <Plus size={16} strokeWidth={2.25} />
-        Créer
+        <span className={cn(compact && 'hidden lg:inline')}>Créer</span>
       </PrimaryButton>
 
       {open ? (
         <div
-          className="absolute left-0 right-0 z-40 mt-1.5 overflow-hidden rounded-app-control border border-app-border bg-app-surface p-1.5 shadow-app-float"
+          className={cn(
+            'absolute z-40 mt-1.5 overflow-hidden rounded-app-control border border-app-border bg-app-surface p-1.5 shadow-app-float',
+            compact
+              ? 'left-full top-0 ml-2 w-48 min-[900px]:max-lg:mt-0'
+              : 'left-0 right-0',
+          )}
           role="menu">
           {CREATE_ITEMS.map((item) => {
             const Icon = item.icon;
@@ -337,3 +349,122 @@ export function AppSearchInput({
     </div>
   );
 }
+
+const BOTTOM_NAV: { href: string; label: string; icon: LucideIcon }[] = [
+  { href: '/app', label: 'Accueil', icon: LayoutDashboard },
+  { href: '/app/quotes', label: 'Devis', icon: FileText },
+  { href: '/app/invoices', label: 'Factures', icon: Receipt },
+  { href: '/app/clients', label: 'Clients', icon: Users },
+];
+
+function isBottomNavActive(pathname: string, href: string) {
+  if (href === '/app') return pathname === '/app' || pathname === '/app/';
+  return pathname === href || pathname.startsWith(`${href}/`);
+}
+
+function BottomCreateButton() {
+  const [open, setOpen] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    function onPointerDown(event: MouseEvent) {
+      if (!rootRef.current?.contains(event.target as Node)) setOpen(false);
+    }
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') setOpen(false);
+    }
+    document.addEventListener('mousedown', onPointerDown);
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', onPointerDown);
+      document.removeEventListener('keydown', onKeyDown);
+    };
+  }, [open]);
+
+  return (
+    <div className="relative flex flex-1 justify-center" ref={rootRef}>
+      <button
+        aria-expanded={open}
+        aria-label="Créer"
+        className="flex h-11 w-11 items-center justify-center rounded-[14px] bg-app-accent text-white shadow-app-primary"
+        onClick={() => setOpen((value) => !value)}
+        type="button">
+        <Plus size={21} strokeWidth={2.25} />
+      </button>
+      {open ? (
+        <div
+          className="absolute bottom-[calc(100%+8px)] left-1/2 z-40 w-48 -translate-x-1/2 overflow-hidden rounded-app-control border border-app-border bg-app-surface p-1.5 shadow-app-float"
+          role="menu">
+          {CREATE_ITEMS.map((item) => {
+            const Icon = item.icon;
+            return (
+              <Link
+                className="flex items-center gap-2.5 rounded-app-field px-2.5 py-2.5 text-[13px] font-medium text-app-text-2 transition-colors duration-150 hover:bg-app-accent-soft hover:text-app-accent"
+                href={item.href}
+                key={item.href}
+                onClick={() => setOpen(false)}
+                role="menuitem">
+                <Icon className="shrink-0 text-app-accent" size={15} strokeWidth={1.75} />
+                {item.label}
+              </Link>
+            );
+          })}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+export function AppBottomNav() {
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const hide =
+    pathname.includes('/new') ||
+    pathname.includes('/edit') ||
+    pathname.startsWith('/app/settings') ||
+    searchParams.get('create') === '1';
+
+  if (hide) return null;
+
+  return (
+    <nav
+      aria-label="Navigation principale"
+      className="fixed inset-x-0 bottom-0 z-30 flex items-center justify-around border-t border-app-border bg-app-surface px-1 pb-[max(8px,env(safe-area-inset-bottom))] pt-1.5 min-[900px]:hidden">
+      {BOTTOM_NAV.slice(0, 2).map((item) => {
+        const Icon = item.icon;
+        const active = isBottomNavActive(pathname, item.href);
+        return (
+          <Link
+            className={cn(
+              'flex min-h-11 min-w-11 flex-1 flex-col items-center justify-center gap-0.5 text-[10px] font-semibold',
+              active ? 'text-app-accent' : 'text-app-faint',
+            )}
+            href={item.href}
+            key={item.href}>
+            <Icon size={19} strokeWidth={1.75} />
+            {item.label}
+          </Link>
+        );
+      })}
+      <BottomCreateButton />
+      {BOTTOM_NAV.slice(2).map((item) => {
+        const Icon = item.icon;
+        const active = isBottomNavActive(pathname, item.href);
+        return (
+          <Link
+            className={cn(
+              'flex min-h-11 min-w-11 flex-1 flex-col items-center justify-center gap-0.5 text-[10px] font-semibold',
+              active ? 'text-app-accent' : 'text-app-faint',
+            )}
+            href={item.href}
+            key={item.href}>
+            <Icon size={19} strokeWidth={1.75} />
+            {item.label}
+          </Link>
+        );
+      })}
+    </nav>
+  );
+}
+

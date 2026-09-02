@@ -476,7 +476,7 @@ function DocumentListPanel({
 
       <DataTable
         activeRowId={selectedId}
-        className="min-h-0 flex-1 rounded-none border-0"
+        className="min-h-0 flex-1 rounded-none border-0 max-[899px]:hidden"
         columns={columns}
         onRowClick={(row) => onSelect(String(row.id))}
         onSelectionChange={onSelectionChange}
@@ -484,6 +484,45 @@ function DocumentListPanel({
         selectable
         selectedIds={selectedIds}
       />
+
+      <ul className="min-h-0 flex-1 divide-y divide-app-border-soft overflow-y-auto min-[900px]:hidden">
+        {items.map((item) => (
+          <li key={item.id}>
+            <button
+              className={cn(
+                'flex min-h-11 w-full items-center gap-3 px-4 py-3 text-left transition-colors duration-150',
+                item.id === selectedId ? 'bg-app-accent-soft' : 'hover:bg-app-hover',
+              )}
+              onClick={() => onSelect(item.id)}
+              type="button">
+              <input
+                aria-label={`Sélectionner ${item.number}`}
+                checked={selectedIds.includes(item.id)}
+                className="h-[15px] w-[15px] shrink-0 [accent-color:var(--app-accent)]"
+                onChange={() =>
+                  onSelectionChange(
+                    selectedIds.includes(item.id)
+                      ? selectedIds.filter((id) => id !== item.id)
+                      : [...selectedIds, item.id],
+                  )
+                }
+                onClick={(event) => event.stopPropagation()}
+                type="checkbox"
+              />
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-[13.5px] font-semibold text-app-text">
+                  {item.number}
+                </span>
+                <span className="block truncate text-[12px] text-app-muted-2">{item.clientName}</span>
+              </span>
+              <span className="app-num shrink-0 text-[13px] font-semibold text-app-text">
+                {formatCurrency(item.totalTtc)}
+              </span>
+              <StatusBadge kind={kind} status={item.status} />
+            </button>
+          </li>
+        ))}
+      </ul>
 
       <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-t border-app-border-soft px-6 py-3.5">
         <p className="app-num text-[12.5px] text-app-muted-2">

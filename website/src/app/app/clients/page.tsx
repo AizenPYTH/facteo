@@ -441,11 +441,35 @@ function ClientsWorkspaceInner() {
               <div className="flex h-full min-h-0 flex-col">
                 <DataTable
                   activeRowId={selectedId}
-                  className="min-h-0 flex-1 rounded-none border-0"
+                  className="min-h-0 flex-1 rounded-none border-0 max-[899px]:hidden"
                   columns={columns}
                   onRowClick={(row) => setSelectedId(String(row.id))}
                   rows={rows}
                 />
+
+                <ul className="min-h-0 flex-1 divide-y divide-app-border-soft overflow-y-auto min-[900px]:hidden">
+                  {visibleClients.map((entry) => (
+                    <li key={entry.id}>
+                      <button
+                        className={cn(
+                          'flex min-h-11 w-full items-center gap-3 px-4 py-3 text-left transition-colors duration-150',
+                          entry.id === selectedId ? 'bg-app-accent-soft' : 'hover:bg-app-hover',
+                        )}
+                        onClick={() => setSelectedId(entry.id)}
+                        type="button">
+                        <ClientAvatar label={clientInitials(entry)} size="sm" />
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-[13.5px] font-semibold text-app-text">
+                            {getClientDisplayName(entry)}
+                          </span>
+                          <span className="block truncate text-[12px] text-app-muted-2">
+                            {entry.city || entry.email || clientTypeLabel(entry)}
+                          </span>
+                        </span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
 
                 <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-t border-app-border-soft px-6 py-3.5">
                   <p className="app-num text-[12.5px] text-app-muted-2">
