@@ -1,7 +1,7 @@
 {
   "cli": {
     "version": ">= 20.5.1",
-    "appVersionSource": "remote"
+    "appVersionSource": "local"
   },
   "build": {
     "development": {
@@ -42,6 +42,9 @@
     "production": {
       "android": {
         "track": "internal"
+      },
+      "ios": {
+        "ascAppId": "6794705229"
       }
     }
   }
