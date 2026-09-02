@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
+import { Suspense, useCallback, useMemo, useState } from 'react';
 import { Mail, MapPin, Phone, Plus, User } from 'lucide-react';
 
 import { MasterDetailLayout, WorkspaceToolbar } from '@/components/app/master-detail';
@@ -40,12 +40,6 @@ function ClientsWorkspaceInner() {
     () => listQuery.data?.pages.flatMap((p) => p.clients) ?? [],
     [listQuery.data],
   );
-
-  useEffect(() => {
-    if (!selectedId && clients.length > 0) {
-      setSelectedId(clients[0].id);
-    }
-  }, [clients, selectedId, setSelectedId]);
 
   const client = detailQuery.data;
 
@@ -159,6 +153,8 @@ function ClientsWorkspaceInner() {
               </div>
             )
           }
+          detailOpen={Boolean(selectedId)}
+          detailTitle="Client"
           list={
             <div className="flex h-full min-h-0 flex-col">
               <div className="border-b border-slate-100/90 bg-gradient-to-b from-white to-slate-50/40 p-4">
@@ -204,6 +200,7 @@ function ClientsWorkspaceInner() {
               </div>
             </div>
           }
+          onCloseDetail={() => setSelectedId(null)}
         />
       </div>
     </div>

@@ -1138,13 +1138,6 @@ function CatalogWorkspaceInner({ type }: { type: ProductType }) {
   const products = query.data ?? [];
   const selected = products.find((p) => p.id === selectedId) ?? null;
 
-  useEffect(() => {
-    const hasSelection = selectedId ? products.some((entry) => entry.id === selectedId) : false;
-    if ((!selectedId || !hasSelection) && products.length > 0 && mode === 'list') {
-      setSelectedId(products[0].id);
-    }
-  }, [products, selectedId, setSelectedId, mode]);
-
   const deleteMutation = useMutation({
     mutationFn: (id: string) => deleteProduct(requireScope(scope), id),
     onSuccess: () => {
@@ -1333,6 +1326,8 @@ function CatalogWorkspaceInner({ type }: { type: ProductType }) {
               </div>
             )
           }
+          detailOpen={mode === 'form' || Boolean(selected)}
+          detailTitle={type === 'product' ? 'Produit' : 'Prestation'}
           list={
             <div className="flex h-full min-h-0 flex-col">
               <div className="border-b border-slate-100 p-4">
@@ -1466,6 +1461,10 @@ function CatalogWorkspaceInner({ type }: { type: ProductType }) {
               </div>
             </div>
           }
+          onCloseDetail={() => {
+            setMode('list');
+            setSelectedId(null);
+          }}
         />
       </div>
     </div>

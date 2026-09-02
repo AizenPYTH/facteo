@@ -18,7 +18,6 @@ import {
 import { DocumentStatusTimeline } from '@/components/app/document-status-timeline';
 import { MasterDetailLayout, WorkspaceToolbar } from '@/components/app/master-detail';
 import { PdfPreviewPanel } from '@/components/app/pdf-preview';
-import { useWorkspaceSidebarWidth } from '@/components/app/resize-handle';
 import { DetailSkeleton, TableSkeleton } from '@/components/app/skeleton';
 import { AppSearchInput } from '@/components/app/app-shell';
 import { StatusBadge } from '@/components/app/status-badge';
@@ -337,7 +336,6 @@ export function InvoicesWorkspace() {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [previewTemplateId, setPreviewTemplateId] = useState('');
   const [quickPreviewId, setQuickPreviewId] = useState<string | null>(null);
-  const [sidebarWidth, setSidebarWidth] = useWorkspaceSidebarWidth(340);
   const { selectedId, setSelectedId } = useSelectedId();
   const { user } = useAuth();
   const { scope } = useTenant();
@@ -351,12 +349,6 @@ export function InvoicesWorkspace() {
     () => listQuery.data?.pages.flatMap((p) => p.invoices) ?? [],
     [listQuery.data],
   );
-
-  useEffect(() => {
-    if (!selectedId && items.length > 0) {
-      setSelectedId(items[0].id);
-    }
-  }, [items, selectedId, setSelectedId]);
 
   const detail = detailQuery.data;
 
@@ -432,14 +424,57 @@ export function InvoicesWorkspace() {
               <div className="p-8">
                 <ErrorState onRetry={() => void detailQuery.refetch()} />
               </div>
+            ) : !detail ? (
+              <PdfPreviewPanel document={null} kind="invoice" templateId={previewTemplateId} />
             ) : (
-              <PdfPreviewPanel
-                document={detail ?? null}
-                kind="invoice"
-                templateId={previewTemplateId}
-              />
+              <div className="flex h-full min-h-0 flex-col">
+                <div className="min-h-0 flex-1">
+                  <DocumentSidebar
+                    actionLoading={
+                      actionLoading ??
+                      (duplicateMutation.isPending
+                        ? 'duplicate'
+                        : sendMutation.isPending
+                          ? 'send'
+                          : null)
+                    }
+                    clientEmail={detail.clientEmail}
+                    clientName={detail.clientName}
+                    documentId={detail.id}
+                    dueOrValid={detail.dueAt}
+                    issuedAt={detail.issuedAt}
+                    kind="invoice"
+                    number={detail.number}
+                    onDownload={() => void runPdfAction('download')}
+                    onDuplicate={() => duplicateMutation.mutate()}
+                    onEmail={() =>
+                      openMailto(
+                        detail.clientEmail,
+                        `Facture ${detail.number}`,
+                        `Bonjour,\n\nVeuillez trouver ci-joint la facture ${detail.number}.\n\nCordialement`,
+                      )
+                    }
+                    onPrint={() => void runPdfAction('print')}
+                    onSend={() => sendMutation.mutate()}
+                    onShare={() => void runPdfAction('share')}
+                    onTemplateChange={setPreviewTemplateId}
+                    status={detail.status}
+                    templateId={previewTemplateId}
+                    totalTtc={detail.totalTtc}
+                  />
+                </div>
+                <div className="h-[320px] shrink-0 border-t border-app-border">
+                  <PdfPreviewPanel
+                    document={detail}
+                    kind="invoice"
+                    templateId={previewTemplateId}
+                  />
+                </div>
+              </div>
             )
           }
+          detailOpen={Boolean(selectedId)}
+          detailTitle="Facture"
           list={
             <DocumentListPanel
               hasMore={Boolean(listQuery.hasNextPage)}
@@ -466,45 +501,7 @@ export function InvoicesWorkspace() {
               ]}
             />
           }
-          sidebar={
-            detail ? (
-              <DocumentSidebar
-                actionLoading={
-                  actionLoading ??
-                  (duplicateMutation.isPending
-                    ? 'duplicate'
-                    : sendMutation.isPending
-                      ? 'send'
-                      : null)
-                }
-                clientEmail={detail.clientEmail}
-                clientName={detail.clientName}
-                documentId={detail.id}
-                dueOrValid={detail.dueAt}
-                issuedAt={detail.issuedAt}
-                kind="invoice"
-                number={detail.number}
-                onDownload={() => void runPdfAction('download')}
-                onDuplicate={() => duplicateMutation.mutate()}
-                onEmail={() =>
-                  openMailto(
-                    detail.clientEmail,
-                    `Facture ${detail.number}`,
-                    `Bonjour,\n\nVeuillez trouver ci-joint la facture ${detail.number}.\n\nCordialement`,
-                  )
-                }
-                onPrint={() => void runPdfAction('print')}
-                onSend={() => sendMutation.mutate()}
-                onShare={() => void runPdfAction('share')}
-                onTemplateChange={setPreviewTemplateId}
-                status={detail.status}
-                templateId={previewTemplateId}
-                totalTtc={detail.totalTtc}
-              />
-            ) : undefined
-          }
-          onSidebarResize={(delta) => setSidebarWidth((w) => w + delta)}
-          sidebarWidth={sidebarWidth}
+          onCloseDetail={() => setSelectedId(null)}
         />
       </div>
     </div>
@@ -517,7 +514,6 @@ export function QuotesWorkspace() {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [previewTemplateId, setPreviewTemplateId] = useState('');
   const [quickPreviewId, setQuickPreviewId] = useState<string | null>(null);
-  const [sidebarWidth, setSidebarWidth] = useWorkspaceSidebarWidth(340);
   const { selectedId, setSelectedId } = useSelectedId();
   const { user } = useAuth();
   const { scope } = useTenant();
@@ -531,12 +527,6 @@ export function QuotesWorkspace() {
     () => listQuery.data?.pages.flatMap((p) => p.quotes) ?? [],
     [listQuery.data],
   );
-
-  useEffect(() => {
-    if (!selectedId && items.length > 0) {
-      setSelectedId(items[0].id);
-    }
-  }, [items, selectedId, setSelectedId]);
 
   const detail = detailQuery.data;
 
@@ -610,14 +600,53 @@ export function QuotesWorkspace() {
               <div className="p-8">
                 <ErrorState onRetry={() => void detailQuery.refetch()} />
               </div>
+            ) : !detail ? (
+              <PdfPreviewPanel document={null} kind="quote" templateId={previewTemplateId} />
             ) : (
-              <PdfPreviewPanel
-                document={detail ?? null}
-                kind="quote"
-                templateId={previewTemplateId}
-              />
+              <div className="flex h-full min-h-0 flex-col">
+                <div className="min-h-0 flex-1">
+                  <DocumentSidebar
+                    actionLoading={
+                      actionLoading ??
+                      (duplicateMutation.isPending
+                        ? 'duplicate'
+                        : sendMutation.isPending
+                          ? 'send'
+                          : null)
+                    }
+                    clientEmail={detail.clientEmail}
+                    clientName={detail.clientName}
+                    documentId={detail.id}
+                    dueOrValid={detail.validUntil}
+                    issuedAt={detail.issuedAt}
+                    kind="quote"
+                    number={detail.number}
+                    onDownload={() => void runPdfAction('download')}
+                    onDuplicate={() => duplicateMutation.mutate()}
+                    onEmail={() =>
+                      openMailto(
+                        detail.clientEmail,
+                        `Devis ${detail.number}`,
+                        `Bonjour,\n\nVeuillez trouver ci-joint le devis ${detail.number}.\n\nCordialement`,
+                      )
+                    }
+                    onPrint={() => void runPdfAction('print')}
+                    onSend={() => sendMutation.mutate()}
+                    onShare={() => void runPdfAction('share')}
+                    onTemplateChange={setPreviewTemplateId}
+                    status={detail.status}
+                    templateId={previewTemplateId}
+                    totalTtc={detail.totalTtc}
+                  />
+                </div>
+                <div className="h-[320px] shrink-0 border-t border-app-border">
+                  <PdfPreviewPanel document={detail} kind="quote" templateId={previewTemplateId} />
+                </div>
+              </div>
             )
           }
+          detailOpen={Boolean(selectedId)}
+          detailTitle="Devis"
           list={
             <DocumentListPanel
               hasMore={Boolean(listQuery.hasNextPage)}
@@ -644,45 +673,7 @@ export function QuotesWorkspace() {
               ]}
             />
           }
-          sidebar={
-            detail ? (
-              <DocumentSidebar
-                actionLoading={
-                  actionLoading ??
-                  (duplicateMutation.isPending
-                    ? 'duplicate'
-                    : sendMutation.isPending
-                      ? 'send'
-                      : null)
-                }
-                clientEmail={detail.clientEmail}
-                clientName={detail.clientName}
-                documentId={detail.id}
-                dueOrValid={detail.validUntil}
-                issuedAt={detail.issuedAt}
-                kind="quote"
-                number={detail.number}
-                onDownload={() => void runPdfAction('download')}
-                onDuplicate={() => duplicateMutation.mutate()}
-                onEmail={() =>
-                  openMailto(
-                    detail.clientEmail,
-                    `Devis ${detail.number}`,
-                    `Bonjour,\n\nVeuillez trouver ci-joint le devis ${detail.number}.\n\nCordialement`,
-                  )
-                }
-                onPrint={() => void runPdfAction('print')}
-                onSend={() => sendMutation.mutate()}
-                onShare={() => void runPdfAction('share')}
-                onTemplateChange={setPreviewTemplateId}
-                status={detail.status}
-                templateId={previewTemplateId}
-                totalTtc={detail.totalTtc}
-              />
-            ) : undefined
-          }
-          onSidebarResize={(delta) => setSidebarWidth((w) => w + delta)}
-          sidebarWidth={sidebarWidth}
+          onCloseDetail={() => setSelectedId(null)}
         />
       </div>
     </div>

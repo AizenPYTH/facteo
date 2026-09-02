@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useCallback, useEffect } from 'react';
+import { Suspense, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Building2, Check, Mail, MapPin, Phone } from 'lucide-react';
 
@@ -14,7 +14,8 @@ function CompaniesWorkspaceInner() {
   const { companies, activeCompany, switchCompany, loading } = useTenant();
   const searchParams = useSearchParams();
   const router = useRouter();
-  const selectedId = searchParams.get('selected') ?? activeCompany?.id ?? null;
+  const selectedParam = searchParams.get('selected');
+  const selectedId = selectedParam ?? activeCompany?.id ?? null;
 
   const setSelectedId = useCallback(
     (id: string | null) => {
@@ -26,12 +27,6 @@ function CompaniesWorkspaceInner() {
     },
     [router, searchParams],
   );
-
-  useEffect(() => {
-    if (!selectedId && companies.length > 0) {
-      setSelectedId(companies[0].id);
-    }
-  }, [companies, selectedId, setSelectedId]);
 
   const selected = companies.find((c) => c.id === selectedId) ?? null;
 
@@ -99,9 +94,37 @@ function CompaniesWorkspaceInner() {
                     ) : null}
                   </dl>
                 </div>
+
+                <div className="mx-auto mt-6 max-w-3xl">
+                  <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+                    Actions
+                  </h3>
+                  <div className="mt-4 space-y-2">
+                    {selected.id !== activeCompany?.id ? (
+                      <button
+                        className="flex w-full items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white hover:bg-primary-dark"
+                        onClick={() => void switchCompany(selected.id)}
+                        type="button">
+                        <Check size={16} />
+                        Activer cet espace
+                      </button>
+                    ) : (
+                      <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700">
+                        Espace actif
+                      </div>
+                    )}
+                    <a
+                      className="flex w-full items-center justify-center rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                      href="/app/settings/company">
+                      Modifier le profil
+                    </a>
+                  </div>
+                </div>
               </div>
             )
           }
+          detailOpen={Boolean(selectedParam && selected)}
+          detailTitle="Entreprise"
           list={
             <ul className="divide-y divide-slate-100 overflow-y-auto">
               {companies.map((company) => (
@@ -120,35 +143,7 @@ function CompaniesWorkspaceInner() {
               ))}
             </ul>
           }
-          sidebar={
-            selected ? (
-              <div className="flex h-full flex-col p-5">
-                <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-400">
-                  Actions
-                </h3>
-                <div className="mt-4 space-y-2">
-                  {selected.id !== activeCompany?.id ? (
-                    <button
-                      className="flex w-full items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white hover:bg-primary-dark"
-                      onClick={() => void switchCompany(selected.id)}
-                      type="button">
-                      <Check size={16} />
-                      Activer cet espace
-                    </button>
-                  ) : (
-                    <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700">
-                      Espace actif
-                    </div>
-                  )}
-                  <a
-                    className="flex w-full items-center justify-center rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
-                    href="/app/settings/company">
-                    Modifier le profil
-                  </a>
-                </div>
-              </div>
-            ) : undefined
-          }
+          onCloseDetail={() => setSelectedId(null)}
         />
       </div>
     </div>

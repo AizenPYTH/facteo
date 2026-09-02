@@ -47,6 +47,8 @@
   --app-danger-text: #b91c1c;
   --app-danger-border: #f3d3d3;
   --app-danger-field: #e88b8b;
+  /* Voile des couches flottantes : modales, palette, panneau de détail superposé. */
+  --app-scrim: rgba(15, 21, 51, 0.34);
 
   --app-shadow-primary: 0 10px 22px -12px rgba(79, 70, 229, 0.85);
   --app-shadow-float: 0 24px 50px -24px rgba(15, 21, 51, 0.45);
@@ -93,6 +95,7 @@
   --color-app-danger-text: var(--app-danger-text);
   --color-app-danger-border: var(--app-danger-border);
   --color-app-danger-field: var(--app-danger-field);
+  --color-app-scrim: var(--app-scrim);
 
   --shadow-app-primary: var(--app-shadow-primary);
   --shadow-app-float: var(--app-shadow-float);
