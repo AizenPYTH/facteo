@@ -28,7 +28,7 @@ import type { InvoiceItemInsert, InvoiceItemRow, InvoicePaymentRow, InvoiceWithC
 export { INVOICES_PAGE_SIZE };
 
 export const INVOICE_COLUMNS =
-  'id, user_id, client_id, quote_id, number, status, subtotal_ht, total_vat, total_ttc, total, issued_at, due_at, paid_at, payment_method, payment_reference, notes, stripe_payment_link, created_at, updated_at' as const;
+  'id, user_id, client_id, quote_id, number, status, subtotal_ht, total_vat, total_ttc, total, issued_at, due_at, paid_at, payment_method, payment_reference, notes, stripe_payment_link, electronic_invoice_status, superpdp_invoice_id, electronic_invoice_last_error, created_at, updated_at' as const;
 
 export const INVOICE_LIST_COLUMNS = `${INVOICE_COLUMNS}, clients(name, company, email)` as const;
 

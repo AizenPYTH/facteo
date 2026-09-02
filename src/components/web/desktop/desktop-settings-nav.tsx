@@ -46,6 +46,11 @@ const SETTINGS_NAV_GROUPS: SettingsNavGroup[] = [
     items: [
       { href: '/settings/numbering', label: 'Numérotation', description: 'Préfixes et séquences' },
       { href: '/settings/templates', label: 'Modèles', description: 'Factures et devis' },
+      {
+        href: '/settings/e-invoicing',
+        label: 'Facturation électronique',
+        description: 'SUPER PDP',
+      },
       { href: '/company', label: 'Signature', description: 'Signature électronique' },
     ],
   },

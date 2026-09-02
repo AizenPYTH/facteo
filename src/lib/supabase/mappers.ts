@@ -113,6 +113,9 @@ export function mapInvoiceRowToInvoice(row: InvoiceWithClient): Invoice {
     paymentReference: row.payment_reference,
     notes: row.notes,
     stripePaymentLink: row.stripe_payment_link ?? null,
+    electronicInvoiceStatus: row.electronic_invoice_status ?? null,
+    superpdpInvoiceId: row.superpdp_invoice_id ?? null,
+    electronicInvoiceLastError: row.electronic_invoice_last_error ?? null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };

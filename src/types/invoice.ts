@@ -84,6 +84,9 @@ export type Invoice = {
   paymentReference: string | null;
   notes: string | null;
   stripePaymentLink: string | null;
+  electronicInvoiceStatus: string | null;
+  superpdpInvoiceId: number | null;
+  electronicInvoiceLastError: string | null;
   createdAt: string;
   updatedAt: string;
 };

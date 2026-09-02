@@ -125,6 +125,11 @@ export default function SettingsScreen() {
               label="Modèles de factures et devis"
               onPress={() => router.push('/settings/templates' as Href)}
             />
+            <View style={styles.separator} />
+            <SettingsRow
+              label="Facturation électronique"
+              onPress={() => router.push('/settings/e-invoicing' as Href)}
+            />
           </SettingsSection>
 
           <NotificationPreferencesSection />

@@ -46,6 +46,12 @@ const SETTINGS_SECTIONS = [
     items: [
       { href: '/app/settings/numbering', label: 'Numérotation', icon: FileText, desc: 'Préfixes devis et factures' },
       { href: '/app/settings/templates', label: 'Modèles PDF', icon: Palette, desc: 'Apparence des documents' },
+      {
+        href: '/app/settings/e-invoicing',
+        label: 'Facturation électronique',
+        icon: Receipt,
+        desc: 'Plateforme Agréée SUPER PDP',
+      },
     ],
   },
   {

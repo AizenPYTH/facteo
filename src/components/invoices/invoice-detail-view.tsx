@@ -59,6 +59,19 @@ export function InvoiceDetailView({
           {invoice.paidAt ? (
             <QuoteField label="Date de paiement" value={formatDate(invoice.paidAt)} />
           ) : null}
+          {invoice.electronicInvoiceStatus ? (
+            <QuoteField
+              label="Facture électronique"
+              value={
+                invoice.superpdpInvoiceId
+                  ? `${invoice.electronicInvoiceStatus} · SUPER PDP #${invoice.superpdpInvoiceId}`
+                  : invoice.electronicInvoiceStatus
+              }
+            />
+          ) : null}
+          {invoice.electronicInvoiceLastError ? (
+            <QuoteField label="Erreur e-facture" value={invoice.electronicInvoiceLastError} />
+          ) : null}
         </View>
       </View>
 
