@@ -7,9 +7,6 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Copy, Download, Mail, Plus, Printer, Send, Share2 } from 'lucide-react';
 import type { InvoiceStatusFilter } from '@inveq/types/invoices-list';
 import type { QuoteStatusFilter } from '@inveq/types/quotes-list';
-import { INVOICE_STATUS_LABELS, type InvoiceStatus } from '@inveq/types/invoice';
-import { QUOTE_STATUS_LABELS, type QuoteStatus } from '@inveq/types/quote';
-
 import { ActivityTimeline } from '@/components/app/activity-timeline';
 import { EmptyState, ErrorState } from '@/components/app/empty-state';
 import {
@@ -24,7 +21,7 @@ import { PdfPreviewPanel } from '@/components/app/pdf-preview';
 import { useWorkspaceSidebarWidth } from '@/components/app/resize-handle';
 import { DetailSkeleton, TableSkeleton } from '@/components/app/skeleton';
 import { AppSearchInput } from '@/components/app/app-shell';
-import { Badge } from '@/components/app/ui';
+import { StatusBadge } from '@/components/app/status-badge';
 import { ComposerTemplateSidebar } from '@/components/app/document-composer/template-sidebar';
 import { useSettings } from '@/hooks/use-settings';
 import { useInvoiceDetail } from '@/hooks/use-invoice-detail';
@@ -50,24 +47,6 @@ import { requireScope } from '@/lib/domain/tenant/scope';
 import { cn } from '@/lib/utils';
 
 type DocumentKind = 'invoice' | 'quote';
-
-const INVOICE_STATUS_VARIANTS: Record<string, 'default' | 'success' | 'warning' | 'danger' | 'info'> = {
-  draft: 'default',
-  sent: 'info',
-  paid: 'success',
-  partially_paid: 'warning',
-  overdue: 'danger',
-  canceled: 'default',
-};
-
-const QUOTE_STATUS_VARIANTS: Record<string, 'default' | 'success' | 'warning' | 'danger' | 'info'> = {
-  draft: 'default',
-  sent: 'info',
-  accepted: 'success',
-  rejected: 'danger',
-  expired: 'warning',
-  converted: 'success',
-};
 
 type ListItem = {
   id: string;
@@ -178,10 +157,6 @@ function DocumentListPanel({
           <ul className="divide-y divide-slate-100/90">
             {items.map((item) => {
               const active = item.id === selectedId;
-              const variants = kind === 'invoice' ? INVOICE_STATUS_VARIANTS : QUOTE_STATUS_VARIANTS;
-              const labels =
-                kind === 'invoice' ? INVOICE_STATUS_LABELS : QUOTE_STATUS_LABELS;
-              const statusKey = item.status as InvoiceStatus & QuoteStatus;
 
               return (
                 <li
@@ -207,9 +182,7 @@ function DocumentListPanel({
                           </p>
                           <p className="mt-0.5 truncate text-sm text-slate-500">{item.clientName}</p>
                         </div>
-                        <Badge variant={variants[item.status] ?? 'default'}>
-                          {labels[statusKey as keyof typeof labels] ?? item.status}
-                        </Badge>
+                        <StatusBadge kind={kind} status={item.status} />
                       </div>
                       <div className="mt-2.5 flex items-center justify-between text-xs text-slate-400">
                         <span>{formatDate(item.issuedAt)}</span>
@@ -287,9 +260,6 @@ function DocumentSidebar({
   templateId?: string;
   onTemplateChange?: (id: string) => void;
 }) {
-  const variants = kind === 'invoice' ? INVOICE_STATUS_VARIANTS : QUOTE_STATUS_VARIANTS;
-  const labels = kind === 'invoice' ? INVOICE_STATUS_LABELS : QUOTE_STATUS_LABELS;
-
   return (
     <div className="flex h-full min-h-0 flex-col overflow-y-auto">
       <div className="border-b border-slate-100 bg-gradient-to-b from-white via-white to-slate-50/70 p-5">
@@ -303,9 +273,7 @@ function DocumentSidebar({
             </h2>
             <p className="mt-1 truncate text-sm text-slate-500">{clientName}</p>
           </div>
-          <Badge variant={variants[status] ?? 'default'}>
-            {labels[status as keyof typeof labels] ?? status}
-          </Badge>
+          <StatusBadge kind={kind} status={status} />
         </div>
         <p className="mt-5 text-[1.65rem] font-semibold tracking-[-0.03em] tabular-nums text-slate-900">
           {formatCurrency(totalTtc)}
@@ -344,7 +312,7 @@ function DocumentSidebar({
             { icon: Copy, label: 'Dupliquer', key: 'duplicate', onClick: onDuplicate },
           ].map((action) => (
             <button
-              className="flex items-center gap-2 rounded-xl border border-slate-200/90 bg-white px-3 py-2.5 text-sm font-medium text-slate-700 shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition duration-150 hover:-translate-y-0.5 hover:border-primary/25 hover:bg-blue-50/50 hover:shadow-sm disabled:opacity-50 disabled:hover:translate-y-0"
+              className="flex items-center gap-2 rounded-xl border border-slate-200/90 bg-white px-3 py-2.5 text-sm font-medium text-slate-700 shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition duration-150 hover:border-primary/25 hover:bg-blue-50/50 hover:shadow-sm disabled:opacity-50"
               disabled={actionLoading === action.key}
               key={action.label}
               onClick={action.onClick}
@@ -434,7 +402,7 @@ export function InvoicesWorkspace() {
         subtitle={`${items.length} facture(s)`}
         title="Factures">
         <Link
-          className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white shadow-[0_10px_24px_-10px_rgba(37,99,235,0.65)] transition duration-150 hover:-translate-y-0.5 hover:bg-primary-dark"
+          className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white shadow-[0_10px_24px_-10px_rgba(37,99,235,0.65)] transition duration-150 hover:bg-primary-dark"
           href="/app/invoices?create=1">
           <Plus size={16} />
           Nouvelle facture
@@ -607,7 +575,7 @@ export function QuotesWorkspace() {
     <div className="flex h-full min-h-0 flex-col">
       <WorkspaceToolbar subtitle={`${items.length} devis`} title="Devis">
         <Link
-          className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white shadow-[0_10px_24px_-10px_rgba(37,99,235,0.65)] transition duration-150 hover:-translate-y-0.5 hover:bg-primary-dark"
+          className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white shadow-[0_10px_24px_-10px_rgba(37,99,235,0.65)] transition duration-150 hover:bg-primary-dark"
           href="/app/quotes?create=1">
           <Plus size={16} />
           Nouveau devis
