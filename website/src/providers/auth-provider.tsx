@@ -11,8 +11,10 @@ import {
   type PropsWithChildren,
 } from 'react';
 
-import { supabase } from '@/lib/supabase';
+import { getPostAuthPath } from '@/lib/domain/auth/post-auth';
 import { getAuthCallbackUrl } from '@/lib/site-url';
+import { supabase } from '@/lib/supabase';
+import { isOauthPkceCode } from '@/lib/supabase/middleware-session';
 
 export type SignInParams = { email: string; password: string };
 
@@ -39,6 +41,28 @@ type AuthContextValue = {
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
+function shouldFinishOauthOnCurrentPage(): boolean {
+  if (typeof window === 'undefined') return false;
+
+  const { pathname, search, hash } = window.location;
+  if (
+    pathname.startsWith('/app') ||
+    pathname.startsWith('/onboarding') ||
+    pathname.startsWith('/login') ||
+    pathname.startsWith('/register') ||
+    pathname.startsWith('/auth') ||
+    pathname.startsWith('/connexion') ||
+    pathname.startsWith('/inscription') ||
+    pathname.startsWith('/mot-de-passe-oublie') ||
+    pathname.startsWith('/reinitialiser-mot-de-passe')
+  ) {
+    return false;
+  }
+
+  const code = new URLSearchParams(search).get('code');
+  return isOauthPkceCode(code) || hash.includes('access_token=');
+}
+
 export function AuthProvider({ children }: PropsWithChildren) {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
@@ -64,11 +88,23 @@ export function AuthProvider({ children }: PropsWithChildren) {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+    } = supabase.auth.onAuthStateChange((event, nextSession) => {
       if (!mounted) return;
       setSession(nextSession);
       setUser(nextSession?.user ?? null);
       setLoading(false);
+
+      if (
+        event === 'SIGNED_IN' &&
+        nextSession?.user &&
+        shouldFinishOauthOnCurrentPage()
+      ) {
+        const userId = nextSession.user.id;
+        void getPostAuthPath(userId).then((path) => {
+          if (!mounted) return;
+          window.location.replace(path);
+        });
+      }
     });
 
     return () => {

@@ -42,6 +42,30 @@ export function isAuthFlowRoute(pathname: string): boolean {
 }
 
 /**
+ * GoTrue PKCE `code` is a long opaque token. Ignore short marketing `?code=` params.
+ */
+export function isOauthPkceCode(code: string | null | undefined): boolean {
+  if (!code) return false;
+  return code.length >= 20 && /^[A-Za-z0-9_-]+$/.test(code);
+}
+
+/**
+ * If Supabase falls back to Site URL (`https://www.inveq.fr/?code=…`) the
+ * homepage renders the marketing shell while the browser client still
+ * exchanges the code. Send that return to `/auth/callback` first.
+ */
+export function shouldRewriteOauthReturnToCallback(
+  pathname: string,
+  code: string | null | undefined,
+): boolean {
+  if (!isOauthPkceCode(code)) return false;
+  if (pathname.startsWith("/auth/callback")) return false;
+  if (pathname.startsWith("/auth/confirm")) return false;
+  if (pathname.startsWith("/reinitialiser-mot-de-passe")) return false;
+  return true;
+}
+
+/**
  * Fail-open on public routes when Auth is unavailable.
  * Fail-closed on /app and /onboarding (redirect to /login).
  * Preserves prior redirect rules when session + onboarding are known.

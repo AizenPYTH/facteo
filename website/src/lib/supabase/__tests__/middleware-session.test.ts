@@ -8,9 +8,11 @@ import {
   AUTH_FETCH_TIMEOUT_MS,
   decideSessionGate,
   isAuthFlowRoute,
+  isOauthPkceCode,
   isPrivateAppPath,
   isPublicAuthRoute,
   needsOnboardingGate,
+  shouldRewriteOauthReturnToCallback,
 } from "../middleware-session";
 
 describe("AUTH_FETCH_TIMEOUT_MS", () => {
@@ -265,5 +267,36 @@ describe("decideSessionGate — auth pages + no loops", () => {
       }),
       { type: "next" }
     );
+  });
+});
+
+describe("OAuth PKCE return rewrite", () => {
+  it("detects GoTrue PKCE codes and ignores short marketing codes", () => {
+    assert.equal(isOauthPkceCode("abc"), false);
+    assert.equal(isOauthPkceCode("SUMMER2026"), false);
+    assert.equal(isOauthPkceCode("0123456789abcdef0123456789"), true);
+  });
+
+  it("rewrites Site URL fallback /?code= to the callback route", () => {
+    assert.equal(
+      shouldRewriteOauthReturnToCallback("/", "0123456789abcdef0123456789"),
+      true,
+    );
+    assert.equal(
+      shouldRewriteOauthReturnToCallback("/tarifs", "0123456789abcdef0123456789"),
+      true,
+    );
+    assert.equal(
+      shouldRewriteOauthReturnToCallback("/auth/callback", "0123456789abcdef0123456789"),
+      false,
+    );
+    assert.equal(
+      shouldRewriteOauthReturnToCallback(
+        "/reinitialiser-mot-de-passe",
+        "0123456789abcdef0123456789",
+      ),
+      false,
+    );
+    assert.equal(shouldRewriteOauthReturnToCallback("/", "promo"), false);
   });
 });

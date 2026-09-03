@@ -18,9 +18,11 @@ export {
   AUTH_FETCH_TIMEOUT_MS,
   decideSessionGate,
   isAuthFlowRoute,
+  isOauthPkceCode,
   isPrivateAppPath,
   isPublicAuthRoute,
   needsOnboardingGate,
+  shouldRewriteOauthReturnToCallback,
   type SessionGateDecision,
 } from "./middleware-session";
 
@@ -75,7 +77,8 @@ async function fetchOnboardingCompleted(
 
 function applyDecision(
   request: NextRequest,
-  decision: ReturnType<typeof decideSessionGate>
+  decision: ReturnType<typeof decideSessionGate>,
+  sessionResponse?: NextResponse
 ) {
   if (decision.type === "next") return null;
 
@@ -87,7 +90,11 @@ function applyDecision(
   } else {
     url.search = "";
   }
-  return NextResponse.redirect(url);
+  const redirected = NextResponse.redirect(url);
+  sessionResponse?.cookies.getAll().forEach((cookie) => {
+    redirected.cookies.set(cookie);
+  });
+  return redirected;
 }
 
 export async function updateSession(request: NextRequest) {
@@ -163,7 +170,7 @@ export async function updateSession(request: NextRequest) {
       onboardingCompleted,
     });
 
-    const redirected = applyDecision(request, decision);
+    const redirected = applyDecision(request, decision, response);
     if (redirected) return redirected;
 
     return response;
