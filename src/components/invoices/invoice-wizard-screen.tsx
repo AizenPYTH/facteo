@@ -198,7 +198,9 @@ export function InvoiceWizardScreen({
         if (state.lines.length === 0) {
           showError('Ajoutez au moins une prestation à la facture.');
         } else {
-          showError('Renseignez la description, la quantité et le prix de chaque prestation.');
+          showError(
+            'Vérifiez chaque prestation : description, quantité, prix, TVA et remise (0 à 100 %).',
+          );
         }
         break;
       case 3:

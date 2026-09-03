@@ -12,8 +12,19 @@ export function isQuoteLineValid(line: QuoteLineValue): boolean {
   const quantity = parseDecimalInput(line.quantity);
   const unitPrice = parseDecimalInput(line.unitPrice);
   const vatRate = parseDecimalInput(line.vatRate);
+  // La remise a été ajoutée à la saisie sans être ajoutée ici : une valeur non
+  // numérique passait la validation et produisait des totaux NaN enregistrés en
+  // base. Le validateur des factures, lui, la contrôlait déjà.
+  const discount = parseDecimalInput(line.discountPercent || '0');
 
-  return quantity > 0 && unitPrice >= 0 && vatRate >= 0 && vatRate <= 100;
+  return (
+    quantity > 0 &&
+    unitPrice >= 0 &&
+    vatRate >= 0 &&
+    vatRate <= 100 &&
+    discount >= 0 &&
+    discount <= 100
+  );
 }
 
 export function areQuoteLinesValid(lines: QuoteLineValue[]): boolean {
