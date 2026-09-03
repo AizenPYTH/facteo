@@ -101,10 +101,10 @@ function assertAppDelegatePatched(source, filePath) {
     fail(`ExpoIapAppDelegateSubscriber absent de ${filePath}`);
   }
   if (!source.includes(MARKER_DELEGATE)) {
-    fail(`Marqueur ${MARKER_DELEGATE} absent après écriture de ${filePath}`);
+    fail(`Marqueur ${MARKER_DELEGATE} absent de ${filePath}`);
   }
   if (source.includes('OpenIapModule') || source.includes('import OpenIAP')) {
-    fail(`OpenIAP est encore référencé dans ${filePath} après le patch`);
+    fail(`OpenIAP est encore référencé dans ${filePath}`);
   }
 }
 
