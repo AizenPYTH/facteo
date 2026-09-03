@@ -18,7 +18,9 @@ export function VoiceRecordButton({ onPress, disabled = false }: VoiceRecordButt
 
   return (
     <PressableScale
+      accessibilityLabel="Dicter"
       accessibilityRole="button"
+      accessibilityState={{ disabled }}
       disabled={disabled}
       onPress={onPress}
       style={[styles.container, disabled && styles.disabled]}>

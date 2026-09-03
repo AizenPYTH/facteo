@@ -101,8 +101,11 @@ export function CompanyAssetField({ kind, value }: CompanyAssetFieldProps) {
   return (
     <View style={styles.container}>
       <PressableScale
+        accessibilityLabel={getAssetLabel(kind)}
         accessibilityRole="button"
+        accessibilityState={{ disabled: isLoading }}
         disabled={isLoading}
+        intensity="subtle"
         onPress={handleUpload}
         style={styles.row}>
         <View style={styles.copy}>

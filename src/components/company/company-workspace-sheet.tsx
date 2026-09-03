@@ -147,6 +147,11 @@ export function CompanyWorkspaceSheet({
               return (
                 <View key={company.id} style={[styles.card, isActive && styles.cardActive]}>
                   <PressableScale
+                    accessibilityHint="Bascule sur cette entreprise"
+                    accessibilityLabel={company.name}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: isActive }}
+                    intensity="subtle"
                     onPress={() => {
                       onSelect(company.id);
                       onClose();

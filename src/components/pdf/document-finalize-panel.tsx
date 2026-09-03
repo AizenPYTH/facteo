@@ -242,6 +242,8 @@ export function DocumentFinalizePanel({
         </View>
         <PressableScale
           accessibilityLabel="Changer de modèle"
+          accessibilityRole="button"
+          intensity="subtle"
           onPress={() => setTemplatePickerVisible(true)}
           style={styles.templateButton}>
           <View style={[styles.templateSwatch, { backgroundColor: template.theme.primary }]} />
@@ -250,7 +252,9 @@ export function DocumentFinalizePanel({
       </View>
 
       <PressableScale
+        accessibilityHint="Ouvre l'aperçu avant envoi"
         accessibilityLabel="Aperçu du document"
+        accessibilityRole="button"
         onPress={() => void handleOpenPreview()}
         style={styles.previewCard}>
         <View style={[styles.previewAccent, { backgroundColor: template.theme.primary }]} />
@@ -328,6 +332,9 @@ export function DocumentFinalizePanel({
       </View>
 
       <PressableScale
+        accessibilityLabel="Définir un modèle par défaut dans les paramètres"
+        accessibilityRole="link"
+        intensity="subtle"
         onPress={() => router.push('/settings/templates' as Href)}
         style={styles.settingsLink}>
         <AppText color="secondary" variant="caption">

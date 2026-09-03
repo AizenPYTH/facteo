@@ -1,5 +1,5 @@
 import { SymbolView } from 'expo-symbols';
-import { Modal, StyleSheet, Text, View } from 'react-native';
+import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { PressableScale } from '@/components/ui/pressable-scale';
@@ -28,12 +28,24 @@ export function ProductImageSourceSheet({
   return (
     <Modal animationType="fade" onRequestClose={onClose} transparent visible={visible}>
       <View style={styles.overlay}>
-        <PressableScale onPress={onClose} style={StyleSheet.absoluteFill} />
+        {/* Zone de fermeture au tap hors feuille : pas de retour visuel, ce
+            n'est pas un contrôle mais l'arrière-plan. */}
+        <Pressable
+          accessibilityLabel="Fermer"
+          accessibilityRole="button"
+          onPress={onClose}
+          style={StyleSheet.absoluteFill}
+        />
         <View style={[styles.sheet, { paddingBottom: Math.max(insets.bottom, spacing.md) }]}>
           <Text style={styles.title}>Ajouter avec l’IA</Text>
           <Text style={styles.subtitle}>Choisissez une source d’image pour analyser le produit.</Text>
 
-          <PressableScale onPress={onCameraPress} style={styles.row}>
+          <PressableScale
+            accessibilityLabel="Prendre une photo"
+            accessibilityRole="button"
+            intensity="subtle"
+            onPress={onCameraPress}
+            style={styles.row}>
             <SymbolView
               name={{ ios: 'camera.fill', android: 'photo_camera', web: 'camera' }}
               size={20}
@@ -44,6 +56,9 @@ export function ProductImageSourceSheet({
           </PressableScale>
 
           <PressableScale
+            accessibilityLabel="Choisir dans la photothèque"
+            accessibilityRole="button"
+            intensity="subtle"
             onPress={onGalleryPress}
             style={styles.row}>
             <SymbolView
@@ -55,7 +70,12 @@ export function ProductImageSourceSheet({
             <Text style={styles.rowLabel}>Choisir une photo</Text>
           </PressableScale>
 
-          <PressableScale onPress={onClose} style={styles.cancel}>
+          <PressableScale
+            accessibilityLabel="Annuler"
+            accessibilityRole="button"
+            intensity="subtle"
+            onPress={onClose}
+            style={styles.cancel}>
             <Text style={styles.cancelLabel}>Annuler</Text>
           </PressableScale>
         </View>
