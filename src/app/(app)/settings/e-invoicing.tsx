@@ -142,7 +142,7 @@ export default function EInvoicingSettingsScreen() {
 
   return (
     <SettingsScreenFrame title="Facturation électronique">
-      <SettingsSection title="Facturation électronique">
+      <SettingsSection variant="plain" title="Facturation électronique">
         <Text style={styles.lead}>
           Connectez votre entreprise à une Plateforme Agréée pour envoyer et recevoir vos factures
           électroniques.
@@ -156,7 +156,7 @@ export default function EInvoicingSettingsScreen() {
         {!connected ? (
           <Button
             disabled={busy || !companyId}
-            label={busy ? 'Connexion…' : 'Connecter SUPER PDP'}
+            title={busy ? 'Connexion…' : 'Connecter SUPER PDP'}
             onPress={() => void handleConnect()}
             style={styles.button}
           />
@@ -182,33 +182,33 @@ export default function EInvoicingSettingsScreen() {
               <Text style={styles.meta}>Environnement SUPER PDP : {connection.remote_env}</Text>
             ) : null}
             {connection?.last_error ? (
-              <Text style={[styles.meta, { color: colors.danger }]}>{connection.last_error}</Text>
+              <Text style={[styles.meta, { color: colors.error }]}>{connection.last_error}</Text>
             ) : null}
 
             <Button
               disabled={busy}
-              label="Vérifier la connexion"
+              title="Vérifier la connexion"
               onPress={() => void handleVerify()}
               style={styles.button}
               variant="ghost"
             />
             <Button
               disabled={busy}
-              label="Synchroniser"
+              title="Synchroniser"
               onPress={() => void handleSync()}
               style={styles.button}
               variant="ghost"
             />
             <Button
               disabled={busy}
-              label="Factures reçues"
+              title="Factures reçues"
               onPress={() => router.push('/settings/e-invoicing-received' as Href)}
               style={styles.button}
               variant="ghost"
             />
             <Button
               disabled={busy}
-              label="Déconnecter"
+              title="Déconnecter"
               onPress={handleDisconnect}
               style={styles.button}
               variant="ghost"
@@ -217,7 +217,7 @@ export default function EInvoicingSettingsScreen() {
         )}
       </SettingsSection>
 
-      <SettingsSection title="Portabilité">
+      <SettingsSection variant="plain" title="Portabilité">
         <Text style={styles.lead}>
           Si votre entreprise était rattachée à une autre plateforme (ex. Qonto), le transfert
           administratif est géré par SUPER PDP. Utilisez « Vérifier la connexion » après migration.
@@ -237,7 +237,7 @@ function useStyles() {
         paddingHorizontal: spacing.md,
       },
       status: {
-        ...typography.subtitle,
+        ...typography.subheadline,
         fontWeight: '600',
         marginBottom: spacing.md,
         paddingHorizontal: spacing.md,
@@ -253,6 +253,7 @@ function useStyles() {
       },
       button: {
         marginTop: spacing.sm,
+        marginHorizontal: spacing.md,
       },
     }),
   );

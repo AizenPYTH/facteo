@@ -1,5 +1,5 @@
 import { router, type Href } from 'expo-router';
-import { Alert, Linking, Platform, StyleSheet, Switch, Text, View } from 'react-native';
+import { Alert, Linking, Platform, Switch, Text, View } from 'react-native';
 
 import {
   SettingsProfileSummary,
@@ -90,7 +90,6 @@ export function SettingsDesktopContent() {
 
           <SettingsSection title="Identité">
             <SettingsRow label="Email" trailing={<Text style={styles.value}>{user?.email}</Text>} />
-            <View style={styles.separator} />
             <SettingsRow
               label="Mot de passe"
               onPress={() =>
@@ -134,12 +133,10 @@ export function SettingsDesktopContent() {
               label="Paiements"
               onPress={() => router.push('/settings/payments' as Href)}
             />
-            <View style={styles.separator} />
             <SettingsRow
               label="Produits"
               onPress={() => router.push('/settings/catalog?type=product' as Href)}
             />
-            <View style={styles.separator} />
             <SettingsRow
               label="Prestations"
               onPress={() => router.push('/settings/catalog?type=service' as Href)}
@@ -148,17 +145,13 @@ export function SettingsDesktopContent() {
 
           <SettingsSection title="Session">
             <SettingsRow label="Se déconnecter" onPress={() => void handleLogout()} />
-            <View style={styles.separator} />
             <SettingsRow destructive label="Supprimer le compte" onPress={handleDeleteAccount} />
           </SettingsSection>
 
           <SettingsSection title="Aide">
             <SettingsRow label="Centre d’aide" onPress={() => void openHelpPage('support')} />
-            <View style={styles.separator} />
             <SettingsRow label="Guide d’utilisation" onPress={() => void openHelpPage('guide')} />
-            <View style={styles.separator} />
             <SettingsRow label="Contact" onPress={() => void openHelpPage('contact')} />
-            <View style={styles.separator} />
             <SettingsRow label="Site web INVEQ" onPress={() => void openMarketingSite()} />
           </SettingsSection>
 
@@ -167,14 +160,11 @@ export function SettingsDesktopContent() {
               label="Politique de confidentialité"
               onPress={() => void openLegalPage('privacy')}
             />
-            <View style={styles.separator} />
             <SettingsRow
               label="Conditions d’utilisation"
               onPress={() => void openLegalPage('terms')}
             />
-            <View style={styles.separator} />
             <SettingsRow label="Mentions légales" onPress={() => void openLegalPage('legal')} />
-            <View style={styles.separator} />
             <SettingsRow
               label="Politique des cookies"
               onPress={() => void openLegalPage('cookies')}
@@ -200,11 +190,6 @@ const useStyles = () =>
     panelBody: {
       padding: spacing.lg,
       gap: spacing.lg,
-    },
-    separator: {
-      height: StyleSheet.hairlineWidth,
-      backgroundColor: colors.separator,
-      marginLeft: spacing.md,
     },
     value: {
       ...typography.subheadline,

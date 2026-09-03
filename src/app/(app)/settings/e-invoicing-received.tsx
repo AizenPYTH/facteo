@@ -80,7 +80,7 @@ export default function ReceivedEInvoicesScreen() {
         </Text>
         <Button
           disabled={busy || !companyId}
-          label={busy ? 'Synchronisation…' : 'Synchroniser'}
+          title={busy ? 'Synchronisation…' : 'Synchroniser'}
           onPress={() => void handleSync()}
         />
       </View>
@@ -149,7 +149,7 @@ function useStyles() {
         borderColor: c.border,
       },
       title: {
-        ...typography.subtitle,
+        ...typography.subheadline,
         color: c.text,
         marginBottom: spacing.xs,
       },
@@ -159,7 +159,7 @@ function useStyles() {
         marginBottom: 2,
       },
       hint: {
-        ...typography.caption,
+        ...typography.caption1,
         color: c.textSecondary,
         marginTop: spacing.sm,
       },

@@ -10,6 +10,12 @@ import { useThemedStyles } from '@/hooks/use-colors';
 type SettingsSectionProps = {
   title?: string;
   footer?: string;
+  /**
+   * `rows` : une suite de `SettingsRow`, séparées par un filet — le cas courant.
+   * `plain` : du contenu libre (texte, boutons, indicateur), qui porte sa propre
+   * mise en page et ne doit pas être tranché tous les deux éléments.
+   */
+  variant?: 'rows' | 'plain';
   children: ReactNode;
 };
 
@@ -20,7 +26,12 @@ type SettingsSectionProps = {
  * intercalait une vingtaine de `<View style={styles.separator} />` à la main,
  * et il en manquait à trois endroits.
  */
-export function SettingsSection({ title, footer, children }: SettingsSectionProps) {
+export function SettingsSection({
+  title,
+  footer,
+  variant = 'rows',
+  children,
+}: SettingsSectionProps) {
   const styles = useStyles();
   const rows = Children.toArray(children).filter(Boolean);
 
@@ -33,12 +44,16 @@ export function SettingsSection({ title, footer, children }: SettingsSectionProp
       ) : null}
 
       <Card flush variant="surface">
-        {rows.map((row, index) => (
-          <Fragment key={index}>
-            {index > 0 ? <ListRowSeparator /> : null}
-            {row}
-          </Fragment>
-        ))}
+        {variant === 'plain'
+          ? // Le contenu libre porte ses propres marges horizontales ; on ne
+            // fournit que la respiration verticale de la carte.
+            <View style={styles.plain}>{children}</View>
+          : rows.map((row, index) => (
+              <Fragment key={index}>
+                {index > 0 ? <ListRowSeparator /> : null}
+                {row}
+              </Fragment>
+            ))}
       </Card>
 
       {footer ? (
@@ -54,6 +69,9 @@ function useStyles() {
   return useThemedStyles((colors) => ({
     section: {
       gap: spacing.xs,
+    },
+    plain: {
+      paddingVertical: spacing.md,
     },
     title: {
       ...textHierarchy.caption,
