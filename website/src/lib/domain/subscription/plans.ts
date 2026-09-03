@@ -46,17 +46,59 @@ export const DEFAULT_PLAN_FEATURES: Record<EffectivePlanId, PlanFeatures> = {
     advanced_stats: false,
     siren_search: true,
   },
+  max: {
+    custom_logo: true,
+    company_signature: true,
+    client_signature: true,
+    pdf_templates: true,
+    stripe_payments: true,
+    ai_assistant: true,
+    advanced_stats: true,
+    siren_search: true,
+  },
 };
 
-/** Mappe l’enum legacy subscriptions.plan vers le catalogue actif. */
+/** Identique au resolver mobile — un compte = un plan, tous les clients. */
 export function resolveEffectivePlanId(plan: SubscriptionPlanId | string): EffectivePlanId {
-  if (plan === 'free' || plan === 'micro') return 'micro';
-  if (plan === 'basique') return 'basique';
-  if (plan === 'standard') return 'standard';
-  if (plan === 'pro' || plan === 'premium' || plan === 'starter' || plan === 'enterprise') {
-    return 'pro';
+  switch (plan) {
+    case 'micro':
+      return 'micro';
+    case 'basique':
+      return 'basique';
+    case 'standard':
+      return 'standard';
+    case 'pro':
+      return 'pro';
+    case 'max':
+      return 'max';
+    case 'free':
+      return 'micro';
+    case 'starter':
+      return 'basique';
+    case 'premium':
+      return 'pro';
+    case 'enterprise':
+      return 'max';
+    default:
+      return 'micro';
   }
-  return 'micro';
+}
+
+export function getEffectivePlanDisplayName(
+  plan: SubscriptionPlanId | EffectivePlanId | string,
+): string {
+  switch (resolveEffectivePlanId(plan)) {
+    case 'basique':
+      return 'Basique';
+    case 'standard':
+      return 'Standard';
+    case 'pro':
+      return 'Pro';
+    case 'max':
+      return 'Max';
+    default:
+      return 'Micro';
+  }
 }
 
 export function isPaidPlan(plan: SubscriptionPlanId | EffectivePlanId | string): boolean {
@@ -82,4 +124,19 @@ export function hasPlanFeature(
 
 export function formatPlanLimit(limit: number | null): string {
   return limit === null ? 'Illimité' : String(limit);
+}
+
+export const PLAN_RANK: Record<EffectivePlanId, number> = {
+  micro: 0,
+  basique: 1,
+  standard: 2,
+  pro: 3,
+  max: 4,
+};
+
+export function isPlanAtLeast(
+  current: EffectivePlanId | string,
+  required: EffectivePlanId,
+): boolean {
+  return PLAN_RANK[resolveEffectivePlanId(current)] >= PLAN_RANK[required];
 }

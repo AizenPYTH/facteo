@@ -110,6 +110,13 @@ export class PlanLimitError extends Error {
   }
 }
 
+export class PremiumFeatureError extends Error {
+  constructor(readonly feature: PlanFeatureKey) {
+    super('PREMIUM_FEATURE_REQUIRED');
+    this.name = 'PremiumFeatureError';
+  }
+}
+
 export const PLAN_FEATURE_LABELS: Record<PlanFeatureKey, string> = {
   custom_logo: 'Logo personnalisé',
   company_signature: 'Signature entreprise',

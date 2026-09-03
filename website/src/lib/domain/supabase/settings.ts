@@ -1,6 +1,7 @@
 import { supabase } from '@/lib/supabase';
 import { logSupabaseError } from '@/lib/supabase/errors';
 import { DEFAULT_PDF_TEMPLATE_ID } from '@/lib/pdf/engine/templates';
+import { assertCurrentUserFeature } from '@/lib/domain/subscription/enforce';
 import type { DataScope } from '@/types/tenant';
 import type { Settings, SettingsFormValues } from '@/types/settings';
 import type { SettingsRow, SettingsUpdate } from '@/types/database';
@@ -153,6 +154,7 @@ export async function updateDocumentTemplates(
   scope: DataScope,
   templates: { quoteTemplateId: string; invoiceTemplateId: string },
 ): Promise<Settings> {
+  await assertCurrentUserFeature('pdf_templates');
   const { data, error } = await supabase
     .from('settings')
     .update({

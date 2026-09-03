@@ -2,6 +2,7 @@ import { supabase } from '@/lib/supabase';
 import { logSupabaseError } from '@/lib/supabase/errors';
 import { readLocalFileAsBytes } from '@/lib/files/read-as-bytes';
 import { debugProfileTrace } from '@/lib/supabase/profile-debug';
+import { assertCurrentUserFeature } from '@/lib/subscription/enforce';
 import type { ProfileUpdate } from '@/types/database';
 
 export const COMPANY_ASSETS_BUCKET = 'company-assets';
@@ -24,6 +25,7 @@ export async function uploadCompanyAsset(
   fileUri: string,
   mimeType: string,
 ): Promise<string> {
+  await assertCurrentUserFeature(kind === 'logo' ? 'custom_logo' : 'company_signature');
   const extension = mimeType.includes('png')
     ? 'png'
     : mimeType.includes('webp')

@@ -2,7 +2,7 @@
   "expo": {
     "name": "INVEQ",
     "slug": "FACTEO",
-    "version": "1.0.6",
+    "version": "1.0.7",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "inveq",
@@ -10,9 +10,11 @@
     "ios": {
       "icon": "./assets/images/icon.png",
       "bundleIdentifier": "com.inveq.app",
-      "buildNumber": "61",
+      "buildNumber": "62",
+      "usesAppleSignIn": true,
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSCameraUsageDescription": "INVEQ utilise l’appareil photo pour scanner le QR code de connexion."
       }
     },
     "android": {
@@ -61,7 +63,20 @@
           "color": "#4F46E5",
           "sounds": []
         }
-      ]
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "INVEQ utilise l’appareil photo pour scanner le QR code de connexion.",
+          "microphonePermission": "INVEQ n’enregistre pas de son pour le scan QR.",
+          "recordAudioAndroid": false,
+          "barcodeScannerEnabled": true
+        }
+      ],
+      "expo-iap",
+      "./plugins/with-defer-iap-init",
+      "expo-apple-authentication",
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true,

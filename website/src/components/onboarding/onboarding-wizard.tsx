@@ -26,6 +26,7 @@ import {
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/providers/auth-provider';
 import { useCompany } from '@/providers/company-provider';
+import { useSubscription } from '@/hooks/use-subscription';
 
 const STEPS = [
   { id: 1, title: 'Entreprise', description: 'Présentez votre activité' },
@@ -38,6 +39,8 @@ const inputClass =
 
 export function OnboardingWizard() {
   const { user } = useAuth();
+  const { hasFeature } = useSubscription();
+  const logoLocked = !hasFeature('custom_logo');
   const {
     companies,
     scope,
@@ -376,6 +379,12 @@ export function OnboardingWizard() {
                   />
                   <div>
                     <p className="mb-1.5 text-sm font-medium text-slate-700">Logo (optionnel)</p>
+                    {logoLocked ? (
+                      <p className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-500">
+                        Le logo personnalisé est disponible à partir de l’offre Basique — comme sur
+                        l’application mobile.
+                      </p>
+                    ) : (
                     <label className="flex cursor-pointer items-center gap-4 rounded-xl border border-dashed border-slate-300 bg-slate-50/80 px-4 py-4 transition hover:border-primary/40 hover:bg-indigo-50/40">
                       <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white ring-1 ring-slate-200">
                         {logoPreview ? (
@@ -398,6 +407,7 @@ export function OnboardingWizard() {
                         type="file"
                       />
                     </label>
+                    )}
                   </div>
                 </div>
               ) : null}

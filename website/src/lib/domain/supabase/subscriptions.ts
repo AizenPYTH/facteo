@@ -284,6 +284,8 @@ export async function upsertDocumentSignature(input: {
   signerName?: string | null;
   signedAt?: string;
 }): Promise<DocumentSignature> {
+  const { assertCurrentUserFeature } = await import('@/lib/domain/subscription/enforce');
+  await assertCurrentUserFeature('client_signature');
   const { data, error } = await supabase
     .from('document_signatures')
     .upsert(

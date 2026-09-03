@@ -14,6 +14,12 @@ function mapAuthErrorMessage(message: string): string {
     case 'User already registered':
       return 'Un compte existe déjà avec cette adresse e-mail.';
     default:
+      if (
+        message.length < 280 &&
+        /[àâäéèêëïîôùûüç]|INVEQ|Apple|Google|abonnement|QR|session|App Store/i.test(message)
+      ) {
+        return message;
+      }
       return GENERIC_ERROR_MESSAGE;
   }
 }

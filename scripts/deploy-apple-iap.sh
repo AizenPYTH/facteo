@@ -43,6 +43,8 @@ npx supabase functions deploy apple-confirm-subscription --project-ref "$PROJECT
 npx supabase functions deploy apple-subscription-notifications --project-ref "$PROJECT_REF" --use-api --no-verify-jwt
 npx supabase functions deploy stripe-create-subscription-checkout --project-ref "$PROJECT_REF" --use-api
 npx supabase functions deploy stripe-confirm-subscription-checkout --project-ref "$PROJECT_REF" --use-api
+npx supabase functions deploy stripe-create-billing-portal --project-ref "$PROJECT_REF" --use-api
+npx supabase functions deploy stripe-subscription-webhook --project-ref "$PROJECT_REF" --use-api --no-verify-jwt
 # QR login scan/redeem are unauthenticated; JWT is verified inside for create/approve
 npx supabase functions deploy mobile-login --project-ref "$PROJECT_REF" --use-api --no-verify-jwt
 

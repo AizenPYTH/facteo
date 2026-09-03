@@ -182,7 +182,7 @@ export async function assertPlanLimit(resource: PlanResource): Promise<PlanLimit
   const check = await checkPlanLimit(resource);
 
   if (!check.allowed) {
-    throw new PlanLimitError(resource, check);
+    throw new PlanLimitError(check);
   }
 
   return check;
@@ -199,7 +199,7 @@ export async function consumeSirenSearch(): Promise<PlanLimitCheck> {
   const check = mapPlanLimitCheck(data);
 
   if (!check.allowed) {
-    throw new PlanLimitError('siren_searches', check);
+    throw new PlanLimitError(check);
   }
 
   return check;
@@ -284,6 +284,8 @@ export async function upsertDocumentSignature(input: {
   signerName?: string | null;
   signedAt?: string;
 }): Promise<DocumentSignature> {
+  const { assertCurrentUserFeature } = await import('@/lib/subscription/enforce');
+  await assertCurrentUserFeature('client_signature');
   const { data, error } = await supabase
     .from('document_signatures')
     .upsert(

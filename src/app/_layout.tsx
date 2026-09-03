@@ -33,6 +33,7 @@ function RootNavigation() {
           <Stack.Screen name="cookies" />
           <Stack.Screen name="(auth)" />
           <Stack.Screen name="(app)" />
+          <Stack.Screen name="auth" />
           <Stack.Screen name="mlc" />
         </Stack>
       </ThemeProvider>

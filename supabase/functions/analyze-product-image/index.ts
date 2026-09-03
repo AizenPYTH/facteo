@@ -1,5 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
 import { requestOpenAiJsonSchema } from '../_shared/openai.ts';
+import { assertUserHasFeature } from '../_shared/entitlements.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -138,6 +139,18 @@ Deno.serve(async (request) => {
 
     if (userError || !user) {
       return jsonResponse({ error: 'Non autorisé.' }, 401);
+    }
+
+    try {
+      await assertUserHasFeature(userClient, user.id, 'ai_assistant');
+    } catch (entitlementError) {
+      const message =
+        entitlementError instanceof Error && entitlementError.message.startsWith('FONCTIONNALITE_REQUISE')
+          ? 'L’assistant IA est réservé à l’offre Max.'
+          : entitlementError instanceof Error
+            ? entitlementError.message
+            : 'Droits insuffisants.';
+      return jsonResponse({ error: message }, 403);
     }
 
     const body = (await request.json().catch(() => null)) as AnalyzeProductBody | null;

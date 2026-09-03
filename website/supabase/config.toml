@@ -418,3 +418,6 @@ verify_jwt = false
 
 [functions.apple-subscription-notifications]
 verify_jwt = false
+
+[functions.stripe-create-billing-portal]
+verify_jwt = true

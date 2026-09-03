@@ -1,5 +1,7 @@
 import { supabase } from '@/lib/supabase';
 import { logSupabaseError } from '@/lib/supabase/errors';
+import { assertCurrentUserFeature } from '@/lib/domain/subscription/enforce';
+import { COMPANY_ASSETS_BUCKET, getPublicStorageUrl } from '@/lib/domain/supabase/storage';
 import type { CompanyProfileFormValues, UpdateCompanyProfileInput } from '@/types/company-profile';
 import { createEmptyCompanyProfileFormValues } from '@/types/company-profile';
 import type { CreateCompanyInput, TenantCompany } from '@/types/tenant';
@@ -234,11 +236,42 @@ export async function deleteCompany(companyId: string): Promise<void> {
   }
 }
 
+export async function uploadCompanyImageFile(
+  companyId: string,
+  kind: 'logo' | 'signature',
+  file: File,
+): Promise<string> {
+  const mimeType = file.type || 'image/png';
+  const extension = mimeType.includes('png')
+    ? 'png'
+    : mimeType.includes('webp')
+      ? 'webp'
+      : mimeType.includes('gif')
+        ? 'gif'
+        : 'jpg';
+  const path = `${companyId}/${kind}-${Date.now()}.${extension}`;
+
+  const { error } = await supabase.storage.from(COMPANY_ASSETS_BUCKET).upload(path, file, {
+    contentType: mimeType,
+    upsert: true,
+  });
+
+  if (error) {
+    logSupabaseError('uploadCompanyImageFile', error);
+    throw error;
+  }
+
+  const url = getPublicStorageUrl(path);
+  await updateCompanyAssetUrl(companyId, kind === 'logo' ? 'logo_url' : 'signature_url', url);
+  return url;
+}
+
 export async function updateCompanyAssetUrl(
   companyId: string,
   field: 'logo_url' | 'signature_url',
   url: string | null,
 ): Promise<void> {
+  await assertCurrentUserFeature(field === 'logo_url' ? 'custom_logo' : 'company_signature');
   const payload =
     field === 'logo_url'
       ? { logo_url: url, updated_at: new Date().toISOString() }

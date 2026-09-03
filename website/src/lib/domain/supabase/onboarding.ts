@@ -203,7 +203,13 @@ export async function saveOnboardingDraft(
   }
 
   if (logoFile) {
-    await uploadCompanyLogoFile(scope.companyId, logoFile);
+    try {
+      await uploadCompanyLogoFile(scope.companyId, logoFile);
+    } catch (error) {
+      if (!(error instanceof Error && error.name === 'PremiumFeatureError')) {
+        throw error;
+      }
+    }
   }
 
   const { error: profileError } = await supabase

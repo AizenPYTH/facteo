@@ -2,6 +2,7 @@
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
+import { CompanyAssetsPanel } from '@/components/app/company-assets-panel';
 import { CompanyProfileForm } from '@/components/app/company-profile-form';
 import { LoadingState } from '@/components/app/ui';
 import { mapCompanyToFormValues, updateCompanyProfile } from '@/lib/domain/supabase/companies';
@@ -34,6 +35,14 @@ export default function CompanySettingsPage() {
 
   return (
     <div className="mx-auto max-w-[720px] p-5 sm:p-6">
+      <CompanyAssetsPanel
+        companyId={activeCompany.id}
+        logoUrl={activeCompany.logoUrl}
+        onUpdated={() => {
+          void queryClient.invalidateQueries({ queryKey: companiesQueryKeys.all });
+        }}
+        signatureUrl={activeCompany.signatureUrl}
+      />
       <CompanyProfileForm
         defaultValues={defaults}
         onSubmit={async (values) => {

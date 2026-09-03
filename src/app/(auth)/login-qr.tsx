@@ -1,6 +1,7 @@
+import { CameraView, useCameraPermissions } from 'expo-camera';
 import { router, useLocalSearchParams, type Href } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Platform, Text } from 'react-native';
+import { Linking, Platform, StyleSheet, Text, View } from 'react-native';
 
 import { AuthScreen } from '@/components/auth/auth-screen';
 import { Button } from '@/components/ui/button';
@@ -12,22 +13,18 @@ import {
   scanMobileLoginChallenge,
 } from '@/lib/auth/mobile-login';
 import { supabase } from '@/lib/supabase';
+import { spacing } from '@/constants/theme/spacing';
 import { typography } from '@/constants/theme/typography';
 
-type Phase = 'idle' | 'waiting' | 'done' | 'error';
+type Phase = 'camera' | 'waiting' | 'done' | 'error';
 
-/**
- * Connexion QR sans module caméra natif.
- * Le scan caméra est retiré du binaire iOS (crash TestFlight 57/59 :
- * expo-camera + expo-iap s’initialisaient au process start).
- * Le deep link `inveq://mlc?c=&s=` reste fonctionnel.
- */
 export default function LoginQrScreen() {
   const styles = useStyles();
   const params = useLocalSearchParams<{ c?: string; s?: string }>();
-  const [phase, setPhase] = useState<Phase>('idle');
+  const [permission, requestPermission] = useCameraPermissions();
+  const [phase, setPhase] = useState<Phase>('camera');
   const [message, setMessage] = useState(
-    'Ouvrez le QR depuis INVEQ.fr → Paramètres → Connexion mobile, ou utilisez e-mail et mot de passe.',
+    'Scannez le QR code affiché sur INVEQ.fr → Paramètres → Connexion mobile.',
   );
   const handledRef = useRef(false);
 
@@ -41,11 +38,13 @@ export default function LoginQrScreen() {
     while (Date.now() - started < 120_000) {
       const status = await getMobileLoginStatus({ challengeId, secret });
 
-      if (status.status === 'denied' || status.status === 'expired') {
+      if (status.status === 'denied' || status.status === 'expired' || status.status === 'used') {
         throw new Error(
           status.status === 'denied'
             ? 'Connexion refusée depuis l’ordinateur.'
-            : 'Le QR code a expiré. Générez-en un nouveau.',
+            : status.status === 'used'
+              ? 'Ce QR code a déjà été utilisé. Générez-en un nouveau.'
+              : 'Le QR code a expiré. Générez-en un nouveau.',
         );
       }
 
@@ -77,6 +76,10 @@ export default function LoginQrScreen() {
 
       const parsed = parseMobileLoginQrPayload(raw);
       if (!parsed) {
+        setPhase('error');
+        setMessage(
+          'QR code invalide. Utilisez uniquement le QR affiché sur INVEQ.fr → Paramètres → Connexion mobile.',
+        );
         return;
       }
 
@@ -98,22 +101,87 @@ export default function LoginQrScreen() {
     }
   }, [handlePayload, params.c, params.s]);
 
+  function resumeScan() {
+    handledRef.current = false;
+    setPhase('camera');
+    setMessage('Scannez le QR code affiché sur INVEQ.fr → Paramètres → Connexion mobile.');
+  }
+
+  if (Platform.OS === 'web') {
+    return (
+      <AuthScreen
+        footer={<Button onPress={() => router.replace('/login' as Href)} title="Retour" variant="ghost" />}
+        subtitle="Le scan du QR code est disponible dans l’application iOS ou Android."
+        title="Connexion QR">
+        <Text style={styles.hint}>
+          Ouvrez INVEQ sur votre téléphone, puis choisissez « Se connecter avec un QR code ».
+        </Text>
+      </AuthScreen>
+    );
+  }
+
+  if (!permission) {
+    return (
+      <AuthScreen footer={<View />} subtitle="Préparation de l’appareil photo." title="QR code">
+        <Text style={styles.hint}>Chargement des permissions…</Text>
+      </AuthScreen>
+    );
+  }
+
+  if (!permission.granted) {
+    const canAskAgain = permission.canAskAgain !== false;
+    return (
+      <AuthScreen
+        footer={
+          <>
+            <Button
+              onPress={() => {
+                if (canAskAgain) {
+                  void requestPermission();
+                  return;
+                }
+                void Linking.openSettings();
+              }}
+              title={canAskAgain ? 'Autoriser l’appareil photo' : 'Ouvrir les réglages'}
+            />
+            <Button onPress={() => router.replace('/login' as Href)} title="Retour" variant="ghost" />
+          </>
+        }
+        subtitle="L’appareil photo sert uniquement à scanner le QR code de connexion."
+        title="QR code">
+        <Text style={styles.hint}>
+          {canAskAgain
+            ? 'Autorisez l’appareil photo pour continuer.'
+            : 'L’accès caméra a été refusé. Activez-le dans les réglages de l’appareil, puis revenez ici.'}
+        </Text>
+      </AuthScreen>
+    );
+  }
+
   return (
     <AuthScreen
       footer={
-        <Button onPress={() => router.replace('/login' as Href)} title="Retour à la connexion" variant="ghost" />
+        <>
+          {phase === 'error' ? <Button onPress={resumeScan} title="Scanner un autre QR" /> : null}
+          <Button onPress={() => router.replace('/login' as Href)} title="Retour à la connexion" variant="ghost" />
+        </>
       }
-      subtitle={
-        Platform.OS === 'web'
-          ? 'Le scan du QR code est disponible dans l’application iOS ou Android.'
-          : message
-      }
+      subtitle={message}
       title="Connexion QR">
-      <Text style={styles.hint}>
-        {phase === 'waiting'
-          ? 'En attente de confirmation…'
-          : 'Le scan caméra est temporairement désactivé pour stabiliser iOS. Ouvrez le lien du QR, ou connectez-vous avec e-mail et mot de passe.'}
-      </Text>
+      {phase === 'camera' ? (
+        <View style={styles.cameraWrap}>
+          <CameraView
+            barcodeScannerSettings={{ barcodeTypes: ['qr'] }}
+            facing="back"
+            onBarcodeScanned={({ data }) => handlePayload(data)}
+            style={StyleSheet.absoluteFill}
+          />
+        </View>
+      ) : (
+        <Text style={styles.hint}>
+          {phase === 'waiting' ? 'En attente de confirmation sur l’ordinateur…' : message}
+        </Text>
+      )}
     </AuthScreen>
   );
 }
@@ -124,6 +192,13 @@ function useStyles() {
       ...typography.subheadline,
       color: colors.textSecondary,
       textAlign: 'center',
+    },
+    cameraWrap: {
+      height: 280,
+      borderRadius: 16,
+      overflow: 'hidden',
+      backgroundColor: colors.backgroundGrouped,
+      marginVertical: spacing.sm,
     },
   }));
 }

@@ -74,6 +74,10 @@ export function isPaidCanonicalPlan(planId: CanonicalPlanId): boolean {
   return PAID_PLANS.has(planId);
 }
 
+export function isAppleStorageId(id: string | null | undefined): boolean {
+  return String(id ?? '').startsWith('apple:');
+}
+
 export function isPaidCheckoutSession(session: Stripe.Checkout.Session): boolean {
   return session.status === 'complete' && session.payment_status === 'paid';
 }
@@ -232,6 +236,18 @@ export async function syncSubscriptionCheckoutSession(
     throw new Error(`Plan Stripe non payant invalide: ${planId}`);
   }
 
+  const { data: currentRow } = await serviceClient
+    .from('subscriptions')
+    .select('stripe_subscription_id')
+    .eq('user_id', userId)
+    .maybeSingle();
+
+  if (isAppleStorageId(currentRow?.stripe_subscription_id)) {
+    throw new Error(
+      'Cet abonnement est géré via l’App Store. Le paiement Stripe n’a pas modifié le compte INVEQ.',
+    );
+  }
+
   const customerId = typeof session.customer === 'string' ? session.customer : session.customer?.id ?? null;
   let stripeSubscriptionId =
     typeof session.subscription === 'string' ? session.subscription : session.subscription?.id ?? null;
@@ -277,6 +293,19 @@ export async function syncStripeSubscriptionObject(
   const mappedStatus = mapStripeSubscriptionStatus(subscription.status);
   const isActivePaid = subscription.status === 'active' || subscription.status === 'trialing';
   const planId = resolveCanonicalPlanId(subscription.metadata?.plan_id);
+
+  const { data: currentRow } = await serviceClient
+    .from('subscriptions')
+    .select('stripe_subscription_id')
+    .eq('user_id', userId)
+    .maybeSingle();
+  const currentStorageId = String(currentRow?.stripe_subscription_id ?? '');
+  const isAppleEntitlement = isAppleStorageId(currentStorageId);
+
+  // Un événement Stripe (actif ou non) ne doit jamais remplacer un entitlement Apple.
+  if (isAppleEntitlement && currentStorageId !== subscription.id) {
+    return;
+  }
 
   if (isActivePaid && isPaidCanonicalPlan(planId)) {
     await applyPlanSubscription(serviceClient, {

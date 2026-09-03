@@ -29,6 +29,7 @@ import { PrimaryLink, SecondaryLink } from '@/components/app/form-fields';
 import { Skeleton } from '@/components/app/skeleton';
 import { Panel, StatCard } from '@/components/app/ui';
 import { useDashboard } from '@/hooks/use-dashboard';
+import { useSubscription } from '@/hooks/use-subscription';
 import { formatCurrency } from '@/lib/domain/format/currency';
 import { formatDate } from '@/lib/domain/format/date';
 import type { DashboardStats, Invoice, MonthlyRevenue } from '@/types/dashboard';
@@ -354,6 +355,8 @@ function DashboardSkeleton() {
 
 export default function DashboardPage() {
   const { firstName, companyName, stats, recentInvoices, extended, loading } = useDashboard();
+  const { hasFeature } = useSubscription();
+  const advancedStatsLocked = !hasFeature('advanced_stats');
 
   if (loading) {
     return <DashboardSkeleton />;
@@ -495,29 +498,60 @@ export default function DashboardPage() {
 
           <div className="flex flex-col gap-3.5">
             <CreatePanel />
-            <Panel title="Vos indicateurs">
-              <MetricRow
-                label="Encaissé cette année"
-                value={formatCurrency(stats.yearlyRevenue)}
-              />
-              <MetricRow label="Devis en attente" value={String(stats.pendingQuotes)} />
-              <MetricRow
-                label="Panier moyen"
-                value={formatCurrency(stats.averageInvoiceAmount)}
-              />
-              <MetricRow
-                hint={topClient ? formatCurrency(topClient.revenue) : undefined}
-                label="Meilleur client"
-                value={topClient?.name ?? '—'}
-              />
-            </Panel>
+            {advancedStatsLocked ? (
+              <Panel title="Vos indicateurs">
+                <MetricRow label="Devis en attente" value={String(stats.pendingQuotes)} />
+                <p className="mt-3 text-[13px] text-app-text-2">
+                  Revenu annuel, panier moyen et meilleur client sont réservés à l’offre Max —
+                  comme sur l’application mobile.
+                </p>
+                <Link
+                  className="mt-3 inline-flex text-[13px] font-semibold text-app-accent hover:underline"
+                  href="/app/settings/subscription">
+                  Voir les offres
+                </Link>
+              </Panel>
+            ) : (
+              <Panel title="Vos indicateurs">
+                <MetricRow
+                  label="Encaissé cette année"
+                  value={formatCurrency(stats.yearlyRevenue)}
+                />
+                <MetricRow label="Devis en attente" value={String(stats.pendingQuotes)} />
+                <MetricRow
+                  label="Panier moyen"
+                  value={formatCurrency(stats.averageInvoiceAmount)}
+                />
+                <MetricRow
+                  hint={topClient ? formatCurrency(topClient.revenue) : undefined}
+                  label="Meilleur client"
+                  value={topClient?.name ?? '—'}
+                />
+              </Panel>
+            )}
           </div>
         </div>
 
-        <div className={cn(TWO_THIRDS_GRID, 'mt-3.5')}>
-          <RevenueChart months={extended.revenueByMonth} />
-          <DashboardActivityFeed activity={extended.recentActivity} invoices={recentInvoices} />
-        </div>
+        {advancedStatsLocked ? (
+          <div className="mt-3.5">
+            <Panel title="Statistiques avancées">
+              <p className="text-[13px] text-app-text-2">
+                Graphique de revenu et activité détaillée : identiques à l’app, disponibles avec
+                Max.
+              </p>
+              <Link
+                className="mt-3 inline-flex text-[13px] font-semibold text-app-accent hover:underline"
+                href="/app/settings/subscription">
+                Voir les offres
+              </Link>
+            </Panel>
+          </div>
+        ) : (
+          <div className={cn(TWO_THIRDS_GRID, 'mt-3.5')}>
+            <RevenueChart months={extended.revenueByMonth} />
+            <DashboardActivityFeed activity={extended.recentActivity} invoices={recentInvoices} />
+          </div>
+        )}
       </div>
     </div>
   );

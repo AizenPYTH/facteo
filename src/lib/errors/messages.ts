@@ -24,5 +24,9 @@ export function toUserFacingError(
     return NETWORK_ERROR_MESSAGE;
   }
 
+  if (message === 'PREMIUM_FEATURE_REQUIRED') {
+    return 'Cette fonctionnalité n’est pas incluse dans votre offre actuelle.';
+  }
+
   return message;
 }

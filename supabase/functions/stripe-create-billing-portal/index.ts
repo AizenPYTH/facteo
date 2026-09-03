@@ -1,15 +1,13 @@
 import Stripe from 'https://esm.sh/stripe@17.7.0?target=deno';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
 
-import { isPaidCanonicalPlan, syncSubscriptionCheckoutSession } from '../_shared/subscription-sync.ts';
-
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-type ConfirmSubscriptionCheckoutBody = {
-  sessionId: string;
+type Body = {
+  returnUrl?: string;
 };
 
 Deno.serve(async (request) => {
@@ -22,13 +20,11 @@ Deno.serve(async (request) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY');
     const supabaseServiceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-
     if (!stripeSecret || !supabaseUrl || !supabaseAnonKey || !supabaseServiceRoleKey) {
       return jsonResponse({ error: 'Configuration Stripe incomplète côté serveur.' }, 500);
     }
 
     const authHeader = request.headers.get('Authorization');
-
     if (!authHeader) {
       return jsonResponse({ error: 'Non autorisé.' }, 401);
     }
@@ -46,35 +42,45 @@ Deno.serve(async (request) => {
       return jsonResponse({ error: 'Non autorisé.' }, 401);
     }
 
-    const body = (await request.json()) as ConfirmSubscriptionCheckoutBody;
+    const body = (await request.json().catch(() => ({}))) as Body;
+    const returnUrl =
+      body.returnUrl?.trim() ||
+      Deno.env.get('INVEQ_SUBSCRIPTION_RETURN_URL')?.trim() ||
+      'https://www.inveq.fr/app/settings/subscription';
 
-    if (!body.sessionId?.trim()) {
-      return jsonResponse({ error: 'Session Stripe manquante.' }, 400);
+    const serviceClient = createClient(supabaseUrl, supabaseServiceRoleKey);
+    const { data: subscriptionRow } = await serviceClient
+      .from('subscriptions')
+      .select('stripe_customer_id, stripe_subscription_id')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    if (String(subscriptionRow?.stripe_subscription_id ?? '').startsWith('apple:')) {
+      return jsonResponse(
+        { error: 'Cet abonnement est géré via l’App Store. Ouvrez Réglages → Abonnements sur iPhone.' },
+        400,
+      );
+    }
+
+    const customerId = subscriptionRow?.stripe_customer_id;
+    if (!customerId) {
+      return jsonResponse({ error: 'Aucun client Stripe associé à ce compte.' }, 404);
     }
 
     const stripe = new Stripe(stripeSecret, { apiVersion: '2024-12-18.acacia' });
-    const serviceClient = createClient(supabaseUrl, supabaseServiceRoleKey);
-    const session = await stripe.checkout.sessions.retrieve(body.sessionId.trim());
+    const portal = await stripe.billingPortal.sessions.create({
+      customer: customerId,
+      return_url: returnUrl,
+    });
 
-    const sessionUserId = session.metadata?.user_id ?? session.client_reference_id ?? null;
-
-    if (sessionUserId !== user.id) {
-      return jsonResponse({ error: 'Cette session de paiement ne vous appartient pas.' }, 403);
+    if (!portal.url) {
+      return jsonResponse({ error: 'Impossible d’ouvrir le portail Stripe.' }, 500);
     }
 
-    const result = await syncSubscriptionCheckoutSession(stripe, serviceClient, session);
-
-    return jsonResponse(
-      {
-        planId: result.planId,
-        status: 'active',
-        isPremium: isPaidCanonicalPlan(result.planId),
-      },
-      200,
-    );
+    return jsonResponse({ portalUrl: portal.url }, 200);
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Erreur inattendue.';
-    return jsonResponse({ error: message }, 400);
+    return jsonResponse({ error: message }, 500);
   }
 });
 

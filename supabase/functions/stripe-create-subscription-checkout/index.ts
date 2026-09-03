@@ -91,9 +91,18 @@ Deno.serve(async (request) => {
       .eq('user_id', user.id)
       .maybeSingle();
 
+    if (String(subscriptionRow?.stripe_subscription_id ?? '').startsWith('apple:')) {
+      return jsonResponse(
+        {
+          error:
+            'Cet abonnement est géré via l’App Store. Changez d’offre depuis Réglages → Abonnements sur iPhone.',
+        },
+        400,
+      );
+    }
+
     if (
       subscriptionRow?.stripe_subscription_id &&
-      !String(subscriptionRow.stripe_subscription_id).startsWith('apple:') &&
       subscriptionRow.status === 'active' &&
       subscriptionRow.plan === planId
     ) {
