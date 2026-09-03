@@ -61,9 +61,6 @@ function useStyles() {
       ...typography.headline,
       color: colors.primary,
     },
-    pressed: {
-      opacity: 0.82,
-    },
     disabled: {
       opacity: 0.5,
     },

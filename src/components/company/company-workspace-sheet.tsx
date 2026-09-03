@@ -344,7 +344,4 @@ const useStyles = () =>
       color: colors.text,
       backgroundColor: colors.surface,
     },
-    pressed: {
-      opacity: 0.9,
-    },
   }));

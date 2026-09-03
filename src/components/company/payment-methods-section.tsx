@@ -82,9 +82,6 @@ function useStyles() {
       paddingHorizontal: spacing.md,
       paddingVertical: spacing.sm,
     },
-    pressed: {
-      opacity: 0.85,
-    },
     label: {
       ...textHierarchy.body,
       color: colors.text,

@@ -459,7 +459,4 @@ const useStyles = () =>
       justifyContent: 'space-between',
       paddingTop: spacing.xs,
     },
-    pressed: {
-      opacity: 0.88,
-    },
   }));

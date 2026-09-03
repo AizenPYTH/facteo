@@ -189,9 +189,6 @@ function useStyles() {
       paddingHorizontal: spacing.md,
       paddingVertical: spacing.md,
     },
-    pressed: {
-      opacity: 0.85,
-    },
     copy: {
       flex: 1,
       minWidth: 0,

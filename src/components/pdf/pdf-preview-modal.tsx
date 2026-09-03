@@ -262,8 +262,5 @@ function useStyles() {
     actionLabelHighlight: {
       color: '#FFFFFF',
     },
-    pressed: {
-      opacity: 0.85,
-    },
   }));
 }
