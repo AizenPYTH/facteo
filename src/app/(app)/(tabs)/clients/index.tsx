@@ -1,7 +1,7 @@
 import { router, type Href } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
   AddClientFab,
@@ -12,11 +12,11 @@ import {
   ClientsScreenHeader,
 } from '@/components/clients';
 import { ClientsDesktopScreen } from '@/components/web/desktop/screens/clients-desktop-screen';
-import { BottomTabInset } from '@/constants/theme';
 import { useBreakpoint } from '@/hooks/use-breakpoint';
 import { useThemedStyles } from '@/hooks/use-colors';
 import { spacing } from '@/constants/theme/spacing';
 import { useDebouncedValue } from '@/hooks/use-debounced-value';
+import { useScreenInsets } from '@/hooks/use-screen-insets';
 import { useInfiniteClients } from '@/hooks/use-clients';
 import { useTenant } from '@/hooks/use-tenant';
 import type { Client } from '@/types/client';
@@ -39,7 +39,7 @@ function ClientsMobileScreen() {
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState<ClientTypeFilter>('all');
   const debouncedSearch = useDebouncedValue(search, SEARCH_DEBOUNCE_MS);
-  const insets = useSafeAreaInsets();
+  const insets = useScreenInsets();
   const { isSwitching } = useTenant();
 
   const {
@@ -47,6 +47,7 @@ function ClientsMobileScreen() {
     data,
     isLoading,
     isRefetching,
+    error,
     isFetchingNextPage,
     hasNextPage,
     fetchNextPage,
@@ -95,8 +96,9 @@ function ClientsMobileScreen() {
         <ClientsList
           clients={visibleClients}
           contentContainerStyle={{
-            paddingBottom: insets.bottom + BottomTabInset + FAB_CLEARANCE,
+            paddingBottom: insets.scrollBottom + FAB_CLEARANCE,
           }}
+          error={error}
           isFetchingNextPage={isFetchingNextPage}
           isInitialLoading={isInitialLoading}
           isRefreshing={isRefetching && !isFetchingNextPage}
@@ -110,7 +112,7 @@ function ClientsMobileScreen() {
       {showFab ? (
         <AddClientFab
           label="Ajouter un client"
-          style={{ bottom: insets.bottom + BottomTabInset + spacing.md }}
+          style={{ bottom: insets.floatingBottom }}
         />
       ) : null}
     </SafeAreaView>

@@ -1,6 +1,7 @@
-import { ActivityIndicator, Pressable, Text, View } from 'react-native';
+import { ActivityIndicator, Text, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 
+import { PressableScale } from '@/components/ui/pressable-scale';
 import { useColors, useThemedStyles } from '@/hooks/use-colors';
 import { components } from '@/constants/theme/design-system';
 import { radius } from '@/constants/theme/radius';
@@ -35,7 +36,7 @@ export function SocialAuthButton({
   const isDisabled = disabled || loading;
 
   return (
-    <Pressable
+    <PressableScale
       accessibilityLabel={title}
       accessibilityRole="button"
       accessibilityState={{ disabled: isDisabled, busy: loading }}
@@ -46,11 +47,7 @@ export function SocialAuthButton({
           onPress();
         }
       }}
-      style={({ pressed }) => [
-        styles.button,
-        pressed && !isDisabled && styles.pressed,
-        isDisabled && styles.disabled,
-      ]}>
+      style={[styles.button, isDisabled && styles.disabled]}>
       {loading ? (
         <ActivityIndicator color={colors.primary} />
       ) : (
@@ -61,7 +58,7 @@ export function SocialAuthButton({
           <Text style={styles.label}>{title}</Text>
         </View>
       )}
-    </Pressable>
+    </PressableScale>
   );
 }
 
@@ -112,9 +109,6 @@ function useStyles() {
       paddingHorizontal: spacing.md,
       alignItems: 'center' as const,
       justifyContent: 'center' as const,
-    },
-    pressed: {
-      backgroundColor: colors.surfaceSecondary,
     },
     disabled: {
       opacity: 0.5,

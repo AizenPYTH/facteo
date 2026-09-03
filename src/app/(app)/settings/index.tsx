@@ -1,27 +1,53 @@
 import { router, type Href } from 'expo-router';
-import { Alert, Linking, Platform, StyleSheet, Switch, Text, View } from 'react-native';
+import { Alert, Linking, Platform, Switch, Text } from 'react-native';
 
-import {
-  SettingsProfileSummary,
-  SettingsRow,
-  SettingsSection,
-} from '@/components/settings';
+import { SettingsProfileSummary, SettingsRow, SettingsSection } from '@/components/settings';
 import { NotificationPreferencesSection } from '@/components/settings/notification-preferences-section';
-import { SettingsScreenFrame } from '@/components/web/desktop/settings-screen-frame';
 import { SettingsDesktopContent } from '@/components/web/desktop/screens/settings-desktop-content';
-import { useBreakpoint } from '@/hooks/use-breakpoint';
-import { useColors, useThemedStyles } from '@/hooks/use-colors';
+import { SettingsScreenFrame } from '@/components/web/desktop/settings-screen-frame';
+import { MARKETING_CONTACT } from '@/constants/marketing/site';
 import { spacing } from '@/constants/theme/spacing';
 import { typography } from '@/constants/theme/typography';
-import { MARKETING_CONTACT } from '@/constants/marketing/site';
-import { openHelpPage, openLegalPage, openMarketingSite } from '@/lib/legal/open-legal-page';
 import { useAuth } from '@/hooks/use-auth';
+import { useBreakpoint } from '@/hooks/use-breakpoint';
+import { useColors, useThemedStyles } from '@/hooks/use-colors';
 import { useCompanyProfile } from '@/hooks/use-company-profile';
 import { useSubscription } from '@/hooks/use-subscription';
 import { getAppVersionInfo } from '@/lib/app-version';
+import { openHelpPage, openLegalPage, openMarketingSite } from '@/lib/legal/open-legal-page';
 import { getEffectivePlanDisplayName } from '@/lib/subscription/plans';
 import { useThemePreference } from '@/providers/theme-preference-provider';
 import { useToast } from '@/providers/toast-provider';
+
+/**
+ * Réglages.
+ *
+ * Organisation revue : les rubriques suivent maintenant les domaines de l'app —
+ * compte, abonnement, entreprise, facturation, catalogue, notifications,
+ * préférences, sécurité, aide. « Produits » et « Prestations » étaient rangés
+ * sous Facturation, « Se déconnecter » et « Supprimer le compte » sous Compte, à
+ * côté d'un lien vers l'abonnement.
+ */
+const ICONS = {
+  email: { ios: 'envelope', android: 'mail', web: 'mail' },
+  plan: { ios: 'star', android: 'star', web: 'star' },
+  companies: { ios: 'building.2', android: 'domain', web: 'domain' },
+  profile: { ios: 'person.text.rectangle', android: 'badge', web: 'badge' },
+  numbering: { ios: 'number', android: 'tag', web: 'tag' },
+  templates: { ios: 'doc.richtext', android: 'article', web: 'article' },
+  eInvoice: { ios: 'bolt', android: 'bolt', web: 'bolt' },
+  payments: { ios: 'creditcard', android: 'credit_card', web: 'credit_card' },
+  products: { ios: 'cube', android: 'inventory_2', web: 'inventory_2' },
+  services: { ios: 'wrench.and.screwdriver', android: 'handyman', web: 'handyman' },
+  appearance: { ios: 'moon', android: 'dark_mode', web: 'dark_mode' },
+  signOut: { ios: 'rectangle.portrait.and.arrow.right', android: 'logout', web: 'logout' },
+  deleteAccount: { ios: 'trash', android: 'delete', web: 'delete' },
+  help: { ios: 'questionmark.circle', android: 'help', web: 'help' },
+  guide: { ios: 'book', android: 'menu_book', web: 'menu_book' },
+  contact: { ios: 'bubble.left', android: 'chat', web: 'chat' },
+  website: { ios: 'globe', android: 'public', web: 'public' },
+  legal: { ios: 'doc.text', android: 'description', web: 'description' },
+} as const;
 
 export default function SettingsScreen() {
   const styles = useStyles();
@@ -105,23 +131,30 @@ export default function SettingsScreen() {
           />
 
           <SettingsSection title="Compte">
+            <SettingsRow icon={ICONS.email} label="Adresse e-mail" value={user?.email ?? '—'} />
+          </SettingsSection>
+
+          <SettingsSection
+            footer="Les achats sont gérés par l’App Store sur iOS."
+            title="Abonnement">
             <SettingsRow
-              label="Abonnement"
+              description="Comparer les offres et changer de formule"
+              icon={ICONS.plan}
+              label="Formule"
               onPress={() => router.push('/settings/premium' as Href)}
+              value={getEffectivePlanDisplayName(subscription?.effectivePlanId ?? 'micro')}
             />
-            <View style={styles.separator} />
-            <SettingsRow label="Se déconnecter" onPress={() => void handleLogout()} />
-            <View style={styles.separator} />
-            <SettingsRow destructive label="Supprimer le compte" onPress={handleDeleteAccount} />
           </SettingsSection>
 
           <SettingsSection title="Entreprise">
             <SettingsRow
+              icon={ICONS.companies}
               label="Mes entreprises"
               onPress={() => router.push('/settings/companies' as Href)}
             />
-            <View style={styles.separator} />
             <SettingsRow
+              description="Identité, mentions légales, coordonnées bancaires"
+              icon={ICONS.profile}
               label="Profil entreprise"
               onPress={() => router.push('/company' as Href)}
             />
@@ -129,31 +162,35 @@ export default function SettingsScreen() {
 
           <SettingsSection title="Facturation">
             <SettingsRow
+              icon={ICONS.numbering}
               label="Préfixes et numéros"
               onPress={() => router.push('/settings/numbering' as Href)}
             />
-            <View style={styles.separator} />
             <SettingsRow
+              icon={ICONS.templates}
               label="Modèles de factures et devis"
               onPress={() => router.push('/settings/templates' as Href)}
             />
-            <View style={styles.separator} />
             <SettingsRow
+              icon={ICONS.eInvoice}
               label="Facturation électronique"
               onPress={() => router.push('/settings/e-invoicing' as Href)}
             />
-            <View style={styles.separator} />
             <SettingsRow
+              icon={ICONS.payments}
               label="Paiements"
               onPress={() => router.push('/settings/payments' as Href)}
             />
-            <View style={styles.separator} />
+          </SettingsSection>
+
+          <SettingsSection title="Catalogue">
             <SettingsRow
+              icon={ICONS.products}
               label="Produits"
               onPress={() => router.push('/settings/catalog?type=product' as Href)}
             />
-            <View style={styles.separator} />
             <SettingsRow
+              icon={ICONS.services}
               label="Prestations"
               onPress={() => router.push('/settings/catalog?type=service' as Href)}
             />
@@ -167,8 +204,9 @@ export default function SettingsScreen() {
                 ? 'Le thème s’applique immédiatement sur l’appareil.'
                 : 'Bientôt disponible sur le web.'
             }
-            title="Apparence">
+            title="Préférences">
             <SettingsRow
+              icon={ICONS.appearance}
               label="Mode sombre"
               onPress={
                 darkModeSupported ? undefined : () => showSuccess('Bientôt disponible sur le web.')
@@ -187,23 +225,39 @@ export default function SettingsScreen() {
             />
           </SettingsSection>
 
+          <SettingsSection title="Sécurité">
+            <SettingsRow
+              icon={ICONS.signOut}
+              label="Se déconnecter"
+              onPress={() => void handleLogout()}
+            />
+            <SettingsRow
+              description="Suppression définitive, sous 30 jours"
+              destructive
+              icon={ICONS.deleteAccount}
+              label="Supprimer le compte"
+              onPress={handleDeleteAccount}
+            />
+          </SettingsSection>
+
           <SettingsSection title="Aide">
             <SettingsRow
+              icon={ICONS.help}
               label="Centre d’aide"
               onPress={() => void openHelpPage('support')}
             />
-            <View style={styles.separator} />
             <SettingsRow
+              icon={ICONS.guide}
               label="Guide d’utilisation"
               onPress={() => void openHelpPage('guide')}
             />
-            <View style={styles.separator} />
             <SettingsRow
+              icon={ICONS.contact}
               label="Contact"
               onPress={() => void openHelpPage('contact')}
             />
-            <View style={styles.separator} />
             <SettingsRow
+              icon={ICONS.website}
               label="Site web INVEQ"
               onPress={() => void openMarketingSite()}
             />
@@ -211,24 +265,28 @@ export default function SettingsScreen() {
 
           <SettingsSection title="Confidentialité & conditions">
             <SettingsRow
+              icon={ICONS.legal}
               label="Politique de confidentialité"
               onPress={() => void openLegalPage('privacy')}
             />
-            <View style={styles.separator} />
             <SettingsRow
+              icon={ICONS.legal}
               label="Conditions d’utilisation"
               onPress={() => void openLegalPage('terms')}
             />
-            <View style={styles.separator} />
-            <SettingsRow label="Mentions légales" onPress={() => void openLegalPage('legal')} />
-            <View style={styles.separator} />
             <SettingsRow
+              icon={ICONS.legal}
+              label="Mentions légales"
+              onPress={() => void openLegalPage('legal')}
+            />
+            <SettingsRow
+              icon={ICONS.legal}
               label="Politique des cookies"
               onPress={() => void openLegalPage('cookies')}
             />
           </SettingsSection>
 
-          <Text style={styles.version}>
+          <Text maxFontSizeMultiplier={1.4} style={styles.version}>
             INVEQ v{versionInfo.version} · build {versionInfo.buildNumber}
           </Text>
         </>
@@ -239,11 +297,6 @@ export default function SettingsScreen() {
 
 function useStyles() {
   return useThemedStyles((colors) => ({
-    separator: {
-      height: StyleSheet.hairlineWidth,
-      backgroundColor: colors.separator,
-      marginLeft: spacing.md,
-    },
     version: {
       ...typography.footnote,
       color: colors.textTertiary,

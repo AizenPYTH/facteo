@@ -1,15 +1,11 @@
 import { SymbolView } from 'expo-symbols';
-import {
-  Pressable,
-  Text,
-  TextInput,
-  View,
-  type TextInputProps,
-} from 'react-native';
 import { useState } from 'react';
+import { Text, TextInput, View, type TextInputProps } from 'react-native';
 
-import { useColors, useThemedStyles } from '@/hooks/use-colors';
+import { useFieldNavigation } from '@/components/ui/form/form-navigation';
+import { PressableScale } from '@/components/ui/pressable-scale';
 import { components } from '@/constants/theme/design-system';
+import { useColors, useThemedStyles } from '@/hooks/use-colors';
 import { radius } from '@/constants/theme/radius';
 import { spacing } from '@/constants/theme/spacing';
 import { typography } from '@/constants/theme/typography';
@@ -36,6 +32,9 @@ export function AuthTextField({
   const colors = useColors();
   const [focused, setFocused] = useState(false);
   const [secure, setSecure] = useState(isPassword);
+  // Câble la ref, `returnKeyType` et `onSubmitEditing` — les écrans posaient un
+  // `returnKeyType="next"` décoratif, sans ref pour enchaîner.
+  const navigation = useFieldNavigation({ enabled: props.editable !== false });
 
   return (
     <View style={styles.container}>
@@ -59,8 +58,11 @@ export function AuthTextField({
           accessibilityLabel={accessibilityLabel ?? label}
           autoCapitalize="none"
           autoCorrect={false}
-          blurOnSubmit={false}
+          blurOnSubmit={navigation ? navigation.blurOnSubmit : false}
+          onSubmitEditing={navigation?.onSubmitEditing}
           placeholderTextColor={colors.textPlaceholder}
+          ref={navigation?.ref}
+          returnKeyType={navigation?.returnKeyType}
           style={[styles.input, style]}
           {...props}
           onBlur={(event) => {
@@ -74,7 +76,7 @@ export function AuthTextField({
           secureTextEntry={isPassword ? secure : false}
         />
         {isPassword ? (
-          <Pressable
+          <PressableScale
             accessibilityLabel={secure ? 'Afficher le mot de passe' : 'Masquer le mot de passe'}
             accessibilityRole="button"
             hitSlop={8}
@@ -86,7 +88,7 @@ export function AuthTextField({
               tintColor={colors.iconSecondary}
               type="hierarchical"
             />
-          </Pressable>
+          </PressableScale>
         ) : null}
       </View>
       {error ? (
@@ -137,7 +139,10 @@ function useStyles() {
       margin: 0,
     },
     trailingButton: {
-      padding: spacing.xs,
+      width: 44,
+      height: 44,
+      alignItems: 'center',
+      justifyContent: 'center',
     },
     error: {
       ...typography.caption1,

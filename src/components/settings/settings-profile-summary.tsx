@@ -1,10 +1,11 @@
-import { router, type Href } from 'expo-router';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
-import { useThemedStyles } from '@/hooks/use-colors';
+import { Card } from '@/components/ui/card';
+import { PressableScale } from '@/components/ui/pressable-scale';
 import { radius } from '@/constants/theme/radius';
 import { spacing } from '@/constants/theme/spacing';
 import { typography } from '@/constants/theme/typography';
+import { useThemedStyles } from '@/hooks/use-colors';
 
 type SettingsProfileSummaryProps = {
   companyName?: string | null;
@@ -23,39 +24,38 @@ export function SettingsProfileSummary({
   const displayName = companyName?.trim() || 'Entreprise';
 
   return (
-    <View style={styles.card}>
-      <Text numberOfLines={2} style={styles.companyName}>
+    <Card variant="elevated">
+      <Text accessibilityRole="header" maxFontSizeMultiplier={1.4} numberOfLines={2} style={styles.companyName}>
         {displayName}
       </Text>
-      <Text numberOfLines={1} style={styles.email}>
+      <Text maxFontSizeMultiplier={1.4} numberOfLines={1} style={styles.email}>
         {email ?? '—'}
       </Text>
       {onPressPlan ? (
-        <Pressable
+        <PressableScale
+          accessibilityHint="Ouvre la comparaison des offres"
+          accessibilityLabel={`Formule ${planLabel}`}
           accessibilityRole="button"
+          intensity="subtle"
           onPress={onPressPlan}
-          style={({ pressed }) => [styles.planBadge, pressed && styles.planBadgePressed]}>
-          <Text style={styles.planLabel}>{planLabel}</Text>
-        </Pressable>
+          style={styles.planBadge}>
+          <Text maxFontSizeMultiplier={1.3} style={styles.planLabel}>
+            {planLabel}
+          </Text>
+        </PressableScale>
       ) : (
         <View style={styles.planBadge}>
-          <Text style={styles.planLabel}>{planLabel}</Text>
+          <Text maxFontSizeMultiplier={1.3} style={styles.planLabel}>
+            {planLabel}
+          </Text>
         </View>
       )}
-    </View>
+    </Card>
   );
 }
 
 function useStyles() {
   return useThemedStyles((colors) => ({
-    card: {
-      gap: spacing.xs,
-      padding: spacing.md,
-      borderRadius: radius.lg,
-      backgroundColor: colors.surface,
-      borderWidth: StyleSheet.hairlineWidth,
-      borderColor: colors.border,
-    },
     companyName: {
       ...typography.title3,
       color: colors.text,
@@ -66,16 +66,12 @@ function useStyles() {
     },
     planBadge: {
       alignSelf: 'flex-start',
+      justifyContent: 'center',
       marginTop: spacing.xs,
-      paddingHorizontal: spacing.sm,
-      paddingVertical: spacing.xs,
+      minHeight: 36,
+      paddingHorizontal: spacing.md,
       borderRadius: radius.chip,
-      backgroundColor: colors.backgroundGrouped,
-      borderWidth: StyleSheet.hairlineWidth,
-      borderColor: colors.border,
-    },
-    planBadgePressed: {
-      opacity: 0.88,
+      backgroundColor: colors.primarySubtle,
     },
     planLabel: {
       ...typography.footnoteMedium,
