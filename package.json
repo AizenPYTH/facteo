@@ -77,6 +77,8 @@
     "preview:web": "npx serve dist",
     "lint": "expo lint",
     "typecheck": "tsc --noEmit",
+    "verify:iap-launch": "node scripts/defer-iap-init.test.js",
+    "eas-build-post-install": "node scripts/defer-iap-init.js",
     "eas:build:ios": "eas build --platform ios --profile production --auto-submit",
     "eas:build:android": "eas build --platform android --profile production --auto-submit",
     "eas:build:all": "eas build --platform all --profile production --auto-submit"
