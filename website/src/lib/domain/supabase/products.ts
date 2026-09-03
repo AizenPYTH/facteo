@@ -151,6 +151,7 @@ function mapFormToInsert(scope: DataScope, type: ProductType, values: ProductFor
 
   const payload: ProductInsert = {
     user_id: scope.userId,
+    company_id: scope.companyId,
     type,
     name: normalizeText(values.name),
     description: normalizeText(values.description) || null,
@@ -242,7 +243,7 @@ export async function fetchProducts(
   let query = supabase
     .from('products')
     .select(firstColumns)
-    .eq('user_id', scope.userId)
+    .eq('company_id', scope.companyId)
     .eq('type', type)
     .is('deleted_at', null)
     .order('created_at', { ascending: false });
@@ -266,7 +267,7 @@ export async function fetchProducts(
     let legacyQuery = supabase
       .from('products')
       .select(LEGACY_PRODUCT_COLUMNS)
-      .eq('user_id', scope.userId)
+      .eq('company_id', scope.companyId)
       .eq('type', type)
       .is('deleted_at', null)
       .order('created_at', { ascending: false });
@@ -301,7 +302,7 @@ export async function fetchProductsByIds(
   const { data, error } = await supabase
     .from('products')
     .select(firstColumns)
-    .eq('user_id', scope.userId)
+    .eq('company_id', scope.companyId)
     .eq('type', type)
     .is('deleted_at', null)
     .in('id', ids);
@@ -318,7 +319,7 @@ export async function fetchProductsByIds(
     const { data: legacyData, error: legacyError } = await supabase
       .from('products')
       .select(LEGACY_PRODUCT_COLUMNS)
-      .eq('user_id', scope.userId)
+      .eq('company_id', scope.companyId)
       .eq('type', type)
       .is('deleted_at', null)
       .in('id', ids);
@@ -344,7 +345,7 @@ export async function fetchProductById(
     .from('products')
     .select(firstColumns)
     .eq('id', productId)
-    .eq('user_id', scope.userId)
+    .eq('company_id', scope.companyId)
     .is('deleted_at', null)
     .maybeSingle();
 
@@ -360,7 +361,7 @@ export async function fetchProductById(
       .from('products')
       .select(LEGACY_PRODUCT_COLUMNS)
       .eq('id', productId)
-      .eq('user_id', scope.userId)
+      .eq('company_id', scope.companyId)
       .is('deleted_at', null)
       .maybeSingle();
     if (legacyError) {
@@ -436,7 +437,7 @@ export async function updateProduct(
     .from('products')
     .update(payload)
     .eq('id', productId)
-    .eq('user_id', scope.userId)
+    .eq('company_id', scope.companyId)
     .select(firstColumns)
     .single();
 
@@ -456,7 +457,7 @@ export async function updateProduct(
       .from('products')
       .update(legacyPayload)
       .eq('id', productId)
-      .eq('user_id', scope.userId)
+      .eq('company_id', scope.companyId)
       .select(LEGACY_PRODUCT_COLUMNS)
       .single();
     if (legacyError) {
@@ -475,11 +476,13 @@ export async function updateProduct(
 }
 
 export async function deleteProduct(scope: DataScope, productId: string): Promise<void> {
+  // Soft-delete: keep the row so quote/invoice lines retain product_id.
+  // Do not chain .select() — RETURNING would re-apply SELECT RLS on the new row.
   const { error } = await supabase
     .from('products')
     .update({ deleted_at: new Date().toISOString(), is_active: false })
     .eq('id', productId)
-    .eq('user_id', scope.userId);
+    .eq('company_id', scope.companyId);
 
   if (error) {
     logSupabaseError('deleteProduct', error);
