@@ -1,3 +1,4 @@
+import { CameraView, useCameraPermissions } from 'expo-camera';
 import { router, useLocalSearchParams, type Href } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Linking, Platform, StyleSheet, Text, View } from 'react-native';
@@ -14,40 +15,6 @@ import {
 import { supabase } from '@/lib/supabase';
 import { spacing } from '@/constants/theme/spacing';
 import { typography } from '@/constants/theme/typography';
-
-/**
- * BUILD DIAGNOSTIC — expo-camera est exclu de l'autolinking (package.json).
- *
- * `expo-camera` exécute `requireNativeModule('ExpoCamera')` au niveau module
- * (node_modules/expo-camera/build/ExpoCameraManager.js:2), et
- * `requireNativeModule` jette `Cannot find native module` quand le module natif
- * est absent. Un import statique ferait donc échouer le chargement de cette
- * route au démarrage — le binaire crasherait pour une raison sans rapport avec
- * l'hypothèse testée, et invaliderait le diagnostic.
- *
- * On charge donc le module de façon défensive : son absence dégrade cet écran
- * au lieu de casser le boot. À retirer avec l'exclusion d'autolinking.
- */
-type ExpoCameraModule = typeof import('expo-camera');
-
-let expoCamera: ExpoCameraModule | null = null;
-try {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  expoCamera = require('expo-camera') as ExpoCameraModule;
-} catch {
-  expoCamera = null;
-}
-
-const CameraView = expoCamera?.CameraView ?? null;
-
-/**
- * Toujours défini pour que le hook reste appelé inconditionnellement.
- * Le repli n'est atteint que dans la build de diagnostic, où l'écran sort
- * avant toute utilisation de `permission`.
- */
-const useCameraPermissions: ExpoCameraModule['useCameraPermissions'] =
-  expoCamera?.useCameraPermissions ??
-  ((() => [null, async () => null, async () => null]) as unknown as ExpoCameraModule['useCameraPermissions']);
 
 type Phase = 'camera' | 'waiting' | 'done' | 'error';
 
@@ -154,22 +121,6 @@ export default function LoginQrScreen() {
         title="Connexion QR">
         <Text style={styles.hint}>
           Ouvrez INVEQ sur votre téléphone, puis choisissez « Se connecter avec un QR code ».
-        </Text>
-      </AuthScreen>
-    );
-  }
-
-  // Build de diagnostic : module natif caméra absent du binaire.
-  // Le parcours par deep link `inveq://mlc?c=&s=` reste opérationnel (cf. effet ci-dessus).
-  if (!CameraView) {
-    return (
-      <AuthScreen
-        footer={<Button onPress={() => router.replace('/login' as Href)} title="Retour" variant="ghost" />}
-        subtitle="Le scan par appareil photo est absent de cette build."
-        title="Connexion QR">
-        <Text style={styles.hint}>
-          Ouvrez le lien QR depuis INVEQ.fr → Paramètres → Connexion mobile, ou connectez-vous avec
-          votre e-mail et votre mot de passe.
         </Text>
       </AuthScreen>
     );
