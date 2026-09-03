@@ -8,15 +8,7 @@ import {
   type SetStateAction,
 } from 'react';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
-import {
-  Alert,
-  FlatList,
-  Linking,
-  Platform,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { Alert, FlatList, Linking, Platform, Text, View } from 'react-native';
 
 import {
   ProductAnalysisConfirmationModal,
@@ -24,7 +16,8 @@ import {
 } from '@/components/ai/product-analysis-confirmation-modal';
 import { ProductAnalysisLoadingModal } from '@/components/ai/product-analysis-loading-modal';
 import { Button } from '@/components/ui/button';
-import { useStickyFooterInset } from '@/components/ui/sticky-footer';
+import { EmptyState } from '@/components/ui/empty-state';
+import { useWizardFooterInset } from '@/components/ui/wizard-screen';
 import { useAuth } from '@/hooks/use-auth';
 import { useThemedStyles } from '@/hooks/use-colors';
 import { usePlatformActionSheet } from '@/hooks/use-platform-action-sheet';
@@ -59,7 +52,7 @@ export function QuoteAddLinesStep({
   const { user } = useAuth();
   const { hasFeature } = useSubscription();
   const { showError, showSuccess } = useToast();
-  const footerInset = useStickyFooterInset('toolbar');
+  const footerInset = useWizardFooterInset();
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisProgress, setAnalysisProgress] = useState(0.08);
   const [analysisImageUri, setAnalysisImageUri] = useState<string | null>(null);
@@ -203,11 +196,18 @@ export function QuoteAddLinesStep({
 
   const listHeader = (
     <View style={styles.headerSection}>
-      <Text style={styles.description}>
-        Ajoutez vos prestations : description, quantité, prix HT et TVA.
+      <Text style={styles.sectionLabel}>
+        {lines.length > 1 ? `${lines.length} prestations` : `${lines.length} prestation`}
       </Text>
+    </View>
+  );
 
-      <Button onPress={handleAddPrestation} title="Ajouter une prestation" />
+  // Le bouton d'ajout est en pied de liste, là où se trouve le pouce après
+  // avoir rempli la dernière ligne — il était en tête, donc hors d'atteinte dès
+  // la deuxième prestation.
+  const listFooter = (
+    <View style={styles.footerSection}>
+      <Button onPress={handleAddPrestation} title="Ajouter une prestation" variant="ghost" />
       {Platform.OS === 'web' ? (
         <Button
           onPress={handleScanProductWithAi}
@@ -215,12 +215,6 @@ export function QuoteAddLinesStep({
           variant="ghost"
         />
       ) : null}
-
-      <View style={styles.prestationsHeader}>
-        <Text style={styles.sectionLabel}>
-          Prestations ({lines.length})
-        </Text>
-      </View>
     </View>
   );
 
@@ -228,12 +222,20 @@ export function QuoteAddLinesStep({
     return (
       <>
         <View style={styles.container}>
-          {listHeader}
-          <View style={styles.emptyPrestations}>
-            <Text style={styles.emptyPrestationsText}>
-              Appuyez sur « Ajouter une prestation » pour commencer.
-            </Text>
-          </View>
+          <EmptyState
+            actionLabel="Ajouter une prestation"
+            description="Description, quantité, prix HT, TVA et remise éventuelle."
+            icon={{ ios: 'list.bullet.rectangle', android: 'list_alt', web: 'list_alt' }}
+            onAction={handleAddPrestation}
+            title="Aucune prestation"
+          />
+          {Platform.OS === 'web' ? (
+            <Button
+              onPress={handleScanProductWithAi}
+              title="Scanner un produit (IA)"
+              variant="ghost"
+            />
+          ) : null}
         </View>
         {actionSheetNode}
         <ProductAnalysisLoadingModal progress={analysisProgress} visible={isAnalyzing} />
@@ -263,6 +265,7 @@ export function QuoteAddLinesStep({
         keyboardDismissMode="on-drag"
         keyboardShouldPersistTaps="handled"
         nestedScrollEnabled
+        ListFooterComponent={listFooter}
         ListHeaderComponent={listHeader}
         renderItem={({ item, index }) => (
           <QuoteLine
@@ -300,41 +303,25 @@ function useStyles() {
   return useThemedStyles((colors) => ({
   container: {
     flex: 1,
+    justifyContent: 'center',
+    gap: spacing.md,
   },
   listContent: {
-    gap: spacing.lg,
+    gap: spacing.md,
     paddingBottom: spacing.lg,
   },
   headerSection: {
-    gap: spacing.lg,
-    paddingBottom: spacing.sm,
+    paddingBottom: spacing.xs,
   },
-  description: {
-    ...typography.subheadline,
-    color: colors.textSecondary,
+  footerSection: {
+    gap: spacing.sm,
+    paddingTop: spacing.xs,
   },
   sectionLabel: {
     ...typography.footnoteMedium,
     color: colors.textSecondary,
     textTransform: 'uppercase',
     letterSpacing: 0.3,
-  },
-  prestationsHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: spacing.sm,
-  },
-  emptyPrestations: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: spacing.xl,
-  },
-  emptyPrestationsText: {
-    ...typography.subheadline,
-    color: colors.textSecondary,
-    textAlign: 'center',
   },
 }));
 }

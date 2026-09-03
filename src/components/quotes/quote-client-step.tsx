@@ -2,18 +2,11 @@ import { router, type Href } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { useMemo, useState } from 'react';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
-import {
-  ActivityIndicator,
-  FlatList,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { ActivityIndicator, FlatList, Pressable, Text, View } from 'react-native';
 
 import { ClientSearchBar } from '@/components/clients/client-search-bar';
 import { Button } from '@/components/ui/button';
-import { useStickyFooterInset } from '@/components/ui/sticky-footer';
+import { useWizardFooterInset } from '@/components/ui/wizard-screen';
 import { useColors, useThemedStyles } from '@/hooks/use-colors';
 import { radius } from '@/constants/theme/radius';
 import { spacing } from '@/constants/theme/spacing';
@@ -73,7 +66,7 @@ function ClientRow({
 export function QuoteClientStep({ selectedClientId, onSelectClient }: QuoteClientStepProps) {
   const styles = useStyles();
   const colors = useColors();
-  const footerInset = useStickyFooterInset('toolbar');
+  const footerInset = useWizardFooterInset();
   const [search, setSearch] = useState('');
   const debouncedSearch = useDebouncedValue(search, 300);
   const { clients, isLoading } = useInfiniteClients(debouncedSearch);

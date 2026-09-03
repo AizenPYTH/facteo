@@ -1,7 +1,8 @@
 import { router, type Href } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
-import { Platform, Pressable, StyleSheet, Text, type ViewStyle } from 'react-native';
+import { StyleSheet, Text, type ViewStyle } from 'react-native';
 
+import { PressableScale } from '@/components/ui/pressable-scale';
 import { useColors, useThemedStyles } from '@/hooks/use-colors';
 import { radius } from '@/constants/theme/radius';
 import { shadows } from '@/constants/theme/theme';
@@ -43,12 +44,13 @@ export function AddInvoiceFab({
   }
 
   return (
-    <Pressable
+    <PressableScale
+      accessibilityLabel={label}
       accessibilityRole="button"
       onPress={() => {
         void handlePress();
       }}
-      style={({ pressed }) => [styles.fab, pressed && styles.pressed, style]}
+      style={[styles.fab, style]}
       testID={testID}>
       <SymbolView
         name={{ ios: 'plus', android: 'add', web: 'add' }}
@@ -57,7 +59,7 @@ export function AddInvoiceFab({
         type="hierarchical"
       />
       <Text style={styles.label}>{label}</Text>
-    </Pressable>
+    </PressableScale>
   );
 }
 
@@ -75,10 +77,6 @@ function useStyles() {
     paddingVertical: spacing.md,
     minHeight: 56,
     ...shadows.floating,
-  },
-  pressed: {
-    backgroundColor: colors.primaryPressed,
-    opacity: Platform.OS === 'ios' ? 0.92 : 1,
   },
   label: {
     ...typography.subheadlineMedium,

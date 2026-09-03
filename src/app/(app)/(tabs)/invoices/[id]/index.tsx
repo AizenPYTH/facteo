@@ -3,7 +3,7 @@ import { useFocusEffect, useLocalSearchParams } from 'expo-router';
 import * as Linking from 'expo-linking';
 import { SymbolView } from 'expo-symbols';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { DocumentActionsSheet } from '@/components/documents/document-actions-sheet';
@@ -14,10 +14,11 @@ import {
   InvoiceScreenHeader,
   PaymentModal,
 } from '@/components/invoices';
+import { DocumentDetailSkeleton } from '@/components/documents/document-detail-skeleton';
 import { PdfPreviewModal } from '@/components/pdf/pdf-preview-modal';
 import { TemplateGalleryModal } from '@/components/pdf/template-gallery-modal';
 import { DocumentClientSignatureBlock } from '@/components/signatures/document-client-signature-block';
-import { LoadingView } from '@/components/ui/loading-view';
+import { PressableScale } from '@/components/ui/pressable-scale';
 import { useDocumentActions } from '@/hooks/use-document-actions';
 import { useThemedStyles, useColors } from '@/hooks/use-colors';
 import { spacing } from '@/constants/theme/spacing';
@@ -404,7 +405,7 @@ export default function InvoiceDetailScreen() {
   if (isSwitching || isLoading || !invoice) {
     return (
       <SafeAreaView edges={['top', 'bottom']} style={styles.safeArea}>
-        <LoadingView message="Chargement de la facture..." />
+        <DocumentDetailSkeleton />
       </SafeAreaView>
     );
   }
@@ -415,19 +416,21 @@ export default function InvoiceDetailScreen() {
         <InvoiceScreenHeader
           title={invoice.number}
           trailing={
-            <Pressable
+            <PressableScale
+              accessibilityHint="Ouvre les actions disponibles sur cette facture"
               accessibilityLabel="Actions"
               accessibilityRole="button"
               hitSlop={8}
+              intensity="subtle"
               onPress={() => setActionsVisible(true)}
-              style={({ pressed }) => [styles.actionsButton, pressed && styles.pressed]}>
+              style={styles.actionsButton}>
               <SymbolView
                 name={{ ios: 'ellipsis.circle', android: 'more_horiz', web: 'more_horiz' }}
                 size={26}
                 tintColor={colors.primary}
               />
               <Text style={styles.actionsLabel}>Actions</Text>
-            </Pressable>
+            </PressableScale>
           }
         />
       </View>
@@ -539,9 +542,6 @@ function useStyles() {
     actionsLabel: {
       ...typography.subheadlineMedium,
       color: colors.primary,
-    },
-    pressed: {
-      opacity: 0.75,
     },
   }));
 }

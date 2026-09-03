@@ -1,9 +1,10 @@
 import { router, type Href } from 'expo-router';
 import { useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { DocumentDetailSkeleton } from '@/components/documents/document-detail-skeleton';
 import { DocumentFinalizePanel } from '@/components/pdf/document-finalize-panel';
 import { DocumentClientSignatureBlock } from '@/components/signatures/document-client-signature-block';
 import { SentDocumentsSection } from '@/components/documents/sent-documents-section';
@@ -13,8 +14,10 @@ import {
   QuoteScreenHeader,
 } from '@/components/quotes';
 import { Button } from '@/components/ui/button';
-import { LoadingView } from '@/components/ui/loading-view';
-import { useColors, useThemedStyles } from '@/hooks/use-colors';
+import { Card } from '@/components/ui/card';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { typography } from '@/constants/theme/typography';
+import { useThemedStyles } from '@/hooks/use-colors';
 import { spacing } from '@/constants/theme/spacing';
 import { useAuth } from '@/hooks/use-auth';
 import { useTenant } from '@/hooks/use-tenant';
@@ -36,7 +39,6 @@ import { useToast } from '@/providers/toast-provider';
 
 export default function QuoteDetailScreen() {
   const styles = useStyles();
-  const colors = useColors();
   const { isWeb, isDesktop, isTablet } = useBreakpoint();
   const { id } = useLocalSearchParams<{ id: string }>();
   useDesktopListRedirect('/quotes');
@@ -52,6 +54,7 @@ export default function QuoteDetailScreen() {
   } = useQuoteMutations();
   const { showError, showSuccess } = useToast();
   const [deleteVisible, setDeleteVisible] = useState(false);
+  const [convertVisible, setConvertVisible] = useState(false);
   const [signModalVisible, setSignModalVisible] = useState(false);
   const { data: sentDocuments = [], isLoading: sentDocumentsLoading } = useSentDocuments(
     'quote',
@@ -110,9 +113,13 @@ export default function QuoteDetailScreen() {
 
     try {
       const invoice = await convertToInvoice.mutateAsync(quoteId);
-      showSuccess('Facture créée.');
+      setConvertVisible(false);
+      // On nomme la facture produite : « Facture créée » ne disait pas laquelle,
+      // et l'écran changeait sans que le lien avec le devis soit explicite.
+      showSuccess(`Facture ${invoice.number} créée depuis ${quote?.number ?? 'ce devis'}.`);
       router.push(`/invoices/${invoice.id}` as Href);
     } catch (error) {
+      setConvertVisible(false);
       showError(getQuoteErrorMessage(readErrorMessage(error)));
     }
   }
@@ -139,7 +146,7 @@ export default function QuoteDetailScreen() {
   if (isLoading || !quote) {
     return (
       <SafeAreaView edges={['top', 'bottom']} style={styles.safeArea}>
-        <LoadingView message="Chargement du devis..." />
+        <DocumentDetailSkeleton />
       </SafeAreaView>
     );
   }
@@ -158,6 +165,21 @@ export default function QuoteDetailScreen() {
         contentContainerStyle={styles.content}
         keyboardDismissMode="on-drag"
         showsVerticalScrollIndicator={false}>
+        {quote.convertedInvoiceId ? (
+          // La conversion ne laissait qu'un bouton parmi cinq en pied d'écran :
+          // rien ne disait, en haut du devis, qu'une facture en était issue.
+          <Card
+            accessibilityHint="Ouvre la facture issue de ce devis"
+            accessibilityLabel="Voir la facture issue de ce devis"
+            onPress={() => router.push(`/invoices/${quote.convertedInvoiceId}` as Href)}
+            variant="subtle">
+            <Text style={styles.bannerTitle}>Ce devis a été converti</Text>
+            <Text style={styles.bannerMessage}>
+              Une facture a été créée à partir de ces prestations. Appuyez pour l’ouvrir.
+            </Text>
+          </Card>
+        ) : null}
+
         <QuoteDetailView quote={quote} />
 
         <DocumentFinalizePanel
@@ -226,22 +248,24 @@ export default function QuoteDetailScreen() {
         {convertible ? (
           <Button
             loading={convertToInvoice.isPending}
-            onPress={handleConvert}
+            onPress={() => setConvertVisible(true)}
             title="Convertir en facture"
-            variant="ghost"
-          />
-        ) : null}
-        {quote.convertedInvoiceId ? (
-          <Button
-            onPress={() => router.push(`/invoices/${quote.convertedInvoiceId}` as Href)}
-            title="Voir la facture"
-            variant="ghost"
           />
         ) : null}
         {deletable ? (
           <Button onPress={() => setDeleteVisible(true)} title="Supprimer" variant="ghost" />
         ) : null}
       </View>
+
+      <ConfirmDialog
+        confirmLabel="Convertir"
+        loading={convertToInvoice.isPending}
+        message={`Une facture reprenant les prestations de ${quote.number} sera créée. Le devis, lui, reste inchangé.`}
+        onCancel={() => setConvertVisible(false)}
+        onConfirm={handleConvert}
+        title="Convertir en facture ?"
+        visible={convertVisible}
+      />
 
       <DeleteQuoteModal
         loading={deleteQuote.isPending}
@@ -280,6 +304,14 @@ function useStyles() {
   },
   statusActions: {
     gap: spacing.sm,
+  },
+  bannerTitle: {
+    ...typography.subheadlineMedium,
+    color: colors.text,
+  },
+  bannerMessage: {
+    ...typography.footnote,
+    color: colors.textSecondary,
   },
   footer: {
     paddingHorizontal: spacing.screenPaddingHorizontal,

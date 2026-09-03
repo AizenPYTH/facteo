@@ -1,6 +1,6 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
-import { useColors, useThemedStyles } from '@/hooks/use-colors';
+import { useThemedStyles } from '@/hooks/use-colors';
 import { radius } from '@/constants/theme/radius';
 import { spacing } from '@/constants/theme/spacing';
 import { typography } from '@/constants/theme/typography';
@@ -13,7 +13,6 @@ type QuoteWizardProgressProps = {
 
 export function QuoteWizardProgress({ currentStep }: QuoteWizardProgressProps) {
   const styles = useStyles();
-  const colors = useColors();
   return (
     <View style={styles.container}>
       {STEPS.map((label, index) => {

@@ -1,12 +1,12 @@
-import { StyleSheet, Text, View, type ViewStyle } from 'react-native';
+import { Text, View, type ViewStyle } from 'react-native';
 
-import { useColors, useThemedStyles } from '@/hooks/use-colors';
-import { radius } from '@/constants/theme/radius';
+import { DocumentLinesSection } from '@/components/documents/document-lines-section';
+import { Card } from '@/components/ui/card';
 import { spacing } from '@/constants/theme/spacing';
 import { typography } from '@/constants/theme/typography';
+import { useThemedStyles } from '@/hooks/use-colors';
 import { formatDate } from '@/lib/format/date';
-import { formatPriceHT } from '@/lib/format/currency';
-import { mapLinesToDocumentTotals, mapLineValueToTotals } from '@/lib/quotes/mappers';
+import { mapLinesToDocumentTotals } from '@/lib/quotes/mappers';
 import type { QuoteDetail } from '@/types/quote';
 
 import { QuoteField } from './quote-field';
@@ -20,7 +20,6 @@ type QuoteDetailViewProps = {
 
 export function QuoteDetailView({ quote, style }: QuoteDetailViewProps) {
   const styles = useStyles();
-  const colors = useColors();
   const totals = mapLinesToDocumentTotals(quote.lines);
 
   return (
@@ -30,7 +29,7 @@ export function QuoteDetailView({ quote, style }: QuoteDetailViewProps) {
           <Text style={styles.sectionTitle}>Informations</Text>
           <QuoteStatusBadge status={quote.status} />
         </View>
-        <View style={styles.card}>
+        <Card variant="surface">
           <QuoteField emphasize label="Numéro" value={quote.number} />
           <QuoteField label="Client" value={quote.clientName} />
           <QuoteField
@@ -46,33 +45,12 @@ export function QuoteDetailView({ quote, style }: QuoteDetailViewProps) {
               value={`${quote.paymentTermsDays} jours`}
             />
           ) : null}
-        </View>
+        </Card>
       </View>
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Prestations</Text>
-        <View style={styles.card}>
-          {quote.lines.map((line, index) => {
-            const lineTotals = mapLineValueToTotals(line);
-
-            return (
-              <View key={line.id} style={index > 0 ? styles.lineSeparator : undefined}>
-                <Text style={styles.lineTitle}>Prestation {index + 1}</Text>
-                <Text style={styles.lineDescription}>{line.description}</Text>
-                <Text style={styles.lineMeta}>
-                  {line.quantity} {line.unit} × {formatPriceHT(Number(line.unitPrice.replace(',', '.')) || 0)} HT
-                  {Number(line.discountPercent.replace(',', '.')) > 0
-                    ? ` · Remise ${line.discountPercent} %`
-                    : ''}
-                </Text>
-                <Text style={styles.lineAmount}>
-                  {formatPriceHT(lineTotals.lineTotalHt)} HT · TVA {line.vatRate} % ·{' '}
-                  {formatPriceHT(lineTotals.lineTotalTtc)} TTC
-                </Text>
-              </View>
-            );
-          })}
-        </View>
+        <DocumentLinesSection lines={quote.lines} />
       </View>
 
       <View style={styles.section}>
@@ -83,18 +61,18 @@ export function QuoteDetailView({ quote, style }: QuoteDetailViewProps) {
       {quote.notes?.trim() ? (
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Notes</Text>
-          <View style={styles.card}>
+          <Card variant="surface">
             <Text style={styles.notes}>{quote.notes.trim()}</Text>
-          </View>
+          </Card>
         </View>
       ) : null}
 
       {quote.internalNotes?.trim() ? (
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Notes internes</Text>
-          <View style={styles.card}>
+          <Card variant="subtle">
             <Text style={styles.notesMuted}>{quote.internalNotes.trim()}</Text>
-          </View>
+          </Card>
         </View>
       ) : null}
     </View>
@@ -117,35 +95,6 @@ function useStyles() {
   sectionTitle: {
     ...typography.headline,
     color: colors.text,
-  },
-  card: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.card,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing.md,
-    gap: spacing.md,
-  },
-  lineSeparator: {
-    paddingTop: spacing.md,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.separator,
-  },
-  lineTitle: {
-    ...typography.footnoteMedium,
-    color: colors.textSecondary,
-  },
-  lineDescription: {
-    ...typography.bodyMedium,
-    color: colors.text,
-  },
-  lineMeta: {
-    ...typography.footnote,
-    color: colors.textSecondary,
-  },
-  lineAmount: {
-    ...typography.subheadlineMedium,
-    color: colors.primary,
   },
   notes: {
     ...typography.body,

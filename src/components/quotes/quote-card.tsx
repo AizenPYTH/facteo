@@ -1,13 +1,14 @@
-import { Pressable, StyleSheet, View, type ViewStyle } from 'react-native';
+import { Text, View, type ViewStyle } from 'react-native';
 
-import { useColors, useThemedStyles } from '@/hooks/use-colors';
+import { Badge } from '@/components/ui/badge';
+import { PressableScale } from '@/components/ui/pressable-scale';
 import { spacing } from '@/constants/theme/spacing';
-import { formatDate } from '@/lib/format/date';
+import { typography } from '@/constants/theme/typography';
+import { useColors, useThemedStyles } from '@/hooks/use-colors';
+import { quoteStatusTone } from '@/lib/documents/status-tone';
 import { formatPriceHT } from '@/lib/format/currency';
-import type { Quote } from '@/types/quote';
-
-import { QuoteField } from './quote-field';
-import { QuoteStatusBadge } from './quote-status-badge';
+import { formatDate } from '@/lib/format/date';
+import { QUOTE_STATUS_LABELS, type Quote } from '@/types/quote';
 
 export type QuoteCardProps = {
   quote: Quote;
@@ -16,25 +17,68 @@ export type QuoteCardProps = {
   testID?: string;
 };
 
+/** Vrai quand la validité est dépassée mais que le statut ne le dit pas encore. */
+function isExpiringSoon(quote: Quote): boolean {
+  if (!quote.validUntil || quote.status !== 'sent') {
+    return false;
+  }
+  return new Date(quote.validUntil).getTime() < Date.now();
+}
+
+/**
+ * Ligne de la liste des devis — même grammaire que `InvoiceCard` : numéro et
+ * montant portent la lecture, le statut qualifie, la validité n'apparaît que
+ * lorsqu'elle informe.
+ */
 export function QuoteCard({ quote, onPress, style, testID }: QuoteCardProps) {
   const styles = useStyles();
   const colors = useColors();
+
   const displayDate = formatDate(quote.issuedAt ?? quote.createdAt);
+  const expired = isExpiringSoon(quote);
+  const validityLabel = quote.validUntil
+    ? `${expired ? 'Expiré le' : 'Valable jusqu’au'} ${formatDate(quote.validUntil)}`
+    : null;
 
   const content = (
-    <View style={[styles.card, style]}>
-      <View style={styles.header}>
-        <QuoteField emphasize label="Numéro" value={quote.number} />
-        <QuoteStatusBadge status={quote.status} />
+    <View style={[styles.row, style]}>
+      <View style={styles.leading}>
+        <View style={styles.titleRow}>
+          <Text maxFontSizeMultiplier={1.4} numberOfLines={1} style={styles.number}>
+            {quote.number}
+          </Text>
+          <Badge
+            label={QUOTE_STATUS_LABELS[quote.status]}
+            size="sm"
+            tone={quoteStatusTone[quote.status]}
+          />
+        </View>
+
+        <Text maxFontSizeMultiplier={1.4} numberOfLines={1} style={styles.client}>
+          {quote.clientName}
+        </Text>
+
+        <Text maxFontSizeMultiplier={1.4} numberOfLines={1} style={styles.meta}>
+          {displayDate}
+        </Text>
       </View>
 
-      <View style={styles.row}>
-        <QuoteField label="Client" value={quote.clientName} />
-        <QuoteField label="Date" value={displayDate} />
-      </View>
-
-      <View style={styles.row}>
-        <QuoteField label="Montant TTC" value={formatPriceHT(quote.totalTtc)} />
+      <View style={styles.trailing}>
+        <Text
+          adjustsFontSizeToFit
+          maxFontSizeMultiplier={1.3}
+          numberOfLines={1}
+          style={styles.amount}>
+          {formatPriceHT(quote.totalTtc)}
+        </Text>
+        {validityLabel ? (
+          <Text
+            maxFontSizeMultiplier={1.3}
+            numberOfLines={1}
+            style={[styles.validity, expired && { color: colors.warning }]}>
+            {validityLabel}
+          </Text>
+        ) : null}
       </View>
     </View>
   );
@@ -48,39 +92,68 @@ export function QuoteCard({ quote, onPress, style, testID }: QuoteCardProps) {
   }
 
   return (
-    <Pressable
-      accessibilityLabel={`Devis ${quote.number}`}
+    <PressableScale
+      accessibilityHint="Ouvre le devis"
+      accessibilityLabel={`Devis ${quote.number}, ${quote.clientName}, ${formatPriceHT(quote.totalTtc)}, ${QUOTE_STATUS_LABELS[quote.status]}`}
       accessibilityRole="button"
+      intensity="subtle"
       onPress={() => onPress(quote)}
-      style={({ pressed }) => [styles.wrapper, pressed && styles.pressed]}
+      style={styles.wrapper}
       testID={testID}>
       {content}
-    </Pressable>
+    </PressableScale>
   );
 }
 
 function useStyles() {
   return useThemedStyles((colors) => ({
-  wrapper: {
-    backgroundColor: colors.surface,
-  },
-  pressed: {
-    backgroundColor: colors.backgroundSecondary,
-  },
-  card: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
-    gap: spacing.md,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    gap: spacing.sm,
-  },
-  row: {
-    flexDirection: 'row',
-    gap: spacing.md,
-  },
-}));
+    wrapper: {
+      backgroundColor: colors.surface,
+    },
+    row: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      gap: spacing.md,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing[3],
+      minHeight: 72,
+    },
+    leading: {
+      flex: 1,
+      minWidth: 0,
+      gap: spacing[0.5],
+    },
+    titleRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing[2],
+    },
+    number: {
+      ...typography.bodySemibold,
+      color: colors.text,
+      flexShrink: 1,
+    },
+    client: {
+      ...typography.subheadline,
+      color: colors.textSecondary,
+    },
+    meta: {
+      ...typography.caption1,
+      color: colors.textTertiary,
+    },
+    trailing: {
+      alignItems: 'flex-end',
+      gap: spacing[0.5],
+      maxWidth: '46%',
+    },
+    amount: {
+      ...typography.bodySemibold,
+      color: colors.text,
+    },
+    validity: {
+      ...typography.caption1,
+      color: colors.textTertiary,
+      textAlign: 'right',
+    },
+  }));
 }

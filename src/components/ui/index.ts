@@ -14,6 +14,7 @@ export { CollapsibleSection } from '@/components/ui/collapsible-section';
 export { ConfirmDialog, type ConfirmDialogProps } from '@/components/ui/confirm-dialog';
 export { EmptyState } from '@/components/ui/empty-state';
 export { ErrorState, type ErrorStateProps } from '@/components/ui/error-state';
+export { FilterChip, FilterChipBar, type FilterChipProps } from '@/components/ui/filter-chip';
 export { FormScreen } from '@/components/ui/form-screen';
 export {
   FormNavigationProvider,
@@ -25,10 +26,11 @@ export { ListRow, ListRowSeparator, type ListRowProps } from '@/components/ui/li
 export { LoadingView } from '@/components/ui/loading-view';
 export { NavigationHeader } from '@/components/ui/navigation-header';
 export { PressableScale, type PressableScaleProps } from '@/components/ui/pressable-scale';
+export { SearchField, type SearchFieldProps } from '@/components/ui/search-field';
 export { Skeleton, SkeletonText, type SkeletonProps } from '@/components/ui/skeleton';
 export { StaggerIn, type StaggerInProps } from '@/components/ui/stagger-in';
 export { StickyFooter } from '@/components/ui/sticky-footer';
 export { SurfaceCard } from '@/components/ui/surface-card';
 export { TextField } from '@/components/ui/text-field';
 export { WizardActionBar } from '@/components/ui/wizard-action-bar';
-export { WizardScreen } from '@/components/ui/wizard-screen';
+export { WizardScreen, useWizardFooterInset } from '@/components/ui/wizard-screen';

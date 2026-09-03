@@ -2,17 +2,17 @@ import {
   ActivityIndicator,
   FlatList,
   RefreshControl,
-  StyleSheet,
-  Text,
   View,
   type ListRenderItem,
   type ViewStyle,
 } from 'react-native';
 
-import { useColors, useThemedStyles } from '@/hooks/use-colors';
+import { DocumentListSkeleton } from '@/components/documents/document-list-skeleton';
+import { ErrorState } from '@/components/ui/error-state';
+import { ListRowSeparator } from '@/components/ui/list-row';
 import { radius } from '@/constants/theme/radius';
 import { spacing } from '@/constants/theme/spacing';
-import { typography } from '@/constants/theme/typography';
+import { useColors, useThemedStyles } from '@/hooks/use-colors';
 import type { Invoice } from '@/types/invoice';
 
 import { EmptyInvoices } from './empty-invoices';
@@ -26,6 +26,8 @@ export type InvoicesListProps = {
   isFetchingNextPage?: boolean;
   isSearching?: boolean;
   showCreateAction?: boolean;
+  /** Échec du chargement : affiché à la place de la liste, avec reprise. */
+  error?: unknown;
   onRefresh?: () => void;
   onEndReached?: () => void;
   contentContainerStyle?: ViewStyle;
@@ -39,6 +41,7 @@ export function InvoicesList({
   isFetchingNextPage = false,
   isSearching = false,
   showCreateAction = true,
+  error,
   onRefresh,
   onEndReached,
   onInvoicePress,
@@ -47,31 +50,28 @@ export function InvoicesList({
 }: InvoicesListProps) {
   const styles = useStyles();
   const colors = useColors();
+
   const renderItem: ListRenderItem<Invoice> = ({ item, index }) => (
     <View>
+      {index > 0 ? <ListRowSeparator /> : null}
       <InvoiceCard invoice={item} onPress={onInvoicePress} />
-      {index < invoices.length - 1 ? <View style={styles.separator} /> : null}
     </View>
   );
 
-  const renderFooter = () => {
-    if (!isFetchingNextPage) {
-      return null;
-    }
-
-    return (
-      <View style={styles.footer}>
-        <ActivityIndicator color={colors.primary} size="small" />
-      </View>
-    );
-  };
-
   if (isInitialLoading) {
+    return <DocumentListSkeleton />;
+  }
+
+  // Une erreur de chargement se présentait comme une liste vide : « Aucune
+  // facture » alors que le réseau avait échoué.
+  if (error && invoices.length === 0) {
     return (
-      <View style={styles.loading}>
-        <ActivityIndicator color={colors.primary} size="large" />
-        <Text style={styles.loadingText}>Chargement des factures...</Text>
-      </View>
+      <ErrorState
+        message="Vérifiez votre connexion, puis réessayez."
+        onRetry={onRefresh}
+        title="Impossible de charger vos factures"
+        variant="screen"
+      />
     );
   }
 
@@ -82,11 +82,19 @@ export function InvoicesList({
         contentContainerStyle,
       ]}
       data={invoices}
+      keyboardShouldPersistTaps="handled"
       keyExtractor={(item) => item.id}
       ListEmptyComponent={
         <EmptyInvoices isSearching={isSearching} showCreateAction={showCreateAction} />
       }
-      ListFooterComponent={renderFooter}
+      ListFooterComponent={
+        isFetchingNextPage ? (
+          <View style={styles.footer}>
+            <ActivityIndicator color={colors.primary} size="small" />
+          </View>
+        ) : null
+      }
+      nestedScrollEnabled
       onEndReached={onEndReached}
       onEndReachedThreshold={0.4}
       refreshControl={
@@ -100,8 +108,6 @@ export function InvoicesList({
         ) : undefined
       }
       renderItem={renderItem}
-      keyboardShouldPersistTaps="handled"
-      nestedScrollEnabled
       showsVerticalScrollIndicator={false}
       style={styles.list}
       testID={testID}
@@ -111,40 +117,24 @@ export function InvoicesList({
 
 function useStyles() {
   return useThemedStyles((colors) => ({
-  list: {
-    flex: 1,
-  },
-  listContent: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.card,
-    borderWidth: 1,
-    borderColor: colors.border,
-    overflow: 'hidden',
-  },
-  emptyContent: {
-    flexGrow: 1,
-    justifyContent: 'center',
-  },
-  loading: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: spacing['3xl'],
-    gap: spacing.md,
-  },
-  loadingText: {
-    ...typography.subheadline,
-    color: colors.textSecondary,
-  },
-  footer: {
-    paddingVertical: spacing.lg,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  separator: {
-    height: StyleSheet.hairlineWidth,
-    backgroundColor: colors.separator,
-    marginLeft: spacing.md,
-  },
-}));
+    list: {
+      flex: 1,
+    },
+    listContent: {
+      backgroundColor: colors.surface,
+      borderRadius: radius.card,
+      borderWidth: 1,
+      borderColor: colors.border,
+      overflow: 'hidden',
+    },
+    emptyContent: {
+      flexGrow: 1,
+      justifyContent: 'center',
+    },
+    footer: {
+      paddingVertical: spacing.lg,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+  }));
 }

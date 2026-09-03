@@ -1,84 +1,31 @@
-import { SymbolView } from 'expo-symbols';
-import { Pressable, StyleSheet, TextInput, View, type ViewStyle } from 'react-native';
+import type { StyleProp, ViewStyle } from 'react-native';
 
-import { useColors, useThemedStyles } from '@/hooks/use-colors';
-import { radius } from '@/constants/theme/radius';
-import { spacing } from '@/constants/theme/spacing';
-import { typography } from '@/constants/theme/typography';
+import { SearchField } from '@/components/ui/search-field';
 
 export type InvoiceSearchBarProps = {
   value: string;
   onChangeText: (value: string) => void;
   placeholder?: string;
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
   testID?: string;
 };
 
+/** Recherche de factures. Délègue au champ de recherche du socle. */
 export function InvoiceSearchBar({
   value,
   onChangeText,
-  placeholder = 'Rechercher par numéro de facture',
+  placeholder = 'Rechercher une facture',
   style,
   testID,
 }: InvoiceSearchBarProps) {
-  const styles = useStyles();
-  const colors = useColors();
   return (
-    <View style={[styles.container, style]} testID={testID}>
-      <SymbolView
-        name={{ ios: 'magnifyingglass', android: 'search', web: 'search' }}
-        size={18}
-        tintColor={colors.iconTertiary}
-        type="hierarchical"
-      />
-      <TextInput
-        autoCapitalize="none"
-        autoCorrect={false}
-        clearButtonMode="while-editing"
-        onChangeText={onChangeText}
-        placeholder={placeholder}
-        placeholderTextColor={colors.textPlaceholder}
-        returnKeyType="search"
-        style={styles.input}
-        value={value}
-      />
-      {value.length > 0 ? (
-        <Pressable
-          accessibilityLabel="Effacer la recherche"
-          accessibilityRole="button"
-          hitSlop={8}
-          onPress={() => onChangeText('')}>
-          <SymbolView
-            name={{ ios: 'xmark.circle.fill', android: 'close', web: 'close' }}
-            size={18}
-            tintColor={colors.iconTertiary}
-            type="hierarchical"
-          />
-        </Pressable>
-      ) : null}
-    </View>
+    <SearchField
+      accessibilityLabel="Rechercher une facture par numéro ou client"
+      onChangeText={onChangeText}
+      placeholder={placeholder}
+      style={style}
+      testID={testID}
+      value={value}
+    />
   );
-}
-
-function useStyles() {
-  return useThemedStyles((colors) => ({
-  container: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    backgroundColor: colors.surface,
-    borderRadius: radius.input,
-    borderWidth: 1,
-    borderColor: colors.border,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.inputPadding,
-  },
-  input: {
-    ...typography.body,
-    flex: 1,
-    color: colors.text,
-    padding: 0,
-    margin: 0,
-  },
-}));
 }

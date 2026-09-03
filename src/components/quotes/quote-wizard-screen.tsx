@@ -6,6 +6,8 @@ import { QuoteAddLinesStep } from '@/components/quotes/quote-add-lines-step';
 import { QuoteClientStep } from '@/components/quotes/quote-client-step';
 import { QuoteScreenHeader } from '@/components/quotes/quote-screen-header';
 import { QuoteWizardProgress } from '@/components/quotes/quote-wizard-progress';
+import { DocumentTotalsBar } from '@/components/documents/document-totals-bar';
+import { FormNavigationProvider } from '@/components/ui/form/form-navigation';
 import { WizardActionBar } from '@/components/ui/wizard-action-bar';
 import { WizardScreen } from '@/components/ui/wizard-screen';
 import { useCompanyProfile } from '@/hooks/use-company-profile';
@@ -268,6 +270,8 @@ export function QuoteWizardScreen({
 
   const isDesktop = variant === 'desktop';
 
+  const handlePrimary = step < TOTAL_STEPS ? handleNext : () => void handleSave();
+
   return (
     <WizardScreen
       bodyScroll={step === 3 ? 'aware' : 'none'}
@@ -275,7 +279,7 @@ export function QuoteWizardScreen({
         <WizardActionBar
           backLabel={step === 1 ? 'Annuler' : 'Précédent'}
           onBack={handleBack}
-          onPrimary={step < TOTAL_STEPS ? handleNext : handleSave}
+          onPrimary={handlePrimary}
           primaryDisabled={step < TOTAL_STEPS ? !canGoNext() : false}
           primaryLabel={primaryActionLabel}
           primaryLoading={step >= TOTAL_STEPS && isSaving}
@@ -289,8 +293,17 @@ export function QuoteWizardScreen({
           </>
         )
       }
+      summary={
+        // Dès qu'il y a des lignes, le total reste sous les yeux — y compris
+        // pendant la saisie, clavier ouvert.
+        step >= 2 && state.lines.length > 0 ? (
+          <DocumentTotalsBar lineCount={state.lines.length} totals={totals} />
+        ) : null
+      }
       variant={variant}>
-      {renderStep()}
+      <FormNavigationProvider onSubmit={handlePrimary} submitReturnKey="done">
+        {renderStep()}
+      </FormNavigationProvider>
     </WizardScreen>
   );
 }
