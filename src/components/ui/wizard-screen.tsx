@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, type ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
+import { KeyboardAwareScrollView, useKeyboardState } from 'react-native-keyboard-controller';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { StickyFooter, useStickyFooterInset } from '@/components/ui/sticky-footer';
@@ -56,9 +56,17 @@ export function WizardScreen({
   const isDesktop = variant === 'desktop';
   const fallbackInset = useStickyFooterInset('toolbar');
   const [measuredFooter, setMeasuredFooter] = useState(0);
+  const keyboardVisible = useKeyboardState((state) => state.isVisible);
 
   // Tant que le pied n'a pas été mesuré, on garde l'estimation du gabarit.
   const footerInset = Math.max(measuredFooter, fallbackInset);
+
+  // Clavier fermé, le pied occupe sa place dans la colonne : rien à réserver.
+  // Clavier ouvert, il remonte au-dessus du contenu et il faut le compenser —
+  // sans quoi le dernier champ passe dessous. Réserver dans les deux cas
+  // laissait un vide en bas de l'étape, d'autant plus visible depuis que le
+  // récapitulatif a épaissi le pied.
+  const scrollReserve = keyboardVisible ? footerInset : spacing.md;
 
   if (isDesktop) {
     return (
@@ -82,7 +90,7 @@ export function WizardScreen({
               bottomOffset={hasFooter ? footerInset : spacing.md}
               contentContainerStyle={[
                 styles.scrollContent,
-                hasFooter ? { paddingBottom: footerInset } : null,
+                hasFooter ? { paddingBottom: scrollReserve } : null,
               ]}
               keyboardDismissMode="on-drag"
               keyboardShouldPersistTaps="handled"
