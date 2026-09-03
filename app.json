@@ -2,7 +2,7 @@
   "expo": {
     "name": "INVEQ",
     "slug": "FACTEO",
-    "version": "1.0.4",
+    "version": "1.0.5",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "inveq",
@@ -10,7 +10,7 @@
     "ios": {
       "icon": "./assets/images/icon.png",
       "bundleIdentifier": "com.inveq.app",
-      "buildNumber": "57",
+      "buildNumber": "58",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
@@ -69,7 +69,8 @@
           "sounds": []
         }
       ],
-      "expo-iap"
+      "expo-iap",
+      "./plugins/with-defer-iap-launch.js"
     ],
     "experiments": {
       "typedRoutes": true,

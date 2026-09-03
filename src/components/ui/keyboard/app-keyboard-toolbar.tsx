@@ -1,41 +1,13 @@
-import { Platform } from 'react-native';
-import { KeyboardToolbar } from 'react-native-keyboard-controller';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-
-import { useColors } from '@/hooks/use-colors';
-
 /**
- * Barre globale Précédent / Suivant / OK, collée au clavier.
- * Montée une seule fois dans le layout racine — tous les TextInput y sont reliés.
+ * Toolbar Prev/Next/OK volontairement désactivée.
+ *
+ * `KeyboardToolbar` (react-native-keyboard-controller) montée à la racine
+ * a été identifiée comme cause probable du crash immédiat TestFlight 1.0.4 (57) :
+ * vue native attachée avant le premier TextInput / avant la fin du layout.
+ *
+ * Le clavier reste géré par KeyboardProvider + KeyboardAwareScrollView +
+ * KeyboardStickyView (déjà en production App Store).
  */
 export function AppKeyboardToolbar() {
-  const insets = useSafeAreaInsets();
-  const colors = useColors();
-
-  if (Platform.OS === 'web') {
-    return null;
-  }
-
-  return (
-    <KeyboardToolbar
-      insets={{ left: insets.left, right: insets.right }}
-      theme={{
-        light: {
-          primary: colors.primary,
-          disabled: colors.textTertiary,
-          background: colors.surface,
-          ripple: colors.primarySubtle,
-        },
-        dark: {
-          primary: colors.primary,
-          disabled: colors.textTertiary,
-          background: colors.surface,
-          ripple: colors.primarySubtle,
-        },
-      }}>
-      <KeyboardToolbar.Prev />
-      <KeyboardToolbar.Next />
-      <KeyboardToolbar.Done text="OK" />
-    </KeyboardToolbar>
-  );
+  return null;
 }

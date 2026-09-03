@@ -4,8 +4,8 @@ import { StatusBar } from 'expo-status-bar';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+import { AppErrorBoundary } from '@/components/app-error-boundary';
 import { SplashScreenController } from '@/components/splash-screen-controller';
-import { AppKeyboardToolbar } from '@/components/ui/keyboard';
 import { AuthProvider } from '@/providers/auth-provider';
 import { CompanyProvider } from '@/providers/company-provider';
 import { ColorsProvider } from '@/providers/colors-provider';
@@ -42,24 +42,25 @@ function RootNavigation() {
 
 export default function RootLayout() {
   return (
-    <SafeAreaProvider>
-      <KeyboardProvider>
-        <QueryProvider>
-          <AuthProvider>
-            <CompanyProvider>
-              <ThemePreferenceProvider>
+    <AppErrorBoundary>
+      <SafeAreaProvider>
+        <KeyboardProvider>
+          <QueryProvider>
+            <AuthProvider>
+              <CompanyProvider>
+                <ThemePreferenceProvider>
                   <SplashScreenController />
                   <ToastProvider>
                     <SubscriptionProvider>
                       <RootNavigation />
-                      <AppKeyboardToolbar />
                     </SubscriptionProvider>
                   </ToastProvider>
-              </ThemePreferenceProvider>
-            </CompanyProvider>
-          </AuthProvider>
-        </QueryProvider>
-      </KeyboardProvider>
-    </SafeAreaProvider>
+                </ThemePreferenceProvider>
+              </CompanyProvider>
+            </AuthProvider>
+          </QueryProvider>
+        </KeyboardProvider>
+      </SafeAreaProvider>
+    </AppErrorBoundary>
   );
 }

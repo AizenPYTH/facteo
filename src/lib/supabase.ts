@@ -5,16 +5,20 @@ import { createClient } from '@supabase/supabase-js';
 import { createSupabaseAuthStorage } from '@/lib/supabase/auth-storage';
 import type { Database } from '@/types/database';
 
-const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
-const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
+const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL?.trim() ?? '';
+const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY?.trim() ?? '';
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error(
-    'Configuration Supabase manquante. Ajoutez EXPO_PUBLIC_SUPABASE_URL et EXPO_PUBLIC_SUPABASE_ANON_KEY dans votre fichier .env.',
-  );
-}
+export const isSupabaseConfigured = Boolean(supabaseUrl && supabaseAnonKey);
 
-export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
+/**
+ * Ne jamais `throw` au chargement du module : en release iOS une exception
+ * synchrone à l’import tue le process (sortie immédiate TestFlight).
+ * Un client placeholder laisse l’UI s’afficher si les env EAS manquent.
+ */
+const resolvedUrl = supabaseUrl || 'https://invalid.supabase.co';
+const resolvedAnonKey = supabaseAnonKey || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.e30.invalid';
+
+export const supabase = createClient<Database>(resolvedUrl, resolvedAnonKey, {
   auth: {
     storage: createSupabaseAuthStorage(),
     autoRefreshToken: true,
