@@ -135,24 +135,6 @@ export default function LoginScreen() {
         <View style={styles.separatorLine} />
       </View>
 
-      <Pressable
-        accessibilityHint="Méthode recommandée si vous êtes déjà connecté sur ordinateur"
-        accessibilityRole="button"
-        disabled={busy}
-        onPress={() => router.push('/login-qr' as Href)}
-        style={({ pressed }) => [styles.qrCard, pressed && styles.qrCardPressed]}>
-        <Text style={styles.qrTitle}>Se connecter avec un QR code</Text>
-        <Text style={styles.qrHint}>
-          Méthode recommandée si vous êtes déjà connecté sur inveq.fr
-        </Text>
-      </Pressable>
-
-      <View style={styles.separatorRow}>
-        <View style={styles.separatorLine} />
-        <Text style={styles.separatorText}>ou avec e-mail</Text>
-        <View style={styles.separatorLine} />
-      </View>
-
       <Controller
         control={control}
         name="email"
@@ -225,28 +207,6 @@ function useStyles() {
       color: colors.textTertiary,
       textTransform: 'uppercase' as const,
       letterSpacing: 0.6,
-    },
-    qrCard: {
-      borderRadius: 14,
-      borderWidth: 1,
-      borderColor: colors.primary,
-      backgroundColor: colors.primarySubtle,
-      paddingVertical: spacing.md,
-      paddingHorizontal: spacing.md,
-      gap: spacing.xs,
-    },
-    qrCardPressed: {
-      opacity: 0.85,
-    },
-    qrTitle: {
-      ...typography.subheadlineMedium,
-      color: colors.primary,
-      textAlign: 'center' as const,
-    },
-    qrHint: {
-      ...typography.caption1,
-      color: colors.textSecondary,
-      textAlign: 'center' as const,
     },
     passwordBlock: {
       gap: spacing.xs,

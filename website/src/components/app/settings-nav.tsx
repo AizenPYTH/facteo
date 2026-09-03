@@ -14,7 +14,6 @@ import {
   Palette,
   Receipt,
   Shield,
-  Smartphone,
   Trash2,
   type LucideIcon,
 } from 'lucide-react';
@@ -41,7 +40,6 @@ export const SETTINGS_NAV_GROUPS: SettingsNavGroup[] = [
     items: [
       { href: '/app/settings/profile', label: 'Profil', icon: Shield },
       { href: '/app/settings/notifications', label: 'Notifications', icon: Bell },
-      { href: '/app/settings/mobile-login', label: 'Connexion mobile', icon: Smartphone },
     ],
   },
   {

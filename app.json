@@ -10,11 +10,10 @@
     "ios": {
       "icon": "./assets/images/icon.png",
       "bundleIdentifier": "com.inveq.app",
-      "buildNumber": "68",
+      "buildNumber": "69",
       "usesAppleSignIn": true,
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false,
-        "NSCameraUsageDescription": "INVEQ utilise l’appareil photo pour scanner le QR code de connexion."
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
@@ -62,15 +61,6 @@
           "icon": "./assets/images/icon.png",
           "color": "#4F46E5",
           "sounds": []
-        }
-      ],
-      [
-        "expo-camera",
-        {
-          "cameraPermission": "INVEQ utilise l’appareil photo pour scanner le QR code de connexion.",
-          "microphonePermission": "INVEQ n’enregistre pas de son pour le scan QR.",
-          "recordAudioAndroid": false,
-          "barcodeScannerEnabled": false
         }
       ],
       "expo-iap",

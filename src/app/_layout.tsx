@@ -34,7 +34,6 @@ function RootNavigation() {
           <Stack.Screen name="(auth)" />
           <Stack.Screen name="(app)" />
           <Stack.Screen name="auth" />
-          <Stack.Screen name="mlc" />
         </Stack>
       </ThemeProvider>
     </ColorsProvider>
