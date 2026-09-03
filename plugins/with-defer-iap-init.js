@@ -1,85 +1,120 @@
+'use strict';
+
 const fs = require('fs');
 const path = require('path');
+const {
+  withDangerousMod,
+  withFinalizedMod,
+  withPodfile,
+} = require('@expo/config-plugins');
+const { applyAndVerify } = require('./defer-iap-init-core');
+
+const POD_APPLY_MARKER = 'INVEQ_APPLY_EXPO_IAP_PATCH';
+const POD_ASSERT_MARKER = 'INVEQ_ASSERT_EXPO_IAP_PATCH';
 
 /**
- * expo-iap 5.x appelle `ExpoIapHelper.setupStore` dans `OnCreate`,
- * ce qui touche `OpenIapModule.shared` au process start et abort TestFlight
- * avant le premier écran JS (builds 57/59).
- *
- * On no-op le subscriber de lancement et on déplace `setupStore` dans
- * `initConnection()`, appelé uniquement à l’ouverture de l’écran Premium.
+ * Must stay true in committed code. Set to false only to prove that
+ * `expo prebuild` fails when the patch is not actually applied.
  */
+const APPLY_EXPO_IAP_PATCH = true;
 
-function patchAppDelegate(projectRoot) {
-  const swiftPath = path.join(
-    projectRoot,
-    'node_modules/expo-iap/ios/ExpoIapAppDelegateSubscriber.swift',
-  );
-  if (!fs.existsSync(swiftPath)) {
-    return;
-  }
+const POD_PRE_AUTOLINK = `
+  # ${POD_APPLY_MARKER}
+  inveq_iap_root = File.expand_path('..', __dir__)
+  inveq_iap_script = File.join(inveq_iap_root, 'plugins', 'defer-iap-init-core.js')
+  unless system('node', inveq_iap_script, inveq_iap_root)
+    raise '[with-defer-iap-init] Le patch expo-iap a échoué avant use_expo_modules!'
+  end
+`;
 
-  fs.writeFileSync(
-    swiftPath,
-    `import ExpoModulesCore
-#if canImport(UIKit)
-import UIKit
-#endif
+const POD_POST_INSTALL = `
+    # ${POD_ASSERT_MARKER}
+    inveq_iap_root = File.expand_path('..', __dir__)
+    inveq_iap_script = File.join(inveq_iap_root, 'plugins', 'defer-iap-init-core.js')
+    unless system('node', inveq_iap_script, inveq_iap_root)
+      raise '[with-defer-iap-init] Le patch expo-iap est absent après pod install'
+    end
+`;
 
-public class ExpoIapAppDelegateSubscriber: ExpoAppDelegateSubscriber {
-    public func application(
-        _ application: UIApplication,
-        didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
-    ) -> Bool {
-        return true
-    }
-}
-`,
-  );
+function fail(message) {
+  throw new Error(`[with-defer-iap-init] ${message}`);
 }
 
-function patchExpoIapModule(projectRoot) {
-  const modulePath = path.join(projectRoot, 'node_modules/expo-iap/ios/ExpoIapModule.swift');
-  if (!fs.existsSync(modulePath)) {
-    return;
+function patchFromMod(config, apply) {
+  const projectRoot = config.modRequest?.projectRoot;
+  if (!projectRoot) {
+    fail('modRequest.projectRoot manquant — le plugin doit s’exécuter pendant prebuild');
+  }
+  applyAndVerify(projectRoot, { apply });
+  return config;
+}
+
+function injectPodfileHooks(contents) {
+  if (!contents.includes('use_expo_modules!')) {
+    fail('Podfile sans use_expo_modules! — impossible d’injecter le patch avant l’autolinking');
+  }
+  if (!contents.includes('post_install do |installer|')) {
+    fail('Podfile sans post_install — impossible d’asserter le patch pendant pod install');
   }
 
-  let source = fs.readFileSync(modulePath, 'utf8');
-
-  source = source.replace(
-    /OnCreate \{ \[weak self\] in\s+Task \{ @MainActor \[weak self\] in\s+guard let self else \{ return \}\s+self\.listenerGeneration = ExpoIapHelper\.setupStore\(module: self\)\s+\}\s+\}/,
-    `OnCreate { [weak self] in
-            // INVEQ: StoreKit is initialized from initConnection, not process start.
-            _ = self
-        }`,
-  );
-
-  if (!source.includes('INVEQ_DEFERRED_IAP_SETUP')) {
-    source = source.replace(
-      `AsyncFunction("initConnection") { (config: [String: Any]?) async throws -> Bool in
-            // Note: iOS doesn't support alternative billing config parameter
-            // Config is ignored on iOS platform
-            await ExpoIapHelper.waitForStoreCleanup()`,
-      `AsyncFunction("initConnection") { (config: [String: Any]?) async throws -> Bool in
-            // Note: iOS doesn't support alternative billing config parameter
-            // Config is ignored on iOS platform
-            // INVEQ_DEFERRED_IAP_SETUP
-            await MainActor.run {
-                if self.listenerGeneration == nil {
-                    self.listenerGeneration = ExpoIapHelper.setupStore(module: self)
-                }
-            }
-            await ExpoIapHelper.waitForStoreCleanup()`,
+  let next = contents;
+  if (!next.includes(POD_APPLY_MARKER)) {
+    next = next.replace(
+      '  use_expo_modules!',
+      `${POD_PRE_AUTOLINK}\n  use_expo_modules!`,
     );
   }
+  if (!next.includes(POD_APPLY_MARKER)) {
+    fail('Injection du patch avant use_expo_modules! a échoué');
+  }
 
-  fs.writeFileSync(modulePath, source);
+  if (!next.includes(POD_ASSERT_MARKER)) {
+    next = next.replace(
+      '  post_install do |installer|',
+      `  post_install do |installer|${POD_POST_INSTALL}`,
+    );
+  }
+  if (!next.includes(POD_ASSERT_MARKER)) {
+    fail('Injection de l’assert post_install a échoué');
+  }
+
+  return next;
 }
 
 function withDeferIapInit(config) {
-  const projectRoot = config._internal?.projectRoot ?? process.cwd();
-  patchAppDelegate(projectRoot);
-  patchExpoIapModule(projectRoot);
+  config = withDangerousMod(config, [
+    'ios',
+    async (modConfig) => patchFromMod(modConfig, APPLY_EXPO_IAP_PATCH),
+  ]);
+
+  config = withPodfile(config, (modConfig) => {
+    modConfig.modResults.contents = injectPodfileHooks(modConfig.modResults.contents);
+    return modConfig;
+  });
+
+  config = withFinalizedMod(config, [
+    'ios',
+    async (modConfig) => {
+      patchFromMod(modConfig, APPLY_EXPO_IAP_PATCH);
+
+      const podfilePath = path.join(modConfig.modRequest.projectRoot, 'ios', 'Podfile');
+      if (!fs.existsSync(podfilePath)) {
+        fail(`Podfile généré introuvable: ${podfilePath}`);
+      }
+      const podfile = fs.readFileSync(podfilePath, 'utf8');
+      if (!podfile.includes(POD_APPLY_MARKER) || !podfile.includes(POD_ASSERT_MARKER)) {
+        const rewritten = injectPodfileHooks(podfile);
+        fs.writeFileSync(podfilePath, rewritten, 'utf8');
+        const after = fs.readFileSync(podfilePath, 'utf8');
+        if (!after.includes(POD_APPLY_MARKER) || !after.includes(POD_ASSERT_MARKER)) {
+          fail('Les hooks Podfile expo-iap sont absents après withFinalizedMod');
+        }
+      }
+
+      return modConfig;
+    },
+  ]);
+
   return config;
 }
 
