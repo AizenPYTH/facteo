@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
-import { KeyboardStickyView, useKeyboardState } from 'react-native-keyboard-controller';
+import { KeyboardStickyView } from 'react-native-keyboard-controller';
 
 import { KEYBOARD_TOOLBAR_HEIGHT } from '@/components/ui/keyboard/constants';
 import { useKeyboardAwareFooterPadding } from '@/components/ui/keyboard/use-keyboard-footer-padding';
@@ -25,12 +25,10 @@ type StickyFooterProps = {
  */
 export function useStickyFooterInset(variant: StickyFooterVariant = 'default'): number {
   const paddingBottom = useKeyboardAwareFooterPadding();
-  const keyboardVisible = useKeyboardState((state) => state.isVisible);
   const contentHeight = variant === 'toolbar' ? STICKY_FOOTER_TOOLBAR_HEIGHT : STICKY_FOOTER_MIN_HEIGHT;
   const topPadding = variant === 'toolbar' ? spacing.xs : spacing.sm;
-  const toolbarSpace = keyboardVisible ? KEYBOARD_TOOLBAR_HEIGHT : 0;
 
-  return contentHeight + topPadding + paddingBottom + StyleSheet.hairlineWidth + toolbarSpace;
+  return contentHeight + topPadding + paddingBottom + StyleSheet.hairlineWidth + KEYBOARD_TOOLBAR_HEIGHT;
 }
 
 export function StickyFooter({

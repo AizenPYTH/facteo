@@ -78,5 +78,10 @@
     "eas:build:android": "eas build --platform android --profile production --auto-submit",
     "eas:build:all": "eas build --platform all --profile production --auto-submit"
   },
+  "expo": {
+    "autolinking": {
+      "exclude": ["expo-iap", "expo-camera"]
+    }
+  },
   "private": true
 }

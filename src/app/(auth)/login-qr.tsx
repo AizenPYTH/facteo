@@ -1,7 +1,6 @@
-import { CameraView, useCameraPermissions } from 'expo-camera';
 import { router, useLocalSearchParams, type Href } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Platform, StyleSheet, Text, View } from 'react-native';
+import { Platform, Text } from 'react-native';
 
 import { AuthScreen } from '@/components/auth/auth-screen';
 import { Button } from '@/components/ui/button';
@@ -13,17 +12,23 @@ import {
   scanMobileLoginChallenge,
 } from '@/lib/auth/mobile-login';
 import { supabase } from '@/lib/supabase';
-import { spacing } from '@/constants/theme/spacing';
 import { typography } from '@/constants/theme/typography';
 
-type Phase = 'camera' | 'waiting' | 'done' | 'error';
+type Phase = 'idle' | 'waiting' | 'done' | 'error';
 
+/**
+ * Connexion QR sans module caméra natif.
+ * Le scan caméra est retiré du binaire iOS (crash TestFlight 57/59 :
+ * expo-camera + expo-iap s’initialisaient au process start).
+ * Le deep link `inveq://mlc?c=&s=` reste fonctionnel.
+ */
 export default function LoginQrScreen() {
   const styles = useStyles();
   const params = useLocalSearchParams<{ c?: string; s?: string }>();
-  const [permission, requestPermission] = useCameraPermissions();
-  const [phase, setPhase] = useState<Phase>('camera');
-  const [message, setMessage] = useState('Scannez le QR code affiché sur INVEQ.fr → Paramètres → Connexion mobile.');
+  const [phase, setPhase] = useState<Phase>('idle');
+  const [message, setMessage] = useState(
+    'Ouvrez le QR depuis INVEQ.fr → Paramètres → Connexion mobile, ou utilisez e-mail et mot de passe.',
+  );
   const handledRef = useRef(false);
 
   const completeLogin = useCallback(async (challengeId: string, secret: string) => {
@@ -93,64 +98,22 @@ export default function LoginQrScreen() {
     }
   }, [handlePayload, params.c, params.s]);
 
-  if (Platform.OS === 'web') {
-    return (
-      <AuthScreen
-        footer={<Button onPress={() => router.replace('/login' as Href)} title="Retour" variant="ghost" />}
-        subtitle="Le scan du QR code est disponible dans l’application iOS ou Android."
-        title="Connexion QR">
-        <Text style={styles.hint}>
-          Ouvrez INVEQ sur votre téléphone, puis choisissez « Se connecter avec un QR code ».
-        </Text>
-      </AuthScreen>
-    );
-  }
-
-  if (!permission) {
-    return (
-      <AuthScreen footer={<View />} subtitle="Préparation de l’appareil photo." title="QR code">
-        <Text style={styles.hint}>Chargement des permissions…</Text>
-      </AuthScreen>
-    );
-  }
-
-  if (!permission.granted) {
-    return (
-      <AuthScreen
-        footer={
-          <>
-            <Button onPress={() => void requestPermission()} title="Autoriser l’appareil photo" />
-            <Button onPress={() => router.replace('/login' as Href)} title="Retour" variant="ghost" />
-          </>
-        }
-        subtitle="L’appareil photo sert uniquement à scanner le QR code de connexion."
-        title="QR code">
-        <Text style={styles.hint}>Autorisez l’appareil photo pour continuer.</Text>
-      </AuthScreen>
-    );
-  }
-
   return (
     <AuthScreen
       footer={
         <Button onPress={() => router.replace('/login' as Href)} title="Retour à la connexion" variant="ghost" />
       }
-      subtitle={message}
+      subtitle={
+        Platform.OS === 'web'
+          ? 'Le scan du QR code est disponible dans l’application iOS ou Android.'
+          : message
+      }
       title="Connexion QR">
-      {phase === 'camera' ? (
-        <View style={styles.cameraWrap}>
-          <CameraView
-            barcodeScannerSettings={{ barcodeTypes: ['qr'] }}
-            facing="back"
-            onBarcodeScanned={({ data }) => handlePayload(data)}
-            style={StyleSheet.absoluteFill}
-          />
-        </View>
-      ) : (
-        <Text style={styles.hint}>
-          {phase === 'waiting' ? 'En attente de confirmation…' : message}
-        </Text>
-      )}
+      <Text style={styles.hint}>
+        {phase === 'waiting'
+          ? 'En attente de confirmation…'
+          : 'Le scan caméra est temporairement désactivé pour stabiliser iOS. Ouvrez le lien du QR, ou connectez-vous avec e-mail et mot de passe.'}
+      </Text>
     </AuthScreen>
   );
 }
@@ -161,13 +124,6 @@ function useStyles() {
       ...typography.subheadline,
       color: colors.textSecondary,
       textAlign: 'center',
-    },
-    cameraWrap: {
-      height: 280,
-      borderRadius: 16,
-      overflow: 'hidden',
-      backgroundColor: colors.backgroundGrouped,
-      marginVertical: spacing.sm,
     },
   }));
 }
