@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase';
 import { logSupabaseError } from '@/lib/supabase/errors';
+import { throwIfPlanLimitReached } from '@/lib/domain/supabase/subscriptions';
 import {
   mapCreateQuoteInputToInsert,
   mapUpdateQuoteInputToInsert,
@@ -181,6 +182,7 @@ export async function createQuote(scope: DataScope, input: CreateQuoteInput): Pr
 
   if (quoteError || !createdQuote) {
     logSupabaseError('createQuote', quoteError);
+    throwIfPlanLimitReached(quoteError);
     throw quoteError ?? new Error('Unable to create quote.');
   }
 

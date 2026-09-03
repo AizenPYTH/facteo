@@ -6,6 +6,7 @@ import {
 import { resolveInvoiceStatusFromPayments } from '@/lib/invoices/status';
 import { supabase } from '@/lib/supabase';
 import { logSupabaseError } from '@/lib/supabase/errors';
+import { throwIfPlanLimitReached } from '@/lib/domain/supabase/subscriptions';
 import { mapInvoiceDetail, mapInvoiceRowToInvoice } from '@/lib/supabase/mappers';
 import { fetchQuoteById } from '@/lib/supabase/quotes';
 import { computeDueDate, fetchSettings, reserveNextInvoiceNumber } from '@/lib/supabase/settings';
@@ -290,6 +291,7 @@ export async function createInvoice(scope: DataScope, input: CreateInvoiceInput)
 
   if (invoiceError || !createdInvoice) {
     logSupabaseError('createInvoice', invoiceError);
+    throwIfPlanLimitReached(invoiceError);
     throw invoiceError ?? new Error('Unable to create invoice.');
   }
 

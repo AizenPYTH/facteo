@@ -28,5 +28,9 @@ export function toUserFacingError(
     return 'Cette fonctionnalité n’est pas incluse dans votre offre actuelle.';
   }
 
+  if (message.toUpperCase().includes('PLAN_LIMIT_REACHED')) {
+    return 'Limite de votre offre atteinte pour ce mois.';
+  }
+
   return message;
 }

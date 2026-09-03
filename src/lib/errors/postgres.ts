@@ -19,6 +19,10 @@ export function mapPostgresErrorMessage(message: string): string | null {
     return 'Votre session a expiré. Reconnectez-vous.';
   }
 
+  if (normalized.includes('plan_limit_reached')) {
+    return 'Limite de votre offre atteinte pour ce mois.';
+  }
+
   if (normalized.includes('permission denied') || normalized.includes('row-level security')) {
     return "Vous n'avez pas accès à cette ressource.";
   }

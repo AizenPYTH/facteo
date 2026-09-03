@@ -113,6 +113,55 @@ export function isPlanLimitError(error: unknown): error is PlanLimitError {
   return error instanceof PlanLimitError;
 }
 
+export function parsePlanLimitError(error: unknown): PlanLimitError | null {
+  if (error instanceof PlanLimitError) {
+    return error;
+  }
+
+  if (!error || typeof error !== 'object') {
+    return null;
+  }
+
+  const message = 'message' in error ? String(error.message) : '';
+  const details = 'details' in error ? String(error.details ?? '') : '';
+  const blob = `${message}\n${details}`;
+
+  if (!blob.includes('PLAN_LIMIT_REACHED')) {
+    return null;
+  }
+
+  const resourceMatch = blob.match(/PLAN_LIMIT_REACHED:([a-z_]+)/i);
+  const resource = (resourceMatch?.[1] ?? 'documents') as PlanResource;
+  let check: PlanLimitCheck;
+
+  try {
+    check = mapPlanLimitCheck(JSON.parse(details));
+    if (!check.resource) {
+      check.resource = resource;
+    }
+  } catch {
+    check = {
+      allowed: false,
+      resource,
+      current: 0,
+      limit: null,
+      planId: 'micro',
+      planName: 'Micro',
+      status: 'active',
+      isPremium: false,
+    };
+  }
+
+  return new PlanLimitError(check);
+}
+
+export function throwIfPlanLimitReached(error: unknown): void {
+  const parsed = parsePlanLimitError(error);
+  if (parsed) {
+    throw parsed;
+  }
+}
+
 export async function ensureUserSubscription(): Promise<void> {
   const { error } = await supabase.rpc('ensure_user_subscription');
 
