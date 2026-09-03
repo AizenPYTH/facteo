@@ -96,9 +96,15 @@ export default function LoginQrScreen() {
   useEffect(() => {
     const challengeId = typeof params.c === 'string' ? params.c : undefined;
     const secret = typeof params.s === 'string' ? params.s : undefined;
-    if (challengeId && secret) {
-      handlePayload(`inveq://mlc?c=${challengeId}&s=${secret}`);
+    if (!challengeId || !secret) {
+      return;
     }
+
+    const timer = setTimeout(() => {
+      handlePayload(`inveq://mlc?c=${challengeId}&s=${secret}`);
+    }, 0);
+
+    return () => clearTimeout(timer);
   }, [handlePayload, params.c, params.s]);
 
   function resumeScan() {
