@@ -14,6 +14,12 @@ export { EmptyInvoices } from './empty-invoices';
 export type { EmptyInvoicesProps } from './empty-invoices';
 
 export { DashboardWelcome } from './dashboard-welcome';
+export type { DashboardWelcomeProps } from './dashboard-welcome';
+
+export { DashboardHero } from './dashboard-hero';
+export type { DashboardHeroProps } from './dashboard-hero';
+
+export { DashboardSkeleton } from './dashboard-skeleton';
 
 export { StatsGrid } from './stats-grid';
 export { ExtendedStatsGrid } from './extended-stats-grid';

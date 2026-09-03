@@ -5,6 +5,7 @@ import { AuthLoadingScreen } from '@/components/auth/auth-loading-screen';
 import { TenantSwitchingOverlay } from '@/components/tenant/tenant-switching-overlay';
 import { useAuth } from '@/hooks/use-auth';
 import { usePushNotifications } from '@/hooks/use-push-notifications';
+import { stackScreenOptions } from '@/lib/navigation/screen-options';
 
 export default function AppLayout() {
   const { user, loading } = useAuth();
@@ -21,22 +22,12 @@ export default function AppLayout() {
   return (
     <>
       <AnimatedSplashOverlay />
-      <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="(tabs)" />
-        <Stack.Screen
-          name="settings"
-          options={{
-            animation: 'slide_from_right',
-            presentation: 'card',
-          }}
-        />
-        <Stack.Screen
-          name="company"
-          options={{
-            animation: 'slide_from_right',
-            presentation: 'card',
-          }}
-        />
+      {/* Animation, geste de retour et présentation viennent d'un seul jeu
+          d'options : chaque pile déclarait les siennes auparavant. */}
+      <Stack screenOptions={stackScreenOptions}>
+        <Stack.Screen name="(tabs)" options={{ animation: 'none' }} />
+        <Stack.Screen name="settings" />
+        <Stack.Screen name="company" />
       </Stack>
       <TenantSwitchingOverlay />
     </>

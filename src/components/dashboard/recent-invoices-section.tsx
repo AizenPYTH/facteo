@@ -1,8 +1,10 @@
-import { StyleSheet, View } from 'react-native';
+import { router, type Href } from 'expo-router';
+import { View } from 'react-native';
 
-import { useColors, useThemedStyles } from '@/hooks/use-colors';
-import { radius } from '@/constants/theme/radius';
+import { Card } from '@/components/ui/card';
+import { ListRowSeparator } from '@/components/ui/list-row';
 import { spacing } from '@/constants/theme/spacing';
+import { useThemedStyles } from '@/hooks/use-colors';
 import type { Invoice } from '@/types/dashboard';
 
 import { EmptyInvoices } from './empty-invoices';
@@ -16,39 +18,39 @@ type RecentInvoicesSectionProps = {
 
 export function RecentInvoicesSection({ invoices, onInvoicePress }: RecentInvoicesSectionProps) {
   const styles = useStyles();
-  const colors = useColors();
+  const hasInvoices = invoices.length > 0;
+
   return (
     <View style={styles.section}>
-      <SectionHeader title="Factures récentes" />
-      {invoices.length === 0 ? (
-        <EmptyInvoices />
-      ) : (
-        <View style={styles.list}>
+      <SectionHeader
+        actionLabel={hasInvoices ? 'Tout voir' : undefined}
+        onAction={hasInvoices ? () => router.push('/invoices' as Href) : undefined}
+        title="Factures récentes"
+      />
+
+      {hasInvoices ? (
+        <Card flush variant="surface">
           {invoices.map((invoice, index) => (
-            <RecentInvoiceCard
-              invoice={invoice}
-              key={invoice.id}
-              onPress={onInvoicePress ? () => onInvoicePress(invoice) : undefined}
-              showSeparator={index < invoices.length - 1}
-            />
+            <View key={invoice.id}>
+              {index > 0 ? <ListRowSeparator /> : null}
+              <RecentInvoiceCard
+                invoice={invoice}
+                onPress={onInvoicePress ? () => onInvoicePress(invoice) : undefined}
+              />
+            </View>
           ))}
-        </View>
+        </Card>
+      ) : (
+        <EmptyInvoices />
       )}
     </View>
   );
 }
 
 function useStyles() {
-  return useThemedStyles((colors) => ({
-  section: {
-    gap: spacing.md,
-  },
-  list: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.card,
-    borderWidth: 1,
-    borderColor: colors.border,
-    overflow: 'hidden',
-  },
-}));
+  return useThemedStyles(() => ({
+    section: {
+      gap: spacing.md,
+    },
+  }));
 }

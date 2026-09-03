@@ -26,6 +26,7 @@ export { LoadingView } from '@/components/ui/loading-view';
 export { NavigationHeader } from '@/components/ui/navigation-header';
 export { PressableScale, type PressableScaleProps } from '@/components/ui/pressable-scale';
 export { Skeleton, SkeletonText, type SkeletonProps } from '@/components/ui/skeleton';
+export { StaggerIn, type StaggerInProps } from '@/components/ui/stagger-in';
 export { StickyFooter } from '@/components/ui/sticky-footer';
 export { SurfaceCard } from '@/components/ui/surface-card';
 export { TextField } from '@/components/ui/text-field';
