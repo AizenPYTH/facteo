@@ -3,8 +3,9 @@ import { useQueryClient } from '@tanstack/react-query';
 import { SymbolView } from 'expo-symbols';
 import { router, type Href } from 'expo-router';
 import { useCallback, useRef, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, View } from 'react-native';
 
+import { PressableScale } from '@/components/ui/pressable-scale';
 import { PdfPreviewModal } from '@/components/pdf/pdf-preview-modal';
 import { TemplateGalleryModal } from '@/components/pdf/template-gallery-modal';
 import { ActionTile } from '@/components/ui/action-tile';
@@ -239,19 +240,19 @@ export function DocumentFinalizePanel({
             {documentNumber} · modèle {template.name}
           </AppText>
         </View>
-        <Pressable
+        <PressableScale
           accessibilityLabel="Changer de modèle"
           onPress={() => setTemplatePickerVisible(true)}
-          style={({ pressed }) => [styles.templateButton, pressed && styles.pressed]}>
+          style={styles.templateButton}>
           <View style={[styles.templateSwatch, { backgroundColor: template.theme.primary }]} />
           <AppText variant="caption">Modèle</AppText>
-        </Pressable>
+        </PressableScale>
       </View>
 
-      <Pressable
+      <PressableScale
         accessibilityLabel="Aperçu du document"
         onPress={() => void handleOpenPreview()}
-        style={({ pressed }) => [styles.previewCard, pressed && styles.pressed]}>
+        style={styles.previewCard}>
         <View style={[styles.previewAccent, { backgroundColor: template.theme.primary }]} />
         <View style={styles.previewContent}>
           <AppText medium variant="body">{documentNumber}</AppText>
@@ -268,7 +269,7 @@ export function DocumentFinalizePanel({
             tintColor={colors.primary}
           />
         )}
-      </Pressable>
+      </PressableScale>
 
       <ActionTile
         icon={{ ios: 'paperplane.fill', android: 'send', web: 'send' }}
@@ -326,9 +327,9 @@ export function DocumentFinalizePanel({
         ) : null}
       </View>
 
-      <Pressable
+      <PressableScale
         onPress={() => router.push('/settings/templates' as Href)}
-        style={({ pressed }) => [styles.settingsLink, pressed && styles.pressed]}>
+        style={styles.settingsLink}>
         <AppText color="secondary" variant="caption">
           Définir un modèle par défaut dans les paramètres
         </AppText>
@@ -337,7 +338,7 @@ export function DocumentFinalizePanel({
           size={14}
           tintColor={colors.textTertiary}
         />
-      </Pressable>
+      </PressableScale>
 
       <TemplateGalleryModal
         buildPreviewHtml={(id) => buildHtml(id)}

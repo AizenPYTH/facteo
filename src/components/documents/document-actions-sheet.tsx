@@ -3,6 +3,7 @@ import { Modal, Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AppText } from '@/components/ui/app-text';
+import { PressableScale } from '@/components/ui/pressable-scale';
 import { useColors, useThemedStyles } from '@/hooks/use-colors';
 import { radius } from '@/constants/theme/radius';
 import { spacing } from '@/constants/theme/spacing';
@@ -36,15 +37,17 @@ function ActionRow({
   const colors = useColors();
 
   return (
-    <Pressable
+    <PressableScale
+      accessibilityLabel={item.label}
       accessibilityRole="button"
       accessibilityState={{ disabled: item.disabled || item.loading }}
       disabled={item.disabled || item.loading}
+      intensity="subtle"
       onPress={() => {
         onClose();
         item.onPress();
       }}
-      style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}>
+      style={styles.row}>
       <SymbolView
         name={item.icon}
         size={20}
@@ -55,7 +58,7 @@ function ActionRow({
         variant="body">
         {item.label}
       </AppText>
-    </Pressable>
+    </PressableScale>
   );
 }
 
@@ -72,7 +75,14 @@ export function DocumentActionsSheet({
   return (
     <Modal animationType="slide" onRequestClose={onClose} transparent visible={visible}>
       <View style={styles.overlay}>
-        <Pressable accessibilityLabel="Fermer" onPress={onClose} style={StyleSheet.absoluteFill} />
+        {/* Zone de fermeture au tap hors feuille : pas de retour visuel, ce
+            n'est pas un contrôle mais l'arrière-plan. */}
+        <Pressable
+          accessibilityLabel="Fermer"
+          accessibilityRole="button"
+          onPress={onClose}
+          style={StyleSheet.absoluteFill}
+        />
         <View style={[styles.sheet, { paddingBottom: Math.max(insets.bottom, spacing.md) }]}>
           <View style={styles.handle} />
           <View style={styles.header}>
@@ -92,11 +102,16 @@ export function DocumentActionsSheet({
             </View>
           ))}
 
-          <Pressable onPress={onClose} style={({ pressed }) => [styles.cancel, pressed && styles.rowPressed]}>
+          <PressableScale
+            accessibilityLabel="Fermer"
+            accessibilityRole="button"
+            intensity="subtle"
+            onPress={onClose}
+            style={styles.cancel}>
             <AppText medium variant="body">
               Fermer
             </AppText>
-          </Pressable>
+          </PressableScale>
         </View>
       </View>
     </Modal>
@@ -146,9 +161,6 @@ const useStyles = () =>
       paddingVertical: spacing.md,
       borderBottomWidth: StyleSheet.hairlineWidth,
       borderBottomColor: colors.separator,
-    },
-    rowPressed: {
-      opacity: 0.85,
     },
     destructiveLabel: {
       color: colors.error,

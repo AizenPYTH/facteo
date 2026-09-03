@@ -2,10 +2,11 @@ import { router, type Href } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { useMemo, useState } from 'react';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
-import { ActivityIndicator, FlatList, Pressable, Text, View } from 'react-native';
+import { ActivityIndicator, FlatList, Text, View } from 'react-native';
 
 import { ClientSearchBar } from '@/components/clients/client-search-bar';
 import { Button } from '@/components/ui/button';
+import { PressableScale } from '@/components/ui/pressable-scale';
 import { useWizardFooterInset } from '@/components/ui/wizard-screen';
 import { useColors, useThemedStyles } from '@/hooks/use-colors';
 import { radius } from '@/constants/theme/radius';
@@ -39,14 +40,14 @@ function ClientRow({
       : null;
 
   return (
-    <Pressable
+    <PressableScale
+      accessibilityHint="Sélectionner ce client pour le document"
+      accessibilityLabel={secondaryLabel ? `${displayName}, ${secondaryLabel}` : displayName}
       accessibilityRole="button"
+      accessibilityState={{ selected: isSelected }}
+      intensity="subtle"
       onPress={onPress}
-      style={({ pressed }) => [
-        styles.clientRow,
-        isSelected && styles.clientRowSelected,
-        pressed && styles.pressed,
-      ]}>
+      style={[styles.clientRow, isSelected && styles.clientRowSelected]}>
       <View style={styles.clientInfo}>
         <Text style={styles.clientName}>{displayName}</Text>
         {secondaryLabel ? <Text style={styles.clientMeta}>{secondaryLabel}</Text> : null}
@@ -59,7 +60,7 @@ function ClientRow({
           type="hierarchical"
         />
       ) : null}
-    </Pressable>
+    </PressableScale>
   );
 }
 
@@ -213,9 +214,6 @@ function useStyles() {
   clientRowSelected: {
     borderColor: colors.primary,
     backgroundColor: colors.primarySubtle,
-  },
-  pressed: {
-    opacity: 0.9,
   },
   clientInfo: {
     flex: 1,

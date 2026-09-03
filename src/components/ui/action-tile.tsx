@@ -1,7 +1,8 @@
 import { SymbolView, type SymbolViewProps } from 'expo-symbols';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/ui/app-text';
+import { PressableScale } from '@/components/ui/pressable-scale';
 import { useColors, useThemedStyles } from '@/hooks/use-colors';
 import { radius } from '@/constants/theme/radius';
 import { spacing } from '@/constants/theme/spacing';
@@ -32,16 +33,16 @@ export function ActionTile({
   const isPrimary = variant === 'primary';
 
   return (
-    <Pressable
+    <PressableScale
+      accessibilityLabel={subtitle ? `${title}. ${subtitle}` : title}
       accessibilityRole="button"
       accessibilityState={{ disabled: disabled || loading }}
       disabled={disabled || loading}
       onPress={onPress}
-      style={({ pressed }) => [
+      style={[
         styles.tile,
         isPrimary && styles.tilePrimary,
         (disabled || loading) && styles.tileDisabled,
-        pressed && !disabled && styles.tilePressed,
       ]}
       testID={testID}>
       <View style={[styles.iconWrap, isPrimary && styles.iconWrapPrimary]}>
@@ -61,7 +62,7 @@ export function ActionTile({
           </AppText>
         ) : null}
       </View>
-    </Pressable>
+    </PressableScale>
   );
 }
 
@@ -83,9 +84,6 @@ const useStyles = () =>
     },
     tileDisabled: {
       opacity: 0.5,
-    },
-    tilePressed: {
-      opacity: 0.88,
     },
     iconWrap: {
       width: 44,

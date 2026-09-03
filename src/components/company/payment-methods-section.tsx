@@ -1,6 +1,7 @@
 import { type Control, Controller, type FieldErrors } from 'react-hook-form';
-import { Pressable, Switch, Text, View } from 'react-native';
+import { Switch, Text, View } from 'react-native';
 
+import { PressableScale } from '@/components/ui/pressable-scale';
 import { useThemedStyles } from '@/hooks/use-colors';
 import { spacing } from '@/constants/theme/spacing';
 import { textHierarchy } from '@/constants/theme/typography';
@@ -49,17 +50,17 @@ export function PaymentMethodsSection({ control }: PaymentMethodsSectionProps) {
           <View>
             {PAYMENT_METHOD_IDS.map((methodId, index) => (
               <View key={methodId}>
-                <Pressable
+                <PressableScale
                   accessibilityRole="switch"
                   accessibilityState={{ checked: selected.has(methodId) }}
                   onPress={() => toggleMethod(methodId)}
-                  style={({ pressed }) => [styles.row, pressed && styles.pressed]}>
+                  style={styles.row}>
                   <Text style={styles.label}>{PAYMENT_METHOD_LABELS[methodId]}</Text>
                   <Switch
                     onValueChange={() => toggleMethod(methodId)}
                     value={selected.has(methodId)}
                   />
-                </Pressable>
+                </PressableScale>
                 {index < PAYMENT_METHOD_IDS.length - 1 ? <FormDivider /> : null}
               </View>
             ))}

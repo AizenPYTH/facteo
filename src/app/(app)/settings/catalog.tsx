@@ -281,7 +281,7 @@ function useStyles() {
     },
     vat: {
       ...typography.caption1,
-      color: colors.textTertiary,
+      color: colors.textSecondary,
     },
     skeletonRow: {
       flexDirection: 'row',

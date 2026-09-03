@@ -1,3 +1,4 @@
+import { useCallback } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -51,11 +52,14 @@ export function InvoicesList({
   const styles = useStyles();
   const colors = useColors();
 
-  const renderItem: ListRenderItem<Invoice> = ({ item, index }) => (
-    <View>
-      {index > 0 ? <ListRowSeparator /> : null}
-      <InvoiceCard invoice={item} onPress={onInvoicePress} />
-    </View>
+  const renderItem = useCallback<ListRenderItem<Invoice>>(
+    ({ item, index }) => (
+      <View>
+        {index > 0 ? <ListRowSeparator /> : null}
+        <InvoiceCard invoice={item} onPress={onInvoicePress} />
+      </View>
+    ),
+    [onInvoicePress],
   );
 
   if (isInitialLoading) {
@@ -107,6 +111,13 @@ export function InvoicesList({
           />
         ) : undefined
       }
+      // Réglages de virtualisation : la liste rendait toutes les lignes montées
+      // dès le premier passage, ce qui se voyait au premier scroll sur les gros
+      // volumes. La hauteur des lignes est fixe côté gabarit, on la déclare.
+      initialNumToRender={8}
+      maxToRenderPerBatch={8}
+      removeClippedSubviews
+      windowSize={9}
       renderItem={renderItem}
       showsVerticalScrollIndicator={false}
       style={styles.list}

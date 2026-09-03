@@ -140,7 +140,7 @@ function useStyles() {
     },
     secondary: {
       ...typography.footnote,
-      color: colors.textTertiary,
+      color: colors.textSecondary,
     },
   }));
 }

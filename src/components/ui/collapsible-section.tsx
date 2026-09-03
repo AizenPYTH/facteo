@@ -1,7 +1,8 @@
 import { SymbolView } from 'expo-symbols';
 import { useState, type ReactNode } from 'react';
-import { Pressable, Text, View, type ViewStyle } from 'react-native';
+import { Text, View, type ViewStyle } from 'react-native';
 
+import { PressableScale } from '@/components/ui/pressable-scale';
 import { useColors, useThemedStyles } from '@/hooks/use-colors';
 import { radius } from '@/constants/theme/radius';
 import { spacing } from '@/constants/theme/spacing';
@@ -26,11 +27,13 @@ export function CollapsibleSection({
 
   return (
     <View style={[styles.container, style]}>
-      <Pressable
+      <PressableScale
+        accessibilityLabel={title}
         accessibilityRole="button"
         accessibilityState={{ expanded }}
+        intensity="subtle"
         onPress={() => setExpanded((current) => !current)}
-        style={({ pressed }) => [styles.trigger, pressed && styles.pressed]}>
+        style={styles.trigger}>
         <Text style={styles.title}>{title}</Text>
         <SymbolView
           name={{
@@ -42,7 +45,7 @@ export function CollapsibleSection({
           tintColor={colors.iconSecondary}
           type="hierarchical"
         />
-      </Pressable>
+      </PressableScale>
       {expanded ? <View style={styles.content}>{children}</View> : null}
     </View>
   );

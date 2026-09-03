@@ -139,7 +139,7 @@ function useStyles() {
     },
     meta: {
       ...typography.caption1,
-      color: colors.textTertiary,
+      color: colors.textSecondary,
     },
     trailing: {
       alignItems: 'flex-end',
@@ -152,7 +152,7 @@ function useStyles() {
     },
     validity: {
       ...typography.caption1,
-      color: colors.textTertiary,
+      color: colors.textSecondary,
       textAlign: 'right',
     },
   }));

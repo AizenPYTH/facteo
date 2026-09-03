@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Alert, Modal, Pressable, StyleSheet, TextInput, View } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 
+import { PressableScale } from '@/components/ui/pressable-scale';
 import { AppText } from '@/components/ui/app-text';
 import { Button } from '@/components/ui/button';
 import { StickyFooter } from '@/components/ui/sticky-footer';
@@ -145,12 +146,12 @@ export function CompanyWorkspaceSheet({
 
               return (
                 <View key={company.id} style={[styles.card, isActive && styles.cardActive]}>
-                  <Pressable
+                  <PressableScale
                     onPress={() => {
                       onSelect(company.id);
                       onClose();
                     }}
-                    style={({ pressed }) => [styles.cardMain, pressed && styles.pressed]}>
+                    style={styles.cardMain}>
                     <View style={styles.avatar}>
                       {company.logoUrl ? (
                         <Image contentFit="cover" source={{ uri: company.logoUrl }} style={styles.avatarImage} />
@@ -190,7 +191,7 @@ export function CompanyWorkspaceSheet({
                         tintColor={colors.primary}
                       />
                     ) : null}
-                  </Pressable>
+                  </PressableScale>
 
                   <View style={styles.cardActions}>
                     {isEditing ? (

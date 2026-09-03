@@ -9,7 +9,6 @@ export { AppText } from '@/components/ui/app-text';
 export { Badge, type BadgeProps, type BadgeSize, type BadgeTone } from '@/components/ui/badge';
 export { Button } from '@/components/ui/button';
 export { Card, type CardProps, type CardVariant } from '@/components/ui/card';
-export { Collapsible } from '@/components/ui/collapsible';
 export { CollapsibleSection } from '@/components/ui/collapsible-section';
 export { ConfirmDialog, type ConfirmDialogProps } from '@/components/ui/confirm-dialog';
 export { EmptyState } from '@/components/ui/empty-state';

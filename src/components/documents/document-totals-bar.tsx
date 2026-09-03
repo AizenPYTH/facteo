@@ -125,7 +125,7 @@ function useStyles() {
     },
     caption: {
       ...typography.caption2,
-      color: colors.textTertiary,
+      color: colors.textSecondary,
     },
     label: {
       ...typography.footnoteMedium,

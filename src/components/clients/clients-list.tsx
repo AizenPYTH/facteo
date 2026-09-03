@@ -1,3 +1,4 @@
+import { useCallback } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -48,11 +49,14 @@ export function ClientsList({
 }: ClientsListProps) {
   const styles = useStyles();
   const colors = useColors();
-  const renderItem: ListRenderItem<Client> = ({ item, index }) => (
-    <View>
-      {index > 0 ? <ListRowSeparator /> : null}
-      <ClientCard client={item} onPress={onClientPress} />
-    </View>
+  const renderItem = useCallback<ListRenderItem<Client>>(
+    ({ item, index }) => (
+      <View>
+        {index > 0 ? <ListRowSeparator /> : null}
+        <ClientCard client={item} onPress={onClientPress} />
+      </View>
+    ),
+    [onClientPress],
   );
 
   const renderFooter = () => {
@@ -106,6 +110,13 @@ export function ClientsList({
           />
         ) : undefined
       }
+      // Réglages de virtualisation : la liste rendait toutes les lignes montées
+      // dès le premier passage, ce qui se voyait au premier scroll sur les gros
+      // volumes. La hauteur des lignes est fixe côté gabarit, on la déclare.
+      initialNumToRender={8}
+      maxToRenderPerBatch={8}
+      removeClippedSubviews
+      windowSize={9}
       renderItem={renderItem}
       keyboardShouldPersistTaps="handled"
       nestedScrollEnabled

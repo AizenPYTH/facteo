@@ -142,7 +142,7 @@ function useStyles() {
     },
     contact: {
       ...typography.caption1,
-      color: colors.textTertiary,
+      color: colors.textSecondary,
     },
   }));
 }

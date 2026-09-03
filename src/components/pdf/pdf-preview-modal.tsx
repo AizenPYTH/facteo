@@ -8,6 +8,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { PressableScale } from '@/components/ui/pressable-scale';
 import { PdfPreviewWebView } from '@/components/pdf/pdf-preview-webview';
 import { useColors, useThemedStyles } from '@/hooks/use-colors';
 import { spacing } from '@/constants/theme/spacing';
@@ -55,19 +56,19 @@ export function PdfPreviewModal({
       visible={visible}>
       <View style={[styles.container, { paddingTop: insets.top }]}>
         <View style={styles.toolbar}>
-          <Pressable
+          <PressableScale
             accessibilityLabel="Fermer l’aperçu"
             accessibilityRole="button"
             hitSlop={12}
             onPress={onClose}
-            style={({ pressed }) => [styles.closeButton, pressed && styles.pressed]}>
+            style={styles.closeButton}>
             <SymbolView
               name={{ ios: 'xmark', android: 'close', web: 'close' }}
               size={18}
               tintColor={colors.text}
               type="hierarchical"
             />
-          </Pressable>
+          </PressableScale>
 
           <View style={styles.titleBlock}>
             <Text numberOfLines={1} style={styles.title}>
@@ -153,16 +154,11 @@ function ActionButton({ label, onPress, loading = false, highlight = false, icon
   const colors = useColors();
 
   return (
-    <Pressable
+    <PressableScale
       accessibilityRole="button"
       disabled={loading}
       onPress={onPress}
-      style={({ pressed }) => [
-        styles.actionButton,
-        highlight && styles.actionButtonHighlight,
-        pressed && styles.pressed,
-        loading && styles.actionButtonDisabled,
-      ]}>
+      style={[styles.actionButton, highlight && styles.actionButtonHighlight, loading && styles.actionButtonDisabled]}>
       <SymbolView
         name={icon}
         size={20}
@@ -170,7 +166,7 @@ function ActionButton({ label, onPress, loading = false, highlight = false, icon
         type="hierarchical"
       />
       <Text style={[styles.actionLabel, highlight && styles.actionLabelHighlight]}>{label}</Text>
-    </Pressable>
+    </PressableScale>
   );
 }
 

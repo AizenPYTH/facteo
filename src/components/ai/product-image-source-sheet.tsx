@@ -1,7 +1,8 @@
 import { SymbolView } from 'expo-symbols';
-import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Modal, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { PressableScale } from '@/components/ui/pressable-scale';
 import { useColors, useThemedStyles } from '@/hooks/use-colors';
 import { radius } from '@/constants/theme/radius';
 import { spacing } from '@/constants/theme/spacing';
@@ -27,12 +28,12 @@ export function ProductImageSourceSheet({
   return (
     <Modal animationType="fade" onRequestClose={onClose} transparent visible={visible}>
       <View style={styles.overlay}>
-        <Pressable onPress={onClose} style={StyleSheet.absoluteFill} />
+        <PressableScale onPress={onClose} style={StyleSheet.absoluteFill} />
         <View style={[styles.sheet, { paddingBottom: Math.max(insets.bottom, spacing.md) }]}>
           <Text style={styles.title}>Ajouter avec l’IA</Text>
           <Text style={styles.subtitle}>Choisissez une source d’image pour analyser le produit.</Text>
 
-          <Pressable onPress={onCameraPress} style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}>
+          <PressableScale onPress={onCameraPress} style={styles.row}>
             <SymbolView
               name={{ ios: 'camera.fill', android: 'photo_camera', web: 'camera' }}
               size={20}
@@ -40,11 +41,11 @@ export function ProductImageSourceSheet({
               type="hierarchical"
             />
             <Text style={styles.rowLabel}>Prendre une photo</Text>
-          </Pressable>
+          </PressableScale>
 
-          <Pressable
+          <PressableScale
             onPress={onGalleryPress}
-            style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}>
+            style={styles.row}>
             <SymbolView
               name={{ ios: 'photo.on.rectangle', android: 'photo_library', web: 'image' }}
               size={20}
@@ -52,11 +53,11 @@ export function ProductImageSourceSheet({
               type="hierarchical"
             />
             <Text style={styles.rowLabel}>Choisir une photo</Text>
-          </Pressable>
+          </PressableScale>
 
-          <Pressable onPress={onClose} style={({ pressed }) => [styles.cancel, pressed && styles.rowPressed]}>
+          <PressableScale onPress={onClose} style={styles.cancel}>
             <Text style={styles.cancelLabel}>Annuler</Text>
-          </Pressable>
+          </PressableScale>
         </View>
       </View>
     </Modal>
