@@ -32,6 +32,7 @@ import {
 } from '@/components/app/form-fields';
 import { AddProductMethods } from '@/components/app/catalog/add-methods';
 import { AiScanProgress } from '@/components/app/catalog/ai-scan-progress';
+import { ImportProgress } from '@/components/app/catalog/import-progress';
 import { MasterDetailLayout } from '@/components/app/master-detail';
 import { DetailSkeleton, TableSkeleton } from '@/components/app/skeleton';
 import { Badge, DataTable, LoadingState, type DataTableColumn } from '@/components/app/ui';
@@ -1011,6 +1012,12 @@ function ProductFormPanel({
               done={!isAnalyzing && detectedProducts.length > 0 && analysisPreview !== null}
               fileCount={analysisFileCount}
               previewUrl={analysisPreview}
+            />
+
+            <ImportProgress
+              detectedCount={analysisPreview === null ? detectedProducts.length : 0}
+              fileName={analysisPreview === null ? analysisFileName : ''}
+              importing={isImportingSpreadsheet}
             />
           </>
         ) : null}
