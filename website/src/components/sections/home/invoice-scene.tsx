@@ -40,15 +40,12 @@ const euro = new Intl.NumberFormat('fr-FR', {
 });
 
 function useSequence(active: boolean, reduce: boolean) {
-  const [stage, setStage] = useState<Stage>(reduce ? 5 : 0);
+  const [stage, setStage] = useState<Stage>(0);
 
   useEffect(() => {
-    if (reduce) {
-      setStage(5);
-      return;
-    }
-
-    if (!active) {
+    // Sous « réduire les animations », l'étape finale est dérivée au rendu :
+    // la forcer ici reviendrait à déclencher un rendu en cascade depuis un effet.
+    if (reduce || !active) {
       return;
     }
 
@@ -74,7 +71,7 @@ function useSequence(active: boolean, reduce: boolean) {
     };
   }, [active, reduce]);
 
-  return stage;
+  return reduce ? 5 : stage;
 }
 
 /** Compteur sur le thread JS — un montant qui se pose vaut mieux qu'un chiffre qui apparaît. */

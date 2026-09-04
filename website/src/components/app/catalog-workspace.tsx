@@ -5,15 +5,13 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Copy,
-  Download,
   FileText,
+  Upload,
   Package,
   Pencil,
   Plus,
   ReceiptText,
-  Sparkles,
   Trash2,
-  Upload,
   Wrench,
 } from 'lucide-react';
 
@@ -32,6 +30,8 @@ import {
   TextArea,
   TextInput,
 } from '@/components/app/form-fields';
+import { AddProductMethods } from '@/components/app/catalog/add-methods';
+import { AiScanProgress } from '@/components/app/catalog/ai-scan-progress';
 import { MasterDetailLayout } from '@/components/app/master-detail';
 import { DetailSkeleton, TableSkeleton } from '@/components/app/skeleton';
 import { Badge, DataTable, LoadingState, type DataTableColumn } from '@/components/app/ui';
@@ -632,6 +632,12 @@ function ProductFormPanel({
   const [analysisError, setAnalysisError] = useState<string | null>(null);
   const [analysisSuccess, setAnalysisSuccess] = useState<string | null>(null);
   const [analysisFileName, setAnalysisFileName] = useState<string>('');
+  // Aperçu local de l'image envoyée à l'analyse. Purement visuel. L'URL vit
+  // aussi dans une ref : au démontage, un setState ne servirait à rien, seule
+  // la révocation compte pour ne pas fuir de blob.
+  const [analysisPreview, setAnalysisPreview] = useState<string | null>(null);
+  const analysisPreviewRef = useRef<string | null>(null);
+  const [analysisFileCount, setAnalysisFileCount] = useState(0);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isImportingSpreadsheet, setIsImportingSpreadsheet] = useState(false);
   const [detectedProducts, setDetectedProducts] = useState<ProductFormValues[]>([]);
@@ -649,7 +655,22 @@ function ProductFormPanel({
     setDetectedProducts([]);
     setOverwriteExistingByReference(true);
     setDuplicateReferences([]);
+    if (analysisPreviewRef.current) {
+      URL.revokeObjectURL(analysisPreviewRef.current);
+      analysisPreviewRef.current = null;
+    }
+    setAnalysisPreview(null);
+    setAnalysisFileCount(0);
   }, [product, type]);
+
+  useEffect(() => {
+    return () => {
+      if (analysisPreviewRef.current) {
+        URL.revokeObjectURL(analysisPreviewRef.current);
+        analysisPreviewRef.current = null;
+      }
+    };
+  }, []);
 
   const mutation = useMutation({
     mutationFn: async () => {
@@ -762,6 +783,13 @@ function ProductFormPanel({
     setDetectedProducts([]);
     setDuplicateReferences([]);
     setAnalysisFileName(selectedFiles.map((entry) => entry.name).join(', '));
+    setAnalysisFileCount(selectedFiles.length);
+    if (analysisPreviewRef.current) {
+      URL.revokeObjectURL(analysisPreviewRef.current);
+    }
+    const previewUrl = URL.createObjectURL(selectedFiles[0]);
+    analysisPreviewRef.current = previewUrl;
+    setAnalysisPreview(previewUrl);
     try {
       const aggregated: ProductFormValues[] = [];
 
@@ -938,97 +966,53 @@ function ProductFormPanel({
         </div>
 
         {!product && type === 'product' ? (
-          <FormSection
-            description="Saisie manuelle, photo (IA) ou tableur. Le premier élément détecté pré-remplit le formulaire."
-            title="Ajout simplifié">
-            <div className="grid gap-2 sm:grid-cols-2">
-              <SecondaryButton
-                onClick={() => {
-                  nameInputRef.current?.focus();
-                }}
-                type="button">
-                Saisie manuelle
-              </SecondaryButton>
-              <SecondaryButton onClick={() => fileInputRef.current?.click()} type="button">
-                <Sparkles size={15} />
-                {isAnalyzing ? 'Analyse IA en cours…' : 'Scanner image (IA)'}
-              </SecondaryButton>
-            </div>
+          <>
+            <input
+              accept="image/*"
+              className="hidden"
+              multiple
+              onChange={(event) => {
+                void handleAiImageSelection(event.target.files);
+                event.target.value = '';
+              }}
+              ref={fileInputRef}
+              type="file"
+            />
+            <input
+              accept=".xlsx,.xls,.xlsm,.xlsb,.csv,.txt"
+              className="hidden"
+              multiple
+              onChange={(event) => {
+                void handleSpreadsheetImport(event.target.files);
+                event.target.value = '';
+              }}
+              ref={spreadsheetInputRef}
+              type="file"
+            />
 
-            <div className="space-y-2 rounded-[11px] border border-dashed border-app-accent-border bg-app-subtle p-3">
-              <p className="text-[12px] text-app-muted">
-                Importez une capture d&apos;écran ou une photo (Amazon, fournisseur, etc.).
-              </p>
-              <input
-                accept="image/*"
-                className="hidden"
-                multiple
-                onChange={(event) => {
-                  void handleAiImageSelection(event.target.files);
-                  event.target.value = '';
-                }}
-                ref={fileInputRef}
-                type="file"
-              />
-              {analysisFileName ? (
-                <p className="text-[12px] text-app-muted">Fichier : {analysisFileName}</p>
-              ) : null}
-              {detectedProducts.length > 0 ? (
-                <div className="rounded-[9px] border border-app-success/20 bg-app-success-tint px-3 py-2 text-[12px] text-app-success-text">
-                  {detectedProducts.length} produit(s) détecté(s). Le premier a été pré-rempli dans le
-                  formulaire.
-                </div>
-              ) : null}
-              {analysisError ? (
-                <p className="text-[12px] font-medium text-app-danger">{analysisError}</p>
-              ) : null}
-              {analysisSuccess ? (
-                <p className="text-[12px] font-medium text-app-success-text">{analysisSuccess}</p>
-              ) : null}
-            </div>
+            <AddProductMethods
+              detectedCount={detectedProducts.length}
+              duplicates={duplicateReferences}
+              error={analysisError}
+              fileName={analysisFileName}
+              isAnalyzing={isAnalyzing}
+              isImporting={isImportingSpreadsheet}
+              onDownloadTemplate={() => void downloadExcelTemplate()}
+              onImport={() => spreadsheetInputRef.current?.click()}
+              onManual={() => nameInputRef.current?.focus()}
+              onOverwriteChange={setOverwriteExistingByReference}
+              onScan={() => fileInputRef.current?.click()}
+              overwriteExisting={overwriteExistingByReference}
+              success={analysisSuccess}
+            />
 
-            <div className="space-y-2 rounded-[11px] border border-dashed border-app-border bg-app-surface p-3">
-              <p className="text-[12px] text-app-muted">
-                Import tableur (.xlsx, .xls, .csv) avec nettoyage automatique TVA/montants.
-              </p>
-              <input
-                accept=".xlsx,.xls,.xlsm,.xlsb,.csv,.txt"
-                className="hidden"
-                multiple
-                onChange={(event) => {
-                  void handleSpreadsheetImport(event.target.files);
-                  event.target.value = '';
-                }}
-                ref={spreadsheetInputRef}
-                type="file"
-              />
-              <div className="grid gap-2 sm:grid-cols-2">
-                <SecondaryButton onClick={() => void downloadExcelTemplate()} type="button">
-                  <Download size={15} />
-                  Télécharger un modèle Excel
-                </SecondaryButton>
-                <SecondaryButton onClick={() => spreadsheetInputRef.current?.click()} type="button">
-                  <Upload size={15} />
-                  {isImportingSpreadsheet ? 'Import en cours…' : 'Importer un fichier'}
-                </SecondaryButton>
-              </div>
-              <label className="flex items-center gap-2 text-[12px] text-app-text-2">
-                <input
-                  checked={overwriteExistingByReference}
-                  className="h-[15px] w-[15px] [accent-color:var(--app-accent)]"
-                  onChange={(event) => setOverwriteExistingByReference(event.target.checked)}
-                  type="checkbox"
-                />
-                Mettre à jour les produits existants (même référence)
-              </label>
-              {duplicateReferences.length > 0 ? (
-                <div className="rounded-[9px] border border-app-warning/30 bg-app-warning-tint px-3 py-2 text-[12px] text-app-warning-text">
-                  <p className="font-semibold">Produits en doublon détectés :</p>
-                  <p className="mt-1">{duplicateReferences.join(' | ')}</p>
-                </div>
-              ) : null}
-            </div>
-          </FormSection>
+            <AiScanProgress
+              analyzing={isAnalyzing}
+              done={!isAnalyzing && detectedProducts.length > 0 && analysisPreview !== null}
+              fileCount={analysisFileCount}
+              previewUrl={analysisPreview}
+            />
+          </>
         ) : null}
 
         {error ? (
@@ -1053,29 +1037,14 @@ function ProductFormPanel({
             />
           </FormField>
           <div className="grid gap-4 sm:grid-cols-2">
-            <FormField label="Référence">
-              <TextInput onChange={(e) => setField('reference', e.target.value)} value={values.reference} />
-            </FormField>
-            <FormField label="SKU">
-              <TextInput onChange={(e) => setField('sku', e.target.value)} value={values.sku} />
-            </FormField>
-            <FormField label="Code-barres (EAN)">
-              <TextInput
-                onChange={(e) => setField('barcodeEan', e.target.value)}
-                value={values.barcodeEan}
-              />
-            </FormField>
-            <FormField label="Catégorie">
-              <TextInput onChange={(e) => setField('category', e.target.value)} value={values.category} />
-            </FormField>
             <FormField label="Marque">
               <TextInput onChange={(e) => setField('brand', e.target.value)} value={values.brand} />
             </FormField>
-            <FormField label="Fournisseur">
-              <TextInput onChange={(e) => setField('supplier', e.target.value)} value={values.supplier} />
-            </FormField>
-            <FormField className="sm:col-span-2" label="Image (URL)">
-              <TextInput onChange={(e) => setField('imageUrl', e.target.value)} value={values.imageUrl} />
+            <FormField label="Catégorie">
+              <TextInput
+                onChange={(e) => setField('category', e.target.value)}
+                value={values.category}
+              />
             </FormField>
           </div>
           <label className="flex items-center gap-2 text-[13px] text-app-text-2">
@@ -1089,7 +1058,29 @@ function ProductFormPanel({
           </label>
         </FormSection>
 
-        <FormSection title="Prix et TVA">
+        <FormSection
+          description="Identifiants utilisés pour retrouver l’élément et éviter les doublons à l’import."
+          title="Référencement">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <FormField label="Référence">
+              <TextInput
+                onChange={(e) => setField('reference', e.target.value)}
+                value={values.reference}
+              />
+            </FormField>
+            <FormField label="SKU">
+              <TextInput onChange={(e) => setField('sku', e.target.value)} value={values.sku} />
+            </FormField>
+            <FormField className="sm:col-span-2" label="Code-barres (EAN)">
+              <TextInput
+                onChange={(e) => setField('barcodeEan', e.target.value)}
+                value={values.barcodeEan}
+              />
+            </FormField>
+          </div>
+        </FormSection>
+
+        <FormSection title="Commercial">
           <div className="grid gap-4 sm:grid-cols-2">
             <FormField label="Prix unitaire HT">
               <TextInput
@@ -1130,6 +1121,24 @@ function ProductFormPanel({
             </div>
           </FormSection>
         ) : null}
+
+        <FormSection title="Fournisseur">
+          <FormField label="Fournisseur">
+            <TextInput
+              onChange={(e) => setField('supplier', e.target.value)}
+              value={values.supplier}
+            />
+          </FormField>
+        </FormSection>
+
+        <FormSection title="Image">
+          <FormField label="Image (URL)">
+            <TextInput
+              onChange={(e) => setField('imageUrl', e.target.value)}
+              value={values.imageUrl}
+            />
+          </FormField>
+        </FormSection>
 
         <FormSection title="Notes">
           <FormField label="Notes">
