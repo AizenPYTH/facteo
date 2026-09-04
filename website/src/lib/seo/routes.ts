@@ -25,7 +25,6 @@ export const PRODUCT_ROUTES: PublicRoute[] = [
   { path: '/logiciel-devis-facture', priority: 0.9, changeFrequency: 'monthly' },
   { path: '/facturation-electronique', priority: 0.9, changeFrequency: 'monthly' },
   { path: '/facturation-auto-entrepreneur', priority: 0.8, changeFrequency: 'monthly' },
-  { path: '/fonctionnalites', priority: 0.8, changeFrequency: 'monthly' },
   { path: '/tarifs', priority: 0.8, changeFrequency: 'monthly' },
 ];
 

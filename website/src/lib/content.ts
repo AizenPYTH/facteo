@@ -119,7 +119,6 @@ export const FOOTER = {
     { label: 'Devis et factures', href: '/logiciel-devis-facture' },
     { label: 'Facturation électronique', href: '/facturation-electronique' },
     { label: 'Auto-entrepreneurs', href: '/facturation-auto-entrepreneur' },
-    { label: 'Fonctionnalités', href: '/fonctionnalites' },
     { label: 'Tarifs', href: '/tarifs' },
   ],
   company: [

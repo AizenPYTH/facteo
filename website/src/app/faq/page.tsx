@@ -8,7 +8,8 @@ import { faqSchema, jsonLd } from '@/lib/seo/schema';
 
 export const metadata: Metadata = {
   alternates: { canonical: `${SITE_URL}/faq` },
-  title: 'Questions fréquentes sur INVEQ',
+  // Le gabarit du layout ajoute déjà « — INVEQ » ; le répéter ici doublait la marque.
+  title: 'Questions fréquentes sur la facturation',
   description:
     'Adaptation aux artisans, usage sur ordinateur, sécurité des données, personnalisation des documents, signature client, codes promo et résiliation.',
   openGraph: {

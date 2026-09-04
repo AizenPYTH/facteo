@@ -68,7 +68,7 @@ export function Hero() {
                 size={16}
               />
             </Button>
-            <Button href="/fonctionnalites" variant="secondary">
+            <Button href="/logiciel-facturation" variant="secondary">
               Voir le produit
             </Button>
           </motion.div>

@@ -1,35 +1,14 @@
-import type { Metadata } from 'next';
-
-import { SITE_URL } from '@/lib/constants';
-
-import { CapabilitiesSection } from '@/components/sections/home/capabilities';
-import { WorkflowSection } from '@/components/sections/home/workflow';
-import { CtaSection, MobileSection, PageHero } from '@/components/sections/landing-sections';
-
-export const metadata: Metadata = {
-  alternates: { canonical: `${SITE_URL}/fonctionnalites` },
-  title: 'Fonctionnalités',
-  description:
-    'Devis, factures, clients, catalogue, signature et suivi des encaissements. Découvrez comment INVEQ accompagne un document du premier chiffrage au règlement.',
-};
+import { redirect } from 'next/navigation';
 
 /**
- * La page se contentait d'une grille d'icônes en huit cartes de même poids.
- * Elle reprend maintenant les sections produit de l'accueil : le parcours d'un
- * document, puis les capacités, montrées plutôt qu'énumérées.
+ * `/fonctionnalites` décrivait le produit avec les deux mêmes sections que
+ * `/logiciel-facturation`, qui en compte cinq de plus. Deux pages répondant à
+ * la même intention se seraient concurrencées sans mieux renseigner personne :
+ * on consolide sur la page pivot plutôt que de diviser le signal.
+ *
+ * La redirection conserve la valeur de l'ancienne URL si elle était liée, et le
+ * visiteur arrive sur un contenu qui englobe celui qu'il cherchait.
  */
-export default function FeaturesPage() {
-  return (
-    <>
-      <PageHero
-        eyebrow="Le produit"
-        subtitle="Tout ce qu’il faut pour chiffrer, facturer et être payé — sans logiciel comptable à apprendre."
-        title="Vos devis et vos factures, de bout en bout"
-      />
-      <WorkflowSection />
-      <CapabilitiesSection />
-      <MobileSection />
-      <CtaSection />
-    </>
-  );
+export default function FonctionnalitesRedirect() {
+  redirect('/logiciel-facturation');
 }
