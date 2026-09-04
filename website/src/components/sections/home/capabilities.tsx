@@ -32,7 +32,7 @@ const SECONDARY = [
   'Remises par ligne, unités personnalisées, TVA par prestation',
   'Signature du client sur l’écran, intégrée au PDF final',
   'Paiements partiels, historique des règlements et suivi des impayés',
-  'Numérotation continue, préfixes et mentions légales paramétrables',
+  'Numérotation continue, préfixes et pied de page paramétrable sur devis et factures',
   'Plusieurs entreprises depuis un seul compte',
   'Application iOS et interface web sur ordinateur',
 ] as const;

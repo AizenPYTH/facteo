@@ -8,10 +8,11 @@
 import { APP_DASHBOARD_URL, APP_REGISTER_URL, IOS_APP_STORE_URL, SUPPORT_EMAIL } from './constants';
 
 export const NAV_LINKS = [
-  { label: 'Fonctionnalités', href: '/fonctionnalites' },
+  { label: 'Logiciel de facturation', href: '/logiciel-facturation' },
+  { label: 'Devis et factures', href: '/logiciel-devis-facture' },
   { label: 'Facturation électronique', href: '/facturation-electronique' },
   { label: 'Tarifs', href: '/tarifs' },
-  { label: 'FAQ', href: '/faq' },
+  { label: 'Guides', href: '/guides' },
 ] as const;
 
 export const MOBILE = {
@@ -114,12 +115,16 @@ export const DOWNLOAD = {
 
 export const FOOTER = {
   product: [
+    { label: 'Logiciel de facturation', href: '/logiciel-facturation' },
+    { label: 'Devis et factures', href: '/logiciel-devis-facture' },
+    { label: 'Facturation électronique', href: '/facturation-electronique' },
+    { label: 'Auto-entrepreneurs', href: '/facturation-auto-entrepreneur' },
     { label: 'Fonctionnalités', href: '/fonctionnalites' },
     { label: 'Tarifs', href: '/tarifs' },
-    { label: 'FAQ', href: '/faq' },
-    { label: 'Blog', href: '/blog' },
   ],
   company: [
+    { label: 'Guides', href: '/guides' },
+    { label: 'FAQ', href: '/faq' },
     { label: 'À propos', href: '/a-propos' },
     { label: 'Contact', href: '/contact' },
     { label: 'Support', href: '/support' },

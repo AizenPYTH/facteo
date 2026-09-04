@@ -3,9 +3,10 @@ import type { Metadata } from 'next';
 import { Button } from '@/components/ui/button';
 import { FadeIn } from '@/components/ui/fade-in';
 import { PageHero } from '@/components/sections/landing-sections';
-import { CONTACT_EMAIL, SUPPORT_EMAIL } from '@/lib/constants';
+import { SITE_URL, CONTACT_EMAIL, SUPPORT_EMAIL } from '@/lib/constants';
 
 export const metadata: Metadata = {
+  alternates: { canonical: `${SITE_URL}/contact` },
   title: 'Contact',
   description: 'Contactez l’équipe INVEQ pour toute question commerciale ou support technique.',
 };

@@ -2,9 +2,10 @@ import type { Metadata } from 'next';
 
 import { FadeIn } from '@/components/ui/fade-in';
 import { PageHero } from '@/components/sections/landing-sections';
-import { SUPPORT_EMAIL } from '@/lib/constants';
+import { SITE_URL, SUPPORT_EMAIL } from '@/lib/constants';
 
 export const metadata: Metadata = {
+  alternates: { canonical: `${SITE_URL}/support` },
   title: 'Support & guide d’utilisation',
   description:
     'Centre d’aide INVEQ : guide d’utilisation, suppression de compte, codes promo et assistance technique.',

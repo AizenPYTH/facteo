@@ -1,10 +1,13 @@
 import type { Metadata } from 'next';
 
+import { SITE_URL } from '@/lib/constants';
+
 import { CapabilitiesSection } from '@/components/sections/home/capabilities';
 import { WorkflowSection } from '@/components/sections/home/workflow';
 import { CtaSection, MobileSection, PageHero } from '@/components/sections/landing-sections';
 
 export const metadata: Metadata = {
+  alternates: { canonical: `${SITE_URL}/fonctionnalites` },
   title: 'Fonctionnalités',
   description:
     'Devis, factures, clients, catalogue, signature et suivi des encaissements. Découvrez comment INVEQ accompagne un document du premier chiffrage au règlement.',

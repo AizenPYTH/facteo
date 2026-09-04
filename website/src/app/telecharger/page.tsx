@@ -6,9 +6,10 @@ import { PageHero } from '@/components/sections/landing-sections';
 import { Button } from '@/components/ui/button';
 import { FadeIn, Stagger, StaggerItem } from '@/components/ui/fade-in';
 import { DOWNLOAD } from '@/lib/content';
-import { APP_DASHBOARD_URL } from '@/lib/constants';
+import { SITE_URL, APP_DASHBOARD_URL } from '@/lib/constants';
 
 export const metadata: Metadata = {
+  alternates: { canonical: `${SITE_URL}/telecharger` },
   title: 'Télécharger l’application',
   description:
     'Téléchargez INVEQ sur iOS, Android ou accédez à l’application web depuis votre navigateur.',

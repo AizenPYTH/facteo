@@ -10,6 +10,14 @@ import { MandateSection } from '@/components/sections/home/mandate';
 import { ProblemSection } from '@/components/sections/home/problem';
 import { WorkflowSection } from '@/components/sections/home/workflow';
 import { Reveal } from '@/components/ui/reveal';
+import { SITE_URL } from '@/lib/constants';
+import { jsonLd, softwareApplicationSchema } from '@/lib/seo/schema';
+
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  alternates: { canonical: SITE_URL },
+};
 
 /**
  * Narration de la page d'accueil.
@@ -25,6 +33,10 @@ import { Reveal } from '@/components/ui/reveal';
 export default function HomePage() {
   return (
     <>
+      <script
+        dangerouslySetInnerHTML={jsonLd(softwareApplicationSchema())}
+        type="application/ld+json"
+      />
       <Hero />
       <ProblemSection />
       <WorkflowSection />

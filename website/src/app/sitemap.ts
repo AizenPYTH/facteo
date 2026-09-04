@@ -1,33 +1,23 @@
 import type { MetadataRoute } from 'next';
 
 import { SITE_URL } from '@/lib/constants';
+import { INDEXABLE_ROUTES } from '@/lib/seo/routes';
 
-const ROUTES = [
-  '',
-  '/fonctionnalites',
-  '/facturation-electronique',
-  '/tarifs',
-  '/faq',
-  '/contact',
-  '/blog',
-  '/support',
-  '/a-propos',
-  '/carrieres',
-  '/login',
-  '/telecharger',
-  '/confidentialite',
-  '/conditions-utilisation',
-  '/cookies',
-  '/mentions-legales',
-];
-
+/**
+ * Sitemap dérivé de la liste des routes indexables.
+ *
+ * L'ancienne version listait `/login`, `/blog` et `/carrieres` : une page de
+ * connexion en `noindex`, et deux pages sans contenu. Soumettre à Google des
+ * URL qu'on lui interdit d'indexer, ou qui n'ont rien à offrir, dilue le
+ * signal sans rien apporter.
+ */
 export default function sitemap(): MetadataRoute.Sitemap {
   const lastModified = new Date();
 
-  return ROUTES.map((route) => ({
-    url: `${SITE_URL}${route}`,
+  return INDEXABLE_ROUTES.map((route) => ({
+    url: `${SITE_URL}${route.path}`,
     lastModified,
-    changeFrequency: route === '' ? 'weekly' : 'monthly',
-    priority: route === '' ? 1 : 0.7,
+    changeFrequency: route.changeFrequency,
+    priority: route.priority,
   }));
 }
