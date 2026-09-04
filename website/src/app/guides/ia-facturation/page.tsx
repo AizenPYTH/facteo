@@ -16,7 +16,7 @@ import { articleSchema, jsonLd } from '@/lib/seo/schema';
 const GUIDE = findGuide('ia-facturation')!;
 
 export const metadata: Metadata = {
-  title: GUIDE.title,
+  title: GUIDE.metaTitle ?? GUIDE.title,
   description: GUIDE.description,
   alternates: { canonical: `${SITE_URL}/guides/${GUIDE.slug}` },
   openGraph: {

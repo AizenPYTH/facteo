@@ -18,6 +18,13 @@
 export type Guide = {
   slug: string;
   title: string;
+  /**
+   * Titre de la balise `<title>`, lorsque le H1 est trop long pour s'afficher
+   * en entier dans les résultats de recherche. Le H1 gagne parfois à rester
+   * explicite là où le title doit être court : les séparer évite de sacrifier
+   * l'un des deux. Absent, c'est `title` qui sert.
+   */
+  metaTitle?: string;
   /** Titre affiché dans les listes, plus court que le H1. */
   cardTitle: string;
   description: string;
@@ -80,6 +87,7 @@ export const GUIDES: Guide[] = [
   },
   {
     slug: 'plateforme-agreee-pdp',
+    metaTitle: 'Plateforme agréée (ex-PDP) : rôle et choix',
     title: 'Plateforme agréée (ex-PDP) : à quoi elle sert et comment en choisir une',
     cardTitle: 'Plateforme agréée (ex-PDP)',
     description:
@@ -90,6 +98,7 @@ export const GUIDES: Guide[] = [
   },
   {
     slug: 'logiciel-facturation-gratuit',
+    metaTitle: 'Logiciel de facturation gratuit : ce qu’il faut savoir',
     title: 'Logiciel de facturation gratuit : ce que « gratuit » recouvre vraiment',
     cardTitle: 'Les logiciels de facturation gratuits',
     description:
@@ -110,6 +119,7 @@ export const GUIDES: Guide[] = [
   },
   {
     slug: 'ia-facturation',
+    metaTitle: 'L’IA en facturation : ce qu’elle fait vraiment',
     title: 'L’IA dans un logiciel de facturation : ce qu’elle fait réellement',
     cardTitle: 'L’IA en facturation',
     description:
