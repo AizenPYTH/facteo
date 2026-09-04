@@ -1,4 +1,4 @@
-import { redirect } from 'next/navigation';
+import { permanentRedirect } from 'next/navigation';
 
 /**
  * `/fonctionnalites` décrivait le produit avec les deux mêmes sections que
@@ -8,7 +8,10 @@ import { redirect } from 'next/navigation';
  *
  * La redirection conserve la valeur de l'ancienne URL si elle était liée, et le
  * visiteur arrive sur un contenu qui englobe celui qu'il cherchait.
+ *
+ * `permanentRedirect` et non `redirect` : le 308 demande la substitution de
+ * l'URL dans l'index, là où le 307 laisserait les deux coexister.
  */
 export default function FonctionnalitesRedirect() {
-  redirect('/logiciel-facturation');
+  permanentRedirect('/logiciel-facturation');
 }

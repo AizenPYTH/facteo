@@ -1,4 +1,4 @@
-import { redirect } from 'next/navigation';
+import { permanentRedirect } from 'next/navigation';
 
 /**
  * `/blog` annonçait des articles « bientôt disponibles » sans rien contenir,
@@ -7,5 +7,5 @@ import { redirect } from 'next/navigation';
  * l'ancienne URL conserve sa valeur si elle était liée.
  */
 export default function BlogRedirect() {
-  redirect('/guides');
+  permanentRedirect('/guides');
 }
