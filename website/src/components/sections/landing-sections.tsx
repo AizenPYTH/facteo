@@ -1,7 +1,8 @@
 'use client';
 
-import { motion } from 'framer-motion';
+import { motion, useInView, useReducedMotion } from 'framer-motion';
 import { Smartphone } from 'lucide-react';
+import { useRef } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { FadeIn, Stagger, StaggerItem } from '@/components/ui/fade-in';
@@ -72,8 +73,19 @@ export function CtaSection() {
 }
 
 export function MobileSection() {
+  const reduce = useReducedMotion();
+  const ref = useRef<HTMLDivElement>(null);
+  const inView = useInView(ref, { margin: '-15% 0px' });
+  // Trois boucles infinies tournaient en permanence, y compris hors du champ.
+  // Elles ne s'exécutent plus que lorsque la maquette est visible, et jamais
+  // sous « réduire les animations ».
+  const loop = !reduce && inView;
+
   return (
-    <section className="border-y border-border/60 bg-[#F7F4EF]/60 px-5 py-20 sm:px-6 sm:py-24 lg:px-8 lg:py-28" id="download">
+    <section
+      className="border-y border-border/60 bg-[#F7F4EF]/60 px-5 py-[var(--section-y)] sm:px-6 lg:px-8 lg:py-[var(--section-y-lg)]"
+      id="download"
+      ref={ref}>
       <div className="mx-auto flex max-w-6xl flex-col items-center gap-12 lg:flex-row lg:gap-16">
         <FadeIn className="flex-1">
           <h2 className="text-3xl font-semibold tracking-[-0.03em] text-foreground sm:text-4xl">
@@ -100,9 +112,9 @@ export function MobileSection() {
               className="pointer-events-none absolute -inset-8 rounded-full bg-[radial-gradient(ellipse_at_center,rgba(37,99,235,0.16),transparent_70%)] blur-xl"
             />
             <motion.div
-              animate={{ y: [0, -6, 0] }}
+              animate={loop ? { y: [0, -6, 0] } : { y: 0 }}
               className="relative h-[24rem] w-[11.5rem] overflow-hidden rounded-[2.45rem] border-[6px] border-[#0B1220] bg-[#F8FAFC] shadow-[0_32px_70px_-28px_rgba(15,23,42,0.55)]"
-              transition={{ duration: 5.5, repeat: Infinity, ease: 'easeInOut' }}>
+              transition={loop ? { duration: 5.5, repeat: Infinity, ease: 'easeInOut' } : { duration: 0.3 }}>
               <div className="mx-auto mt-2.5 h-5 w-[4.5rem] rounded-full bg-[#0B1220]" />
               <div className="mt-4 px-3.5">
                 <div className="flex items-center justify-between">
@@ -112,16 +124,16 @@ export function MobileSection() {
                   </span>
                 </div>
                 <motion.div
-                  animate={{ opacity: [0.85, 1, 0.85] }}
+                  animate={loop ? { opacity: [0.85, 1, 0.85] } : { opacity: 1 }}
                   className="mt-3 rounded-xl bg-white p-2.5 shadow-sm ring-1 ring-slate-100"
-                  transition={{ duration: 3.2, repeat: Infinity, ease: 'easeInOut' }}>
+                  transition={loop ? { duration: 3.2, repeat: Infinity, ease: 'easeInOut' } : { duration: 0.3 }}>
                   <p className="text-[9px] font-medium text-slate-500">Martin SARL</p>
                   <p className="mt-0.5 text-[11px] font-semibold text-slate-900">1 435,20 €</p>
                   <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-100">
                     <motion.div
-                      animate={{ width: ['35%', '100%', '35%'] }}
+                      animate={loop ? { width: ['35%', '100%', '35%'] } : { width: '68%' }}
                       className="h-full rounded-full bg-primary"
-                      transition={{ duration: 4.5, repeat: Infinity, ease: 'easeInOut' }}
+                      transition={loop ? { duration: 4.5, repeat: Infinity, ease: 'easeInOut' } : { duration: 0.3 }}
                     />
                   </div>
                 </motion.div>
@@ -142,18 +154,18 @@ export function MobileSection() {
                   ))}
                 </div>
                 <motion.div
-                  animate={{ scale: [1, 1.02, 1] }}
+                  animate={loop ? { scale: [1, 1.02, 1] } : { scale: 1 }}
                   className="mt-3 flex h-9 items-center justify-center rounded-xl bg-primary text-[10px] font-semibold text-white shadow-sm"
-                  transition={{ duration: 2.8, repeat: Infinity, ease: 'easeInOut' }}>
+                  transition={loop ? { duration: 2.8, repeat: Infinity, ease: 'easeInOut' } : { duration: 0.3 }}>
                   Nouvelle facture
                 </motion.div>
               </div>
               <div className="absolute bottom-2 left-1/2 h-1 w-10 -translate-x-1/2 rounded-full bg-slate-300/90" />
             </motion.div>
             <motion.div
-              animate={{ y: [0, 8, 0], opacity: [0.9, 1, 0.9] }}
+              animate={loop ? { y: [0, 8, 0], opacity: [0.9, 1, 0.9] } : { y: 0, opacity: 1 }}
               className="absolute -right-6 top-16 hidden rounded-xl border border-white/80 bg-white/95 px-2.5 py-2 shadow-lg sm:block"
-              transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}>
+              transition={loop ? { duration: 4, repeat: Infinity, ease: 'easeInOut' } : { duration: 0.3 }}>
               <p className="text-[10px] font-semibold text-emerald-700">Paiement reçu</p>
               <p className="text-[9px] text-slate-500">+1 435,20 €</p>
             </motion.div>
