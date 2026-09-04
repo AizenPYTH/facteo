@@ -1,143 +1,19 @@
 'use client';
 
-import type { ElementType } from 'react';
-import {
-  Building2,
-  Cloud,
-  CreditCard,
-  FileText,
-  Monitor,
-  PenLine,
-  Receipt,
-  Shield,
-  Smartphone,
-  Sparkles,
-  Users,
-  BarChart3,
-} from 'lucide-react';
 import { motion } from 'framer-motion';
+import { Smartphone } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { FadeIn, Stagger, StaggerItem } from '@/components/ui/fade-in';
-import { AnimatedBackground } from '@/components/marketing/animated-background';
-import InvoiceHero from '@/components/hero/InvoiceHero';
 import {
   CTA,
   FAQ,
-  FEATURES,
   MOBILE,
-  PRESENTATION,
-  WHY,
 } from '@/lib/content';
 import { APP_REGISTER_URL } from '@/lib/constants';
 
 export { PricingSection } from '@/components/sections/pricing-section';
 
-const ICONS: Record<string, ElementType> = {
-  sparkles: Sparkles,
-  shield: Shield,
-  smartphone: Smartphone,
-  cloud: Cloud,
-  users: Users,
-  'file-text': FileText,
-  receipt: Receipt,
-  file: FileText,
-  'pen-line': PenLine,
-  'credit-card': CreditCard,
-  'bar-chart': BarChart3,
-  'building-2': Building2,
-  monitor: Monitor,
-};
-
-export function HeroSection() {
-  return (
-    <section className="relative overflow-hidden px-5 pb-20 pt-16 sm:px-6 sm:pb-24 sm:pt-20 lg:px-8 lg:pb-28 lg:pt-24">
-      <AnimatedBackground />
-      <div className="relative">
-        <InvoiceHero />
-      </div>
-    </section>
-  );
-}
-
-export function PresentationSection() {
-  return (
-    <section className="px-5 py-20 sm:px-6 sm:py-24 lg:px-8 lg:py-28" id="presentation">
-      <div className="mx-auto max-w-6xl">
-        <FadeIn className="max-w-2xl">
-          <h2 className="text-3xl font-semibold tracking-[-0.03em] text-foreground sm:text-4xl lg:text-[2.75rem] lg:leading-[1.1]">
-            {PRESENTATION.title}
-          </h2>
-          <p className="mt-5 text-base leading-relaxed text-muted sm:text-lg">{PRESENTATION.subtitle}</p>
-        </FadeIn>
-        <Stagger className="mt-12 grid gap-3 sm:mt-14 sm:grid-cols-2 sm:gap-4">
-          {PRESENTATION.bullets.map((bullet) => (
-            <StaggerItem key={bullet}>
-              <div className="card-hover flex items-start gap-3.5 rounded-2xl border border-border/80 bg-surface p-5 sm:p-6">
-                <div className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
-                <p className="text-[15px] leading-relaxed text-foreground/90">{bullet}</p>
-              </div>
-            </StaggerItem>
-          ))}
-        </Stagger>
-      </div>
-    </section>
-  );
-}
-
-export function WhySection() {
-  return (
-    <section className="border-y border-border/60 bg-[#F7F4EF]/70 px-5 py-20 sm:px-6 sm:py-24 lg:px-8 lg:py-28">
-      <div className="mx-auto max-w-6xl text-center">
-        <FadeIn>
-          <h2 className="text-3xl font-semibold tracking-[-0.03em] text-foreground sm:text-4xl">
-            {WHY.title}
-          </h2>
-          <p className="mx-auto mt-4 max-w-xl text-muted">{WHY.subtitle}</p>
-        </FadeIn>
-        <Stagger className="mt-12 grid gap-4 sm:mt-14 sm:grid-cols-2 lg:grid-cols-4">
-          {WHY.items.map((item) => {
-            const Icon = ICONS[item.icon] ?? Sparkles;
-            return (
-              <StaggerItem key={item.title}>
-                <div className="card-hover h-full rounded-2xl border border-border/80 bg-surface p-6 text-left">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-primary">
-                    <Icon size={20} />
-                  </div>
-                  <h3 className="mt-4 font-semibold tracking-tight text-foreground">{item.title}</h3>
-                  <p className="mt-2 text-sm leading-relaxed text-muted">{item.description}</p>
-                </div>
-              </StaggerItem>
-            );
-          })}
-        </Stagger>
-      </div>
-    </section>
-  );
-}
-
-export function FeaturesGrid({ showAll = false }: { showAll?: boolean }) {
-  const items = showAll ? FEATURES.items : FEATURES.items.slice(0, 6);
-
-  return (
-    <Stagger className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-      {items.map((item) => {
-        const Icon = ICONS[item.icon] ?? FileText;
-        return (
-          <StaggerItem key={item.title}>
-            <div className="card-hover group h-full rounded-2xl border border-border bg-surface p-6">
-              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50 text-primary transition-colors group-hover:bg-primary group-hover:text-white">
-                <Icon size={22} />
-              </div>
-              <h3 className="mt-4 font-semibold text-foreground">{item.title}</h3>
-              <p className="mt-2 text-sm leading-relaxed text-muted">{item.description}</p>
-            </div>
-          </StaggerItem>
-        );
-      })}
-    </Stagger>
-  );
-}
 
 export function FaqSection({ compact = false }: { compact?: boolean }) {
   const items = compact ? FAQ.items.slice(0, 4) : FAQ.items;
@@ -288,13 +164,33 @@ export function MobileSection() {
   );
 }
 
-export function PageHero({ title, subtitle }: { title: string; subtitle?: string }) {
+export function PageHero({
+  eyebrow,
+  title,
+  subtitle,
+}: {
+  eyebrow?: string;
+  title: string;
+  subtitle?: string;
+}) {
   return (
-    <section className="gradient-hero relative overflow-hidden border-b border-border px-6 py-16 lg:px-8 lg:py-20">
-      <AnimatedBackground />
+    <section className="relative isolate overflow-hidden border-b border-border/60 px-5 py-16 sm:px-6 lg:px-8 lg:py-24">
+      <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 bg-aurora" />
+      <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 bg-grid" />
       <FadeIn className="relative mx-auto max-w-3xl text-center">
-        <h1 className="text-4xl font-bold tracking-tight text-foreground lg:text-5xl">{title}</h1>
-        {subtitle ? <p className="mt-4 text-lg text-muted">{subtitle}</p> : null}
+        {eyebrow ? (
+          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">
+            {eyebrow}
+          </p>
+        ) : null}
+        <h1 className="mt-4 text-[2rem] font-semibold leading-[1.1] tracking-[-0.035em] text-foreground sm:text-[2.75rem] lg:text-[3rem]">
+          {title}
+        </h1>
+        {subtitle ? (
+          <p className="mx-auto mt-5 max-w-xl text-base leading-relaxed text-muted sm:text-[1.0625rem]">
+            {subtitle}
+          </p>
+        ) : null}
       </FadeIn>
     </section>
   );

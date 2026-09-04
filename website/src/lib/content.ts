@@ -1,3 +1,10 @@
+/**
+ * Contenus éditoriaux du site vitrine.
+ *
+ * Le nom « INVEQ » doit rester visible sur la page d'accueil pour la
+ * vérification de marque Google OAuth : il est porté par l'élément
+ * `id="app-name"` du composant `sections/home/hero`.
+ */
 import { APP_DASHBOARD_URL, APP_REGISTER_URL, IOS_APP_STORE_URL, SUPPORT_EMAIL } from './constants';
 
 export const NAV_LINKS = [
@@ -6,54 +13,6 @@ export const NAV_LINKS = [
   { label: 'Tarifs', href: '/tarifs' },
   { label: 'FAQ', href: '/faq' },
 ] as const;
-
-export const HERO = {
-  overline: 'Facturation pour les pros',
-  /** Doit correspondre exactement au nom OAuth Google Cloud Console */
-  title: 'INVEQ',
-  subtitle:
-    'Logiciel de facturation, devis et gestion pour artisans et PME. Gérez vos devis et factures comme un pro — clients, signatures et encaissements.',
-  ctaPrimary: 'Commencer gratuitement',
-  ctaSecondary: 'Voir les fonctionnalités',
-};
-
-export const PRESENTATION = {
-  title: 'Tout votre activité, au même endroit',
-  subtitle:
-    'Fini les tableurs, les PDF perdus et les relances oubliées. INVEQ vous accompagne du premier devis jusqu’à la facture signée.',
-  bullets: [
-    'Créez des devis professionnels en quelques minutes',
-    'Transformez un devis accepté en facture en un clic',
-    'Suivez vos encaissements et vos impayés en temps réel',
-    'Accédez à vos documents depuis mobile ou ordinateur',
-  ],
-};
-
-export const WHY = {
-  title: 'Pourquoi choisir INVEQ ?',
-  subtitle: 'Un outil conçu pour le terrain, pas pour les comptables.',
-  items: [
-    { title: 'Simplicité', description: 'Interface claire, workflows guidés, zéro jargon comptable.', icon: 'sparkles' },
-    { title: 'Conformité', description: 'Documents structurés, numérotation, mentions légales et archivage.', icon: 'shield' },
-    { title: 'Mobilité', description: 'Signez et envoyez vos documents depuis le chantier ou le bureau.', icon: 'smartphone' },
-    { title: 'Fiabilité', description: 'Synchronisation cloud, sauvegardes automatiques, données sécurisées.', icon: 'cloud' },
-  ],
-};
-
-export const FEATURES = {
-  title: 'Fonctionnalités complètes',
-  subtitle: 'Tout ce dont vous avez besoin pour facturer sereinement.',
-  items: [
-    { title: 'Gestion clients', description: 'Fiches clients, historique, recherche instantanée et import SIRET.', icon: 'users' },
-    { title: 'Devis', description: 'Création guidée, modèles, statuts et conversion en facture.', icon: 'file-text' },
-    { title: 'Factures', description: 'Émission, relances, paiements partiels et suivi des impayés.', icon: 'receipt' },
-    { title: 'PDF professionnels', description: '21 modèles, logo, couleurs et aperçu fidèle avant envoi.', icon: 'file' },
-    { title: 'Signature client', description: 'Signature tactile sur devis et factures, intégrée au PDF.', icon: 'pen-line' },
-    { title: 'Statistiques', description: 'Suivez votre CA, vos impayés et l’activité de vos documents.', icon: 'bar-chart' },
-    { title: 'Multi-entreprises', description: 'Gérez plusieurs espaces de travail depuis un seul compte.', icon: 'building-2' },
-    { title: 'Application web', description: 'Interface desktop optimisée, en plus de l’application iOS.', icon: 'monitor' },
-  ],
-};
 
 export const MOBILE = {
   title: 'Votre bureau dans votre poche',
