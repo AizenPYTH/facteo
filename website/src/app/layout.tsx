@@ -21,11 +21,13 @@ export const metadata: Metadata = {
     canonical: SITE_URL,
   },
   title: {
-    default: SITE_NAME,
+    // Le titre par défaut se limitait au nom de marque : aucun signal de
+    // recherche pour quelqu'un qui cherche un logiciel de devis ou de facture.
+    default: `${SITE_NAME} — Devis et factures pour artisans, indépendants et TPE`,
     template: `%s — ${SITE_NAME}`,
   },
   description:
-    'INVEQ simplifie la facturation, les devis, les signatures et les paiements. Application mobile et web pour artisans, freelances et petites entreprises.',
+    'Créez vos devis, convertissez-les en factures et suivez vos encaissements. Facturation électronique via plateforme agréée. Application iOS et web pour artisans, indépendants et TPE.',
   keywords: [
     'facturation',
     'devis',
@@ -36,6 +38,7 @@ export const metadata: Metadata = {
     'TPE',
     'gestion commerciale',
     'signature électronique',
+    'facturation électronique',
     'INVEQ',
   ],
   openGraph: {

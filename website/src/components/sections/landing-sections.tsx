@@ -27,7 +27,6 @@ import {
   FEATURES,
   MOBILE,
   PRESENTATION,
-  TESTIMONIALS,
   WHY,
 } from '@/lib/content';
 import { APP_REGISTER_URL } from '@/lib/constants';
@@ -163,45 +162,35 @@ export function FaqSection({ compact = false }: { compact?: boolean }) {
 
 export function CtaSection() {
   return (
-    <section className="px-5 py-20 sm:px-6 sm:py-24 lg:px-8 lg:py-28">
+    <section className="px-5 py-[var(--section-y)] sm:px-6 lg:px-8 lg:py-[var(--section-y-lg)]">
       <FadeIn>
-        <div className="mx-auto max-w-4xl rounded-[1.75rem] bg-gradient-to-br from-[#1D4ED8] to-[#0B1220] px-6 py-14 text-center text-white shadow-[0_24px_60px_-24px_rgba(29,78,216,0.55)] sm:px-10 sm:py-16">
-          <h2 className="text-3xl font-semibold tracking-[-0.03em] sm:text-4xl">{CTA.title}</h2>
-          <p className="mx-auto mt-4 max-w-lg text-base text-blue-100/90">{CTA.subtitle}</p>
-          <div className="mt-8">
-            <Button className="!bg-white !text-primary !shadow-none hover:!bg-blue-50" href={APP_REGISTER_URL}>
-              {CTA.cta}
-            </Button>
+        <div className="relative mx-auto max-w-4xl overflow-hidden rounded-[1.75rem] bg-[#0B0E14] px-6 py-16 text-center text-white shadow-[0_40px_80px_-40px_rgba(49,46,129,0.6)] sm:px-10 sm:py-20">
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-0"
+            style={{
+              background:
+                'radial-gradient(ellipse 60% 70% at 50% 0%, rgba(139,92,246,0.4), transparent 65%), radial-gradient(ellipse 50% 60% at 85% 100%, rgba(37,99,235,0.28), transparent 60%)',
+            }}
+          />
+          <div className="relative">
+            <h2 className="mx-auto max-w-xl text-[1.75rem] font-semibold leading-tight tracking-[-0.03em] sm:text-4xl">
+              {CTA.title}
+            </h2>
+            <p className="mx-auto mt-5 max-w-md text-[15px] leading-relaxed text-slate-300">
+              {CTA.subtitle}
+            </p>
+            <div className="mt-9 flex justify-center">
+              <Button
+                className="!bg-white !text-[#0B0E14] !shadow-[0_10px_30px_-10px_rgba(255,255,255,0.4)] hover:!bg-slate-100"
+                href={APP_REGISTER_URL}
+                size="lg">
+                {CTA.cta}
+              </Button>
+            </div>
           </div>
         </div>
       </FadeIn>
-    </section>
-  );
-}
-
-export function TestimonialsSection() {
-  return (
-    <section className="px-5 py-20 sm:px-6 sm:py-24 lg:px-8 lg:py-28">
-      <div className="mx-auto max-w-6xl">
-        <FadeIn className="text-center">
-          <h2 className="text-3xl font-semibold tracking-[-0.03em] text-foreground sm:text-4xl">
-            {TESTIMONIALS.title}
-          </h2>
-          <p className="mt-4 text-muted">{TESTIMONIALS.subtitle}</p>
-        </FadeIn>
-        <Stagger className="mt-12 grid gap-4 sm:mt-14 md:grid-cols-3 md:gap-5">
-          {TESTIMONIALS.items.map((t) => (
-            <StaggerItem key={t.author}>
-              <blockquote className="card-hover h-full rounded-2xl border border-border/80 bg-surface p-6">
-                <p className="text-[15px] leading-relaxed text-foreground/90">“{t.quote}”</p>
-                <footer className="mt-5 text-sm text-muted">
-                  <strong className="font-semibold text-foreground">{t.author}</strong> — {t.role}
-                </footer>
-              </blockquote>
-            </StaggerItem>
-          ))}
-        </Stagger>
-      </div>
     </section>
   );
 }

@@ -243,3 +243,117 @@ body {
 .legal-prose h2 {
   scroll-margin-top: 6rem;
 }
+
+/* ==========================================================================
+   Système INVEQ — surfaces, rythme et mouvement du site vitrine.
+   Les jetons --app-* au-dessus appartiennent à l'espace connecté et ne sont
+   pas touchés ici.
+   ========================================================================== */
+
+:root {
+  /* Rythme vertical : trois hauteurs de section, pas davantage. */
+  --section-y: 5rem;
+  --section-y-lg: 7.5rem;
+
+  /* Profondeur. Une ombre portée large et très diffuse lit comme de la
+     lumière ; une ombre courte et dense lit comme du carton. */
+  --shadow-card: 0 1px 2px rgba(15, 23, 42, 0.04), 0 8px 24px -12px rgba(15, 23, 42, 0.12);
+  --shadow-lift: 0 1px 2px rgba(15, 23, 42, 0.05), 0 24px 48px -24px rgba(15, 23, 42, 0.22);
+  --shadow-scene: 0 40px 80px -40px rgba(49, 46, 129, 0.45);
+
+  --ring-focus: 0 0 0 2px var(--surface), 0 0 0 4px var(--primary);
+}
+
+/* Grille technique très discrète — donne une assise sans se voir. */
+.bg-grid {
+  background-image:
+    linear-gradient(to right, rgba(79, 70, 229, 0.055) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(79, 70, 229, 0.055) 1px, transparent 1px);
+  background-size: 64px 64px;
+  mask-image: radial-gradient(ellipse 70% 60% at 50% 0%, #000 35%, transparent 78%);
+  -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 0%, #000 35%, transparent 78%);
+}
+
+/* Halo de marque derrière une scène produit. */
+.bg-aurora {
+  background:
+    radial-gradient(ellipse 45% 42% at 22% 8%, rgba(168, 85, 247, 0.20), transparent 70%),
+    radial-gradient(ellipse 50% 45% at 82% 0%, rgba(37, 99, 235, 0.16), transparent 70%),
+    radial-gradient(ellipse 60% 40% at 50% 100%, rgba(99, 102, 241, 0.10), transparent 70%);
+}
+
+.surface-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  box-shadow: var(--shadow-card);
+}
+
+/* Bordure dégradée : un liseré de marque sans cerner la carte de couleur. */
+.surface-ring {
+  position: relative;
+  isolation: isolate;
+}
+
+.surface-ring::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(160deg, rgba(168, 85, 247, 0.55), rgba(99, 102, 241, 0.18) 45%, transparent 70%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Chiffres alignés : indispensable dès qu'un montant s'anime. */
+.tnum {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+}
+
+/* Anneau de focus unique pour tout le site vitrine. */
+.focus-ring:focus-visible {
+  outline: none;
+  box-shadow: var(--ring-focus);
+}
+
+/* Le survol d'une carte doit se sentir, pas se voir. */
+.lift {
+  transition:
+    transform 0.24s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.24s cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 0.24s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: transform;
+}
+
+@media (hover: hover) {
+  .lift:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-lift);
+    border-color: rgba(99, 102, 241, 0.35);
+  }
+}
+
+/* Respect du réglage système : on coupe le mouvement, jamais l'état final. */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .lift:hover {
+    transform: none;
+  }
+}
