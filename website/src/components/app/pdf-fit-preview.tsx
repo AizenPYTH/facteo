@@ -13,6 +13,27 @@ const A4_RATIO = A4_HEIGHT_PX / A4_WIDTH_PX;
 
 type FitMode = 'auto' | 'page' | 'width';
 
+/**
+ * Marge interne réelle du conteneur de défilement : `p-4`, et `sm:p-5` au-delà
+ * du premier point de rupture, soit 40 px au total dans le cas le plus large.
+ *
+ * La valeur précédente — 20 — sous-estimait cette marge d'une vingtaine de
+ * pixels. L'échelle calculée produisait donc une page systématiquement plus
+ * large que la place disponible : une barre de défilement apparaissait,
+ * amputait la largeur utile, l'échelle était recalculée plus petite, la barre
+ * disparaissait, la largeur repassait à sa valeur initiale — et le cycle
+ * recommençait toutes les 80 ms. C'est ce battement qui faisait vibrer
+ * l'aperçu en continu.
+ */
+const VIEWPORT_PADDING = 40;
+
+/**
+ * En deçà de ce seuil, un changement d'échelle est invisible et ne justifie pas
+ * un rendu. Le garde-fou empêche qu'un écart d'arrondi n'entretienne à lui seul
+ * une boucle mesure → rendu → mesure.
+ */
+const SCALE_EPSILON = 0.002;
+
 function waitForImages(doc: Document): Promise<void> {
   const images = Array.from(doc.images);
   if (images.length === 0) return Promise.resolve();
@@ -85,6 +106,22 @@ export function PdfFitPreview({
   const [fitMode, setFitMode] = useState<FitMode>('auto');
   const [iframeHeight, setIframeHeight] = useState(A4_HEIGHT_PX);
 
+  /**
+   * Réinitialisation du cadrage à l'arrivée d'un nouveau document.
+   *
+   * C'était un effet, qui enchaînait deux `setState` après le rendu : React
+   * affichait donc brièvement le document neuf avec le zoom de l'ancien avant
+   * de le corriger au rendu suivant. Ajuster l'état pendant le rendu — le
+   * motif recommandé pour « remettre à zéro quand une propriété change » —
+   * évite ce rendu intermédiaire.
+   */
+  const [renderedHtml, setRenderedHtml] = useState(html);
+  if (html !== renderedHtml) {
+    setRenderedHtml(html);
+    setZoomFactor(1);
+    setFitMode('auto');
+  }
+
   const scale = autoScale * zoomFactor;
 
   const measureAndFit = useCallback(async () => {
@@ -98,12 +135,13 @@ export function PdfFitPreview({
     await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
 
     const measured = measureDocument(doc);
-    setDocSize(measured);
-    setIframeHeight(measured.h);
+    // Conserver la référence précédente à valeur égale : `setDocSize` avec un
+    // objet neuf provoquait un rendu à chaque mesure, même sans changement.
+    setDocSize((prev) => (prev.w === measured.w && prev.h === measured.h ? prev : measured));
+    setIframeHeight((prev) => (prev === measured.h ? prev : measured.h));
 
-    const pad = 20;
-    const cw = Math.max(container.clientWidth - pad, 80);
-    const ch = Math.max(container.clientHeight - pad, 80);
+    const cw = Math.max(container.clientWidth - VIEWPORT_PADDING, 80);
+    const ch = Math.max(container.clientHeight - VIEWPORT_PADDING, 80);
 
     const pageCount = Math.max(1, Math.ceil(measured.h / A4_HEIGHT_PX));
     const isMultiPage = pageCount > 1;
@@ -125,7 +163,7 @@ export function PdfFitPreview({
     const maxScale = 1.5;
     nextScale = Math.min(maxScale, Math.max(minScale, nextScale));
 
-    setAutoScale(nextScale);
+    setAutoScale((prev) => (Math.abs(prev - nextScale) < SCALE_EPSILON ? prev : nextScale));
   }, [fitMode]);
 
   const scheduleMeasure = useCallback(() => {
@@ -143,11 +181,6 @@ export function PdfFitPreview({
     observer.observe(container);
     return () => observer.disconnect();
   }, [scheduleMeasure]);
-
-  useEffect(() => {
-    setZoomFactor(1);
-    setFitMode('auto');
-  }, [html]);
 
   useEffect(() => {
     scheduleMeasure();
@@ -262,7 +295,9 @@ export function PdfFitPreview({
         </div>
       ) : null}
 
-      <div className="relative min-h-0 flex-1 overflow-auto" ref={containerRef}>
+      <div
+        className="relative min-h-0 flex-1 overflow-auto [scrollbar-gutter:stable]"
+        ref={containerRef}>
         {isLoading ? (
           <div className="absolute inset-3">
             <PdfSkeleton />
