@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 import { SITE_URL } from '@/lib/constants';
 
 import { CtaSection } from '@/components/sections/landing-sections';
+import { RelatedLinks } from '@/components/seo/seo-blocks';
 import {
   EInvoicingChainSection,
   EInvoicingChangesSection,
@@ -30,6 +31,32 @@ export default function EInvoicingPage() {
       <EInvoicingPlatformSection />
       <EInvoicingConnectionSection />
       <EInvoicingFaqSection />
+
+      <RelatedLinks
+        links={[
+          {
+            label: 'Plateforme agréée (ex-PDP)',
+            description: 'Ce qu’elle fait d’une facture, et pourquoi le terme a changé.',
+            href: '/guides/plateforme-agreee-pdp',
+          },
+          {
+            label: 'L’obligation de facture électronique',
+            description: 'Qui est concerné, et à partir de quand.',
+            href: '/guides/facture-electronique-obligation',
+          },
+          {
+            label: 'Logiciel de facturation',
+            description: 'Le périmètre complet d’INVEQ.',
+            href: '/logiciel-facturation',
+          },
+          {
+            label: 'Mentions obligatoires',
+            description: 'Les données que doit porter chaque facture.',
+            href: '/guides/mentions-obligatoires-facture',
+          },
+        ]}
+      />
+
       <CtaSection />
     </>
   );

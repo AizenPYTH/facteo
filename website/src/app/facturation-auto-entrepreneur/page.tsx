@@ -131,6 +131,11 @@ export default function FacturationAutoEntrepreneurPage() {
       <RelatedLinks
         links={[
           {
+            label: 'Comment faire une facture',
+            description: 'Les six étapes, de la préparation au suivi du règlement.',
+            href: '/guides/comment-faire-une-facture',
+          },
+          {
             label: 'Mentions obligatoires',
             description: 'La liste complète de ce qui doit figurer sur une facture.',
             href: '/guides/mentions-obligatoires-facture',

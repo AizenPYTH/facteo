@@ -161,9 +161,9 @@ export default function ChoisirLogicielFacturationPage() {
             href: '/logiciel-facturation',
           },
           {
-            label: 'Tarifs',
-            description: 'Ce que contient chaque offre.',
-            href: '/tarifs',
+            label: 'Comparatif des logiciels français',
+            description: 'Les cinq familles du marché, pour se situer.',
+            href: '/guides/comparatif-logiciels-facturation',
           },
           {
             label: 'Facture électronique',

@@ -25,6 +25,7 @@ export const PRODUCT_ROUTES: PublicRoute[] = [
   { path: '/logiciel-devis-facture', priority: 0.9, changeFrequency: 'monthly' },
   { path: '/facturation-electronique', priority: 0.9, changeFrequency: 'monthly' },
   { path: '/facturation-auto-entrepreneur', priority: 0.8, changeFrequency: 'monthly' },
+  { path: '/logiciel-devis-facture-artisan', priority: 0.8, changeFrequency: 'monthly' },
   { path: '/tarifs', priority: 0.8, changeFrequency: 'monthly' },
 ];
 
@@ -35,6 +36,11 @@ export const GUIDE_ROUTES: PublicRoute[] = [
   { path: '/guides/devis-ou-facture', priority: 0.7, changeFrequency: 'yearly' },
   { path: '/guides/facture-electronique-obligation', priority: 0.7, changeFrequency: 'monthly' },
   { path: '/guides/choisir-logiciel-facturation', priority: 0.7, changeFrequency: 'yearly' },
+  { path: '/guides/comment-faire-une-facture', priority: 0.7, changeFrequency: 'yearly' },
+  { path: '/guides/plateforme-agreee-pdp', priority: 0.7, changeFrequency: 'monthly' },
+  { path: '/guides/logiciel-facturation-gratuit', priority: 0.7, changeFrequency: 'monthly' },
+  { path: '/guides/comparatif-logiciels-facturation', priority: 0.7, changeFrequency: 'monthly' },
+  { path: '/guides/ia-facturation', priority: 0.7, changeFrequency: 'monthly' },
 ];
 
 /** Pages d'appui : utiles aux visiteurs, secondaires pour la recherche. */

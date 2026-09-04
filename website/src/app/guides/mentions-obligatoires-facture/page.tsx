@@ -181,9 +181,9 @@ export default function MentionsObligatoiresPage() {
       <RelatedLinks
         links={[
           {
-            label: 'Devis ou facture ?',
-            description: 'Le rôle de chaque document et l’ordre d’émission.',
-            href: '/guides/devis-ou-facture',
+            label: 'Comment faire une facture',
+            description: 'La marche à suivre, de la préparation à la conservation.',
+            href: '/guides/comment-faire-une-facture',
           },
           {
             label: 'Auto-entrepreneurs',

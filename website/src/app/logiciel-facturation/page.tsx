@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 
 import { CapabilitiesSection } from '@/components/sections/home/capabilities';
+import { AiSection } from '@/components/sections/product/ai-section';
 import { WorkflowSection } from '@/components/sections/home/workflow';
 import { CtaSection, PageHero, PricingSection } from '@/components/sections/landing-sections';
 import {
@@ -36,7 +37,7 @@ const FAQ = [
   {
     question: 'INVEQ est-il vraiment gratuit ?',
     answer:
-      'L’offre Micro est à 0 € et sans limite de durée. Les offres payantes débloquent des volumes plus élevés et des fonctions avancées : le détail figure sur la page Tarifs.',
+      'L’offre Micro est à 0 €, sans carte bancaire et sans limite de durée. Elle est plafonnée à 3 documents par mois ; le catalogue et les contacts, eux, sont illimités. Au-delà de trois devis ou factures par mois, il faut passer à une offre payante — le détail figure sur la page Tarifs.',
   },
   {
     question: 'Faut-il des compétences en comptabilité ?',
@@ -47,6 +48,11 @@ const FAQ = [
     question: 'Mes données sont-elles conservées en sécurité ?',
     answer:
       'Les données sont hébergées sur une infrastructure cloud gérée (Supabase), avec chiffrement en transit et sauvegardes. Vous restez propriétaire de vos documents et pouvez les exporter en PDF à tout moment.',
+  },
+  {
+    question: 'Que fait exactement l’intelligence artificielle d’INVEQ ?',
+    answer:
+      'Une seule chose, et elle la fait bien : à partir d’une photo, elle prépare une fiche produit en remplissant le nom, la description, la référence, l’unité, le prix hors taxes et le taux de TVA. Elle ne rédige pas vos factures, ne lit pas celles de vos fournisseurs et ne relance personne. L’assistant IA est inclus dans l’offre Max.',
   },
   {
     question: 'Puis-je utiliser INVEQ sur mobile ?',
@@ -123,6 +129,7 @@ export default function LogicielFacturationPage() {
 
       <WorkflowSection />
       <CapabilitiesSection />
+      <AiSection />
 
       <section
         className="border-y border-border/60 bg-[#F7F4EF]/50 px-5 py-[var(--section-y)] sm:px-6 lg:px-8 lg:py-[var(--section-y-lg)]"
@@ -150,6 +157,16 @@ export default function LogicielFacturationPage() {
             label: 'Auto-entrepreneurs',
             description: 'Franchise en base, mentions à porter, facturation au forfait.',
             href: '/facturation-auto-entrepreneur',
+          },
+          {
+            label: 'Artisans',
+            description: 'Chiffrer sur le chantier, faire signer, facturer.',
+            href: '/logiciel-devis-facture-artisan',
+          },
+          {
+            label: 'L’IA en facturation',
+            description: 'Ce que l’intelligence artificielle fait vraiment, et ce qu’on lui prête.',
+            href: '/guides/ia-facturation',
           },
           {
             label: 'Choisir son logiciel',

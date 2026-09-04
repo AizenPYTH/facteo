@@ -153,9 +153,9 @@ export default function FactureElectroniqueObligationPage() {
             href: '/facturation-electronique',
           },
           {
-            label: 'Mentions obligatoires',
-            description: 'Les données qui doivent figurer sur chaque facture.',
-            href: '/guides/mentions-obligatoires-facture',
+            label: 'Plateforme agréée (ex-PDP)',
+            description: 'Ce qu’elle fait d’une facture, et comment en choisir une.',
+            href: '/guides/plateforme-agreee-pdp',
           },
           {
             label: 'Logiciel de facturation',
