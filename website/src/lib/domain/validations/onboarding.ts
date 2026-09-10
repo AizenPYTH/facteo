@@ -36,10 +36,7 @@ export const onboardingStep2Schema = z.object({
   phone: optionalText,
   address: optionalText,
   city: optionalText,
-  postalCode: optionalText.refine(
-    (value) => !value || /^\d{5}$/.test(value),
-    'Le code postal doit contenir 5 chiffres',
-  ),
+  postalCode: optionalText.max(40),
   country: optionalText,
 });
 

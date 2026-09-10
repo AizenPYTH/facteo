@@ -167,7 +167,6 @@ export function CompanyProfileForm({ control, errors, assets }: CompanyProfileFo
               render={({ field: { onChange, onBlur, value } }) => (
                 <TextField
                   error={errors.postalCode?.message}
-                  keyboardType="number-pad"
                   label="Code postal"
                   onBlur={onBlur}
                   onChangeText={onChange}
