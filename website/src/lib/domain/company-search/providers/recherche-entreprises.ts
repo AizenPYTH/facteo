@@ -120,11 +120,6 @@ function mapToLookupResult(
 export const rechercheEntreprisesProvider: CompanySearchProvider = {
   async searchByRegistrationNumber(registrationNumber, options = {}) {
     const baseUrl = getCompanySearchApiBaseUrl();
-
-    if (!baseUrl) {
-      throw new CompanySearchError('NOT_CONFIGURED');
-    }
-
     const endpoint = new URL('search', `${baseUrl}/`);
     endpoint.searchParams.set('q', registrationNumber);
     endpoint.searchParams.set('per_page', '1');
