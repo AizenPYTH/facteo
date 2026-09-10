@@ -25,10 +25,7 @@ export const clientFormSchema = z.object({
   ),
   phone: optionalText.refine(isValidFrenchPhone, 'Numéro de téléphone invalide.'),
   address: optionalText,
-  postalCode: optionalText.refine(
-    (value) => !value || /^\d{5}$/.test(value),
-    'Le code postal doit contenir 5 chiffres.',
-  ),
+  postalCode: optionalText.max(40),
   city: optionalText,
   country: optionalText,
   siren: optionalSiren,

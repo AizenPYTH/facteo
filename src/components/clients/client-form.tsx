@@ -150,7 +150,6 @@ export function ClientForm({ control, errors, setValue }: ClientFormProps) {
             render={({ field: { onChange, onBlur, value } }) => (
               <TextField
                 error={errors.postalCode?.message}
-                keyboardType="number-pad"
                 label="Code postal"
                 onBlur={onBlur}
                 onChangeText={onChange}

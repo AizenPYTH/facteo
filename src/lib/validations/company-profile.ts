@@ -17,10 +17,7 @@ export const companyProfileSchema = z.object({
     .email('Adresse e-mail invalide.'),
   phone: optionalText,
   address: optionalText,
-  postalCode: optionalText.refine(
-    (value) => !value || /^\d{5}$/.test(value),
-    'Le code postal doit contenir 5 chiffres',
-  ),
+  postalCode: optionalText.max(40),
   city: optionalText,
   country: optionalText,
   siret: optionalText.refine(
