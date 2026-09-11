@@ -1,86 +1,40 @@
-const fs = require('fs');
-const path = require('path');
+const { withDangerousMod, withFinalizedMod } = require('expo/config-plugins');
+
+const { applyDeferredIapInit, assertDeferredIapInit } = require('../scripts/defer-iap-init');
+
+function patchDuringPrebuild(projectRoot, phase) {
+  applyDeferredIapInit(projectRoot);
+  assertDeferredIapInit(projectRoot);
+  console.log(
+    `[INVEQ] ${phase}: expo-iap cannot initialize StoreKit before initConnection()`,
+  );
+}
 
 /**
- * expo-iap 5.x appelle `ExpoIapHelper.setupStore` dans `OnCreate`,
- * ce qui touche `OpenIapModule.shared` au process start et abort TestFlight
- * avant le premier écran JS (builds 57/59).
+ * Must run AFTER the "expo-iap" plugin function: that plugin's syncAutolinking
+ * re-enables ExpoIapAppDelegateSubscriber in expo-module.config.json every time
+ * Expo evaluates the config (including `expo export` / fingerprint).
  *
- * On no-op le subscriber de lancement et on déplace `setupStore` dans
- * `initConnection()`, appelé uniquement à l’ouverture de l’écran Premium.
+ * Dangerous mods run first during prebuild; finalized mods run last. We patch in
+ * both so a later mod cannot put launch-time StoreKit back, and the build fails
+ * if the crash paths are still present when Xcode/CocoaPods start.
  */
-
-function patchAppDelegate(projectRoot) {
-  const swiftPath = path.join(
-    projectRoot,
-    'node_modules/expo-iap/ios/ExpoIapAppDelegateSubscriber.swift',
-  );
-  if (!fs.existsSync(swiftPath)) {
-    return;
-  }
-
-  fs.writeFileSync(
-    swiftPath,
-    `import ExpoModulesCore
-#if canImport(UIKit)
-import UIKit
-#endif
-
-public class ExpoIapAppDelegateSubscriber: ExpoAppDelegateSubscriber {
-    public func application(
-        _ application: UIApplication,
-        didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
-    ) -> Bool {
-        return true
-    }
-}
-`,
-  );
-}
-
-function patchExpoIapModule(projectRoot) {
-  const modulePath = path.join(projectRoot, 'node_modules/expo-iap/ios/ExpoIapModule.swift');
-  if (!fs.existsSync(modulePath)) {
-    return;
-  }
-
-  let source = fs.readFileSync(modulePath, 'utf8');
-
-  source = source.replace(
-    /OnCreate \{ \[weak self\] in\s+Task \{ @MainActor \[weak self\] in\s+guard let self else \{ return \}\s+self\.listenerGeneration = ExpoIapHelper\.setupStore\(module: self\)\s+\}\s+\}/,
-    `OnCreate { [weak self] in
-            // INVEQ: StoreKit is initialized from initConnection, not process start.
-            _ = self
-        }`,
-  );
-
-  if (!source.includes('INVEQ_DEFERRED_IAP_SETUP')) {
-    source = source.replace(
-      `AsyncFunction("initConnection") { (config: [String: Any]?) async throws -> Bool in
-            // Note: iOS doesn't support alternative billing config parameter
-            // Config is ignored on iOS platform
-            await ExpoIapHelper.waitForStoreCleanup()`,
-      `AsyncFunction("initConnection") { (config: [String: Any]?) async throws -> Bool in
-            // Note: iOS doesn't support alternative billing config parameter
-            // Config is ignored on iOS platform
-            // INVEQ_DEFERRED_IAP_SETUP
-            await MainActor.run {
-                if self.listenerGeneration == nil {
-                    self.listenerGeneration = ExpoIapHelper.setupStore(module: self)
-                }
-            }
-            await ExpoIapHelper.waitForStoreCleanup()`,
-    );
-  }
-
-  fs.writeFileSync(modulePath, source);
-}
-
 function withDeferIapInit(config) {
-  const projectRoot = config._internal?.projectRoot ?? process.cwd();
-  patchAppDelegate(projectRoot);
-  patchExpoIapModule(projectRoot);
-  return config;
+  config = withDangerousMod(config, [
+    'ios',
+    async (modConfig) => {
+      patchDuringPrebuild(modConfig.modRequest.projectRoot, 'withDangerousMod');
+      return modConfig;
+    },
+  ]);
+
+  return withFinalizedMod(config, [
+    'ios',
+    async (modConfig) => {
+      patchDuringPrebuild(modConfig.modRequest.projectRoot, 'withFinalizedMod');
+      return modConfig;
+    },
+  ]);
 }
 
 module.exports = withDeferIapInit;
