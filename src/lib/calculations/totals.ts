@@ -18,7 +18,8 @@ export function calculateLineTotals(
   const grossHt = roundCurrency(quantity * unitPrice);
   const discountAmount = roundCurrency(grossHt * (Math.min(100, Math.max(0, discountPercent)) / 100));
   const lineTotalHt = roundCurrency(grossHt - discountAmount);
-  const lineVat = roundCurrency(lineTotalHt * (vatRate / 100));
+  const safeVatRate = Number.isFinite(vatRate) ? vatRate : 0;
+  const lineVat = roundCurrency(lineTotalHt * (safeVatRate / 100));
   const lineTotalTtc = roundCurrency(lineTotalHt + lineVat);
 
   return { lineTotalHt, lineVat, lineTotalTtc, discountAmount };

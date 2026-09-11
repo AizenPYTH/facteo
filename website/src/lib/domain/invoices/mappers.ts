@@ -1,5 +1,5 @@
 import { calculateDocumentTotals, calculateLineTotals } from '@/lib/calculations/totals';
-import { parseDecimalInput } from '@/lib/format/decimal';
+import { parseDecimalInput, parseVatRateInput } from '@/lib/format/decimal';
 import type { CreateInvoiceInput, InvoiceLineValue, UpdateInvoiceInput } from '@/types/invoice';
 import type { InvoiceInsert, InvoiceItemInsert } from '@/types/database';
 import type { DataScope } from '@/types/tenant';
@@ -9,7 +9,7 @@ export function mapInvoiceLineValueToTotals(
 ) {
   const quantity = parseDecimalInput(line.quantity);
   const unitPrice = parseDecimalInput(line.unitPrice);
-  const vatRate = parseDecimalInput(line.vatRate);
+  const vatRate = parseVatRateInput(line.vatRate);
   const discountPercent = parseDecimalInput(line.discountPercent || '0');
 
   return calculateLineTotals(quantity, unitPrice, vatRate, discountPercent);
@@ -35,7 +35,7 @@ function mapLineToInsert(
     quantity: parseDecimalInput(line.quantity),
     unit: line.unit.trim(),
     unit_price: parseDecimalInput(line.unitPrice),
-    vat_rate: parseDecimalInput(line.vatRate),
+    vat_rate: parseVatRateInput(line.vatRate),
     discount_percent: parseDecimalInput(line.discountPercent || '0'),
     line_total_ht: lineTotals.lineTotalHt,
   };

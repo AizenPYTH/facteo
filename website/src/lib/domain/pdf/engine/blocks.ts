@@ -6,6 +6,18 @@ import { formatPriceHT } from '@/lib/format/currency';
 import { mapLineValueToTotals } from '@/lib/quotes/mappers';
 import type { PdfClientInfo, PdfCompanyInfo, PdfDocumentInput, PdfDocumentLine } from '@/lib/pdf/engine/types';
 
+function formatIban(value: string): string {
+  return value.replace(/\s/g, '').replace(/(.{4})/g, '$1 ').trim();
+}
+
+function formatVatRateLabel(value: string): string {
+  const normalized = value.trim().replace(/\s/g, '').replace(',', '.');
+  if (!normalized) {
+    return '0 %';
+  }
+  return `${value.trim()} %`;
+}
+
 export function escapeHtml(value: string): string {
   return value
     .replace(/&/g, '&amp;')
@@ -70,7 +82,7 @@ export function buildLineRows(lines: PdfDocumentLine[]): string {
           <td>${escapeHtml(line.unit)}</td>
           <td class="num">${formatPriceHT(Number(line.unitPrice.replace(',', '.')) || 0)}</td>
           <td class="num">${discount > 0 ? `${discount} %` : '—'}</td>
-          <td class="num">${line.vatRate} %</td>
+          <td class="num">${formatVatRateLabel(line.vatRate)}</td>
           <td class="num">${formatPriceHT(totals.lineTotalHt)}</td>
         </tr>
       `;
@@ -126,8 +138,10 @@ export function buildPaymentSection(input: PdfDocumentInput): string {
   const paymentTermsDays = input.settings?.paymentTermsDays ?? 30;
   const { company } = input;
   const methods = company.paymentMethods ?? [];
+  const iban = company.iban?.trim() ?? '';
+  const bic = company.bic?.trim() ?? '';
 
-  if (methods.length === 0 && !company.iban && !company.bic) {
+  if (methods.length === 0 && !iban && !bic) {
     return '';
   }
 
@@ -136,10 +150,10 @@ export function buildPaymentSection(input: PdfDocumentInput): string {
     .join('');
 
   const bankBlock =
-    methods.includes('bank_transfer') && (company.iban || company.bic)
+    iban || bic
       ? `
-          ${company.iban ? `<div><strong>IBAN</strong> ${escapeHtml(company.iban)}</div>` : ''}
-          ${company.bic ? `<div><strong>BIC</strong> ${escapeHtml(company.bic)}</div>` : ''}
+          ${iban ? `<div><strong>IBAN</strong> ${escapeHtml(formatIban(iban))}</div>` : ''}
+          ${bic ? `<div><strong>BIC</strong> ${escapeHtml(bic)}</div>` : ''}
         `
       : '';
 

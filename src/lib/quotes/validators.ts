@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 import { frenchDateInputToIso } from '@/lib/format/date-input';
-import { parseDecimalInput } from '@/lib/format/decimal';
+import { parseDecimalInput, parseVatRateInput } from '@/lib/format/decimal';
 import type { QuoteInfoValues, QuoteLineValue } from '@/types/quote';
 
 export function isQuoteLineValid(line: QuoteLineValue): boolean {
@@ -11,7 +11,7 @@ export function isQuoteLineValid(line: QuoteLineValue): boolean {
 
   const quantity = parseDecimalInput(line.quantity);
   const unitPrice = parseDecimalInput(line.unitPrice);
-  const vatRate = parseDecimalInput(line.vatRate);
+  const vatRate = parseVatRateInput(line.vatRate);
 
   return quantity > 0 && unitPrice >= 0 && vatRate >= 0 && vatRate <= 100;
 }
