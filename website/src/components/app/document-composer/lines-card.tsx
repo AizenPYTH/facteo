@@ -3,6 +3,7 @@
 import { FileSpreadsheet, Library, Plus, Sparkles, Trash2, Upload } from 'lucide-react';
 
 import { InlineFieldError } from '@/components/app/document-composer/field-errors';
+import { VatRateSlider } from '@/components/app/document-composer/vat-rate-slider';
 import type { FieldErrors, LineValue } from '@/components/app/document-composer/validation';
 import { TextInput } from '@/components/app/form-fields';
 import { formatCurrency } from '@/lib/domain/format/currency';
@@ -122,7 +123,7 @@ export function ComposerLinesCard({
               <th className={cn(HEAD_CELL, 'w-[52px]')}>Qté</th>
               <th className={cn(HEAD_CELL, 'w-[64px]')}>Unité</th>
               <th className={cn(HEAD_CELL, 'w-[82px]')}>Prix HT</th>
-              <th className={cn(HEAD_CELL, 'w-[56px]')}>TVA</th>
+              <th className={cn(HEAD_CELL, 'w-[132px]')}>TVA</th>
               <th className={cn(HEAD_CELL, 'w-[92px] text-right')}>Total TTC</th>
               <th className={cn(HEAD_CELL, 'w-[44px] pr-4')} />
             </tr>
@@ -182,10 +183,9 @@ export function ComposerLinesCard({
                     />
                   </td>
                   <td className="px-2 py-2">
-                    <TextInput
-                      aria-label="Taux de TVA"
-                      className="app-num px-2 py-[7px] text-right"
-                      onChange={(event) => onUpdateLine(line.id, { vatRate: event.target.value })}
+                    <VatRateSlider
+                      compact
+                      onChange={(vatRate) => onUpdateLine(line.id, { vatRate })}
                       value={line.vatRate}
                     />
                   </td>
@@ -285,13 +285,12 @@ export function ComposerLinesCard({
                     />
                     <InlineFieldError message={submitAttempted ? rowErrors?.unitPrice : undefined} />
                   </div>
-                  <TextInput
-                    aria-label="Taux de TVA"
-                    className="app-num"
-                    onChange={(event) => onUpdateLine(line.id, { vatRate: event.target.value })}
-                    placeholder="TVA %"
-                    value={line.vatRate}
-                  />
+                  <div className="col-span-2">
+                    <VatRateSlider
+                      onChange={(vatRate) => onUpdateLine(line.id, { vatRate })}
+                      value={line.vatRate}
+                    />
+                  </div>
                 </div>
 
                 <div className="flex items-center justify-between rounded-app-field bg-app-subtle px-3 py-2">

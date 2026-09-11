@@ -32,6 +32,7 @@ import {
   TextArea,
   TextInput,
 } from '@/components/app/form-fields';
+import { VatRateSlider } from '@/components/app/document-composer/vat-rate-slider';
 import { MasterDetailLayout } from '@/components/app/master-detail';
 import { DetailSkeleton, TableSkeleton } from '@/components/app/skeleton';
 import { Badge, DataTable, LoadingState, type DataTableColumn } from '@/components/app/ui';
@@ -1104,7 +1105,11 @@ function ProductFormPanel({
               />
             </FormField>
             <FormField label="TVA (%)">
-              <TextInput onChange={(e) => setField('vatRate', e.target.value)} value={values.vatRate} />
+              <VatRateSlider
+                compact
+                onChange={(vatRate) => setField('vatRate', vatRate)}
+                value={values.vatRate}
+              />
             </FormField>
             <FormField label="Unité">
               <TextInput onChange={(e) => setField('unit', e.target.value)} value={values.unit} />
