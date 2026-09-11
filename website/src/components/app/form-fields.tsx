@@ -115,7 +115,11 @@ export function PrimaryButton({
   loading,
   className,
   ...props
-}: React.ButtonHTMLAttributes<HTMLButtonElement> & { loading?: boolean }) {
+}: React.ButtonHTMLAttributes<HTMLButtonElement> & {
+  loading?: boolean;
+  /** React 19 : `ref` est une prop ordinaire, transmise au `<button>` par le spread. */
+  ref?: React.Ref<HTMLButtonElement>;
+}) {
   return (
     <button
       className={cn(

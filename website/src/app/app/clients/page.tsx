@@ -12,6 +12,7 @@ import {
   Phone,
   Plus,
   Receipt,
+  Upload,
   User,
   UserPlus,
 } from 'lucide-react';
@@ -375,6 +376,10 @@ function ClientsWorkspaceInner() {
             search={search}
           />
         }>
+        <SecondaryLink className="whitespace-nowrap" href="/app/ai?tool=spreadsheet">
+          <Upload size={15} strokeWidth={1.9} />
+          Importer
+        </SecondaryLink>
         <PrimaryLink href="/app/clients/new">
           <Plus size={16} />
           Nouveau client

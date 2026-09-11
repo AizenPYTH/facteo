@@ -1,0 +1,1125 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./inveq-app-mockup-v2.support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  html, body { margin: 0; padding: 0; background: #f6f7fb; }
+  * { box-sizing: border-box; }
+  a { color: #4f46e5; text-decoration: none; }
+  a:hover { color: #4338ca; }
+  input, button, select, textarea { font: inherit; color: inherit; }
+</style>
+</helmet>
+<div style="display:flex; min-height:100vh; width:100%; background:#f6f7fb; font-family:Inter, Helvetica, Arial, sans-serif; color:#0f1533; -webkit-font-smoothing:antialiased">
+
+  <sc-if value="{{ showShell }}" hint-placeholder-val="{{ true }}">
+  <aside style="width:248px; flex:0 0 248px; background:#ffffff; border-right:1px solid #e6e9f2; display:flex; flex-direction:column; position:sticky; top:0; height:100vh">
+    <div style="padding:18px 16px 12px">
+      <img src="logo-inveq.png" alt="INVEQ" style="width:132px; height:auto; display:block" />
+    </div>
+
+    <div style="padding:0 12px 10px; display:flex; flex-direction:column; gap:8px">
+      <button style="display:flex; align-items:center; gap:10px; width:100%; padding:9px 11px; border:1px solid #e6e9f2; border-radius:10px; background:#fafbfe; cursor:pointer; text-align:left" style-hover="background:#f3f5fa">
+        <span style="width:26px; height:26px; border-radius:8px; background:#f1efff; color:#4f46e5; display:flex; align-items:center; justify-content:center; font-size:11.5px; font-weight:700">SW</span>
+        <span style="flex:1; min-width:0; font-size:13px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap">SNOWOLF</span>
+        <span style="color:#a3aabd; font-size:11px">▾</span>
+      </button>
+
+      <button onClick="{{ openCreate }}" style="display:flex; align-items:center; justify-content:center; gap:8px; width:100%; padding:10px 14px; border:0; border-radius:10px; background:linear-gradient(180deg,#5b52ea,#4f46e5); color:#fff; font-size:13.5px; font-weight:600; cursor:pointer; box-shadow:0 10px 22px -12px rgba(79,70,229,.85)">
+        <span style="font-size:15px; line-height:1">+</span> Créer
+      </button>
+
+      <button onClick="{{ openPalette }}" style="display:flex; align-items:center; gap:9px; width:100%; padding:9px 11px; border:1px solid #e6e9f2; border-radius:10px; background:#fafbfe; color:#8a92a8; font-size:13px; cursor:pointer; text-align:left" style-hover="border-color:#c9c4f5">
+        <span style="display:flex; color:#a3aabd">{{ iconSearch }}</span>
+        <span style="flex:1">Rechercher</span>
+        <span style="font-size:10.5px; font-weight:600; color:#a3aabd; border:1px solid #e6e9f2; border-radius:5px; padding:1px 5px; background:#fff">⌘K</span>
+      </button>
+    </div>
+
+    <nav style="flex:1; overflow:auto; padding:6px 12px 12px; display:flex; flex-direction:column; gap:2px">
+      <sc-for list="{{ navItems }}" as="item" hint-placeholder-count="11">
+        <sc-if value="{{ item.isGroup }}">
+          <div style="padding:14px 11px 6px; font-size:10.5px; font-weight:700; letter-spacing:.07em; text-transform:uppercase; color:#a3aabd">{{ item.label }}</div>
+        </sc-if>
+        <sc-if value="{{ item.isLink }}">
+          <button onClick="{{ item.onClick }}" style="{{ item.style }}">
+            <span style="display:flex; width:16px">{{ item.icon }}</span>
+            <span style="flex:1; text-align:left">{{ item.label }}</span>
+            <sc-if value="{{ item.badge }}">
+              <span style="{{ item.badgeStyle }}">{{ item.badge }}</span>
+            </sc-if>
+          </button>
+        </sc-if>
+      </sc-for>
+    </nav>
+
+    <div style="border-top:1px solid #f3f5fa; padding:10px 12px 14px; display:flex; flex-direction:column; gap:4px">
+      <button onClick="{{ goSettings }}" style="display:flex; align-items:center; gap:10px; padding:9px 11px; border:0; border-radius:9px; background:transparent; color:#3b4256; font-size:13px; font-weight:500; cursor:pointer; text-align:left" style-hover="background:#f7f8fd">
+        <span style="display:flex; width:16px; color:#8a92a8">{{ iconGear }}</span> Paramètres
+      </button>
+      <div style="display:flex; align-items:center; gap:10px; padding:8px 11px; border-radius:9px">
+        <span style="width:28px; height:28px; border-radius:8px; background:#f1efff; color:#4f46e5; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700">FD</span>
+        <div style="flex:1; min-width:0">
+          <div style="font-size:12.5px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap">Farouq DIB</div>
+          <div style="font-size:11px; color:#8a92a8">Offre Max</div>
+        </div>
+        <span style="color:#a3aabd; display:flex">{{ iconExit }}</span>
+      </div>
+    </div>
+  </aside>
+  </sc-if>
+
+  <main style="flex:1; min-width:0; display:flex; flex-direction:column">
+
+    <sc-if value="{{ showShell }}" hint-placeholder-val="{{ true }}">
+    <header style="background:#fff; border-bottom:1px solid #e6e9f2; position:sticky; top:0; z-index:5">
+      <div style="display:flex; align-items:center; gap:16px; padding:13px 24px; min-height:64px">
+        <div style="flex:1; min-width:0">
+          <div style="display:flex; align-items:center; gap:9px">
+            <h1 style="margin:0; font-size:19px; font-weight:600; letter-spacing:-0.01em">{{ pageTitle }}</h1>
+            <sc-if value="{{ pageCount }}">
+              <span style="font-size:11.5px; font-weight:600; color:#4338ca; background:#f1efff; border-radius:20px; padding:2px 9px">{{ pageCount }}</span>
+            </sc-if>
+          </div>
+          <sc-if value="{{ pageSub }}">
+            <div style="margin-top:2px; font-size:13px; color:#6b7490">{{ pageSub }}</div>
+          </sc-if>
+        </div>
+        <div style="display:flex; align-items:center; gap:10px; flex-shrink:0">
+          <sc-if value="{{ secondaryLabel }}">
+            <button style="display:flex; align-items:center; gap:7px; padding:9px 14px; border:1px solid #e6e9f2; border-radius:10px; background:#fff; font-size:13px; font-weight:600; color:#3b4256; cursor:pointer; white-space:nowrap" style-hover="border-color:#c9c4f5; background:#fafbfe">
+              <span style="display:flex; color:#8a92a8">{{ iconUpload }}</span>{{ secondaryLabel }}
+            </button>
+          </sc-if>
+          <button style="display:flex; align-items:center; gap:8px; padding:10px 16px; border:0; border-radius:10px; background:linear-gradient(180deg,#5b52ea,#4f46e5); color:#fff; font-size:13.5px; font-weight:600; cursor:pointer; white-space:nowrap; box-shadow:0 10px 22px -12px rgba(79,70,229,.85)">
+            <span style="font-size:15px; line-height:1">+</span>{{ primaryLabel }}
+          </button>
+        </div>
+      </div>
+    </header>
+    </sc-if>
+
+    <!-- TABLEAU DE BORD -->
+    <sc-if value="{{ isDash }}" hint-placeholder-val="{{ true }}">
+    <div style="padding:20px 24px 40px; display:flex; flex-direction:column; gap:16px">
+
+      <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:14px">
+        <div style="background:#fff; border:1px solid #e6e9f2; border-radius:14px; padding:16px 18px">
+          <div style="display:flex; align-items:center; gap:9px">
+            <span style="width:26px; height:26px; border-radius:8px; background:#ecfdf5; color:#059669; display:flex; align-items:center; justify-content:center">{{ iconCard }}</span>
+            <span style="font-size:12px; font-weight:600; color:#6b7490">Encaissé ce mois</span>
+          </div>
+          <div style="margin-top:10px; font-size:28px; font-weight:600; letter-spacing:-0.02em; font-variant-numeric:tabular-nums">7 940 €</div>
+          <div style="margin-top:4px; font-size:12.5px; color:#6b7490">+18 % vs août · 5 factures payées</div>
+        </div>
+        <div style="background:#fff; border:1px solid #e6e9f2; border-radius:14px; padding:16px 18px">
+          <div style="display:flex; align-items:center; gap:9px">
+            <span style="width:26px; height:26px; border-radius:8px; background:#f1efff; color:#4f46e5; display:flex; align-items:center; justify-content:center">{{ iconClock }}</span>
+            <span style="font-size:12px; font-weight:600; color:#6b7490">En attente de paiement</span>
+          </div>
+          <div style="margin-top:10px; font-size:28px; font-weight:600; letter-spacing:-0.02em; font-variant-numeric:tabular-nums">5 220 €</div>
+          <div style="margin-top:4px; font-size:12.5px; color:#6b7490">4 factures · délai moyen 12 j</div>
+        </div>
+        <div style="background:#fff; border:1px solid #f3d3d3; border-radius:14px; padding:16px 18px">
+          <div style="display:flex; align-items:center; gap:9px">
+            <span style="width:26px; height:26px; border-radius:8px; background:#fef2f2; color:#dc2626; display:flex; align-items:center; justify-content:center">{{ iconAlert }}</span>
+            <span style="flex:1; font-size:12px; font-weight:600; color:#6b7490">En retard</span>
+            <a href="#" style="font-size:12px; font-weight:600">Traiter</a>
+          </div>
+          <div style="margin-top:10px; font-size:28px; font-weight:600; letter-spacing:-0.02em; color:#b91c1c; font-variant-numeric:tabular-nums">860 €</div>
+          <div style="margin-top:4px; font-size:12.5px; color:#6b7490">2 factures · la plus ancienne 6 j</div>
+        </div>
+      </div>
+
+      <sc-if value="{{ aiBanner }}" hint-placeholder-val="{{ true }}">
+      <div style="background:linear-gradient(100deg,#f6f4ff,#fdfdff); border:1px solid #c9c4f5; border-radius:14px; padding:16px 18px; display:flex; flex-wrap:wrap; align-items:center; gap:16px">
+        <div style="flex:1; min-width:260px">
+          <div style="display:flex; align-items:center; gap:8px">
+            <span style="display:flex; color:#4f46e5">{{ iconSparkle }}</span>
+            <span style="font-size:14.5px; font-weight:600">Gagnez du temps avec l’IA</span>
+          </div>
+          <div style="margin-top:4px; font-size:13px; color:#3b4256; max-width:520px">Déposez une image où le produit est décrit (fiche d’un site marchand, catalogue fournisseur, étiquette) ou remplissez le modèle de tableur INVEQ : les fiches sont créées pour vous, vous validez avant enregistrement.</div>
+        </div>
+        <div style="display:flex; flex-wrap:wrap; gap:9px">
+          <button onClick="{{ goAi }}" style="display:flex; align-items:center; gap:8px; padding:9px 14px; border:0; border-radius:10px; background:#4f46e5; color:#fff; font-size:13px; font-weight:600; cursor:pointer; white-space:nowrap">
+            <span style="display:flex">{{ iconCamera }}</span> Créer depuis une image
+          </button>
+          <button onClick="{{ goAi }}" style="display:flex; align-items:center; gap:8px; padding:9px 14px; border:1px solid #c9c4f5; border-radius:10px; background:#fff; color:#4338ca; font-size:13px; font-weight:600; cursor:pointer; white-space:nowrap">
+            <span style="display:flex">{{ iconSheet }}</span> Modèle de tableur
+          </button>
+        </div>
+      </div>
+      </sc-if>
+
+      <div style="display:grid; grid-template-columns:minmax(0,2fr) minmax(280px,1fr); gap:16px; align-items:start">
+
+        <div style="display:flex; flex-direction:column; gap:16px; min-width:0">
+          <section style="background:#fff; border:1px solid #e6e9f2; border-radius:14px">
+            <div style="display:flex; align-items:center; gap:10px; padding:14px 18px; border-bottom:1px solid #f3f5fa">
+              <h2 style="margin:0; flex:1; font-size:14.5px; font-weight:600">À traiter aujourd’hui</h2>
+              <span style="font-size:11.5px; font-weight:600; color:#4338ca; background:#f1efff; border-radius:20px; padding:2px 9px">4</span>
+              <a href="#" style="font-size:12.5px; font-weight:600">Tout voir</a>
+            </div>
+            <sc-for list="{{ tasks }}" as="t" hint-placeholder-count="4">
+              <div style="display:flex; align-items:center; gap:12px; padding:12px 18px; border-bottom:1px solid #f3f5fa">
+                <span style="{{ t.iconStyle }}">{{ t.icon }}</span>
+                <div style="flex:1; min-width:0">
+                  <div style="font-size:13.5px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap">{{ t.title }}</div>
+                  <div style="margin-top:2px; font-size:12px; color:#8a92a8">{{ t.meta }}</div>
+                </div>
+                <div style="font-size:13.5px; font-weight:600; font-variant-numeric:tabular-nums">{{ t.amount }}</div>
+                <button style="padding:7px 13px; border:1px solid #e6e9f2; border-radius:9px; background:#fff; font-size:12.5px; font-weight:600; color:#4338ca; cursor:pointer" style-hover="border-color:#c9c4f5; background:#fafbfe">{{ t.action }}</button>
+              </div>
+            </sc-for>
+            <div style="padding:11px 18px; font-size:12.5px; color:#8a92a8; background:#fafbfe; border-radius:0 0 14px 14px">Tout est à jour au-delà de ces éléments.</div>
+          </section>
+
+          <section style="background:#fff; border:1px solid #e6e9f2; border-radius:14px">
+            <div style="display:flex; align-items:center; gap:10px; padding:14px 18px; border-bottom:1px solid #f3f5fa">
+              <h2 style="margin:0; flex:1; font-size:14.5px; font-weight:600">Chiffre d’affaires encaissé</h2>
+              <div style="display:flex; gap:2px; background:#f3f5fa; border-radius:20px; padding:3px">
+                <span style="padding:5px 12px; border-radius:20px; background:#fff; font-size:12px; font-weight:600; box-shadow:0 1px 2px rgba(15,21,51,.06)">12 mois</span>
+                <span style="padding:5px 12px; border-radius:20px; font-size:12px; font-weight:500; color:#6b7490">6 mois</span>
+                <span style="padding:5px 12px; border-radius:20px; font-size:12px; font-weight:500; color:#6b7490">Année</span>
+              </div>
+            </div>
+            <div style="padding:18px">
+              <div style="font-size:12.5px; color:#6b7490">12 derniers mois · <span style="font-weight:600; color:#0f1533">50 220 €</span> au total</div>
+              <div style="margin-top:16px; display:grid; grid-template-columns:repeat(12,minmax(0,1fr)); gap:8px; align-items:end; height:160px">
+                <sc-for list="{{ months }}" as="m" hint-placeholder-count="12">
+                  <div style="display:flex; flex-direction:column; justify-content:flex-end; height:100%; gap:8px">
+                    <div style="{{ m.barStyle }}"></div>
+                    <div style="text-align:center; font-size:10.5px; color:#a3aabd">{{ m.label }}</div>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <div style="display:flex; flex-direction:column; gap:16px; min-width:0">
+          <section style="background:#fff; border:1px solid #e6e9f2; border-radius:14px">
+            <div style="padding:14px 18px; border-bottom:1px solid #f3f5fa"><h2 style="margin:0; font-size:14.5px; font-weight:600">Créer</h2></div>
+            <div style="padding:14px 18px; display:grid; grid-template-columns:1fr 1fr; gap:10px">
+              <sc-for list="{{ createTiles }}" as="c" hint-placeholder-count="4">
+                <button onClick="{{ c.onClick }}" style="display:flex; flex-direction:column; gap:8px; padding:12px; border:1px solid #e6e9f2; border-radius:12px; background:#fff; cursor:pointer; text-align:left" style-hover="border-color:#c9c4f5; background:#fafbfe">
+                  <span style="width:28px; height:28px; border-radius:8px; background:#f1efff; color:#4f46e5; display:flex; align-items:center; justify-content:center">{{ c.icon }}</span>
+                  <span style="font-size:13px; font-weight:600">{{ c.label }}</span>
+                </button>
+              </sc-for>
+            </div>
+          </section>
+
+          <section style="background:#fff; border:1px solid #e6e9f2; border-radius:14px">
+            <div style="padding:14px 18px; border-bottom:1px solid #f3f5fa"><h2 style="margin:0; font-size:14.5px; font-weight:600">Ce mois</h2></div>
+            <div style="padding:6px 18px 12px">
+              <sc-for list="{{ indicators }}" as="i" hint-placeholder-count="4">
+                <div style="display:flex; align-items:center; gap:12px; padding:11px 0; border-bottom:1px solid #f3f5fa">
+                  <span style="flex:1; font-size:13px; color:#3b4256">{{ i.label }}</span>
+                  <span style="font-size:13.5px; font-weight:600; font-variant-numeric:tabular-nums">{{ i.value }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </section>
+
+          <section style="background:#fff; border:1px solid #e6e9f2; border-radius:14px">
+            <div style="display:flex; align-items:center; padding:14px 18px; border-bottom:1px solid #f3f5fa">
+              <h2 style="margin:0; flex:1; font-size:14.5px; font-weight:600">Activité récente</h2>
+              <a href="#" style="font-size:12.5px; font-weight:600">Voir tout</a>
+            </div>
+            <div style="padding:6px 18px 14px">
+              <sc-for list="{{ activity }}" as="a" hint-placeholder-count="4">
+                <div style="display:flex; align-items:center; gap:11px; padding:11px 0; border-bottom:1px solid #f3f5fa">
+                  <span style="width:26px; height:26px; border-radius:8px; background:#f3f5fa; color:#6b7490; display:flex; align-items:center; justify-content:center; flex-shrink:0">{{ a.icon }}</span>
+                  <div style="flex:1; min-width:0">
+                    <div style="font-size:12.5px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap">{{ a.title }}</div>
+                    <div style="font-size:11.5px; color:#a3aabd">{{ a.when }}</div>
+                  </div>
+                  <div style="font-size:12.5px; font-weight:600; font-variant-numeric:tabular-nums">{{ a.amount }}</div>
+                </div>
+              </sc-for>
+            </div>
+          </section>
+        </div>
+      </div>
+    </div>
+    </sc-if>
+
+    <!-- LISTES : CLIENTS / DEVIS / FACTURES / PAIEMENTS / CATALOGUE -->
+    <sc-if value="{{ isList }}">
+    <div style="display:flex; min-width:0; flex:1; align-items:stretch">
+      <div style="flex:1; min-width:0; display:flex; flex-direction:column">
+
+        <div style="display:flex; flex-wrap:wrap; align-items:center; gap:10px; padding:14px 24px; background:#fff; border-bottom:1px solid #e6e9f2">
+          <div style="display:flex; align-items:center; gap:8px; flex:0 1 320px; padding:8px 11px; border:1px solid #e6e9f2; border-radius:10px; background:#fafbfe">
+            <span style="display:flex; color:#a3aabd">{{ iconSearch }}</span>
+            <input placeholder="{{ searchPlaceholder }}" style="flex:1; min-width:0; border:0; background:transparent; font-size:13px; outline:none" />
+          </div>
+          <div style="display:flex; flex-wrap:wrap; gap:7px; flex:1">
+            <sc-for list="{{ chips }}" as="c" hint-placeholder-count="5">
+              <button style="{{ c.style }}">{{ c.label }}<sc-if value="{{ c.count }}"><span style="{{ c.countStyle }}">{{ c.count }}</span></sc-if></button>
+            </sc-for>
+          </div>
+          <sc-if value="{{ aiToolbar }}">
+            <div style="display:flex; gap:8px">
+              <button onClick="{{ goAi }}" style="display:flex; align-items:center; gap:7px; padding:8px 13px; border:1px solid #c9c4f5; border-radius:10px; background:#f6f4ff; color:#4338ca; font-size:12.5px; font-weight:600; cursor:pointer; white-space:nowrap">
+                <span style="display:flex">{{ iconCamera }}</span> Créer depuis une image
+              </button>
+              <button style="display:flex; align-items:center; gap:7px; padding:8px 13px; border:1px solid #e6e9f2; border-radius:10px; background:#fff; color:#3b4256; font-size:12.5px; font-weight:600; cursor:pointer; white-space:nowrap">
+                <span style="display:flex; color:#8a92a8">{{ iconSheet }}</span> Modèle de tableur
+              </button>
+              <button onClick="{{ goAi }}" style="display:flex; align-items:center; gap:7px; padding:8px 13px; border:1px solid #c9c4f5; border-radius:10px; background:#f6f4ff; color:#4338ca; font-size:12.5px; font-weight:600; cursor:pointer; white-space:nowrap">
+                <span style="display:flex">{{ iconUpload }}</span> Importer le modèle rempli
+              </button>
+            </div>
+          </sc-if>
+          <button style="display:flex; align-items:center; gap:7px; padding:8px 12px; border:1px solid #e6e9f2; border-radius:10px; background:#fff; font-size:12.5px; font-weight:600; color:#3b4256; cursor:pointer">
+            <span style="display:flex; color:#8a92a8">{{ iconSort }}</span> Trier
+          </button>
+        </div>
+
+        <div style="flex:1; padding:16px 24px 40px; min-width:0">
+          <div style="background:#fff; border:1px solid #e6e9f2; border-radius:14px; overflow-x:auto; overflow-y:hidden">
+            <div style="{{ headStyle }}">
+              <sc-for list="{{ columns }}" as="col" hint-placeholder-count="6">
+                <div style="{{ col.style }}">{{ col.label }}</div>
+              </sc-for>
+            </div>
+            <sc-for list="{{ rows }}" as="r" hint-placeholder-count="7">
+              <div onClick="{{ r.onClick }}" style="{{ r.style }}">
+                <sc-for list="{{ r.cells }}" as="cell" hint-placeholder-count="6">
+                  <div style="{{ cell.style }}">
+                    <sc-if value="{{ cell.avatar }}">
+                      <span style="width:30px; height:30px; border-radius:8px; background:#f1efff; color:#4f46e5; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; flex-shrink:0">{{ cell.avatar }}</span>
+                    </sc-if>
+                    <sc-if value="{{ cell.stack }}">
+                      <div style="min-width:0">
+                        <div style="font-size:13.5px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap">{{ cell.text }}</div>
+                        <div style="font-size:11.5px; color:#8a92a8; overflow:hidden; text-overflow:ellipsis; white-space:nowrap">{{ cell.sub }}</div>
+                      </div>
+                    </sc-if>
+                    <sc-if value="{{ cell.badge }}">
+                      <span style="{{ cell.badgeStyle }}"><span style="{{ cell.dotStyle }}"></span>{{ cell.badge }}</span>
+                    </sc-if>
+                    <sc-if value="{{ cell.plain }}">{{ cell.text }}</sc-if>
+                  </div>
+                </sc-for>
+              </div>
+            </sc-for>
+            <div style="display:flex; align-items:center; justify-content:space-between; padding:11px 24px; background:#fafbfe; font-size:12.5px; color:#6b7490">
+              <span>{{ footLeft }}</span>
+              <span>Lignes par page 25</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <sc-if value="{{ detailOverlay }}">
+        <div onClick="{{ closeDetail }}" style="position:fixed; inset:0; background:rgba(15,21,51,.32); z-index:20"></div>
+      </sc-if>
+      <sc-if value="{{ hasDetail }}">
+      <aside style="{{ detailStyle }}">
+        <div>
+          <sc-if value="{{ detailOverlay }}">
+            <button onClick="{{ closeDetail }}" style="margin-bottom:12px; padding:7px 12px; border:1px solid #e6e9f2; border-radius:9px; background:#fff; font-size:12.5px; font-weight:600; color:#3b4256; cursor:pointer">Fermer</button>
+          </sc-if>
+          <div style="font-size:11.5px; font-weight:700; letter-spacing:.07em; text-transform:uppercase; color:#a3aabd">{{ detail.kind }}</div>
+          <div style="margin-top:6px; display:flex; align-items:center; gap:9px">
+            <span style="font-size:17px; font-weight:600">{{ detail.title }}</span>
+            <span style="{{ detail.badgeStyle }}"><span style="{{ detail.dotStyle }}"></span>{{ detail.status }}</span>
+          </div>
+          <div style="margin-top:3px; font-size:13px; color:#6b7490">{{ detail.client }}</div>
+        </div>
+
+        <div>
+          <div style="font-size:27px; font-weight:600; letter-spacing:-0.02em; font-variant-numeric:tabular-nums">{{ detail.amount }}</div>
+          <div style="margin-top:2px; font-size:12.5px; color:#8a92a8">{{ detail.amountNote }}</div>
+        </div>
+
+        <div style="display:flex; gap:8px">
+          <button style="flex:1; padding:10px 14px; border:0; border-radius:10px; background:linear-gradient(180deg,#5b52ea,#4f46e5); color:#fff; font-size:13px; font-weight:600; cursor:pointer; box-shadow:0 10px 22px -12px rgba(79,70,229,.85)">{{ detail.primary }}</button>
+          <button style="padding:10px 13px; border:1px solid #e6e9f2; border-radius:10px; background:#fff; font-size:13px; font-weight:600; color:#3b4256; cursor:pointer">PDF</button>
+          <button style="padding:10px 12px; border:1px solid #e6e9f2; border-radius:10px; background:#fff; color:#6b7490; cursor:pointer">···</button>
+        </div>
+
+        <div style="border:1px solid #e6e9f2; border-radius:14px; overflow:hidden">
+          <div style="padding:11px 14px; border-bottom:1px solid #f3f5fa; font-size:13px; font-weight:600">Suivi</div>
+          <div style="padding:12px 14px; display:flex; flex-direction:column; gap:0">
+            <sc-for list="{{ detail.timeline }}" as="s" hint-placeholder-count="4">
+              <div style="display:flex; gap:11px">
+                <div style="display:flex; flex-direction:column; align-items:center">
+                  <span style="{{ s.dotStyle }}"></span>
+                  <span style="{{ s.lineStyle }}"></span>
+                </div>
+                <div style="padding-bottom:12px">
+                  <div style="{{ s.labelStyle }}">{{ s.label }}</div>
+                  <div style="font-size:11.5px; color:#a3aabd">{{ s.when }}</div>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+
+        <div style="border:1px solid #e6e9f2; border-radius:14px">
+          <div style="padding:11px 14px; border-bottom:1px solid #f3f5fa; font-size:13px; font-weight:600">Détails</div>
+          <div style="padding:6px 14px 12px">
+            <sc-for list="{{ detail.facts }}" as="f" hint-placeholder-count="5">
+              <div style="display:flex; align-items:center; gap:12px; padding:9px 0; border-bottom:1px solid #f3f5fa">
+                <span style="flex:1; font-size:12.5px; color:#6b7490">{{ f.label }}</span>
+                <span style="font-size:12.5px; font-weight:600; font-variant-numeric:tabular-nums">{{ f.value }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </aside>
+      </sc-if>
+    </div>
+    </sc-if>
+
+    <!-- ÉDITEUR -->
+    <sc-if value="{{ isComposer }}">
+    <div style="{{ composerGrid }}">
+
+      <div style="{{ composerSideStyle }}">
+        <section style="background:#fff; border:1px solid #e6e9f2; border-radius:14px; padding:16px 18px">
+          <div style="display:flex; align-items:center; gap:8px">
+            <h2 style="margin:0; flex:1; font-size:14.5px; font-weight:600">Client</h2>
+            <span style="font-size:11px; font-weight:600; color:#b45309; background:#fffbeb; border-radius:20px; padding:2px 8px">Obligatoire</span>
+          </div>
+          <div style="margin-top:11px; display:flex; align-items:center; gap:10px; padding:10px 11px; border:1px solid #c9c4f5; border-radius:9px; background:#fff; box-shadow:0 0 0 3px rgba(79,70,229,.14)">
+            <span style="width:28px; height:28px; border-radius:8px; background:#f1efff; color:#4f46e5; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700">MS</span>
+            <div style="flex:1; min-width:0">
+              <div style="font-size:13px; font-weight:600">Martin SARL</div>
+              <div style="font-size:11.5px; color:#8a92a8">TVA FR76 421 908 332</div>
+            </div>
+            <span style="color:#a3aabd; font-size:11px">▾</span>
+          </div>
+          <div style="margin-top:9px; font-size:12px; color:#8a92a8; line-height:1.5">14 rue des Fabriques, 69003 Lyon<br />comptabilite@martin-sarl.fr</div>
+        </section>
+
+        <section style="background:#fff; border:1px solid #e6e9f2; border-radius:14px; padding:16px 18px">
+          <h2 style="margin:0; font-size:14.5px; font-weight:600">Dates et conditions</h2>
+          <div style="margin-top:12px; display:flex; flex-direction:column; gap:11px">
+            <label style="display:block">
+              <span style="display:block; font-size:12px; font-weight:600; color:#6b7490; margin-bottom:5px">Date d’émission</span>
+              <input value="11/09/2026" style="width:100%; padding:9px 11px; border:1px solid #e6e9f2; border-radius:9px; background:#fff; font-size:13px; font-variant-numeric:tabular-nums" />
+            </label>
+            <div>
+              <span style="display:block; font-size:12px; font-weight:600; color:#6b7490; margin-bottom:5px">Délai de paiement</span>
+              <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:6px">
+                <span style="text-align:center; padding:8px; border:1px solid #c9c4f5; border-radius:9px; background:#f1efff; color:#4338ca; font-size:12.5px; font-weight:600">30 j</span>
+                <span style="text-align:center; padding:8px; border:1px solid #e6e9f2; border-radius:9px; font-size:12.5px; color:#3b4256">45 j</span>
+                <span style="text-align:center; padding:8px; border:1px solid #e6e9f2; border-radius:9px; font-size:12.5px; color:#3b4256">60 j</span>
+              </div>
+              <div style="margin-top:7px; font-size:12px; color:#8a92a8">Échéance calculée : 11/10/2026</div>
+            </div>
+          </div>
+        </section>
+
+        <section style="background:#fff; border:1px solid #e6e9f2; border-radius:14px; padding:16px 18px">
+          <h2 style="margin:0; font-size:14.5px; font-weight:600">Notes sur le document</h2>
+          <textarea placeholder="Conditions, remarques…" style="margin-top:11px; width:100%; min-height:88px; padding:9px 11px; border:1px solid #e6e9f2; border-radius:9px; font-size:13px; resize:vertical; outline:none"></textarea>
+        </section>
+      </div>
+
+      <div style="{{ composerMainStyle }}">
+        <section style="background:#fff; border:1px solid #e6e9f2; border-radius:14px; overflow-x:auto">
+          <div style="display:flex; flex-wrap:wrap; align-items:center; gap:9px; padding:13px 18px; border-bottom:1px solid #f3f5fa">
+            <h2 style="margin:0; flex:1; font-size:14.5px; font-weight:600">Lignes du document</h2>
+            <button style="display:flex; align-items:center; gap:7px; padding:8px 12px; border:1px solid #e6e9f2; border-radius:9px; background:#fff; font-size:12.5px; font-weight:600; color:#3b4256; cursor:pointer">+ Ligne libre</button>
+            <button style="display:flex; align-items:center; gap:7px; padding:8px 12px; border:1px solid #e6e9f2; border-radius:9px; background:#fff; font-size:12.5px; font-weight:600; color:#3b4256; cursor:pointer"><span style="display:flex; color:#8a92a8">{{ iconBox }}</span> Catalogue</button>
+            <button style="display:flex; align-items:center; gap:7px; padding:8px 12px; border:1px solid #c9c4f5; border-radius:9px; background:#f6f4ff; color:#4338ca; font-size:12.5px; font-weight:600; cursor:pointer"><span style="display:flex">{{ iconSheet }}</span> Import IA · modèle CSV</button>
+          </div>
+
+          <div style="display:grid; grid-template-columns:minmax(220px,1fr) 70px 80px 96px 72px 104px 32px; gap:10px; min-width:800px; padding:9px 18px; background:#fafbfe; border-bottom:1px solid #e6e9f2; font-size:11px; font-weight:700; letter-spacing:.07em; text-transform:uppercase; color:#8a92a8">
+            <div>Description</div><div style="text-align:right">Qté</div><div>Unité</div><div style="text-align:right">Prix HT</div><div style="text-align:right">TVA</div><div style="text-align:right">Total TTC</div><div></div>
+          </div>
+          <sc-for list="{{ lines }}" as="l" hint-placeholder-count="3">
+            <div style="display:grid; grid-template-columns:minmax(220px,1fr) 70px 80px 96px 72px 104px 32px; gap:10px; min-width:800px; align-items:center; padding:10px 18px; border-bottom:1px solid #f3f5fa">
+              <div style="font-size:13px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap">{{ l.desc }}</div>
+              <div style="text-align:right; font-size:13px; font-variant-numeric:tabular-nums">{{ l.qty }}</div>
+              <div style="font-size:13px; color:#6b7490">{{ l.unit }}</div>
+              <div style="text-align:right; font-size:13px; font-variant-numeric:tabular-nums">{{ l.price }}</div>
+              <div style="text-align:right; font-size:13px; color:#6b7490">{{ l.vat }}</div>
+              <div style="text-align:right; font-size:13px; font-weight:600; font-variant-numeric:tabular-nums">{{ l.total }}</div>
+              <div style="text-align:center; color:#a3aabd; font-size:13px">×</div>
+            </div>
+          </sc-for>
+          <div style="padding:10px 18px; border-bottom:1px solid #f3f5fa">
+            <button style="width:100%; padding:10px; border:1px dashed #c9c4f5; border-radius:9px; background:#fff; color:#4338ca; font-size:12.5px; font-weight:600; cursor:pointer">+ Ajouter une ligne</button>
+          </div>
+          <div style="padding:14px 18px; background:#fafbfe; display:flex; justify-content:flex-end">
+            <div style="width:260px; display:flex; flex-direction:column; gap:8px">
+              <div style="display:flex; justify-content:space-between; font-size:13px; color:#6b7490"><span>Total HT</span><span style="font-variant-numeric:tabular-nums; color:#0f1533">3 650,00 €</span></div>
+              <div style="display:flex; justify-content:space-between; font-size:13px; color:#6b7490"><span>TVA 20 %</span><span style="font-variant-numeric:tabular-nums; color:#0f1533">730,00 €</span></div>
+              <div style="display:flex; justify-content:space-between; align-items:baseline; padding-top:8px; border-top:1px solid #e6e9f2"><span style="font-size:13.5px; font-weight:600">Total TTC</span><span style="font-size:15px; font-weight:600; color:#4338ca; font-variant-numeric:tabular-nums">4 380,00 €</span></div>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <div style="{{ composerAsideStyle }}">
+        <section style="background:#fff; border:1px solid #e6e9f2; border-radius:14px; padding:16px 18px">
+          <h2 style="margin:0; font-size:14.5px; font-weight:600">Modèle PDF</h2>
+          <div style="margin-top:12px; display:grid; grid-template-columns:1fr 1fr; gap:10px">
+            <sc-for list="{{ templates }}" as="tpl" hint-placeholder-count="4">
+              <div style="{{ tpl.style }}">
+                <div style="{{ tpl.barStyle }}"></div>
+                <div style="padding:8px 10px 9px">
+                  <div style="height:4px; background:#e6e9f2; border-radius:2px; width:70%"></div>
+                  <div style="height:4px; background:#eef0f7; border-radius:2px; width:90%; margin-top:5px"></div>
+                  <div style="height:4px; background:#eef0f7; border-radius:2px; width:50%; margin-top:5px"></div>
+                  <div style="margin-top:9px; font-size:12px; font-weight:600">{{ tpl.name }}</div>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+        </section>
+        <section style="background:#fff; border:1px solid #e6e9f2; border-radius:14px; padding:16px 18px">
+          <div style="display:flex; align-items:center; gap:8px">
+            <h2 style="margin:0; flex:1; font-size:14.5px; font-weight:600">Aperçu</h2>
+            <span style="font-size:10.5px; font-weight:700; letter-spacing:.07em; text-transform:uppercase; color:#059669">En direct</span>
+          </div>
+          <div style="margin-top:12px; aspect-ratio:1 / 1.414; border:1px solid #e6e9f2; border-radius:10px; background:repeating-linear-gradient(135deg,#fbfbfe 0 8px,#f4f5fb 8px 16px); display:flex; align-items:center; justify-content:center">
+            <span style="font-family:ui-monospace, SFMono-Regular, Menlo, monospace; font-size:11px; color:#8a92a8; text-align:center; padding:0 18px">aperçu A4 · DEV-2026-0093</span>
+          </div>
+          <button style="margin-top:11px; width:100%; padding:9px; border:1px solid #e6e9f2; border-radius:9px; background:#fff; font-size:12.5px; font-weight:600; color:#3b4256; cursor:pointer">Ouvrir en grand</button>
+        </section>
+      </div>
+    </div>
+    </sc-if>
+
+    <!-- ENTREPRISES -->
+    <sc-if value="{{ isCompanies }}">
+    <div style="padding:20px 24px 40px; display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:14px; align-items:start">
+      <sc-for list="{{ companies }}" as="co" hint-placeholder-count="3">
+        <div style="{{ co.cardStyle }}">
+          <div style="display:flex; align-items:center; gap:11px">
+            <span style="width:40px; height:40px; border-radius:10px; background:#f1efff; color:#4f46e5; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:700">{{ co.initials }}</span>
+            <div style="flex:1; min-width:0">
+              <div style="font-size:14.5px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap">{{ co.name }}</div>
+              <div style="font-size:12px; color:#8a92a8">{{ co.role }}</div>
+            </div>
+            <sc-if value="{{ co.active }}">
+              <span style="font-size:11px; font-weight:600; color:#047857; background:#ecfdf5; border-radius:20px; padding:3px 9px">Actif</span>
+            </sc-if>
+          </div>
+          <div style="margin-top:14px; display:grid; grid-template-columns:repeat(3,1fr); gap:8px">
+            <div><div style="font-size:16px; font-weight:600; font-variant-numeric:tabular-nums">{{ co.clients }}</div><div style="font-size:11.5px; color:#8a92a8">clients</div></div>
+            <div><div style="font-size:16px; font-weight:600; font-variant-numeric:tabular-nums">{{ co.docs }}</div><div style="font-size:11.5px; color:#8a92a8">documents</div></div>
+            <div><div style="font-size:16px; font-weight:600; font-variant-numeric:tabular-nums">{{ co.revenue }}</div><div style="font-size:11.5px; color:#8a92a8">CA 2026</div></div>
+          </div>
+          <div style="margin-top:14px; display:flex; gap:8px">
+            <button style="{{ co.primaryStyle }}">{{ co.primaryLabel }}</button>
+            <button style="padding:9px 14px; border:1px solid #e6e9f2; border-radius:9px; background:#fff; font-size:12.5px; font-weight:600; color:#3b4256; cursor:pointer">Profil</button>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+    </sc-if>
+
+    <!-- PARAMÈTRES -->
+    <sc-if value="{{ isSettings }}">
+    <div style="display:flex; min-width:0; flex:1; align-items:stretch">
+      <div style="width:236px; flex:0 0 236px; background:#fff; border-right:1px solid #e6e9f2; padding:16px 12px; display:flex; flex-direction:column; gap:2px">
+        <sc-for list="{{ settingsNav }}" as="s" hint-placeholder-count="10">
+          <sc-if value="{{ s.isGroup }}">
+            <div style="padding:14px 11px 6px; font-size:10.5px; font-weight:700; letter-spacing:.07em; text-transform:uppercase; color:#a3aabd">{{ s.label }}</div>
+          </sc-if>
+          <sc-if value="{{ s.isLink }}">
+            <div style="{{ s.style }}">{{ s.label }}</div>
+          </sc-if>
+        </sc-for>
+      </div>
+      <div style="flex:1; min-width:0; padding:20px 24px 40px">
+        <div style="max-width:720px; display:flex; flex-direction:column; gap:14px">
+          <section style="background:#fff; border:1px solid #e6e9f2; border-radius:14px">
+            <div style="padding:14px 18px; border-bottom:1px solid #f3f5fa">
+              <h2 style="margin:0; font-size:14.5px; font-weight:600">Identité de l’entreprise</h2>
+              <div style="margin-top:2px; font-size:12.5px; color:#8a92a8">Ces informations apparaissent sur vos devis et factures.</div>
+            </div>
+            <div style="padding:16px 18px; display:grid; grid-template-columns:1fr 1fr; gap:12px">
+              <label style="display:block"><span style="display:block; font-size:12px; font-weight:600; color:#6b7490; margin-bottom:5px">Raison sociale</span><input value="SNOWOLF" style="width:100%; padding:9px 11px; border:1px solid #e6e9f2; border-radius:9px; font-size:13px" /></label>
+              <label style="display:block"><span style="display:block; font-size:12px; font-weight:600; color:#6b7490; margin-bottom:5px">SIRET</span><input value="893 221 456 00018" style="width:100%; padding:9px 11px; border:1px solid #e6e9f2; border-radius:9px; font-size:13px; font-variant-numeric:tabular-nums" /></label>
+              <label style="display:block"><span style="display:block; font-size:12px; font-weight:600; color:#6b7490; margin-bottom:5px">E-mail de facturation</span><input value="contact@snowolf.fr" style="width:100%; padding:9px 11px; border:1px solid #e6e9f2; border-radius:9px; font-size:13px" /></label>
+              <label style="display:block"><span style="display:block; font-size:12px; font-weight:600; color:#6b7490; margin-bottom:5px">Numéro de TVA</span><input value="FR55 893 221 456" style="width:100%; padding:9px 11px; border:1px solid #e6e9f2; border-radius:9px; font-size:13px; font-variant-numeric:tabular-nums" /></label>
+              <label style="display:block; grid-column:1 / -1"><span style="display:block; font-size:12px; font-weight:600; color:#6b7490; margin-bottom:5px">Adresse</span><input value="8 avenue de la Gare, 74000 Annecy" style="width:100%; padding:9px 11px; border:1px solid #e6e9f2; border-radius:9px; font-size:13px" /></label>
+            </div>
+            <div style="padding:12px 18px; background:#fafbfe; border-top:1px solid #f3f5fa; display:flex; justify-content:flex-end; gap:9px; border-radius:0 0 14px 14px">
+              <button style="padding:9px 14px; border:1px solid #e6e9f2; border-radius:9px; background:#fff; font-size:13px; font-weight:600; color:#3b4256; cursor:pointer">Annuler</button>
+              <button style="padding:9px 16px; border:0; border-radius:9px; background:#4f46e5; color:#fff; font-size:13px; font-weight:600; cursor:pointer">Enregistrer</button>
+            </div>
+          </section>
+
+          <section style="background:#fff; border:1px solid #e6e9f2; border-radius:14px">
+            <div style="padding:14px 18px; border-bottom:1px solid #f3f5fa">
+              <h2 style="margin:0; font-size:14.5px; font-weight:600">Numérotation</h2>
+              <div style="margin-top:2px; font-size:12.5px; color:#8a92a8">Prochain numéro de facture : <span style="font-weight:600; color:#0f1533">FAC-2026-0144</span></div>
+            </div>
+            <div style="padding:16px 18px; display:grid; grid-template-columns:1fr 1fr; gap:12px">
+              <label style="display:block"><span style="display:block; font-size:12px; font-weight:600; color:#6b7490; margin-bottom:5px">Préfixe facture</span><input value="FAC" style="width:100%; padding:9px 11px; border:1px solid #e6e9f2; border-radius:9px; font-size:13px" /></label>
+              <label style="display:block"><span style="display:block; font-size:12px; font-weight:600; color:#6b7490; margin-bottom:5px">Préfixe devis</span><input value="DEV" style="width:100%; padding:9px 11px; border:1px solid #e6e9f2; border-radius:9px; font-size:13px" /></label>
+            </div>
+          </section>
+        </div>
+      </div>
+    </div>
+    </sc-if>
+
+    <!-- OUTILS IA -->
+    <sc-if value="{{ isAi }}">
+    <div style="padding:20px 24px 40px; display:flex; flex-direction:column; gap:16px">
+      <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:14px">
+        <sc-for list="{{ aiTools }}" as="t" hint-placeholder-count="3">
+          <div style="background:#fff; border:1px solid #e6e9f2; border-radius:14px; padding:18px; display:flex; flex-direction:column; gap:11px">
+            <span style="width:38px; height:38px; border-radius:10px; background:#f1efff; color:#4f46e5; display:flex; align-items:center; justify-content:center">{{ t.icon }}</span>
+            <div style="font-size:14.5px; font-weight:600">{{ t.title }}</div>
+            <div style="font-size:13px; color:#3b4256; line-height:1.5; flex:1">{{ t.body }}</div>
+            <sc-if value="{{ t.download }}">
+              <div style="border:1px solid #e6e9f2; border-radius:10px; background:#fafbfe; padding:12px 14px">
+                <div style="font-size:12.5px; font-weight:600">{{ t.step }}</div>
+                <div style="margin-top:9px; display:flex; flex-wrap:wrap; gap:8px">
+                  <button style="display:flex; align-items:center; gap:7px; padding:8px 13px; border:1px solid #c9c4f5; border-radius:9px; background:#fff; color:#4338ca; font-size:12.5px; font-weight:600; cursor:pointer; white-space:nowrap">{{ t.downloadLabel }}</button>
+                  <span style="font-size:11.5px; color:#8a92a8; align-self:center">Colonnes prêtes · ne pas les renommer</span>
+                </div>
+              </div>
+            </sc-if>
+            <div style="border:1px dashed #c9c4f5; border-radius:10px; background:#fbfaff; padding:14px; text-align:center">
+              <div style="font-family:ui-monospace, SFMono-Regular, Menlo, monospace; font-size:11px; color:#8a92a8">{{ t.dropHint }}</div>
+            </div>
+            <button style="padding:10px 14px; border:0; border-radius:10px; background:linear-gradient(180deg,#5b52ea,#4f46e5); color:#fff; font-size:13px; font-weight:600; cursor:pointer">{{ t.cta }}</button>
+            <sc-if value="{{ t.note }}">
+              <div style="font-size:12px; color:#8a92a8">{{ t.note }}</div>
+            </sc-if>
+          </div>
+        </sc-for>
+      </div>
+
+      <section style="background:#fff; border:1px solid #e6e9f2; border-radius:14px">
+        <div style="display:flex; align-items:center; padding:14px 18px; border-bottom:1px solid #f3f5fa">
+          <h2 style="margin:0; flex:1; font-size:14.5px; font-weight:600">Imports récents</h2>
+          <span style="font-size:12.5px; color:#8a92a8">Chaque import est vérifiable avant enregistrement</span>
+        </div>
+        <sc-for list="{{ aiRuns }}" as="r" hint-placeholder-count="3">
+          <div style="display:flex; align-items:center; gap:12px; padding:12px 18px; border-bottom:1px solid #f3f5fa">
+            <span style="width:28px; height:28px; border-radius:8px; background:#f3f5fa; color:#6b7490; display:flex; align-items:center; justify-content:center">{{ r.icon }}</span>
+            <div style="flex:1; min-width:0">
+              <div style="font-size:13.5px; font-weight:600">{{ r.title }}</div>
+              <div style="font-size:12px; color:#8a92a8">{{ r.meta }}</div>
+            </div>
+            <span style="{{ r.badgeStyle }}"><span style="{{ r.dotStyle }}"></span>{{ r.status }}</span>
+            <button style="padding:7px 13px; border:1px solid #e6e9f2; border-radius:9px; background:#fff; font-size:12.5px; font-weight:600; color:#4338ca; cursor:pointer">{{ r.action }}</button>
+          </div>
+        </sc-for>
+      </section>
+    </div>
+    </sc-if>
+
+    <!-- ONBOARDING -->
+    <sc-if value="{{ isOnboarding }}">
+    <div style="flex:1; display:flex; align-items:center; justify-content:center; padding:40px 24px; background:linear-gradient(180deg,#f8f7ff,#f6f7fb)">
+      <div style="width:100%; max-width:640px; background:#fff; border:1px solid #e6e9f2; border-radius:16px; overflow:hidden">
+        <div style="padding:22px 26px 0; display:flex; align-items:center; gap:14px">
+          <img src="logo-inveq.png" alt="INVEQ" style="width:110px; height:auto" />
+          <div style="flex:1"></div>
+          <button onClick="{{ goDash }}" style="border:0; background:transparent; color:#8a92a8; font-size:12.5px; cursor:pointer">Passer</button>
+        </div>
+        <div style="padding:18px 26px 0">
+          <div style="display:flex; gap:6px">
+            <span style="flex:1; height:4px; border-radius:2px; background:#4f46e5"></span>
+            <span style="flex:1; height:4px; border-radius:2px; background:#4f46e5"></span>
+            <span style="flex:1; height:4px; border-radius:2px; background:#e6e9f2"></span>
+            <span style="flex:1; height:4px; border-radius:2px; background:#e6e9f2"></span>
+          </div>
+          <div style="margin-top:14px; font-size:11.5px; font-weight:700; letter-spacing:.07em; text-transform:uppercase; color:#a3aabd">Étape 2 sur 4</div>
+          <h1 style="margin:6px 0 0; font-size:24px; font-weight:600; letter-spacing:-0.02em">Votre entreprise</h1>
+          <p style="margin:6px 0 0; font-size:13.5px; color:#6b7490; max-width:440px">Saisissez votre SIRET : nous remplissons le reste automatiquement. Vous pourrez tout corriger ensuite.</p>
+        </div>
+        <div style="padding:18px 26px 22px; display:flex; flex-direction:column; gap:12px">
+          <label style="display:block">
+            <span style="display:block; font-size:12px; font-weight:600; color:#6b7490; margin-bottom:5px">SIRET ou nom de l’entreprise</span>
+            <div style="display:flex; gap:8px">
+              <input value="893 221 456 00018" style="flex:1; padding:10px 11px; border:1px solid #c9c4f5; border-radius:9px; font-size:13px; font-variant-numeric:tabular-nums; box-shadow:0 0 0 3px rgba(79,70,229,.14)" />
+              <button style="padding:10px 14px; border:1px solid #e6e9f2; border-radius:9px; background:#fff; font-size:13px; font-weight:600; color:#3b4256; cursor:pointer">Rechercher</button>
+            </div>
+          </label>
+          <div style="border:1px solid #e6e9f2; border-radius:12px; padding:14px; background:#fafbfe">
+            <div style="display:flex; align-items:center; gap:9px">
+              <span style="display:flex; color:#059669">{{ iconCheck }}</span>
+              <span style="font-size:13px; font-weight:600">SNOWOLF · Annecy (74)</span>
+            </div>
+            <div style="margin-top:7px; font-size:12.5px; color:#6b7490; line-height:1.6">8 avenue de la Gare, 74000 Annecy<br />Activité : travaux d’installation électrique · Créée en 2021</div>
+          </div>
+          <div style="display:flex; align-items:center; gap:10px; padding-top:4px">
+            <button onClick="{{ goDash }}" style="flex:1; padding:11px 16px; border:0; border-radius:10px; background:linear-gradient(180deg,#5b52ea,#4f46e5); color:#fff; font-size:13.5px; font-weight:600; cursor:pointer; box-shadow:0 10px 22px -12px rgba(79,70,229,.85)">Continuer</button>
+            <button style="padding:11px 16px; border:1px solid #e6e9f2; border-radius:10px; background:#fff; font-size:13.5px; font-weight:600; color:#3b4256; cursor:pointer">Retour</button>
+          </div>
+          <div style="font-size:12px; color:#a3aabd">Étape suivante : logo et couleurs de vos documents.</div>
+        </div>
+      </div>
+    </div>
+    </sc-if>
+  </main>
+
+  <sc-if value="{{ paletteOpen }}">
+  <div onClick="{{ closePalette }}" style="position:fixed; inset:0; background:rgba(15,21,51,.38); display:flex; align-items:flex-start; justify-content:center; padding-top:12vh; z-index:50">
+    <div style="width:min(620px,92vw); background:#fff; border-radius:14px; box-shadow:0 24px 50px -24px rgba(15,21,51,.45); overflow:hidden">
+      <div style="display:flex; align-items:center; gap:10px; padding:14px 16px; border-bottom:1px solid #f3f5fa">
+        <span style="display:flex; color:#a3aabd">{{ iconSearch }}</span>
+        <input placeholder="Rechercher un client, un document, une action…" autofocus="{{ true }}" style="flex:1; border:0; outline:none; font-size:14.5px" />
+        <span style="font-size:10.5px; font-weight:600; color:#a3aabd; border:1px solid #e6e9f2; border-radius:5px; padding:2px 6px">esc</span>
+      </div>
+      <div style="padding:10px 0 12px; max-height:52vh; overflow:auto">
+        <div style="padding:8px 16px 4px; font-size:10.5px; font-weight:700; letter-spacing:.07em; text-transform:uppercase; color:#a3aabd">Actions</div>
+        <sc-for list="{{ paletteActions }}" as="p" hint-placeholder-count="5">
+          <div style="display:flex; align-items:center; gap:11px; padding:9px 16px">
+            <span style="width:26px; height:26px; border-radius:8px; background:#f1efff; color:#4f46e5; display:flex; align-items:center; justify-content:center">{{ p.icon }}</span>
+            <span style="flex:1; font-size:13.5px">{{ p.label }}</span>
+            <span style="font-size:11px; color:#a3aabd">{{ p.hint }}</span>
+          </div>
+        </sc-for>
+        <div style="padding:12px 16px 4px; font-size:10.5px; font-weight:700; letter-spacing:.07em; text-transform:uppercase; color:#a3aabd">Documents</div>
+        <sc-for list="{{ paletteDocs }}" as="d" hint-placeholder-count="3">
+          <div style="display:flex; align-items:center; gap:11px; padding:9px 16px">
+            <span style="width:26px; height:26px; border-radius:8px; background:#f3f5fa; color:#6b7490; display:flex; align-items:center; justify-content:center">{{ d.icon }}</span>
+            <div style="flex:1; min-width:0"><div style="font-size:13.5px">{{ d.label }}</div><div style="font-size:11.5px; color:#a3aabd">{{ d.sub }}</div></div>
+            <span style="font-size:12.5px; font-weight:600; font-variant-numeric:tabular-nums">{{ d.amount }}</span>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </div>
+  </sc-if>
+
+  <sc-if value="{{ createOpen }}">
+  <div onClick="{{ closeCreate }}" style="position:fixed; inset:0; background:rgba(15,21,51,.38); display:flex; align-items:center; justify-content:center; z-index:50">
+    <div style="width:min(420px,92vw); background:#fff; border-radius:14px; box-shadow:0 24px 50px -24px rgba(15,21,51,.45); overflow:hidden">
+      <div style="padding:16px 18px; border-bottom:1px solid #f3f5fa; font-size:15px; font-weight:600">Créer</div>
+      <div style="padding:8px 0">
+        <sc-for list="{{ createMenu }}" as="m" hint-placeholder-count="6">
+          <div onClick="{{ m.onClick }}" style="display:flex; align-items:center; gap:11px; padding:11px 18px; cursor:pointer" style-hover="background:#f7f8fd">
+            <span style="{{ m.iconStyle }}">{{ m.icon }}</span>
+            <div style="flex:1; min-width:0"><div style="font-size:13.5px; font-weight:600">{{ m.label }}</div><div style="font-size:11.5px; color:#8a92a8">{{ m.sub }}</div></div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1440,&quot;height&quot;:900},&quot;defaultScreen&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Tableau de bord&quot;,&quot;Factures&quot;,&quot;Éditeur de document&quot;,&quot;Outils IA&quot;,&quot;Onboarding&quot;],&quot;default&quot;:&quot;Tableau de bord&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Maquette&quot;},&quot;aiEmphasis&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Bannière + tuiles&quot;,&quot;Tuiles seules&quot;],&quot;default&quot;:&quot;Bannière + tuiles&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Outils IA&quot;},&quot;navCounters&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Navigation&quot;}}">
+class Component extends DCLogic {
+  state = { screen: null, palette: false, create: false, detailOpen: false, vw: typeof window === 'undefined' ? 1440 : window.innerWidth, sel: { clients: 1, quotes: 'DEV-2026-0091', invoices: 'FAC-2026-0142' }, catalogTab: 'produits' };
+
+  componentDidMount() {
+    this._resize = () => this.setState({ vw: window.innerWidth });
+    window.addEventListener('resize', this._resize);
+    this._resize();
+    this._key = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); this.setState({ palette: true }); }
+      if (e.key === 'Escape') this.setState({ palette: false, create: false });
+    };
+    window.addEventListener('keydown', this._key);
+  }
+  componentWillUnmount() { window.removeEventListener('keydown', this._key); window.removeEventListener('resize', this._resize); }
+
+  get screen() {
+    const map = { 'Tableau de bord': 'dash', 'Factures': 'invoices', 'Éditeur de document': 'composer', 'Outils IA': 'ai', 'Onboarding': 'onboarding' };
+    return this.state.screen || map[this.props.defaultScreen] || 'dash';
+  }
+  go = (s) => () => this.setState({ screen: s, create: false, palette: false });
+
+  // --- icônes (primitives simples) ---
+  svg(children, size) {
+    return React.createElement('svg', { width: size || 16, height: size || 16, viewBox: '0 0 20 20', fill: 'none', stroke: 'currentColor', strokeWidth: 1.6, strokeLinecap: 'round', strokeLinejoin: 'round' }, children);
+  }
+  ic(name, size) {
+    const r = (p) => React.createElement('rect', Object.assign({ key: Math.random() }, p));
+    const c = (p) => React.createElement('circle', Object.assign({ key: Math.random() }, p));
+    const l = (p) => React.createElement('line', Object.assign({ key: Math.random() }, p));
+    const pl = (p) => React.createElement('polyline', Object.assign({ key: Math.random() }, p));
+    const pg = (p) => React.createElement('polygon', Object.assign({ key: Math.random() }, p));
+    const sets = {
+      grid: [r({ x: 3, y: 3, width: 6, height: 6, rx: 1.5 }), r({ x: 11, y: 3, width: 6, height: 6, rx: 1.5 }), r({ x: 3, y: 11, width: 6, height: 6, rx: 1.5 }), r({ x: 11, y: 11, width: 6, height: 6, rx: 1.5 })],
+      users: [c({ cx: 8, cy: 7, r: 3 }), pl({ points: '2.5,17 2.5,14.5 13.5,14.5 13.5,17' }), c({ cx: 15, cy: 7.5, r: 2 })],
+      doc: [r({ x: 4, y: 2.5, width: 12, height: 15, rx: 2 }), l({ x1: 7, y1: 7, x2: 13, y2: 7 }), l({ x1: 7, y1: 10.5, x2: 13, y2: 10.5 }), l({ x1: 7, y1: 14, x2: 10, y2: 14 })],
+      invoice: [r({ x: 3.5, y: 2.5, width: 13, height: 15, rx: 2 }), l({ x1: 6.5, y1: 6.5, x2: 13.5, y2: 6.5 }), l({ x1: 6.5, y1: 10, x2: 11, y2: 10 }), l({ x1: 6.5, y1: 13.5, x2: 13.5, y2: 13.5 })],
+      card: [r({ x: 2.5, y: 5, width: 15, height: 10, rx: 2 }), l({ x1: 2.5, y1: 9, x2: 17.5, y2: 9 })],
+      box: [r({ x: 3, y: 5.5, width: 14, height: 11, rx: 2 }), l({ x1: 3, y1: 9.5, x2: 17, y2: 9.5 }), l({ x1: 10, y1: 9.5, x2: 10, y2: 16.5 })],
+      tool: [c({ cx: 7, cy: 7, r: 3.2 }), l({ x1: 9.4, y1: 9.4, x2: 16, y2: 16 })],
+      building: [r({ x: 4, y: 3, width: 12, height: 14, rx: 1.8 }), r({ x: 7, y: 6, width: 2.4, height: 2.4 }), r({ x: 11, y: 6, width: 2.4, height: 2.4 }), r({ x: 7, y: 10.5, width: 2.4, height: 2.4 }), r({ x: 11, y: 10.5, width: 2.4, height: 2.4 })],
+      gear: [c({ cx: 10, cy: 10, r: 6 }), c({ cx: 10, cy: 10, r: 2.2 })],
+      sparkle: [pg({ points: '10,2.5 12.2,7.8 17.5,10 12.2,12.2 10,17.5 7.8,12.2 2.5,10 7.8,7.8' })],
+      camera: [r({ x: 2.5, y: 5, width: 15, height: 11, rx: 2.4 }), c({ cx: 10, cy: 10.5, r: 3 })],
+      sheet: [r({ x: 3.5, y: 3, width: 13, height: 14, rx: 2 }), l({ x1: 3.5, y1: 8, x2: 16.5, y2: 8 }), l({ x1: 3.5, y1: 12.5, x2: 16.5, y2: 12.5 }), l({ x1: 10, y1: 8, x2: 10, y2: 17 })],
+      search: [c({ cx: 9, cy: 9, r: 5.2 }), l({ x1: 13, y1: 13, x2: 17, y2: 17 })],
+      clock: [c({ cx: 10, cy: 10, r: 6.4 }), pl({ points: '10,6 10,10 13,12' })],
+      alert: [c({ cx: 10, cy: 10, r: 6.4 }), l({ x1: 10, y1: 6.5, x2: 10, y2: 10.5 }), l({ x1: 10, y1: 13.2, x2: 10, y2: 13.3 })],
+      check: [pl({ points: '4,10.5 8,14.5 16,5.5' })],
+      exit: [pl({ points: '11,4 16,4 16,16 11,16' }), l({ x1: 4, y1: 10, x2: 12, y2: 10 }), pl({ points: '8,6.5 4.5,10 8,13.5' })],
+      upload: [pl({ points: '5,12.5 5,16 15,16 15,12.5' }), l({ x1: 10, y1: 4, x2: 10, y2: 12 }), pl({ points: '6.8,7 10,3.8 13.2,7' })],
+      sort: [l({ x1: 4, y1: 6, x2: 15, y2: 6 }), l({ x1: 4, y1: 10, x2: 12, y2: 10 }), l({ x1: 4, y1: 14, x2: 9, y2: 14 })],
+      euro: [c({ cx: 10, cy: 10, r: 6.4 }), l({ x1: 6.5, y1: 9, x2: 12, y2: 9 }), l({ x1: 6.5, y1: 11.5, x2: 12, y2: 11.5 })],
+      bell: [pl({ points: '6,13 6,9 14,9 14,13' }), l({ x1: 4.5, y1: 13.5, x2: 15.5, y2: 13.5 }), c({ cx: 10, cy: 16, r: 1.2 })],
+    };
+    return this.svg(sets[name] || sets.doc, size);
+  }
+
+  tone(t) {
+    const m = {
+      draft: ['#f3f5fa', '#4a5268', '#a3aabd'],
+      sent: ['#f1efff', '#4338ca', '#4f46e5'],
+      partial: ['#fffbeb', '#b45309', '#f59e0b'],
+      paid: ['#ecfdf5', '#047857', '#059669'],
+      late: ['#fef2f2', '#b91c1c', '#dc2626'],
+      expired: ['#fffbeb', '#b45309', '#f59e0b'],
+    }[t] || ['#f3f5fa', '#4a5268', '#a3aabd'];
+    return {
+      badgeStyle: 'display:inline-flex; align-items:center; gap:6px; padding:3px 9px; border-radius:20px; font-size:11.5px; font-weight:600; background:' + m[0] + '; color:' + m[1],
+      dotStyle: 'width:5px; height:5px; border-radius:50%; background:' + m[2],
+    };
+  }
+
+  // --- données ---
+  data() {
+    return {
+      clients: [
+        { id: 1, name: 'Martin SARL', type: 'Professionnel', initials: 'MS', contact: 'comptabilite@martin-sarl.fr', city: 'Lyon', paid: '12 480 €', pending: '1 435 €', last: 'FAC-2026-0142' },
+        { id: 2, name: 'Atelier Nord', type: 'Professionnel', initials: 'AN', contact: 'a.nord@atelier.fr', city: 'Lille', paid: '8 900 €', pending: '890 €', last: 'FAC-2026-0139' },
+        { id: 3, name: 'Lumen Studio', type: 'Professionnel', initials: 'LS', contact: 'hello@lumen.studio', city: 'Paris', paid: '21 400 €', pending: '—', last: 'FAC-2026-0138' },
+        { id: 4, name: 'Sophie Laurent', type: 'Particulier', initials: 'SL', contact: 's.laurent@gmail.com', city: 'Bordeaux', paid: '3 210 €', pending: '540 €', last: 'FAC-2026-0140' },
+        { id: 5, name: 'Bâti Pro', type: 'Professionnel', initials: 'BP', contact: 'devis@batipro.fr', city: 'Nantes', paid: '15 060 €', pending: '2 980 €', last: 'FAC-2026-0141' },
+        { id: 6, name: 'Maison Verte', type: 'Professionnel', initials: 'MV', contact: 'contact@maisonverte.fr', city: 'Rennes', paid: '6 740 €', pending: '—', last: 'DEV-2026-0091' },
+        { id: 7, name: 'Karim Benali', type: 'Particulier', initials: 'KB', contact: 'k.benali@outlook.fr', city: 'Marseille', paid: '1 980 €', pending: '320 €', last: 'FAC-2026-0137' },
+      ],
+      invoices: [
+        { id: 'FAC-2026-0143', client: 'Martin SARL', issued: '11 sept. 2026', due: '11 oct. 2026', total: '68,00 €', status: 'Brouillon', tone: 'draft' },
+        { id: 'FAC-2026-0142', client: 'Martin SARL', issued: '10 sept. 2026', due: '10 oct. 2026', total: '1 435,20 €', status: 'Envoyée', tone: 'sent' },
+        { id: 'FAC-2026-0141', client: 'Bâti Pro', issued: '08 sept. 2026', due: '08 oct. 2026', total: '2 980,00 €', status: 'Partielle', tone: 'partial' },
+        { id: 'FAC-2026-0140', client: 'Sophie Laurent', issued: '05 sept. 2026', due: '05 oct. 2026', total: '540,00 €', status: 'En retard', tone: 'late' },
+        { id: 'FAC-2026-0139', client: 'Atelier Nord', issued: '02 sept. 2026', due: '02 oct. 2026', total: '890,00 €', status: 'Envoyée', tone: 'sent' },
+        { id: 'FAC-2026-0138', client: 'Lumen Studio', issued: '28 août 2026', due: '27 sept. 2026', total: '2 140,00 €', status: 'Payée', tone: 'paid' },
+        { id: 'FAC-2026-0137', client: 'Karim Benali', issued: '24 août 2026', due: '23 sept. 2026', total: '320,00 €', status: 'En retard', tone: 'late' },
+      ],
+      quotes: [
+        { id: 'DEV-2026-0092', client: 'Martin SARL', issued: '09 sept. 2026', due: '09 oct. 2026', total: '4 380,00 €', status: 'Envoyé', tone: 'sent' },
+        { id: 'DEV-2026-0091', client: 'Maison Verte', issued: '06 sept. 2026', due: '06 oct. 2026', total: '6 740,00 €', status: 'Accepté', tone: 'paid' },
+        { id: 'DEV-2026-0090', client: 'Bâti Pro', issued: '03 sept. 2026', due: '03 oct. 2026', total: '12 500,00 €', status: 'Envoyé', tone: 'sent' },
+        { id: 'DEV-2026-0089', client: 'Lumen Studio', issued: '30 août 2026', due: '29 sept. 2026', total: '980,00 €', status: 'Refusé', tone: 'late' },
+        { id: 'DEV-2026-0088', client: 'Sophie Laurent', issued: '27 août 2026', due: '26 sept. 2026', total: '1 240,00 €', status: 'Expiré', tone: 'expired' },
+        { id: 'DEV-2026-0087', client: 'Atelier Nord', issued: '22 août 2026', due: '21 sept. 2026', total: '3 100,00 €', status: 'Brouillon', tone: 'draft' },
+      ],
+      payments: [
+        { date: '12 sept. 2026', doc: 'FAC-2026-0138', client: 'Lumen Studio', method: 'Virement', amount: '2 140,00 €', status: 'Encaissé', tone: 'paid' },
+        { date: '10 sept. 2026', doc: 'FAC-2026-0141', client: 'Bâti Pro', method: 'Carte · Stripe', amount: '1 500,00 €', status: 'Partiel', tone: 'partial' },
+        { date: '06 sept. 2026', doc: 'FAC-2026-0136', client: 'Maison Verte', method: 'Virement', amount: '1 260,00 €', status: 'Encaissé', tone: 'paid' },
+        { date: '01 sept. 2026', doc: 'FAC-2026-0134', client: 'Martin SARL', method: 'Chèque', amount: '3 420,00 €', status: 'Encaissé', tone: 'paid' },
+        { date: '28 août 2026', doc: 'FAC-2026-0133', client: 'Atelier Nord', method: 'Carte · Stripe', amount: '760,00 €', status: 'Encaissé', tone: 'paid' },
+      ],
+      produits: [
+        { name: 'Casque Sony MDR-ZX110B – Noir', cat: 'Audio', ref: 'SON-ZX110-N', unit: 'pièce', price: '10,00 €', vat: '20 %', stock: '24 en stock', tone: 'paid' },
+        { name: 'Casque Sony MDR-ZX110B – Rose', cat: 'Audio', ref: 'SON-ZX110-R', unit: 'pièce', price: '12,00 €', vat: '20 %', stock: '3 en stock', tone: 'partial' },
+        { name: 'Câble HDMI 2.1 – 2 m', cat: 'Câblage', ref: 'CAB-HDMI-2', unit: 'pièce', price: '8,50 €', vat: '20 %', stock: '120 en stock', tone: 'paid' },
+        { name: 'Support mural universel', cat: 'Accessoires', ref: 'SUP-MUR-U', unit: 'pièce', price: '24,90 €', vat: '20 %', stock: 'Rupture', tone: 'late' },
+        { name: 'Pack installation bureau', cat: 'Packs', ref: 'PCK-INST', unit: 'forfait', price: '149,00 €', vat: '20 %', stock: '—', tone: 'draft' },
+      ],
+    };
+  }
+
+  renderVals() {
+    const d = this.data();
+    const s = this.screen;
+    const aiBanner = (this.props.aiEmphasis ?? 'Bannière + tuiles') === 'Bannière + tuiles';
+    const counters = this.props.navCounters ?? true;
+    const wide = this.state.vw >= 1280;
+    const masterDetail = ['clients', 'quotes', 'invoices'].indexOf(s) > -1;
+
+    // nav
+    const navDef = [
+      { id: 'dash', label: 'Tableau de bord', icon: 'grid' },
+      { id: 'clients', label: 'Clients', icon: 'users' },
+      { id: 'quotes', label: 'Devis', icon: 'doc', badge: '3' },
+      { id: 'invoices', label: 'Factures', icon: 'invoice', badge: '2', danger: true },
+      { id: 'payments', label: 'Paiements', icon: 'card' },
+      { group: 'Catalogue' },
+      { id: 'catalog', label: 'Produits', icon: 'box' },
+      { id: 'prestations', label: 'Prestations', icon: 'tool' },
+      { id: 'companies', label: 'Entreprises', icon: 'building' },
+      { group: 'Assistant' },
+      { id: 'ai', label: 'Outils IA', icon: 'sparkle' },
+    ];
+    const navItems = navDef.map((n) => {
+      if (n.group) return { isGroup: true, label: n.group };
+      const active = s === n.id;
+      return {
+        isLink: true, label: n.label, icon: this.ic(n.icon), onClick: this.go(n.id),
+        badge: counters ? n.badge : null,
+        badgeStyle: 'font-size:11px; font-weight:700; font-variant-numeric:tabular-nums; padding:1px 7px; border-radius:20px; background:' + (n.danger ? '#fef2f2' : '#f3f5fa') + '; color:' + (n.danger ? '#b91c1c' : '#6b7490'),
+        style: 'display:flex; align-items:center; gap:10px; height:36px; padding:0 11px; border:0; border-radius:9px; cursor:pointer; font-size:13px; font-weight:' + (active ? '600' : '500') + '; background:' + (active ? '#f1efff' : 'transparent') + '; color:' + (active ? '#4f46e5' : '#3b4256'),
+      };
+    });
+
+    // en-têtes d'écran : action primaire toujours au même endroit
+    const heads = {
+      dash: { title: 'Bonjour, Farouq', sub: 'SNOWOLF · vendredi 11 septembre', primary: 'Nouvelle facture', secondary: null },
+      clients: { title: 'Clients', count: '7 clients', primary: 'Nouveau client', secondary: 'Importer' },
+      quotes: { title: 'Devis', count: '6 devis', primary: 'Nouveau devis', secondary: 'Importer' },
+      invoices: { title: 'Factures', count: '7 factures', primary: 'Nouvelle facture', secondary: 'Importer' },
+      payments: { title: 'Paiements', count: '5 encaissements', sub: 'Factures réglées et montants attendus', primary: 'Enregistrer un paiement', secondary: null },
+      catalog: { title: 'Produits', count: '5 actifs', primary: 'Nouveau produit', secondary: 'Modèle de tableur' },
+      prestations: { title: 'Prestations', count: '4 actives', primary: 'Nouvelle prestation', secondary: 'Modèle de tableur' },
+      companies: { title: 'Entreprises', count: '3 espaces', sub: 'Chaque espace a sa numérotation et ses documents', primary: 'Nouvelle entreprise', secondary: null },
+      settings: { title: 'Paramètres', sub: 'Compte, entreprise, facturation et abonnement', primary: 'Nouvelle facture', secondary: null },
+      composer: { title: 'Nouveau devis', sub: 'DEV-2026-0093 · brouillon enregistré', primary: 'Créer et envoyer', secondary: null },
+      ai: { title: 'Outils IA', sub: 'Créez vos fiches produits depuis une image de fiche produit ou le modèle de tableur INVEQ', primary: 'Nouvel import', secondary: null },
+    };
+    const h = heads[s] || heads.dash;
+
+    // tableaux
+    const col = (label, w, align) => ({ label: label, w: w, align: align });
+    const defs = {
+      clients: { cols: [col('Client', 'minmax(200px,1.6fr)'), col('Contact', 'minmax(190px,1.4fr)'), col('Ville', '110px'), col('CA encaissé', '120px', 'right'), col('En attente', '110px', 'right'), col('Dernier document', '150px')], placeholder: 'Nom, société, e-mail, ville…' },
+      quotes: { cols: [col('Numéro', '150px'), col('Client', 'minmax(170px,1.4fr)'), col('Émission', '120px'), col('Validité', '120px'), col('Total TTC', '120px', 'right'), col('Statut', '120px')], placeholder: 'Numéro, client, montant…' },
+      invoices: { cols: [col('Numéro', '150px'), col('Client', 'minmax(170px,1.4fr)'), col('Émission', '120px'), col('Échéance', '120px'), col('Total TTC', '120px', 'right'), col('Statut', '120px')], placeholder: 'Numéro, client, montant…' },
+      payments: { cols: [col('Date', '120px'), col('Facture', '150px'), col('Client', 'minmax(160px,1.2fr)'), col('Moyen', '140px'), col('Montant', '120px', 'right'), col('Statut', '120px')], placeholder: 'Facture, client, moyen…' },
+      catalog: { cols: [col('Désignation', 'minmax(240px,1.8fr)'), col('Référence', '140px'), col('Unité', '90px'), col('Prix HT', '100px', 'right'), col('TVA', '80px', 'right'), col('Stock', '130px')], placeholder: 'Nom, référence, SKU…' },
+    };
+    const key = s === 'prestations' ? 'catalog' : s;
+    const def = defs[key] || defs.invoices;
+    const grid = def.cols.map((c) => c.w).join(' ');
+    const minOf = (w) => { const m = w.match(/minmax\((\d+)px/); return m ? parseInt(m[1], 10) : parseInt(w, 10) || 0; };
+    const tableMin = def.cols.reduce((a, c) => a + minOf(c.w), 0) + (def.cols.length - 1) * 14 + 48;
+    const cellBase = (c) => 'display:flex; align-items:center; gap:10px; min-width:0; font-size:13px; font-variant-numeric:tabular-nums; color:#3b4256;' + (c.align === 'right' ? ' justify-content:flex-end;' : '');
+
+    const headStyle = 'display:grid; grid-template-columns:' + grid + '; gap:14px; padding:9px 24px; min-width:' + tableMin + 'px; background:#fafbfe; border-bottom:1px solid #e6e9f2; position:sticky; top:0; z-index:2';
+    const columns = def.cols.map((c) => ({ label: c.label, style: 'font-size:11px; font-weight:700; letter-spacing:.07em; text-transform:uppercase; color:#8a92a8;' + (c.align === 'right' ? ' text-align:right;' : '') }));
+
+    const rowStyle = (active) => 'display:grid; grid-template-columns:' + grid + '; gap:14px; padding:11px 24px; min-width:' + tableMin + 'px; align-items:center; border-bottom:1px solid #f3f5fa; cursor:pointer; background:' + (active ? '#f7f6ff' : '#fff') + '; box-shadow:' + (active ? 'inset 3px 0 0 #4f46e5' : 'none');
+    const txt = (c, v, weight) => ({ plain: true, text: v, style: cellBase(c) + (weight ? ' font-weight:600; color:#0f1533;' : '') });
+
+    let rows = [], footLeft = '', detail = null, chips = [], aiToolbar = false;
+
+    if (s === 'clients') {
+      const sel = this.state.sel.clients;
+      rows = d.clients.map((r) => ({
+        onClick: () => this.setState({ detailOpen: true, sel: Object.assign({}, this.state.sel, { clients: r.id }) }),
+        style: rowStyle(r.id === sel),
+        cells: [
+          { avatar: r.initials, stack: true, text: r.name, sub: r.type, style: cellBase(def.cols[0]) },
+          txt(def.cols[1], r.contact), txt(def.cols[2], r.city), txt(def.cols[3], r.paid, true), txt(def.cols[4], r.pending), txt(def.cols[5], r.last),
+        ],
+      }));
+      footLeft = '7 sur 7 clients';
+      chips = [['Tous', '7', true], ['Professionnels', '5'], ['Particuliers', '2'], ['Impayés', '4']];
+      const c = d.clients.find((x) => x.id === sel) || d.clients[0];
+      detail = {
+        kind: c.type, title: c.name, client: c.contact, status: 'À jour', amount: c.paid, amountNote: 'encaissé depuis janvier · ' + c.pending + ' en attente',
+        primary: 'Nouveau devis',
+        timeline: [['Client créé', '12 févr. 2026', true], ['Dernier devis envoyé', '09 sept. 2026', true], ['Dernière facture', c.last, true], ['Dernier paiement reçu', '01 sept. 2026', false]],
+        facts: [['Ville', c.city], ['Type', c.type], ['CA encaissé', c.paid], ['En attente', c.pending], ['Documents', '9'], ['Délai de paiement moyen', '12 j']],
+      };
+    } else if (s === 'quotes' || s === 'invoices') {
+      const list = s === 'quotes' ? d.quotes : d.invoices;
+      const sel = this.state.sel[s];
+      rows = list.map((r) => {
+        const t = this.tone(r.tone);
+        return {
+          onClick: () => this.setState({ detailOpen: true, sel: Object.assign({}, this.state.sel, { [s]: r.id }) }),
+          style: rowStyle(r.id === sel),
+          cells: [
+            txt(def.cols[0], r.id, true), txt(def.cols[1], r.client), txt(def.cols[2], r.issued), txt(def.cols[3], r.due), txt(def.cols[4], r.total, true),
+            { badge: r.status, badgeStyle: t.badgeStyle, dotStyle: t.dotStyle, style: cellBase(def.cols[5]) },
+          ],
+        };
+      });
+      footLeft = list.length + ' sur ' + list.length + (s === 'quotes' ? ' devis' : ' factures');
+      chips = s === 'quotes'
+        ? [['Tous', '6', true], ['Brouillons', '1'], ['Envoyés', '2'], ['Acceptés', '1'], ['Refusés', '1'], ['Expirés', '1']]
+        : [['Toutes', '7', true], ['Brouillons', '1'], ['Envoyées', '2'], ['En retard', '2'], ['Partielles', '1'], ['Payées', '1']];
+      const r = list.find((x) => x.id === sel) || list[0];
+      const t = this.tone(r.tone);
+      const primaryMap = { draft: s === 'quotes' ? 'Envoyer le devis' : 'Envoyer la facture', sent: s === 'quotes' ? 'Relancer le client' : 'Marquer comme payée', partial: 'Enregistrer le solde', late: 'Relancer le client', paid: s === 'quotes' ? 'Convertir en facture' : 'Télécharger le PDF', expired: 'Renouveler le devis' };
+      detail = {
+        kind: s === 'quotes' ? 'Devis' : 'Facture', title: r.id, client: r.client, status: r.status, badgeStyle: t.badgeStyle, dotStyle: t.dotStyle,
+        amount: r.total, amountNote: s === 'quotes' ? 'valable jusqu’au ' + r.due : 'échéance le ' + r.due,
+        primary: primaryMap[r.tone] || 'Envoyer',
+        timeline: [['Créé', r.issued, true], ['Envoyé par e-mail', r.issued, r.tone !== 'draft'], [s === 'quotes' ? 'Vu par le client' : 'Paiement reçu', r.tone === 'paid' ? r.due : 'en attente', r.tone === 'paid'], [s === 'quotes' ? 'Accepté' : 'Soldée', r.tone === 'paid' ? r.due : '—', r.tone === 'paid']],
+        facts: [['Total HT', '3 650,00 €'], ['TVA 20 %', '730,00 €'], ['Total TTC', r.total], [s === 'quotes' ? 'Validité' : 'Échéance', r.due], ['Modèle PDF', 'Moderne'], ['Relances envoyées', r.tone === 'late' ? '2' : '0']],
+      };
+    } else if (s === 'payments') {
+      rows = d.payments.map((r) => {
+        const t = this.tone(r.tone);
+        return { onClick: null, style: rowStyle(false), cells: [txt(def.cols[0], r.date), txt(def.cols[1], r.doc, true), txt(def.cols[2], r.client), txt(def.cols[3], r.method), txt(def.cols[4], r.amount, true), { badge: r.status, badgeStyle: t.badgeStyle, dotStyle: t.dotStyle, style: cellBase(def.cols[5]) }] };
+      });
+      footLeft = '5 encaissements · 9 180 € ce trimestre';
+      chips = [['Ce mois', null, true], ['Trimestre'], ['Année'], ['Virement'], ['Carte · Stripe']];
+    } else if (s === 'catalog' || s === 'prestations') {
+      const list = s === 'catalog' ? d.produits : [
+        { name: 'Pose et raccordement', cat: 'Main-d’œuvre', ref: 'PRS-POSE', unit: 'heure', price: '45,00 €', vat: '20 %', stock: '1 h', tone: 'draft' },
+        { name: 'Diagnostic sur site', cat: 'Expertise', ref: 'PRS-DIAG', unit: 'forfait', price: '90,00 €', vat: '20 %', stock: '2 h', tone: 'draft' },
+        { name: 'Maintenance annuelle', cat: 'Contrat', ref: 'PRS-MAINT', unit: 'an', price: '480,00 €', vat: '20 %', stock: '—', tone: 'draft' },
+        { name: 'Déplacement', cat: 'Frais', ref: 'PRS-DEP', unit: 'forfait', price: '35,00 €', vat: '20 %', stock: '—', tone: 'draft' },
+      ];
+      rows = list.map((r) => {
+        const t = this.tone(r.tone);
+        return {
+          onClick: null, style: rowStyle(false),
+          cells: [
+            { stack: true, text: r.name, sub: r.cat, style: cellBase(def.cols[0]) },
+            txt(def.cols[1], r.ref), txt(def.cols[2], r.unit), txt(def.cols[3], r.price, true), txt(def.cols[4], r.vat),
+            { badge: r.stock, badgeStyle: t.badgeStyle, dotStyle: t.dotStyle, style: cellBase(def.cols[5]) },
+          ],
+        };
+      });
+      footLeft = list.length + (s === 'catalog' ? ' produits actifs' : ' prestations actives');
+      chips = s === 'catalog' ? [['Actifs', '5', true], ['Stock bas', '2'], ['Archivés', '1']] : [['Actives', '4', true], ['Archivées', '0']];
+      aiToolbar = true;
+    }
+
+    const chipItems = chips.map((c) => ({
+      label: c[0], count: c[1],
+      style: 'display:inline-flex; align-items:center; gap:7px; white-space:nowrap; padding:7px 13px; border-radius:20px; cursor:pointer; font-size:12.5px; font-weight:600; border:1px solid ' + (c[2] ? '#c9c4f5' : '#e6e9f2') + '; background:' + (c[2] ? '#f1efff' : '#fff') + '; color:' + (c[2] ? '#4338ca' : '#3b4256'),
+      countStyle: 'font-size:11px; font-weight:700; font-variant-numeric:tabular-nums; color:' + (c[2] ? '#4f46e5' : '#a3aabd'),
+    }));
+
+    if (detail) {
+      detail.timeline = detail.timeline.map((t, i, arr) => ({
+        label: t[0], when: t[1],
+        labelStyle: 'font-size:12.5px; font-weight:600; color:' + (t[2] ? '#0f1533' : '#a3aabd'),
+        dotStyle: 'width:9px; height:9px; border-radius:50%; flex-shrink:0; background:' + (t[2] ? '#4f46e5' : '#fff') + '; border:1.5px solid ' + (t[2] ? '#4f46e5' : '#d8dce8'),
+        lineStyle: 'width:1.5px; flex:1; min-height:' + (i === arr.length - 1 ? '0' : '22px') + '; background:' + (t[2] ? '#dcd9fb' : '#eef0f7'),
+      }));
+      detail.facts = detail.facts.map((f) => ({ label: f[0], value: f[1] }));
+    }
+
+    const monthVals = [2400, 3100, 2800, 3600, 4100, 3300, 4800, 5200, 4600, 5900, 6300, 4120];
+    const monthLabels = ['O', 'N', 'D', 'J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S'];
+    const max = 6300;
+
+    return {
+      showShell: s !== 'onboarding',
+      isDash: s === 'dash', isList: ['clients', 'quotes', 'invoices', 'payments', 'catalog', 'prestations'].indexOf(s) > -1,
+      isComposer: s === 'composer', isCompanies: s === 'companies', isSettings: s === 'settings', isAi: s === 'ai', isOnboarding: s === 'onboarding',
+      hasDetail: masterDetail && (wide || this.state.detailOpen),
+      detailOverlay: masterDetail && !wide && this.state.detailOpen,
+      detailStyle: (masterDetail && !wide)
+        ? 'position:fixed; top:0; right:0; bottom:0; width:min(420px,92vw); z-index:21; overflow:auto; background:#fff; border-left:1px solid #e6e9f2; box-shadow:0 24px 50px -24px rgba(15,21,51,.45); padding:20px; display:flex; flex-direction:column; gap:16px'
+        : 'width:392px; flex:0 0 392px; background:#fff; border-left:1px solid #e6e9f2; padding:20px; display:flex; flex-direction:column; gap:16px',
+      closeDetail: () => this.setState({ detailOpen: false }),
+      composerGrid: 'padding:18px 24px 40px; display:grid; gap:16px; align-items:start; grid-template-columns:' + (this.state.vw >= 1440 ? '300px minmax(420px,1fr) 300px' : this.state.vw >= 1100 ? 'minmax(420px,1fr) 300px' : 'minmax(0,1fr)'),
+      composerMainStyle: 'display:flex; flex-direction:column; gap:14px; min-width:0; order:' + (this.state.vw >= 1440 ? 2 : 1),
+      composerSideStyle: 'display:flex; flex-direction:column; gap:14px; min-width:0; order:' + (this.state.vw >= 1440 ? 1 : this.state.vw >= 1100 ? 3 : 2),
+      composerAsideStyle: 'display:flex; flex-direction:column; gap:14px; min-width:0; order:' + (this.state.vw >= 1440 ? 3 : this.state.vw >= 1100 ? 2 : 3),
+      navItems, pageTitle: h.title, pageSub: h.sub, pageCount: h.count, primaryLabel: h.primary, secondaryLabel: h.secondary,
+      searchPlaceholder: def.placeholder, headStyle, columns, rows, footLeft, chips: chipItems, detail, aiToolbar, aiBanner,
+
+      iconSearch: this.ic('search'), iconGear: this.ic('gear'), iconExit: this.ic('exit'), iconUpload: this.ic('upload'), iconSort: this.ic('sort'),
+      iconCard: this.ic('euro'), iconClock: this.ic('clock'), iconAlert: this.ic('alert'), iconSparkle: this.ic('sparkle'),
+      iconCamera: this.ic('camera'), iconSheet: this.ic('sheet'), iconBox: this.ic('box'), iconCheck: this.ic('check', 18),
+
+      openPalette: () => this.setState({ palette: true }), closePalette: () => this.setState({ palette: false }),
+      openCreate: () => this.setState({ create: true }), closeCreate: () => this.setState({ create: false }),
+      paletteOpen: this.state.palette, createOpen: this.state.create,
+      goAi: this.go('ai'), goSettings: this.go('settings'), goDash: this.go('dash'),
+
+      tasks: [
+        { title: 'Relancer FAC-2026-0140 — Sophie Laurent', meta: 'En retard de 6 jours · relance envoyée le 08/09', amount: '540,00 €', action: 'Relancer', icon: this.ic('alert'), iconStyle: 'width:30px; height:30px; border-radius:8px; display:flex; align-items:center; justify-content:center; flex-shrink:0; background:#fef2f2; color:#dc2626' },
+        { title: 'Facturer le devis DEV-2026-0091 — Maison Verte', meta: 'Accepté le 08 sept. · non converti', amount: '6 740,00 €', action: 'Facturer', icon: this.ic('check'), iconStyle: 'width:30px; height:30px; border-radius:8px; display:flex; align-items:center; justify-content:center; flex-shrink:0; background:#ecfdf5; color:#059669' },
+        { title: 'Brouillon FAC-2026-0143 à finaliser', meta: 'Martin SARL · créé hier', amount: '68,00 €', action: 'Reprendre', icon: this.ic('doc'), iconStyle: 'width:30px; height:30px; border-radius:8px; display:flex; align-items:center; justify-content:center; flex-shrink:0; background:#f3f5fa; color:#6b7490' },
+        { title: 'DEV-2026-0092 expire dans 5 jours', meta: 'Martin SARL · envoyé le 09 sept.', amount: '4 380,00 €', action: 'Relancer', icon: this.ic('clock'), iconStyle: 'width:30px; height:30px; border-radius:8px; display:flex; align-items:center; justify-content:center; flex-shrink:0; background:#fffbeb; color:#b45309' },
+      ],
+      createTiles: [
+        { label: 'Devis', icon: this.ic('doc'), onClick: this.go('composer') },
+        { label: 'Facture', icon: this.ic('invoice'), onClick: this.go('composer') },
+        { label: 'Client', icon: this.ic('users'), onClick: this.go('clients') },
+        { label: 'Produit', icon: this.ic('box'), onClick: this.go('catalog') },
+      ],
+      indicators: [
+        { label: 'Devis envoyés', value: '9' }, { label: 'Taux d’acceptation', value: '62 %' },
+        { label: 'Panier moyen', value: '1 480 €' }, { label: 'Meilleur client', value: 'Lumen Studio' },
+      ],
+      activity: [
+        { title: 'FAC-2026-0142 envoyée — Martin SARL', when: 'il y a 2 heures', amount: '1 435,20 €', icon: this.ic('invoice') },
+        { title: 'Paiement reçu — Lumen Studio', when: 'hier', amount: '2 140,00 €', icon: this.ic('euro') },
+        { title: 'DEV-2026-0091 accepté — Maison Verte', when: 'il y a 3 jours', amount: '6 740,00 €', icon: this.ic('doc') },
+        { title: '12 produits importés depuis un tableur', when: 'il y a 4 jours', amount: '—', icon: this.ic('sheet') },
+      ],
+      months: monthVals.map((v, i) => ({
+        label: monthLabels[i],
+        barStyle: 'border-radius:6px 6px 3px 3px; height:' + Math.round((v / max) * 100) + '%; background:' + (i === 11 ? 'linear-gradient(180deg,#7c3aed,#4f46e5)' : '#dcd9fb'),
+      })),
+      lines: [
+        { desc: 'Pose et raccordement — tableau électrique', qty: '12', unit: 'heure', price: '45,00 €', vat: '20 %', total: '648,00 €' },
+        { desc: 'Casque Sony MDR-ZX110B – Noir', qty: '4', unit: 'pièce', price: '10,00 €', vat: '20 %', total: '48,00 €' },
+        { desc: 'Pack installation bureau', qty: '2', unit: 'forfait', price: '149,00 €', vat: '20 %', total: '357,60 €' },
+      ],
+      templates: ['Classique', 'Moderne', 'Premium', 'Minimal'].map((n, i) => ({
+        name: n,
+        style: 'border:1px solid ' + (i === 1 ? '#c9c4f5' : '#e6e9f2') + '; border-radius:10px; overflow:hidden; background:' + (i === 1 ? '#fbfaff' : '#fff') + '; cursor:pointer',
+        barStyle: 'height:8px; background:' + ['#4f46e5', 'linear-gradient(90deg,#7c3aed,#4f46e5)', '#0f1533', '#a3aabd'][i],
+      })),
+      companies: [
+        { name: 'SNOWOLF', role: 'Propriétaire', initials: 'SW', active: true, clients: '7', docs: '34', revenue: '50 220 €' },
+        { name: 'Atelier Dib', role: 'Propriétaire', initials: 'AD', clients: '3', docs: '11', revenue: '8 400 €' },
+        { name: 'Cercle Soft', role: 'Collaborateur', initials: 'CS', clients: '12', docs: '58', revenue: '96 700 €' },
+      ].map((c) => ({
+        name: c.name, role: c.role, initials: c.initials, active: c.active, clients: c.clients, docs: c.docs, revenue: c.revenue,
+        cardStyle: 'background:#fff; border:1px solid ' + (c.active ? '#c9c4f5' : '#e6e9f2') + '; border-radius:14px; padding:18px',
+        primaryLabel: c.active ? 'Espace actif' : 'Activer',
+        primaryStyle: 'flex:1; padding:9px 14px; border-radius:9px; font-size:12.5px; font-weight:600; cursor:pointer; border:' + (c.active ? '1px solid #e6e9f2' : '0') + '; background:' + (c.active ? '#fafbfe' : '#4f46e5') + '; color:' + (c.active ? '#8a92a8' : '#fff'),
+      })),
+      settingsNav: [
+        { group: 'Compte' }, { label: 'Profil' }, { label: 'Notifications' },
+        { group: 'Entreprise' }, { label: 'Identité', active: true }, { label: 'Logo et couleurs' }, { label: 'Modèles PDF' },
+        { group: 'Facturation' }, { label: 'Numérotation' }, { label: 'Moyens de paiement' }, { label: 'Facturation électronique' },
+        { group: 'Abonnement' }, { label: 'Offre Max' }, { label: 'Historique' },
+      ].map((x) => x.group ? { isGroup: true, label: x.group } : {
+        isLink: true, label: x.label,
+        style: 'display:flex; align-items:center; height:34px; padding:0 11px; border-radius:9px; font-size:13px; cursor:pointer; font-weight:' + (x.active ? '600' : '500') + '; background:' + (x.active ? '#f1efff' : 'transparent') + '; color:' + (x.active ? '#4f46e5' : '#3b4256'),
+      }),
+      aiTools: [
+        { title: 'Image → produit', body: 'Déposez une image où les informations du produit sont écrites : fiche produit d’un site marchand, catalogue fournisseur, étiquette de prix. L’IA lit le nom, la référence, le prix et la TVA — une photo d’objet sans texte ne peut pas être reconnue.', dropHint: 'capture d’écran ou photo de fiche produit · .jpg, .png, .pdf', cta: 'Choisir une image', icon: this.ic('camera', 20), note: 'Les valeurs lues restent modifiables avant enregistrement.' },
+        { title: 'Tableur → catalogue', body: 'L’import n’accepte que le modèle INVEQ : téléchargez-le, remplissez les colonnes déjà en place, puis déposez le fichier. Un autre tableur sera refusé.', dropHint: 'déposez votre modèle rempli · .xlsx, .csv — jusqu’à 2 000 lignes', cta: 'Importer le modèle rempli', icon: this.ic('sheet', 20), download: true, downloadLabel: 'Télécharger le modèle vide (.xlsx)', step: 'Étape 1 — partez du modèle INVEQ', note: 'Étape 2 — déposez le fichier rempli ci-dessus.' },
+      ],
+      aiRuns: [
+        { title: '12 produits importés — modele-inveq-produits.xlsx', meta: '4 sept. 2026 · 12 lignes reconnues, 0 ignorée', status: 'Enregistré', action: 'Voir', icon: this.ic('sheet'), badgeStyle: this.tone('paid').badgeStyle, dotStyle: this.tone('paid').dotStyle },
+        { title: 'Fiche produit — Casque Sony MDR-ZX110B', meta: '2 sept. 2026 · prix et référence à confirmer', status: 'À vérifier', action: 'Vérifier', icon: this.ic('camera'), badgeStyle: this.tone('partial').badgeStyle, dotStyle: this.tone('partial').dotStyle },
+        { title: 'Fichier refusé — export-fournisseur.xlsx', meta: '30 août 2026 · colonnes hors modèle INVEQ', status: 'Refusé', action: 'Modèle', icon: this.ic('alert'), badgeStyle: this.tone('late').badgeStyle, dotStyle: this.tone('late').dotStyle },
+      ],
+      paletteActions: [
+        { label: 'Créer une facture', hint: 'F', icon: this.ic('invoice') },
+        { label: 'Créer un devis', hint: 'D', icon: this.ic('doc') },
+        { label: 'Ajouter un client', hint: 'C', icon: this.ic('users') },
+        { label: 'Créer un produit depuis une image', hint: 'P', icon: this.ic('camera') },
+        { label: 'Télécharger le modèle de tableur', hint: 'T', icon: this.ic('sheet') },
+        { label: 'Changer d’entreprise', hint: 'E', icon: this.ic('building') },
+      ],
+      paletteDocs: [
+        { label: 'FAC-2026-0142', sub: 'Martin SARL · envoyée', amount: '1 435,20 €', icon: this.ic('invoice') },
+        { label: 'DEV-2026-0091', sub: 'Maison Verte · accepté', amount: '6 740,00 €', icon: this.ic('doc') },
+        { label: 'FAC-2026-0140', sub: 'Sophie Laurent · en retard', amount: '540,00 €', icon: this.ic('invoice') },
+      ],
+      createMenu: [
+        { label: 'Devis', sub: 'Depuis le catalogue ou une ligne libre', icon: this.ic('doc'), onClick: this.go('composer'), iconStyle: 'width:30px; height:30px; border-radius:8px; background:#f1efff; color:#4f46e5; display:flex; align-items:center; justify-content:center' },
+        { label: 'Facture', sub: 'Ou convertir un devis accepté', icon: this.ic('invoice'), onClick: this.go('composer'), iconStyle: 'width:30px; height:30px; border-radius:8px; background:#f1efff; color:#4f46e5; display:flex; align-items:center; justify-content:center' },
+        { label: 'Client', sub: 'Recherche SIRET automatique', icon: this.ic('users'), onClick: this.go('clients'), iconStyle: 'width:30px; height:30px; border-radius:8px; background:#f3f5fa; color:#6b7490; display:flex; align-items:center; justify-content:center' },
+        { label: 'Produit ou prestation', sub: 'Fiche manuelle', icon: this.ic('box'), onClick: this.go('catalog'), iconStyle: 'width:30px; height:30px; border-radius:8px; background:#f3f5fa; color:#6b7490; display:flex; align-items:center; justify-content:center' },
+        { label: 'Créer depuis une image', sub: 'IA · fiche produit, catalogue ou étiquette', icon: this.ic('camera'), onClick: this.go('ai'), iconStyle: 'width:30px; height:30px; border-radius:8px; background:#f6f4ff; color:#4338ca; border:1px solid #c9c4f5; display:flex; align-items:center; justify-content:center' },
+        { label: 'Télécharger le modèle de tableur', sub: 'Étape 1 avant tout import Excel ou CSV', icon: this.ic('sheet'), onClick: this.go('ai'), iconStyle: 'width:30px; height:30px; border-radius:8px; background:#f6f4ff; color:#4338ca; border:1px solid #c9c4f5; display:flex; align-items:center; justify-content:center' },
+        { label: 'Importer le modèle rempli', sub: 'IA · vos lignes arrivent dans le catalogue', icon: this.ic('upload'), onClick: this.go('ai'), iconStyle: 'width:30px; height:30px; border-radius:8px; background:#f6f4ff; color:#4338ca; border:1px solid #c9c4f5; display:flex; align-items:center; justify-content:center' },
+      ],
+    };
+  }
+}
+</script>
+</body>
+</html>

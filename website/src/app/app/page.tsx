@@ -3,13 +3,16 @@
 import type { LucideIcon } from 'lucide-react';
 import {
   AlertCircle,
+  Camera,
   CheckCircle2,
   Clock,
+  Download,
   FileText,
   Hourglass,
   Package,
   Plus,
   Receipt,
+  Sparkles,
   TrendingUp,
   UserPlus,
   Wallet,
@@ -25,11 +28,12 @@ import {
   type DashboardTone,
 } from '@/components/app/dashboard-activity';
 import { EmptyState } from '@/components/app/empty-state';
-import { PrimaryLink, SecondaryLink } from '@/components/app/form-fields';
+import { PrimaryLink } from '@/components/app/form-fields';
 import { Skeleton } from '@/components/app/skeleton';
 import { Panel, StatCard } from '@/components/app/ui';
 import { useDashboard } from '@/hooks/use-dashboard';
 import { useSubscription } from '@/hooks/use-subscription';
+import { downloadSpreadsheetTemplate } from '@/lib/domain/catalog/spreadsheet-import';
 import { formatCurrency } from '@/lib/domain/format/currency';
 import { formatDate } from '@/lib/domain/format/date';
 import type { DashboardStats, Invoice, MonthlyRevenue } from '@/types/dashboard';
@@ -165,6 +169,42 @@ function MetricRow({ label, hint, value }: { label: string; hint?: string; value
         {value}
       </span>
     </div>
+  );
+}
+
+/**
+ * Bandeau IA du tableau de bord (§1.2) : sort l'import par image et l'import
+ * par tableur de l'éditeur, où ils étaient enfouis. Aucune requête nouvelle.
+ */
+function AiBanner() {
+  return (
+    <section className="mt-3.5 flex flex-wrap items-center gap-4 rounded-app-card border border-app-accent-border bg-[linear-gradient(100deg,#f6f4ff,#fdfdff)] px-[18px] py-4">
+      <span className="flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-app-control bg-app-accent-tint text-app-accent">
+        <Sparkles size={19} strokeWidth={1.75} />
+      </span>
+      <div className="min-w-[220px] flex-1">
+        <h2 className="text-[14.5px] font-semibold tracking-[-0.01em] text-app-text">
+          Gagnez du temps avec l’IA
+        </h2>
+        <p className="mt-0.5 text-[13px] text-app-text-2">
+          Lisez une fiche produit en image, ou remplissez le modèle de tableur INVEQ : vos lignes
+          arrivent dans le catalogue, vérifiables avant enregistrement.
+        </p>
+      </div>
+      <div className="flex flex-wrap items-center gap-2">
+        <PrimaryLink href="/app/ai?tool=image">
+          <Camera size={15} strokeWidth={1.9} />
+          Créer depuis une image
+        </PrimaryLink>
+        <button
+          className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-app-control border border-app-accent-border bg-app-surface px-3.5 py-[9px] text-[13px] font-semibold text-app-accent-strong transition-colors duration-150 hover:bg-app-accent-tint"
+          onClick={() => void downloadSpreadsheetTemplate('products')}
+          type="button">
+          <Download size={15} strokeWidth={1.9} />
+          Modèle de tableur
+        </button>
+      </div>
+    </section>
   );
 }
 
@@ -378,11 +418,6 @@ export default function DashboardPage() {
       <AppTopBar
         subtitle={`${companyName ?? 'Vue d’ensemble de votre activité'} · ${todayLabel}`}
         title={firstName ? `Bonjour, ${firstName}` : 'Tableau de bord'}>
-        <SecondaryLink href="/app/quotes?create=1">
-          <FileText className="text-app-accent-violet" size={15} strokeWidth={1.75} />
-          <span className="max-sm:hidden">Nouveau devis</span>
-          <span className="sm:hidden">Devis</span>
-        </SecondaryLink>
         <PrimaryLink href="/app/invoices?create=1">
           <Plus size={15} strokeWidth={2.25} />
           <span className="max-sm:hidden">Nouvelle facture</span>
@@ -448,6 +483,8 @@ export default function DashboardPage() {
             value={String(stats.lateInvoices)}
           />
         </div>
+
+        <AiBanner />
 
         <div className={cn(TWO_THIRDS_GRID, 'mt-3.5')}>
           <Panel

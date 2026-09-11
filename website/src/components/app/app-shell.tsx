@@ -4,10 +4,11 @@ import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useQueryClient, type QueryKey } from '@tanstack/react-query';
 import type { LucideIcon } from 'lucide-react';
-import { FileText, LayoutDashboard, LogOut, Plus, Receipt, Search, UserPlus, Users } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
+import { FileText, LayoutDashboard, LogOut, Plus, Receipt, Search, Users } from 'lucide-react';
+import { useCallback, useMemo, useState, useSyncExternalStore } from 'react';
 
 import { useCommandPalette } from '@/components/app/command-palette';
+import { CreateMenuModal } from '@/components/app/create-menu';
 import { CompanySwitcher } from '@/components/app/company-switcher';
 import { PrimaryButton } from '@/components/app/form-fields';
 import { BrandMark, BrandWordmark } from '@/components/brand/brand-logo';
@@ -19,12 +20,6 @@ import { useAuth } from '@/providers/auth-provider';
 import { useTenant } from '@/providers/company-provider';
 import type { SubscriptionSnapshot } from '@/types/subscription';
 import { cn } from '@/lib/utils';
-
-const CREATE_ITEMS: { href: string; label: string; icon: LucideIcon }[] = [
-  { href: '/app/quotes?create=1', label: 'Devis', icon: FileText },
-  { href: '/app/invoices?create=1', label: 'Facture', icon: Receipt },
-  { href: '/app/clients/new', label: 'Client', icon: UserPlus },
-];
 
 const NAV_ITEM_BASE =
   'flex h-9 w-full items-center gap-2.5 rounded-app-field px-2.5 text-[13.5px] transition-colors duration-150';
@@ -224,64 +219,20 @@ export function AppSidebar() {
 
 function CreateMenu({ compact = false }: { compact?: boolean }) {
   const [open, setOpen] = useState(false);
-  const rootRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-
-    function onPointerDown(event: MouseEvent) {
-      if (!rootRef.current?.contains(event.target as Node)) setOpen(false);
-    }
-    function onKeyDown(event: KeyboardEvent) {
-      if (event.key === 'Escape') setOpen(false);
-    }
-
-    document.addEventListener('mousedown', onPointerDown);
-    document.addEventListener('keydown', onKeyDown);
-    return () => {
-      document.removeEventListener('mousedown', onPointerDown);
-      document.removeEventListener('keydown', onKeyDown);
-    };
-  }, [open]);
 
   return (
-    <div className="relative" ref={rootRef}>
+    <>
       <PrimaryButton
         aria-expanded={open}
-        aria-haspopup="menu"
+        aria-haspopup="dialog"
         className={cn('w-full py-2.5 text-[13.5px]', compact && 'px-0')}
-        onClick={() => setOpen((value) => !value)}
+        onClick={() => setOpen(true)}
         title="Créer">
         <Plus size={16} strokeWidth={2.25} />
         <span className={cn(compact && 'hidden lg:inline')}>Créer</span>
       </PrimaryButton>
-
-      {open ? (
-        <div
-          className={cn(
-            'absolute z-40 mt-1.5 overflow-hidden rounded-app-control border border-app-border bg-app-surface p-1.5 shadow-app-float',
-            compact
-              ? 'left-full top-0 ml-2 w-48 min-[900px]:max-lg:mt-0'
-              : 'left-0 right-0',
-          )}
-          role="menu">
-          {CREATE_ITEMS.map((item) => {
-            const Icon = item.icon;
-            return (
-              <Link
-                className="flex items-center gap-2.5 rounded-app-field px-2.5 py-2 text-[13px] font-medium text-app-text-2 transition-colors duration-150 hover:bg-app-accent-soft hover:text-app-accent"
-                href={item.href}
-                key={item.href}
-                onClick={() => setOpen(false)}
-                role="menuitem">
-                <Icon className="shrink-0 text-app-accent" size={15} strokeWidth={1.75} />
-                {item.label}
-              </Link>
-            );
-          })}
-        </div>
-      ) : null}
-    </div>
+      <CreateMenuModal onClose={() => setOpen(false)} open={open} />
+    </>
   );
 }
 
@@ -307,7 +258,7 @@ export function AppTopBar({
               {title}
             </h1>
             {count !== undefined && count !== null ? (
-              <span className="app-num shrink-0 rounded-app-chip bg-app-border-soft px-2 py-0.5 text-[11px] font-semibold text-app-muted">
+              <span className="app-num shrink-0 rounded-app-chip bg-app-accent-tint px-[9px] py-0.5 text-[11.5px] font-semibold text-app-accent-strong">
                 {count}
               </span>
             ) : null}
@@ -364,54 +315,19 @@ function isBottomNavActive(pathname: string, href: string) {
 
 function BottomCreateButton() {
   const [open, setOpen] = useState(false);
-  const rootRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    function onPointerDown(event: MouseEvent) {
-      if (!rootRef.current?.contains(event.target as Node)) setOpen(false);
-    }
-    function onKeyDown(event: KeyboardEvent) {
-      if (event.key === 'Escape') setOpen(false);
-    }
-    document.addEventListener('mousedown', onPointerDown);
-    document.addEventListener('keydown', onKeyDown);
-    return () => {
-      document.removeEventListener('mousedown', onPointerDown);
-      document.removeEventListener('keydown', onKeyDown);
-    };
-  }, [open]);
 
   return (
-    <div className="relative flex flex-1 justify-center" ref={rootRef}>
+    <div className="relative flex flex-1 justify-center">
       <button
         aria-expanded={open}
+        aria-haspopup="dialog"
         aria-label="Créer"
         className="flex h-11 w-11 items-center justify-center rounded-[14px] bg-app-accent text-white shadow-app-primary"
-        onClick={() => setOpen((value) => !value)}
+        onClick={() => setOpen(true)}
         type="button">
         <Plus size={21} strokeWidth={2.25} />
       </button>
-      {open ? (
-        <div
-          className="absolute bottom-[calc(100%+8px)] left-1/2 z-40 w-48 -translate-x-1/2 overflow-hidden rounded-app-control border border-app-border bg-app-surface p-1.5 shadow-app-float"
-          role="menu">
-          {CREATE_ITEMS.map((item) => {
-            const Icon = item.icon;
-            return (
-              <Link
-                className="flex items-center gap-2.5 rounded-app-field px-2.5 py-2.5 text-[13px] font-medium text-app-text-2 transition-colors duration-150 hover:bg-app-accent-soft hover:text-app-accent"
-                href={item.href}
-                key={item.href}
-                onClick={() => setOpen(false)}
-                role="menuitem">
-                <Icon className="shrink-0 text-app-accent" size={15} strokeWidth={1.75} />
-                {item.label}
-              </Link>
-            );
-          })}
-        </div>
-      ) : null}
+      <CreateMenuModal onClose={() => setOpen(false)} open={open} />
     </div>
   );
 }

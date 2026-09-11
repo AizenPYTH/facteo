@@ -7,6 +7,7 @@ import {
   Package,
   Receipt,
   Settings,
+  Sparkles,
   Users,
   Wrench,
 } from 'lucide-react';
@@ -57,6 +58,13 @@ export const APP_NAV_SECTIONS: AppNavSection[] = [
         icon: Building2,
         matchPrefixes: ['/app/companies'],
       },
+    ],
+  },
+  {
+    id: 'assistant',
+    label: 'Assistant',
+    items: [
+      { href: '/app/ai', label: 'Outils IA', icon: Sparkles, matchPrefixes: ['/app/ai'] },
     ],
   },
 ];

@@ -19,6 +19,16 @@ import { cn } from '@/lib/utils';
 
 type PeriodId = 'month' | 'quarter' | 'year';
 
+/** Chips de moyen de paiement (§Barre d'outils de liste) : filtrage local, aucune requête. */
+type MethodId = 'all' | 'transfer' | 'card' | 'stripe';
+
+const METHODS: { id: MethodId; label: string; match: (method: string | null) => boolean }[] = [
+  { id: 'all', label: 'Tous les moyens', match: () => true },
+  { id: 'transfer', label: 'Virement', match: (method) => method === 'bank_transfer' },
+  { id: 'card', label: 'Carte', match: (method) => method === 'card' },
+  { id: 'stripe', label: 'Stripe', match: (method) => method === 'stripe' },
+];
+
 const PERIODS: { id: PeriodId; label: string; caption: string }[] = [
   { id: 'month', label: 'Ce mois', caption: 'mois en cours' },
   { id: 'quarter', label: 'Trimestre', caption: 'trimestre en cours' },
@@ -27,6 +37,31 @@ const PERIODS: { id: PeriodId; label: string; caption: string }[] = [
 
 function plural(count: number) {
   return count > 1 ? 's' : '';
+}
+
+function FilterChip({
+  active,
+  label,
+  onClick,
+}: {
+  active: boolean;
+  label: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      aria-pressed={active}
+      className={cn(
+        'inline-flex items-center gap-1.5 whitespace-nowrap rounded-app-chip border px-[13px] py-[7px] text-[12.5px] font-semibold transition-colors duration-150',
+        active
+          ? 'border-app-accent-border bg-app-accent-tint text-app-accent-strong'
+          : 'border-app-border bg-app-surface text-app-text-2 hover:border-app-accent-border',
+      )}
+      onClick={onClick}
+      type="button">
+      {label}
+    </button>
+  );
 }
 
 function periodStart(period: PeriodId): Date {
@@ -51,6 +86,7 @@ function paymentMethodLabel(method: string | null): string {
 
 export default function PaymentsPage() {
   const [period, setPeriod] = useState<PeriodId>('month');
+  const [method, setMethod] = useState<MethodId>('all');
   const { stats, loading: dashboardLoading } = useDashboard();
   const query = useInfiniteInvoices('', 'paid');
 
@@ -64,13 +100,19 @@ export default function PaymentsPage() {
   /** Le sélecteur de période filtre les encaissements déjà chargés : aucune requête supplémentaire. */
   const visible = useMemo(() => {
     const start = periodStart(period).getTime();
+    const methodFilter = METHODS.find((item) => item.id === method)!.match;
     return invoices.filter((invoice) => {
       const reference = invoice.paidAt ?? invoice.issuedAt;
       if (!reference) return false;
       const time = new Date(reference).getTime();
-      return Number.isFinite(time) && time >= start;
+      return Number.isFinite(time) && time >= start && methodFilter(invoice.paymentMethod);
     });
-  }, [invoices, period]);
+  }, [invoices, method, period]);
+
+  const visibleTotal = useMemo(
+    () => visible.reduce((sum, invoice) => sum + invoice.totalTtc, 0),
+    [visible],
+  );
 
   const caption = PERIODS.find((item) => item.id === period)!.caption;
 
@@ -101,7 +143,32 @@ export default function PaymentsPage() {
             : null
         }
         subtitle="Factures réglées et suivi des montants attendus"
-        title="Paiements">
+        title="Paiements"
+        toolbar={
+          <>
+            <div className="flex flex-wrap items-center gap-1.5">
+              {PERIODS.map((item) => (
+                <FilterChip
+                  active={item.id === period}
+                  key={item.id}
+                  label={item.label}
+                  onClick={() => setPeriod(item.id)}
+                />
+              ))}
+            </div>
+            <span className="hidden h-5 w-px bg-app-border sm:block" />
+            <div className="flex flex-wrap items-center gap-1.5">
+              {METHODS.map((item) => (
+                <FilterChip
+                  active={item.id === method}
+                  key={item.id}
+                  label={item.label}
+                  onClick={() => setMethod(item.id)}
+                />
+              ))}
+            </div>
+          </>
+        }>
         <PrimaryLink href="/app/invoices?status=sent">
           <Plus size={16} />
           Enregistrer un paiement
@@ -157,29 +224,7 @@ export default function PaymentsPage() {
           />
         </div>
 
-        <Panel
-          action={
-            <div className="flex gap-1 rounded-app-field bg-app-border-soft p-[3px]">
-              {PERIODS.map((item) => (
-                <button
-                  aria-pressed={item.id === period}
-                  className={cn(
-                    'rounded-[7px] px-2.5 py-[5px] text-[12px] font-semibold transition-colors duration-150',
-                    item.id === period
-                      ? 'bg-app-surface text-app-text'
-                      : 'text-app-muted-2 hover:text-app-text-2',
-                  )}
-                  key={item.id}
-                  onClick={() => setPeriod(item.id)}
-                  type="button">
-                  {item.label}
-                </button>
-              ))}
-            </div>
-          }
-          bodyClassName="p-0"
-          className="mt-3.5"
-          title="Encaissements">
+        <Panel bodyClassName="p-0" className="mt-3.5" title="Encaissements">
           {query.isLoading ? (
             <div className="p-[18px]">
               <TableSkeleton rows={6} />
@@ -247,7 +292,7 @@ export default function PaymentsPage() {
 
               <div className="flex flex-wrap items-center justify-between gap-3 border-t border-app-border-soft px-6 py-3.5">
                 <p className="app-num text-[12.5px] text-app-muted-2">
-                  {`${visible.length} encaissement${plural(visible.length)} sur le ${caption}`}
+                  {`${visible.length} encaissement${plural(visible.length)} · ${formatCurrency(visibleTotal)} sur le ${caption}`}
                   {totalCount !== null ? ` · ${totalCount} au total` : ''}
                 </p>
                 {query.hasNextPage ? (

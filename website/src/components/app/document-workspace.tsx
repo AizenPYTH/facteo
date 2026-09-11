@@ -21,6 +21,7 @@ import {
   Receipt,
   Send,
   Share2,
+  Upload,
   type LucideIcon,
 } from 'lucide-react';
 import {
@@ -47,6 +48,7 @@ import {
   PrimaryButton,
   PrimaryLink,
   SecondaryButton,
+  SecondaryLink,
 } from '@/components/app/form-fields';
 import { StatusBadge } from '@/components/app/status-badge';
 import { DataTable, type DataTableColumn } from '@/components/app/ui';
@@ -927,6 +929,10 @@ export function InvoicesWorkspace() {
             status={status}
           />
         }>
+        <SecondaryLink className="whitespace-nowrap" href="/app/ai?tool=spreadsheet">
+          <Upload size={15} strokeWidth={1.9} />
+          Importer
+        </SecondaryLink>
         <PrimaryLink href="/app/invoices?create=1">
           <Plus size={16} />
           Nouvelle facture
@@ -1304,6 +1310,10 @@ export function QuotesWorkspace() {
             status={status}
           />
         }>
+        <SecondaryLink className="whitespace-nowrap" href="/app/ai?tool=spreadsheet">
+          <Upload size={15} strokeWidth={1.9} />
+          Importer
+        </SecondaryLink>
         <PrimaryLink href="/app/quotes?create=1">
           <Plus size={16} />
           Nouveau devis

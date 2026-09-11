@@ -2,7 +2,7 @@
 
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import type { LucideIcon } from 'lucide-react';
-import { Building2, FileText, Receipt, Search, UserPlus, Users } from 'lucide-react';
+import { Building2, Camera, FileText, Receipt, Search, Table, Upload, UserPlus, Users } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import {
   createContext,
@@ -21,6 +21,7 @@ import { useDebouncedValue } from '@/hooks/use-debounced-value';
 import { useInfiniteClients } from '@/hooks/use-clients';
 import { useInfiniteInvoices } from '@/hooks/use-invoices';
 import { useInfiniteQuotes } from '@/hooks/use-quotes';
+import { downloadSpreadsheetTemplate } from '@/lib/domain/catalog/spreadsheet-import';
 import { getClientDisplayName, getClientSecondaryLabel } from '@/lib/domain/clients/name';
 import { formatCurrency } from '@/lib/domain/format/currency';
 import { useCompany } from '@/providers/company-provider';
@@ -276,6 +277,21 @@ function CommandPalettePanel({
           icon={UserPlus}
           label="Ajouter un client"
           onSelect={() => goTo('/app/clients/new')}
+        />
+        <PaletteAction
+          icon={Camera}
+          label="Créer un produit depuis une image"
+          onSelect={() => goTo('/app/ai?tool=image')}
+        />
+        <PaletteAction
+          icon={Table}
+          label="Télécharger le modèle de tableur"
+          onSelect={() => run(() => void downloadSpreadsheetTemplate('products'))}
+        />
+        <PaletteAction
+          icon={Upload}
+          label="Importer le modèle rempli"
+          onSelect={() => goTo('/app/ai?tool=spreadsheet')}
         />
         {otherCompanies.length > 0 ? (
           otherCompanies.map((company) => (
