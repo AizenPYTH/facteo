@@ -1,4 +1,4 @@
-import { parseDecimalInput } from '@/lib/format/decimal';
+import { parseDecimalInput, parseVatRateInput } from '@/lib/format/decimal';
 import { formatDecimalForInput } from '@/types/quote';
 import type { QuoteItemRow } from '@/types/database';
 import type { QuoteLineValue } from '@/types/quote';
@@ -59,7 +59,7 @@ export function isInvoiceLineValid(line: InvoiceLineValue): boolean {
 
   const quantity = parseDecimalInput(line.quantity);
   const unitPrice = parseDecimalInput(line.unitPrice);
-  const vatRate = parseDecimalInput(line.vatRate);
+  const vatRate = parseVatRateInput(line.vatRate);
   const discount = parseDecimalInput(line.discountPercent || '0');
 
   return (
