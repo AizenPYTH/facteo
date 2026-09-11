@@ -3,6 +3,7 @@ import { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { TextField } from '@/components/ui/text-field';
+import { VatRateSlider } from '@/components/ui/vat-rate-slider';
 import { useColors, useThemedStyles } from '@/hooks/use-colors';
 import { radius } from '@/constants/theme/radius';
 import { spacing } from '@/constants/theme/spacing';
@@ -72,12 +73,7 @@ export function QuoteLine({ index, value, onChange, onRemove }: QuoteLineProps) 
         </View>
       </View>
 
-      <TextField
-        keyboardType="decimal-pad"
-        label="TVA (%)"
-        onChangeText={(text) => updateField('vatRate', text)}
-        value={value.vatRate}
-      />
+      <VatRateSlider onChange={(vatRate) => updateField('vatRate', vatRate)} value={value.vatRate} />
 
       <View style={styles.totals}>
         <Text style={styles.totalsLabel}>

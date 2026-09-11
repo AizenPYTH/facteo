@@ -22,7 +22,6 @@ import {
 } from '@/components/app/document-composer/composer-header';
 import { ComposerErrorBanner } from '@/components/app/document-composer/field-errors';
 import { ComposerLinesCard, type LineFieldName } from '@/components/app/document-composer/lines-card';
-import { ComposerPreviewColumn } from '@/components/app/document-composer/preview-column';
 import { ComposerTemplateBar } from '@/components/app/document-composer/template-bar';
 import { ComposerTermsCard } from '@/components/app/document-composer/terms-card';
 import {
@@ -53,7 +52,6 @@ import { clientsQueryKeys, invoicesQueryKeys, quotesQueryKeys } from '@/lib/doma
 import { analyzeProductImage, type ProductImageAnalysis } from '@/lib/domain/ai/product-image-analysis';
 import { calculateLineTotals } from '@/lib/calculations/totals';
 import { getDefaultComposerTemplateId } from '@/lib/domain/pdf/composer-templates';
-import type { DraftDocumentInput } from '@/lib/domain/pdf/draft-pdf';
 import { requireScope } from '@/lib/domain/tenant/scope';
 import { createEmptyInvoiceLine } from '@inveq/types/invoice';
 import { createEmptyQuoteLine, createLocalLineId } from '@inveq/types/quote';
@@ -634,21 +632,6 @@ export function DocumentComposer({ kind }: { kind: 'invoice' | 'quote' }) {
       ? 'saved'
       : 'draft';
 
-  const draft: DraftDocumentInput = {
-    kind,
-    clientId,
-    notes,
-    templateId,
-    lines: lines.map((line) => ({
-      description: line.description,
-      quantity: line.quantity,
-      unit: line.unit,
-      unitPrice: line.unitPrice,
-      vatRate: line.vatRate,
-      discountPercent: line.discountPercent,
-    })),
-  };
-
   const bannerMessages = [fieldErrors.clientId, fieldErrors.linesGlobal].filter(
     (message): message is string => Boolean(message),
   );
@@ -671,6 +654,12 @@ export function DocumentComposer({ kind }: { kind: 'invoice' | 'quote' }) {
   );
 
   const termsCard = <ComposerTermsCard kind={kind} paymentTermsDays={paymentTermsDays} />;
+
+  const templateCard = (
+    <ComposerCard title="Modèle PDF">
+      <ComposerTemplateBar onChange={setTemplateId} value={templateId} />
+    </ComposerCard>
+  );
 
   const notesCard = (
     <ComposerCard title="Notes affichées sur le document">
@@ -776,9 +765,7 @@ export function DocumentComposer({ kind }: { kind: 'invoice' | 'quote' }) {
                 paymentTermsDays={paymentTermsDays}
                 totals={totals}
               />
-              <ComposerCard title="Modèle PDF">
-                <ComposerTemplateBar onChange={setTemplateId} value={templateId} />
-              </ComposerCard>
+              {templateCard}
             </>
           ) : null}
         </ComposerWizardShell>
@@ -787,23 +774,15 @@ export function DocumentComposer({ kind }: { kind: 'invoice' | 'quote' }) {
           {/* Le retrait haut vit dans le contenu : sur le conteneur, il décalerait l’ancrage de l’en-tête collant des lignes. */}
           <div className="pt-4">
             {errorBanner}
-            <div className="grid grid-cols-1 items-start gap-3.5 min-[900px]:grid-cols-[280px_minmax(0,1fr)] xl:grid-cols-[300px_minmax(0,1fr)_300px]">
+            <div className="grid grid-cols-1 items-start gap-3.5 min-[900px]:grid-cols-[280px_minmax(0,1fr)] xl:grid-cols-[300px_minmax(0,1fr)]">
               <div className="flex min-w-0 flex-col gap-3">
                 {clientCard}
                 {termsCard}
                 {notesCard}
+                {templateCard}
               </div>
 
               {linesCard}
-
-              <ComposerPreviewColumn
-                className="min-[900px]:col-span-2 min-[900px]:grid min-[900px]:grid-cols-2 xl:col-span-1 xl:flex"
-                draft={draft}
-                onTemplateChange={setTemplateId}
-                scope={scope}
-                templateId={templateId}
-                userEmail={user?.email}
-              />
             </div>
           </div>
         </div>
