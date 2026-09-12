@@ -156,7 +156,7 @@ export default function EInvoicingSettingsScreen() {
         {!connected ? (
           <Button
             disabled={busy || !companyId}
-            label={busy ? 'Connexion…' : 'Connecter SUPER PDP'}
+            title={busy ? 'Connexion…' : 'Connecter SUPER PDP'}
             onPress={() => void handleConnect()}
             style={styles.button}
           />
@@ -182,33 +182,33 @@ export default function EInvoicingSettingsScreen() {
               <Text style={styles.meta}>Environnement SUPER PDP : {connection.remote_env}</Text>
             ) : null}
             {connection?.last_error ? (
-              <Text style={[styles.meta, { color: colors.danger }]}>{connection.last_error}</Text>
+              <Text style={[styles.meta, { color: colors.error }]}>{connection.last_error}</Text>
             ) : null}
 
             <Button
               disabled={busy}
-              label="Vérifier la connexion"
+              title="Vérifier la connexion"
               onPress={() => void handleVerify()}
               style={styles.button}
               variant="ghost"
             />
             <Button
               disabled={busy}
-              label="Synchroniser"
+              title="Synchroniser"
               onPress={() => void handleSync()}
               style={styles.button}
               variant="ghost"
             />
             <Button
               disabled={busy}
-              label="Factures reçues"
+              title="Factures reçues"
               onPress={() => router.push('/settings/e-invoicing-received' as Href)}
               style={styles.button}
               variant="ghost"
             />
             <Button
               disabled={busy}
-              label="Déconnecter"
+              title="Déconnecter"
               onPress={handleDisconnect}
               style={styles.button}
               variant="ghost"
@@ -237,7 +237,7 @@ function useStyles() {
         paddingHorizontal: spacing.md,
       },
       status: {
-        ...typography.subtitle,
+        ...typography.subheadlineMedium,
         fontWeight: '600',
         marginBottom: spacing.md,
         paddingHorizontal: spacing.md,

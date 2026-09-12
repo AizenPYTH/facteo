@@ -94,6 +94,7 @@ export function QuotesDesktopScreen() {
   );
 
   const [previewUri, setPreviewUri] = useState<string | null>(null);
+  const [previewHtml, setPreviewHtml] = useState<string | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
   const [previewError, setPreviewError] = useState<string | null>(null);
   const [previewVersion, setPreviewVersion] = useState(0);
@@ -104,12 +105,14 @@ export function QuotesDesktopScreen() {
     documentNumber: selectedQuote?.number ?? '',
     clientEmail: selectedQuote?.clientEmail,
     clientName: selectedQuote?.clientName ?? '',
+    documentUpdatedAt: selectedQuote?.updatedAt,
     buildHtml,
   });
 
   useEffect(() => {
     let active = true;
     setPreviewUri(null);
+    setPreviewHtml(null);
     setPreviewError(null);
 
     if (!selectedQuote || !scope) {
@@ -122,15 +125,17 @@ export function QuotesDesktopScreen() {
       try {
         const html = (await buildHtml()).trim();
         if (!html) throw new Error('Données insuffisantes pour générer le PDF.');
-        const { generateHtmlAsPdf } = await import('@/lib/pdf/share');
-        const pdf = await generateHtmlAsPdf(html, `${selectedQuote.number}.pdf`);
+        const { generatePdfFromHtml } = await import('@/lib/pdf/output');
+        const pdf = await generatePdfFromHtml(html, `${selectedQuote.number}.pdf`);
         if (active) {
           setPreviewUri(pdf.uri);
+          setPreviewHtml(pdf.html);
           setPreviewError(null);
         }
       } catch (error) {
         if (active) {
           setPreviewUri(null);
+          setPreviewHtml(null);
           setPreviewError(
             error instanceof Error ? error.message : 'Impossible de générer l’aperçu.',
           );
@@ -249,6 +254,7 @@ export function QuotesDesktopScreen() {
             error={previewError}
             loading={previewLoading}
             onRetry={() => setPreviewVersion((v) => v + 1)}
+            pdfHtml={previewHtml}
             pdfUri={previewUri}
             title={selectedQuote?.number ?? 'Aperçu PDF'}
           />
@@ -257,17 +263,17 @@ export function QuotesDesktopScreen() {
             documentId={selectedId ?? ''}
             documentNumber={selectedQuote?.number ?? ''}
             documentType="quote"
-            downloadLoading={documentActions.loading}
+            downloadLoading={documentActions.isBusy('download')}
             duplicateLoading={duplicateQuote.isPending}
-            onDownload={() => void documentActions.handleShare()}
+            onDownload={documentActions.handleDownload}
             onDuplicate={() => void handleDuplicate()}
             onEdit={
               selectedQuote
                 ? () => router.push(`/quotes/${selectedQuote.id}/edit` as Href)
                 : undefined
             }
-            onSend={() => void documentActions.handleSendEmail()}
-            sendLoading={documentActions.emailLoading}
+            onSend={documentActions.handleSendEmail}
+            sendLoading={documentActions.isBusy('email')}
           />
         </View>
       </View>

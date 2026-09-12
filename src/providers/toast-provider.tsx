@@ -7,17 +7,16 @@ import {
   useState,
   type PropsWithChildren,
 } from 'react';
-import { StyleSheet } from 'react-native';
 import Animated, { FadeInUp, FadeOutUp } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { useColors, useThemedStyles } from '@/hooks/use-colors';
+import { useThemedStyles } from '@/hooks/use-colors';
 import { radius } from '@/constants/theme/radius';
 import { spacing } from '@/constants/theme/spacing';
 import { typography } from '@/constants/theme/typography';
 import { GENERIC_ERROR_MESSAGE } from '@/lib/errors/messages';
 
-type ToastType = 'success' | 'error';
+type ToastType = 'success' | 'error' | 'info';
 
 type ToastState = {
   id: number;
@@ -28,6 +27,12 @@ type ToastState = {
 type ToastContextValue = {
   showSuccess: (message: string) => void;
   showError: (message: string) => void;
+  /**
+   * Information neutre : ni réussite ni panne. Sert notamment aux actions
+   * indisponibles sur la plateforme (impression sur web, partage absent),
+   * qu'il serait faux d'annoncer comme une erreur ou comme un succès.
+   */
+  showInfo: (message: string) => void;
 };
 
 const ToastContext = createContext<ToastContextValue | undefined>(undefined);
@@ -45,7 +50,6 @@ function formatSuccessMessage(message: string): string {
 
 export function ToastProvider({ children }: PropsWithChildren) {
   const styles = useStyles();
-  const colors = useColors();
   const [toast, setToast] = useState<ToastState | null>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const insets = useSafeAreaInsets();
@@ -77,6 +81,7 @@ export function ToastProvider({ children }: PropsWithChildren) {
       showSuccess: (message) => showToast('success', formatSuccessMessage(message)),
       showError: (message) =>
         showToast('error', message.trim() || GENERIC_ERROR_MESSAGE),
+      showInfo: (message) => showToast('info', message.trim()),
     }),
     [showToast],
   );
@@ -91,13 +96,21 @@ export function ToastProvider({ children }: PropsWithChildren) {
           style={[
             styles.container,
             { top: insets.top + spacing.sm },
-            toast.type === 'success' ? styles.success : styles.error,
+            toast.type === 'success'
+              ? styles.success
+              : toast.type === 'error'
+                ? styles.error
+                : styles.info,
           ]}>
           <Animated.Text
             accessibilityLiveRegion="polite"
             style={[
               styles.message,
-              toast.type === 'success' ? styles.successMessage : styles.errorMessage,
+              toast.type === 'success'
+                ? styles.successMessage
+                : toast.type === 'error'
+                  ? styles.errorMessage
+                  : styles.infoMessage,
             ]}>
             {toast.message}
           </Animated.Text>
@@ -108,7 +121,6 @@ export function ToastProvider({ children }: PropsWithChildren) {
 }
 
 export function useToast() {
-  const styles = useStyles();
   const context = useContext(ToastContext);
 
   if (!context) {
@@ -138,6 +150,10 @@ function useStyles() {
     backgroundColor: colors.errorSubtle,
     borderColor: colors.error,
   },
+  info: {
+    backgroundColor: colors.backgroundSecondary,
+    borderColor: colors.border,
+  },
   message: {
     ...typography.subheadlineMedium,
     textAlign: 'center',
@@ -147,6 +163,9 @@ function useStyles() {
   },
   errorMessage: {
     color: colors.error,
+  },
+  infoMessage: {
+    color: colors.text,
   },
 }));
 }

@@ -93,6 +93,7 @@ export async function buildQuotePdfInput(
     client: client ?? fallbackClient(quote.clientName),
     settings,
     showPaymentQr: false,
+    status: quote.status,
     clientSignature: documentSignature
       ? { url: documentSignature.signatureUrl, signedAt: documentSignature.signedAt }
       : null,
@@ -129,6 +130,7 @@ export async function buildInvoicePdfInput(
     client: client ?? fallbackClient(invoice.clientName),
     settings,
     showPaymentQr: true,
+    status: invoice.status,
     clientSignature: documentSignature
       ? { url: documentSignature.signatureUrl, signedAt: documentSignature.signedAt }
       : null,

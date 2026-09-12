@@ -8,15 +8,7 @@ import {
   type SetStateAction,
 } from 'react';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
-import {
-  Alert,
-  FlatList,
-  Linking,
-  Platform,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { Alert, Linking, Platform, Text, View } from 'react-native';
 
 import {
   ProductAnalysisConfirmationModal,
@@ -182,9 +174,10 @@ export function QuoteAddLinesStep({
       });
 
       onAddLine({
-        id: createEmptyQuoteLine().id,
+        ...createEmptyQuoteLine(),
         productId: product.id,
-        description: title || description || product.name,
+        title: title || product.name,
+        description: title ? description : description || product.name,
         quantity: formatDecimalForInput(quantity),
         unit,
         unitPrice: priceHt === null ? '' : formatDecimalForInput(priceHt),
@@ -204,7 +197,7 @@ export function QuoteAddLinesStep({
   const listHeader = (
     <View style={styles.headerSection}>
       <Text style={styles.description}>
-        Ajoutez vos prestations : description, quantité, prix HT et TVA.
+        Ajoutez vos prestations : titre, description, quantité, prix HT et TVA.
       </Text>
 
       <Button onPress={handleAddPrestation} title="Ajouter une prestation" />
@@ -227,7 +220,7 @@ export function QuoteAddLinesStep({
   if (lines.length === 0) {
     return (
       <>
-        <View style={styles.container}>
+        <View style={[styles.container, { paddingBottom: footerInset }]}>
           {listHeader}
           <View style={styles.emptyPrestations}>
             <Text style={styles.emptyPrestationsText}>
@@ -256,27 +249,31 @@ export function QuoteAddLinesStep({
 
   return (
     <>
-      <FlatList
-        contentContainerStyle={styles.listContent}
-        data={lines}
-        keyExtractor={(item) => item.id}
-        keyboardDismissMode="on-drag"
+      {/*
+        Un seul conteneur de défilement, et c'est `KeyboardAwareScrollView`.
+        Le nombre de prestations d'un devis se compte en unités : la
+        virtualisation d'une FlatList n'apporte rien, alors qu'imbriquer une
+        FlatList dans un scroll géré par le clavier empêchait la librairie de
+        mesurer correctement le champ actif.
+      */}
+      <KeyboardAwareScrollView
+        bottomOffset={spacing.lg}
+        contentContainerStyle={[styles.listContent, { paddingBottom: footerInset + spacing.lg }]}
+        keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
         keyboardShouldPersistTaps="handled"
-        nestedScrollEnabled
-        ListHeaderComponent={listHeader}
-        renderItem={({ item, index }) => (
+        showsVerticalScrollIndicator={false}
+        style={styles.container}>
+        {listHeader}
+        {lines.map((item, index) => (
           <QuoteLine
             index={index}
+            key={item.id}
             onChange={(updatedLine) => onChangeLine(index, updatedLine)}
             onRemove={() => onRemoveLine(index)}
             value={item}
           />
-        )}
-        renderScrollComponent={(props) => (
-          <KeyboardAwareScrollView {...props} bottomOffset={footerInset} keyboardShouldPersistTaps="handled" />
-        )}
-        showsVerticalScrollIndicator={false}
-      />
+        ))}
+      </KeyboardAwareScrollView>
       {actionSheetNode}
       <ProductAnalysisLoadingModal progress={analysisProgress} visible={isAnalyzing} />
       {analysisDraft && analysisImageUri ? (
@@ -302,8 +299,8 @@ function useStyles() {
     flex: 1,
   },
   listContent: {
+    flexGrow: 1,
     gap: spacing.lg,
-    paddingBottom: spacing.lg,
   },
   headerSection: {
     gap: spacing.lg,

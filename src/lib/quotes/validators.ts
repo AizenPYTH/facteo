@@ -1,19 +1,29 @@
 import { z } from 'zod';
 
 import { frenchDateInputToIso } from '@/lib/format/date-input';
+import { hasLineDesignation } from '@/lib/documents/line-mappers';
 import { parseDecimalInput, parseVatRateInput } from '@/lib/format/decimal';
 import type { QuoteInfoValues, QuoteLineValue } from '@/types/quote';
 
 export function isQuoteLineValid(line: QuoteLineValue): boolean {
-  if (!line.description.trim() || !line.unit.trim()) {
+  if (!hasLineDesignation(line) || !line.unit.trim()) {
     return false;
   }
 
   const quantity = parseDecimalInput(line.quantity);
   const unitPrice = parseDecimalInput(line.unitPrice);
+  // Champ TVA vide = 0 % : l'utilisateur n'a pas à écrire « 0 ».
   const vatRate = parseVatRateInput(line.vatRate);
+  const discount = line.discountPercent.trim() ? parseDecimalInput(line.discountPercent) : 0;
 
-  return quantity > 0 && unitPrice >= 0 && vatRate >= 0 && vatRate <= 100;
+  return (
+    quantity > 0 &&
+    unitPrice >= 0 &&
+    vatRate >= 0 &&
+    vatRate <= 100 &&
+    discount >= 0 &&
+    discount <= 100
+  );
 }
 
 export function areQuoteLinesValid(lines: QuoteLineValue[]): boolean {

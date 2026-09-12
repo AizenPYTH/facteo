@@ -10,7 +10,12 @@ import { spacing } from '@/constants/theme/spacing';
 import { typography } from '@/constants/theme/typography';
 import { formatDate } from '@/lib/format/date';
 import { formatPriceHT } from '@/lib/format/currency';
+import { parseAmountInput, parseVatRateForTotals } from '@/lib/format/decimal';
 import { mapInvoiceLineValueToTotals, mapInvoiceLinesToDocumentTotals } from '@/lib/invoices/mappers';
+import {
+  formatElectronicInvoiceStatus,
+  isElectronicInvoiceFailed,
+} from '@/lib/superpdp/status';
 import type { InvoiceDetail } from '@/types/invoice';
 
 import { InvoiceStatusBadge } from './invoice-status-badge';
@@ -31,6 +36,7 @@ export function InvoiceDetailView({
   const styles = useStyles();
   const colors = useColors();
   const totals = mapInvoiceLinesToDocumentTotals(invoice.lines);
+  const electronicStatusLabel = formatElectronicInvoiceStatus(invoice.electronicInvoiceStatus);
 
   return (
     <View style={[styles.container, style]}>
@@ -59,18 +65,21 @@ export function InvoiceDetailView({
           {invoice.paidAt ? (
             <QuoteField label="Date de paiement" value={formatDate(invoice.paidAt)} />
           ) : null}
-          {invoice.electronicInvoiceStatus ? (
+          {electronicStatusLabel ? (
             <QuoteField
               label="Facture électronique"
               value={
                 invoice.superpdpInvoiceId
-                  ? `${invoice.electronicInvoiceStatus} · SUPER PDP #${invoice.superpdpInvoiceId}`
-                  : invoice.electronicInvoiceStatus
+                  ? `${electronicStatusLabel} · réf. ${invoice.superpdpInvoiceId}`
+                  : electronicStatusLabel
               }
             />
           ) : null}
-          {invoice.electronicInvoiceLastError ? (
-            <QuoteField label="Erreur e-facture" value={invoice.electronicInvoiceLastError} />
+          {invoice.electronicInvoiceLastError || isElectronicInvoiceFailed(invoice.electronicInvoiceStatus) ? (
+            <QuoteField
+              label="Erreur de transmission"
+              value={invoice.electronicInvoiceLastError ?? 'La plateforme a rejeté la facture.'}
+            />
           ) : null}
         </View>
       </View>
@@ -83,17 +92,21 @@ export function InvoiceDetailView({
 
             return (
               <View key={line.id} style={index > 0 ? styles.lineSeparator : undefined}>
-                <Text style={styles.lineTitle}>Prestation {index + 1}</Text>
-                <Text style={styles.lineDescription}>{line.description}</Text>
+                <Text style={styles.lineTitle}>
+                  {line.title?.trim() || line.description.trim() || `Prestation ${index + 1}`}
+                </Text>
+                {line.title?.trim() && line.description.trim() ? (
+                  <Text style={styles.lineDescription}>{line.description}</Text>
+                ) : null}
                 <Text style={styles.lineMeta}>
-                  {line.quantity} {line.unit} ×{' '}
-                  {formatPriceHT(Number(line.unitPrice.replace(',', '.')) || 0)} HT
-                  {Number(line.discountPercent.replace(',', '.')) > 0
+                  {line.quantity} {line.unit} × {formatPriceHT(parseAmountInput(line.unitPrice))} HT
+                  {parseAmountInput(line.discountPercent) > 0
                     ? ` · Remise ${line.discountPercent} %`
                     : ''}
                 </Text>
                 <Text style={styles.lineAmount}>
-                  {formatPriceHT(lineTotals.lineTotalHt)} HT · TVA {line.vatRate} % ·{' '}
+                  {formatPriceHT(lineTotals.lineTotalHt)} HT · TVA{' '}
+                  {parseVatRateForTotals(line.vatRate)} % ·{' '}
                   {formatPriceHT(lineTotals.lineTotalTtc)} TTC
                 </Text>
               </View>

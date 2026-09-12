@@ -1,17 +1,25 @@
 import { buildQuotePdfHtml } from '@/lib/pdf/document-pdf';
-import { generateHtmlAsPdf, sharePdf } from '@/lib/pdf/share';
+import { generatePdfFromHtml, sharePdf, type GeneratedPdf, type PdfOutcome } from '@/lib/pdf/output';
 import type { QuoteDetail } from '@/types/quote';
 import type { DataScope } from '@/types/tenant';
+
+export async function generateQuotePdf(
+  scope: DataScope,
+  quote: QuoteDetail,
+  authEmail?: string | null,
+  templateId?: string | null,
+): Promise<GeneratedPdf> {
+  const html = await buildQuotePdfHtml(scope, quote, authEmail, templateId);
+  return generatePdfFromHtml(html, `${quote.number}.pdf`);
+}
 
 export async function shareQuotePdf(
   scope: DataScope,
   quote: QuoteDetail,
   authEmail?: string | null,
-): Promise<string> {
-  const html = await buildQuotePdfHtml(scope, quote, authEmail);
-  const generated = await generateHtmlAsPdf(html, `${quote.number}.pdf`);
-  await sharePdf(generated.uri, `Partager le devis ${quote.number}`);
-  return generated.uri;
+): Promise<PdfOutcome> {
+  const generated = await generateQuotePdf(scope, quote, authEmail);
+  return sharePdf(generated, `Partager le devis ${quote.number}`);
 }
 
 export async function previewQuotePdfHtml(
@@ -20,14 +28,4 @@ export async function previewQuotePdfHtml(
   authEmail?: string | null,
 ): Promise<string> {
   return buildQuotePdfHtml(scope, quote, authEmail);
-}
-
-export async function generateQuotePdfFile(
-  scope: DataScope,
-  quote: QuoteDetail,
-  authEmail?: string | null,
-): Promise<{ uri: string; html: string }> {
-  const html = await buildQuotePdfHtml(scope, quote, authEmail);
-  const generated = await generateHtmlAsPdf(html, `${quote.number}.pdf`);
-  return { uri: generated.uri, html };
 }

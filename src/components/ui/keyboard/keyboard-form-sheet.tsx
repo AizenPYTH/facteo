@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
+import { Platform, View, type StyleProp, type ViewStyle } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 
 import { StickyFooter, useStickyFooterInset } from '@/components/ui/sticky-footer';
@@ -32,8 +32,12 @@ export function KeyboardFormSheet({
     <View style={styles.root} testID={testID}>
       <KeyboardAwareScrollView
         bottomOffset={footer ? footerInset : spacing.md + KEYBOARD_TOOLBAR_HEIGHT}
-        contentContainerStyle={[styles.content, contentContainerStyle]}
-        keyboardDismissMode="on-drag"
+        contentContainerStyle={[
+          styles.content,
+          footer ? { paddingBottom: footerInset } : null,
+          contentContainerStyle,
+        ]}
+        keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
         style={styles.flex}>

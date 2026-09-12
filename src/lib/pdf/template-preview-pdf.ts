@@ -1,6 +1,6 @@
 import * as FileSystem from 'expo-file-system/legacy';
 
-import { generateHtmlAsPdf } from '@/lib/pdf/share';
+import { generatePdfFromHtml } from '@/lib/pdf/output';
 
 const memoryCache = new Map<string, string>();
 const inflight = new Map<string, Promise<string>>();
@@ -65,9 +65,9 @@ export async function ensureTemplatePreviewPdf(
       throw new Error('Aperçu indisponible : données entreprise incomplètes.');
     }
 
-    const generated = await generateHtmlAsPdf(html, `template-${templateId}.pdf`);
+    const generated = await generatePdfFromHtml(html, `template-${templateId}.pdf`);
 
-    if (!(await isValidPdfFile(generated.uri))) {
+    if (!generated.uri || !(await isValidPdfFile(generated.uri))) {
       throw new Error('Le PDF généré est vide.');
     }
 

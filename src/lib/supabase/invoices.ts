@@ -34,7 +34,7 @@ export const INVOICE_COLUMNS =
 export const INVOICE_LIST_COLUMNS = `${INVOICE_COLUMNS}, clients(name, company, email)` as const;
 
 const INVOICE_ITEM_COLUMNS =
-  'id, invoice_id, user_id, product_id, position, description, quantity, unit, unit_price, vat_rate, discount_percent, line_total_ht, created_at, updated_at' as const;
+  'id, invoice_id, user_id, product_id, position, title, description, quantity, unit, unit_price, vat_rate, discount_percent, line_total_ht, created_at, updated_at' as const;
 
 const PAYMENT_COLUMNS =
   'id, invoice_id, user_id, amount, paid_at, payment_method, payment_reference, notes, created_at' as const;

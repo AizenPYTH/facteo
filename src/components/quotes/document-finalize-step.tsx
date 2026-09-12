@@ -91,13 +91,23 @@ export function DocumentFinalizeStep({
         <Text style={styles.sectionTitle}>Prestations ({lines.length})</Text>
         {lines.map((line, index) => {
           const lineTotals = mapLineValueToTotals(line);
+          // Titre et description sont indépendants : le titre sert de
+          // désignation, la description de second niveau. Une ligne ancienne
+          // (description seule) garde sa description comme désignation.
+          const designation = line.title?.trim() || line.description.trim();
+          const detail = line.title?.trim() ? line.description.trim() : '';
 
           return (
             <View key={line.id} style={styles.lineRow}>
               <View style={styles.lineInfo}>
                 <Text style={styles.lineTitle}>
-                  {index + 1}. {line.description || 'Sans description'}
+                  {index + 1}. {designation || 'Prestation sans désignation'}
                 </Text>
+                {detail ? (
+                  <Text numberOfLines={3} style={styles.lineDescription}>
+                    {detail}
+                  </Text>
+                ) : null}
                 <Text style={styles.lineMeta}>
                   {line.quantity} {line.unit} · {formatPriceHT(lineTotals.lineTotalHt)} HT
                 </Text>
@@ -203,9 +213,13 @@ function useStyles() {
     ...typography.subheadlineMedium,
     color: colors.text,
   },
-  lineMeta: {
+  lineDescription: {
     ...typography.footnote,
     color: colors.textSecondary,
+  },
+  lineMeta: {
+    ...typography.caption1,
+    color: colors.textTertiary,
   },
   lineAmount: {
     ...typography.subheadlineMedium,

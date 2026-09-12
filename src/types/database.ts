@@ -166,6 +166,8 @@ export type InvoiceItemRow = {
   user_id: string;
   product_id: string | null;
   position: number;
+  /** Null pour les lignes antérieures à la séparation titre / description. */
+  title: string | null;
   description: string;
   quantity: number;
   unit: string;
@@ -184,6 +186,7 @@ export type InvoiceItemInsert = {
   user_id: string;
   product_id?: string | null;
   position: number;
+  title?: string | null;
   description: string;
   quantity: number;
   unit: string;
@@ -382,6 +385,8 @@ export type QuoteItemRow = {
   user_id: string;
   product_id: string | null;
   position: number;
+  /** Null pour les lignes antérieures à la séparation titre / description. */
+  title: string | null;
   description: string;
   quantity: number;
   unit: string;
@@ -420,6 +425,7 @@ export type QuoteItemInsert = {
   user_id: string;
   product_id?: string | null;
   position: number;
+  title?: string | null;
   description: string;
   quantity: number;
   unit: string;
@@ -632,6 +638,91 @@ export type CompanyMemberRow = {
   created_at: string;
 };
 
+/**
+ * Facture électronique reçue via SUPER PDP.
+ * Ce type manquait au schéma généré ; il est ajouté ici sans modifier la
+ * fonctionnalité de facturation électronique elle-même.
+ */
+export type SuperPdpReceivedInvoiceRow = {
+  id: string;
+  company_id: string;
+  superpdp_invoice_id: number;
+  supplier_name: string | null;
+  supplier_number: string | null;
+  invoice_number: string | null;
+  issue_date: string | null;
+  currency: string;
+  subtotal_ht: string | number | null;
+  total_vat: string | number | null;
+  total_ttc: string | number | null;
+  latest_status_code: string | null;
+  electronic_invoice_status: string | null;
+  received_at: string | null;
+  document_content_type: string | null;
+  structured_payload: Record<string, unknown> | null;
+  raw_events: Record<string, unknown>[];
+  imported_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+/**
+ * Commande importée depuis une place de marché (eBay en V1).
+ * Lecture seule côté client : l'écriture passe par les Edge Functions et par
+ * link_external_order_invoice().
+ */
+export type ExternalOrderRow = {
+  id: string;
+  company_id: string;
+  provider: string;
+  environment: 'sandbox' | 'production';
+  external_order_id: string;
+  legacy_order_id: string | null;
+  order_reference: string | null;
+  order_created_at: string | null;
+  order_modified_at: string | null;
+  fulfillment_status: string | null;
+  payment_status: string | null;
+  currency: string | null;
+  subtotal_amount: string | number | null;
+  shipping_amount: string | number | null;
+  discount_amount: string | number | null;
+  tax_amount: string | number | null;
+  total_amount: string | number | null;
+  marketplace_tax_amount: string | number;
+  collect_and_remit: boolean;
+  buyer_username: string | null;
+  buyer_snapshot: Record<string, unknown> | null;
+  line_items: Record<string, unknown>[] | null;
+  marketplace_ids: string[] | null;
+  invoice_id: string | null;
+  invoiced_at: string | null;
+  imported_at: string;
+  updated_at: string;
+};
+
+/** Projection publique d'une intégration : aucun jeton. */
+export type IntegrationStatusRow = {
+  id: string;
+  company_id: string;
+  provider: string;
+  environment: 'sandbox' | 'production';
+  status: string;
+  external_account_id: string | null;
+  scopes: string[];
+  connected_at: string | null;
+  last_sync_at: string | null;
+  last_sync_error: string | null;
+  last_synced_modified_at: string | null;
+  access_token_expires_at: string | null;
+  refresh_token_expires_at: string | null;
+  refresh_token_expired: boolean;
+  orders_imported: number;
+  orders_pending_invoice: number;
+  created_at: string;
+  updated_at: string;
+};
+
 export type Database = {
   public: {
     Tables: {
@@ -795,8 +886,26 @@ export type Database = {
         Update: Partial<DocumentSignatureRow>;
         Relationships: [];
       };
+      superpdp_received_invoices: {
+        Row: SuperPdpReceivedInvoiceRow;
+        Insert: Partial<SuperPdpReceivedInvoiceRow> & { company_id: string; superpdp_invoice_id: number };
+        Update: Partial<SuperPdpReceivedInvoiceRow>;
+        Relationships: [];
+      };
+      external_orders: {
+        Row: ExternalOrderRow;
+        // Aucune écriture directe depuis le client : la RLS ne l'autorise pas.
+        Insert: never;
+        Update: never;
+        Relationships: [];
+      };
     };
-    Views: Record<string, never>;
+    Views: {
+      integration_status: {
+        Row: IntegrationStatusRow;
+        Relationships: [];
+      };
+    };
     Functions: {
       ensure_profile_exists: {
         Args: Record<PropertyKey, never>;
@@ -829,6 +938,14 @@ export type Database = {
       create_company_for_user: {
         Args: { p_name: string };
         Returns: string;
+      };
+      link_external_order_invoice: {
+        Args: { p_external_order_id: string; p_invoice_id: string };
+        Returns: undefined;
+      };
+      disconnect_integration: {
+        Args: { p_company_id: string; p_provider: string };
+        Returns: undefined;
       };
     };
     Enums: Record<string, never>;

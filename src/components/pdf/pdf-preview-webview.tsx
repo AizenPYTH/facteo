@@ -10,7 +10,10 @@ import { buildPdfPreviewSource } from '@/lib/pdf/preview-source';
 const VIEWER_BACKGROUND = '#EBEBF0';
 
 type PdfPreviewWebViewProps = {
-  pdfUri: string;
+  /** `null` sur le web : aucun fichier PDF n'est produit, on affiche `html`. */
+  pdfUri: string | null;
+  /** Repli : rendu direct du HTML du document quand il n'y a pas de fichier. */
+  html?: string;
   onPageCountChange?: (count: number) => void;
   onGestureActiveChange?: (active: boolean) => void;
   /** Use pdf.js on all platforms for identical page-fit rendering. */
@@ -25,6 +28,7 @@ type ViewerMessage =
 
 export function PdfPreviewWebView({
   pdfUri,
+  html,
   onPageCountChange,
   onGestureActiveChange,
   preferPdfJs = false,
@@ -44,6 +48,19 @@ export function PdfPreviewWebView({
       setError(false);
       setSource(null);
       setWebViewLoading(true);
+
+      if (!pdfUri) {
+        if (!html) {
+          setError(true);
+          setWebViewLoading(false);
+          return;
+        }
+
+        // Pas de fichier PDF (web) : on affiche le document lui-même.
+        setSource({ mode: 'pdfjs', html });
+        setWebViewLoading(false);
+        return;
+      }
 
       try {
         const nextSource = await buildPdfPreviewSource(pdfUri, { preferPdfJs });
@@ -72,7 +89,7 @@ export function PdfPreviewWebView({
         clearTimeout(loadTimeout);
       }
     };
-  }, [pdfUri, preferPdfJs]);
+  }, [html, pdfUri, preferPdfJs]);
 
   function handleMessage(rawMessage: string) {
     try {
@@ -125,7 +142,7 @@ export function PdfPreviewWebView({
   return (
     <View style={styles.container}>
       <WebView
-        key={pdfUri}
+        key={pdfUri ?? 'inline-html'}
         allowFileAccess
         allowsBackForwardNavigationGestures={false}
         allowsInlineMediaPlayback
@@ -155,7 +172,7 @@ export function PdfPreviewWebView({
         source={
           source.html
             ? { baseUrl: source.baseUrl, html: source.html }
-            : { uri: source.uri ?? pdfUri }
+            : { uri: source.uri ?? (pdfUri as string) }
         }
         style={styles.webview}
       />

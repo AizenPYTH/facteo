@@ -127,6 +127,8 @@ type DocumentPreviewPanelProps = {
   loading: boolean;
   error: string | null;
   pdfUri: string | null;
+  /** Le web ne produit pas de fichier PDF : on affiche alors le HTML du document. */
+  pdfHtml?: string | null;
   onRetry: () => void;
   emptyMessage?: string;
 };
@@ -136,6 +138,7 @@ export function DocumentPreviewPanel({
   loading,
   error,
   pdfUri,
+  pdfHtml,
   onRetry,
   emptyMessage = 'Sélectionnez un document pour afficher l’aperçu.',
 }: DocumentPreviewPanelProps) {
@@ -149,9 +152,9 @@ export function DocumentPreviewPanel({
           <ActivityIndicator color={colors.primary} size="large" />
           <Text style={styles.hint}>Génération du PDF…</Text>
         </View>
-      ) : pdfUri ? (
+      ) : pdfUri || pdfHtml ? (
         <View style={styles.preview}>
-          <PdfPreviewWebView pdfUri={pdfUri} preferPdfJs />
+          <PdfPreviewWebView html={pdfHtml ?? undefined} pdfUri={pdfUri} preferPdfJs />
         </View>
       ) : error ? (
         <View style={styles.centered}>

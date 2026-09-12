@@ -1,44 +1,23 @@
-export type PdfLayoutVariant =
-  | 'classic'
-  | 'banner'
-  | 'sidebar'
-  | 'minimal'
-  | 'stripe'
-  | 'centered'
-  | 'split'
-  | 'card';
+import type { TemplateContext } from '@/lib/pdf/engine/templates/context';
 
-export type PdfLogoPosition = 'left' | 'center' | 'right';
-export type PdfHeaderStyle = 'default' | 'band' | 'underline' | 'boxed';
-export type PdfTableStyle = 'default' | 'striped' | 'bordered' | 'minimal';
-export type PdfTotalsStyle = 'default' | 'highlight' | 'boxed' | 'accent';
-
-export type PdfTemplateTheme = {
-  primary: string;
-  accent: string;
-  text: string;
-  muted: string;
-  border: string;
-  surface: string;
-  surfaceAlt: string;
-  paymentBg: string;
-  paymentBorder: string;
-};
-
+/**
+ * Un modèle de document = une identité visuelle + une fonction de rendu.
+ *
+ * Les 20 modèles partagent le même contrat de données (`TemplateContext`) et ne
+ * diffèrent que par leur mise en page. Aucun n'accède aux données brutes : le
+ * contexte est déjà formaté (montants, dates, TVA par taux, QR).
+ */
 export type PdfTemplateDefinition = {
+  /** '01' … '20'. Stocké dans `settings.invoice_template_id`. */
   id: string;
   name: string;
   description: string;
-  inspiration: string;
-  theme: PdfTemplateTheme;
-  layout: PdfLayoutVariant;
-  logoPosition: PdfLogoPosition;
-  headerStyle: PdfHeaderStyle;
-  tableStyle: PdfTableStyle;
-  totalsStyle: PdfTotalsStyle;
-  showPartyCards: boolean;
-  titleAlign: 'left' | 'right' | 'center';
-  fontFamily: string;
+  /** Couleur d'accent unique du modèle. `null` = modèle sans couleur. */
+  accent: string | null;
+  /** Couleur du papier (fond de page). */
+  paper: string;
+  render: (context: TemplateContext) => string;
 };
 
-export const DEFAULT_PDF_TEMPLATE_ID = 'classic-blue';
+/** Modèle « maison » INVEQ. */
+export const DEFAULT_PDF_TEMPLATE_ID = '04';

@@ -3,7 +3,10 @@ import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 import { KeyboardStickyView } from 'react-native-keyboard-controller';
 
 import { KEYBOARD_TOOLBAR_HEIGHT } from '@/components/ui/keyboard/constants';
-import { useKeyboardAwareFooterPadding } from '@/components/ui/keyboard/use-keyboard-footer-padding';
+import {
+  useKeyboardAwareFooterPadding,
+  useStableFooterPadding,
+} from '@/components/ui/keyboard/use-keyboard-footer-padding';
 import { useColors, useThemedStyles } from '@/hooks/use-colors';
 import { spacing } from '@/constants/theme/spacing';
 
@@ -20,11 +23,15 @@ type StickyFooterProps = {
 };
 
 /**
- * Espace à réserver sous le contenu scrollable pour qu’il ne passe pas
- * sous le pied + la toolbar clavier.
+ * Espace à réserver sous le contenu scrollable pour qu'il ne passe jamais sous
+ * le pied d'action.
+ *
+ * Valeur **constante** : elle ne doit pas changer à l'ouverture du clavier,
+ * sinon la hauteur du contenu est recalculée au milieu de l'animation de
+ * défilement (voir `useStableFooterPadding`).
  */
 export function useStickyFooterInset(variant: StickyFooterVariant = 'default'): number {
-  const paddingBottom = useKeyboardAwareFooterPadding();
+  const paddingBottom = useStableFooterPadding();
   const contentHeight = variant === 'toolbar' ? STICKY_FOOTER_TOOLBAR_HEIGHT : STICKY_FOOTER_MIN_HEIGHT;
   const topPadding = variant === 'toolbar' ? spacing.xs : spacing.sm;
 

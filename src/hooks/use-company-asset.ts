@@ -7,6 +7,8 @@ import {
   getCachedCompanyAssetUrl,
   pickCompanyAsset,
 } from '@/lib/company-assets/image';
+import { clearInlineImageCache } from '@/lib/pdf/inline-images';
+import { clearPdfCache } from '@/lib/pdf/document-cache';
 import { updateCompanyAssetUrl } from '@/lib/supabase/companies';
 import {
   deleteCompanyAssetByUrl,
@@ -50,6 +52,13 @@ export function useCompanyAsset(kind: CompanyAssetKind) {
       const field = kind === 'logo' ? 'logo_url' : 'signature_url';
       await updateCompanyAssetUrl(activeScope.companyId, field, publicUrl);
       await cacheCompanyAssetUrl(activeScope.companyId, kind, publicUrl);
+
+      // Les PDF déjà produits embarquent l'ancienne image : ils sont périmés.
+      if (currentUrl) {
+        clearInlineImageCache(currentUrl);
+      }
+      clearPdfCache();
+
       return { status: 'success', url: publicUrl };
     },
     onSuccess: (result) => {
@@ -90,6 +99,12 @@ export function useCompanyAsset(kind: CompanyAssetKind) {
       const field = kind === 'logo' ? 'logo_url' : 'signature_url';
       await updateCompanyAssetUrl(activeScope.companyId, field, null);
       await cacheCompanyAssetUrl(activeScope.companyId, kind, null);
+
+      if (currentUrl) {
+        clearInlineImageCache(currentUrl);
+      }
+      clearPdfCache();
+
       return { status: 'success', url: null };
     },
     onSuccess: (result) => {

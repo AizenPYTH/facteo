@@ -168,7 +168,9 @@ export default function QuoteDetailScreen() {
           documentId={quote.id}
           documentNumber={quote.number}
           documentType="quote"
+          documentUpdatedAt={quote.updatedAt}
           markAsSentLoading={updateQuoteStatus.isPending}
+          onSent={quote.status === 'draft' ? () => handleStatusChange('sent') : undefined}
           onMarkAsSent={() => void handleStatusChange('sent')}
           onSignPress={() => setSignModalVisible(true)}
         />

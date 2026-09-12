@@ -28,7 +28,7 @@ export const QUOTE_COLUMNS =
 export const QUOTE_LIST_COLUMNS = `${QUOTE_COLUMNS}, clients(name, company, email)` as const;
 
 const QUOTE_ITEM_COLUMNS =
-  'id, quote_id, user_id, product_id, position, description, quantity, unit, unit_price, vat_rate, discount_percent, line_total_ht, created_at, updated_at' as const;
+  'id, quote_id, user_id, product_id, position, title, description, quantity, unit, unit_price, vat_rate, discount_percent, line_total_ht, created_at, updated_at' as const;
 
 function sanitizeSearchTerm(search: string): string {
   return search.trim().replace(/[%_,]/g, '');

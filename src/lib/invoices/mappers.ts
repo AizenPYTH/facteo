@@ -1,5 +1,5 @@
 import { calculateDocumentTotals, calculateLineTotals } from '@/lib/calculations/totals';
-import { parseDecimalInput, parseVatRateInput } from '@/lib/format/decimal';
+import { parseAmountInput, parseVatRateForTotals } from '@/lib/format/decimal';
 import type { CreateInvoiceInput, InvoiceLineValue, UpdateInvoiceInput } from '@/types/invoice';
 import type { InvoiceInsert, InvoiceItemInsert } from '@/types/database';
 import type { DataScope } from '@/types/tenant';
@@ -7,10 +7,10 @@ import type { DataScope } from '@/types/tenant';
 export function mapInvoiceLineValueToTotals(
   line: Pick<InvoiceLineValue, 'quantity' | 'unitPrice' | 'vatRate' | 'discountPercent'>,
 ) {
-  const quantity = parseDecimalInput(line.quantity);
-  const unitPrice = parseDecimalInput(line.unitPrice);
-  const vatRate = parseVatRateInput(line.vatRate);
-  const discountPercent = parseDecimalInput(line.discountPercent || '0');
+  const quantity = parseAmountInput(line.quantity);
+  const unitPrice = parseAmountInput(line.unitPrice);
+  const vatRate = parseVatRateForTotals(line.vatRate);
+  const discountPercent = parseAmountInput(line.discountPercent);
 
   return calculateLineTotals(quantity, unitPrice, vatRate, discountPercent);
 }
@@ -31,12 +31,13 @@ function mapLineToInsert(
     user_id: scope.userId,
     product_id: line.productId,
     position: index,
+    title: line.title?.trim() || null,
     description: line.description.trim(),
-    quantity: parseDecimalInput(line.quantity),
+    quantity: parseAmountInput(line.quantity),
     unit: line.unit.trim(),
-    unit_price: parseDecimalInput(line.unitPrice),
-    vat_rate: parseVatRateInput(line.vatRate),
-    discount_percent: parseDecimalInput(line.discountPercent || '0'),
+    unit_price: parseAmountInput(line.unitPrice),
+    vat_rate: parseVatRateForTotals(line.vatRate),
+    discount_percent: parseAmountInput(line.discountPercent),
     line_total_ht: lineTotals.lineTotalHt,
   };
 }

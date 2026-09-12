@@ -108,6 +108,7 @@ export function InvoicesDesktopScreen() {
   );
 
   const [previewUri, setPreviewUri] = useState<string | null>(null);
+  const [previewHtml, setPreviewHtml] = useState<string | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
   const [previewError, setPreviewError] = useState<string | null>(null);
   const [previewVersion, setPreviewVersion] = useState(0);
@@ -118,12 +119,14 @@ export function InvoicesDesktopScreen() {
     documentNumber: selectedInvoice?.number ?? '',
     clientEmail: selectedInvoice?.clientEmail,
     clientName: selectedInvoice?.clientName ?? '',
+    documentUpdatedAt: selectedInvoice?.updatedAt,
     buildHtml,
   });
 
   useEffect(() => {
     let active = true;
     setPreviewUri(null);
+    setPreviewHtml(null);
     setPreviewError(null);
 
     if (!selectedInvoice || !scope) {
@@ -136,15 +139,17 @@ export function InvoicesDesktopScreen() {
       try {
         const html = (await buildHtml()).trim();
         if (!html) throw new Error('Données insuffisantes pour générer le PDF.');
-        const { generateHtmlAsPdf } = await import('@/lib/pdf/share');
-        const pdf = await generateHtmlAsPdf(html, `${selectedInvoice.number}.pdf`);
+        const { generatePdfFromHtml } = await import('@/lib/pdf/output');
+        const pdf = await generatePdfFromHtml(html, `${selectedInvoice.number}.pdf`);
         if (active) {
           setPreviewUri(pdf.uri);
+          setPreviewHtml(pdf.html);
           setPreviewError(null);
         }
       } catch (error) {
         if (active) {
           setPreviewUri(null);
+          setPreviewHtml(null);
           setPreviewError(
             error instanceof Error ? error.message : 'Impossible de générer l’aperçu.',
           );
@@ -266,6 +271,7 @@ export function InvoicesDesktopScreen() {
             error={previewError}
             loading={previewLoading}
             onRetry={() => setPreviewVersion((v) => v + 1)}
+            pdfHtml={previewHtml}
             pdfUri={previewUri}
             title={selectedInvoice?.number ?? 'Aperçu PDF'}
           />
@@ -274,9 +280,9 @@ export function InvoicesDesktopScreen() {
             documentId={selectedId ?? ''}
             documentNumber={selectedInvoice?.number ?? ''}
             documentType="invoice"
-            downloadLoading={documentActions.loading}
+            downloadLoading={documentActions.isBusy('download')}
             duplicateLoading={duplicateInvoice.isPending}
-            onDownload={() => void documentActions.handleShare()}
+            onDownload={documentActions.handleDownload}
             onDuplicate={() => void handleDuplicate()}
             onEdit={
               selectedInvoice
@@ -284,8 +290,8 @@ export function InvoicesDesktopScreen() {
                 : undefined
             }
             onPayment={() => setPaymentVisible(true)}
-            onSend={() => void documentActions.handleSendEmail()}
-            sendLoading={documentActions.emailLoading}
+            onSend={documentActions.handleSendEmail}
+            sendLoading={documentActions.isBusy('email')}
             showPayment={Boolean(selectedInvoice && selectedInvoice.amountDue > 0)}
           />
         </View>

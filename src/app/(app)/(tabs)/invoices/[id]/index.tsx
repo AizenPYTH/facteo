@@ -19,6 +19,7 @@ import { TemplateGalleryModal } from '@/components/pdf/template-gallery-modal';
 import { DocumentClientSignatureBlock } from '@/components/signatures/document-client-signature-block';
 import { LoadingView } from '@/components/ui/loading-view';
 import { useDocumentActions } from '@/hooks/use-document-actions';
+import { useElectronicInvoicing } from '@/hooks/use-electronic-invoicing';
 import { useThemedStyles, useColors } from '@/hooks/use-colors';
 import { spacing } from '@/constants/theme/spacing';
 import { typography } from '@/constants/theme/typography';
@@ -29,6 +30,7 @@ import { useInvoiceMutations } from '@/hooks/use-invoice-mutations';
 import { getInvoiceErrorMessage } from '@/lib/invoices/errors';
 import { buildInvoicePdfHtml } from '@/lib/pdf/document-pdf';
 import { sendElectronicInvoice } from '@/lib/superpdp/api';
+import { formatElectronicInvoiceStatus } from '@/lib/superpdp/status';
 import { useAuth } from '@/hooks/use-auth';
 import { useTenant } from '@/hooks/use-tenant';
 import { requireScope } from '@/lib/tenant/scope';
@@ -62,6 +64,7 @@ export default function InvoiceDetailScreen() {
     updateInvoiceStatus,
   } = useInvoiceMutations();
   const { hasFeature } = useSubscription();
+  const { data: eInvoicing } = useElectronicInvoicing();
   const { isConfigured, createLink, openPaymentLink } = useStripePayment(invoiceId ?? '');
   const { showError, showSuccess } = useToast();
 
@@ -87,6 +90,25 @@ export default function InvoiceDetailScreen() {
     [invoice, scope, user?.email],
   );
 
+  /**
+   * Une facture réellement transmise au client n'est plus un brouillon.
+   * On ne l'avance qu'après confirmation d'envoi par le fournisseur — jamais
+   * sur une simple ouverture de l'application Mail.
+   */
+  const handleInvoiceSent = useCallback(async () => {
+    if (!invoiceId || invoice?.status !== 'draft') {
+      return;
+    }
+
+    try {
+      await updateInvoiceStatus.mutateAsync({ invoiceId, status: 'sent' });
+    } catch {
+      // L'envoi a bien eu lieu : un échec de mise à jour du statut ne doit pas
+      // être présenté comme un échec d'envoi. L'utilisateur peut toujours
+      // utiliser « Marquer comme envoyée ».
+    }
+  }, [invoice?.status, invoiceId, updateInvoiceStatus]);
+
   const documentActions = useDocumentActions({
     buildHtml,
     clientEmail: invoice?.clientEmail,
@@ -94,6 +116,8 @@ export default function InvoiceDetailScreen() {
     documentId: invoice?.id ?? '',
     documentNumber: invoice?.number ?? '',
     documentType: 'invoice',
+    documentUpdatedAt: invoice?.updatedAt,
+    onSent: handleInvoiceSent,
   });
 
   useEffect(() => {
@@ -270,30 +294,60 @@ export default function InvoiceDetailScreen() {
         id: 'send',
         label: 'Envoyer par e-mail',
         icon: { ios: 'paperplane.fill', android: 'send', web: 'send' } as const,
-        onPress: () => void documentActions.handleSendEmail(),
-        loading: documentActions.emailLoading,
+        onPress: documentActions.handleSendEmail,
+        loading: documentActions.isBusy('email'),
       },
-      {
-        id: 'e-invoice',
-        label: invoice.superpdpInvoiceId
-          ? `Facture électronique (${invoice.electronicInvoiceStatus || 'envoyée'})`
-          : 'Envoyer en facture électronique',
-        icon: { ios: 'bolt.fill', android: 'bolt', web: 'bolt' } as const,
-        onPress: () => void handleSendElectronic(),
-      },
+      // L'envoi électronique n'apparaît que si l'entreprise est réellement
+      // raccordée à la plateforme et autorisée à émettre. Sinon on propose le
+      // raccordement, sans laisser croire qu'INVEQ est déjà connecté.
+      ...(eInvoicing?.canEmit
+        ? [
+            {
+              id: 'e-invoice',
+              label: invoice.superpdpInvoiceId
+                ? `Facture électronique · ${
+                    formatElectronicInvoiceStatus(invoice.electronicInvoiceStatus) ?? 'transmise'
+                  }`
+                : 'Transmettre en facture électronique',
+              icon: { ios: 'bolt.fill', android: 'bolt', web: 'bolt' } as const,
+              onPress: () => void handleSendElectronic(),
+            },
+          ]
+        : [
+            {
+              id: 'e-invoice-setup',
+              label: 'Configurer la facturation électronique',
+              icon: { ios: 'bolt.badge.clock', android: 'bolt', web: 'bolt' } as const,
+              onPress: () => router.push('/settings/e-invoicing' as Href),
+            },
+          ]),
       {
         id: 'pdf',
-        label: 'Générer le PDF',
+        label: 'Aperçu du PDF',
         icon: { ios: 'doc.fill', android: 'picture_as_pdf', web: 'picture_as_pdf' } as const,
-        onPress: () => void documentActions.handleShare(),
-        loading: documentActions.loading,
+        onPress: documentActions.handleOpenPreview,
+        loading: documentActions.isBusy('preview'),
+      },
+      {
+        id: 'download',
+        label: 'Télécharger PDF',
+        icon: { ios: 'arrow.down.circle.fill', android: 'download', web: 'download' } as const,
+        onPress: documentActions.handleDownload,
+        loading: documentActions.isBusy('download'),
+      },
+      {
+        id: 'share',
+        label: 'Partager le PDF',
+        icon: { ios: 'square.and.arrow.up', android: 'share', web: 'share' } as const,
+        onPress: documentActions.handleShare,
+        loading: documentActions.isBusy('share'),
       },
       {
         id: 'print',
         label: 'Imprimer',
         icon: { ios: 'printer.fill', android: 'print', web: 'print' } as const,
-        onPress: () => void documentActions.handlePrint(),
-        loading: documentActions.loading,
+        onPress: documentActions.handlePrint,
+        loading: documentActions.isBusy('print'),
       },
       {
         id: 'template',
@@ -393,6 +447,7 @@ export default function InvoiceDetailScreen() {
   }, [
     companyId,
     documentActions,
+    eInvoicing?.canEmit,
     hasFeature,
     invoice,
   ]);
@@ -473,15 +528,17 @@ export default function InvoiceDetailScreen() {
       />
 
       <PdfPreviewModal
-        loading={documentActions.loading}
+        busyAction={documentActions.pendingAction}
+        errorMessage={documentActions.pdfError}
         onClose={() => documentActions.setPreviewVisible(false)}
-        onEmail={() => void documentActions.handleSendEmail()}
+        onDownload={documentActions.handleDownload}
+        onEmail={documentActions.handleSendEmail}
         onPageCountChange={documentActions.setPageCount}
-        onPrint={() => void documentActions.handlePrint()}
-        onSave={() => void documentActions.handleShare()}
-        onShare={() => void documentActions.handleShare()}
+        onPrint={documentActions.handlePrint}
+        onShare={documentActions.handleShare}
         pageCount={documentActions.pageCount}
-        pdfLoading={documentActions.pdfLoading}
+        pdfHtml={documentActions.previewHtml}
+        pdfLoading={documentActions.pdfStatus === 'generating'}
         pdfUri={documentActions.previewPdfUri}
         title={`Aperçu · ${invoice.number}`}
         visible={documentActions.previewVisible}

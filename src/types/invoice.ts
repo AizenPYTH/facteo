@@ -23,6 +23,9 @@ export const INVOICE_STATUS_LABELS: Record<InvoiceStatus, string> = {
 export type InvoiceLineValue = {
   id: string;
   productId: string | null;
+  /** Nom court de la prestation. Peut être vide. */
+  title: string;
+  /** Détail de la prestation, multiligne. Peut être vide. */
   description: string;
   quantity: string;
   unit: string;
@@ -39,6 +42,7 @@ export function createEmptyInvoiceLine(): InvoiceLineValue {
   return {
     id: createLocalInvoiceLineId(),
     productId: null,
+    title: '',
     description: '',
     quantity: '1',
     unit: 'unité',

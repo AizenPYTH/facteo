@@ -24,7 +24,6 @@ export type { InvoicesListProps } from './invoices-list';
 export { InvoicesScreenHeader } from './invoices-screen-header';
 export type { InvoicesScreenHeaderProps } from './invoices-screen-header';
 
-export { InvoiceInfoStep } from './invoice-info-step';
 
 export { InvoiceStatusFilterBar } from './invoice-status-filter-bar';
 

@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Platform, StyleSheet, View } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -49,12 +49,18 @@ export function WizardScreen({
         {header ? <View style={styles.header}>{header}</View> : null}
         {bodyScroll === 'aware' ? (
           <KeyboardAwareScrollView
+            /*
+              `bottomOffset` = marge conservée entre le champ actif et le haut du
+              clavier. Le pied d'action étant collé au clavier, il faut compter
+              sa hauteur, sinon le champ se retrouve sous les boutons.
+              Cette valeur est constante (voir `useStickyFooterInset`).
+            */
             bottomOffset={footer ? footerInset : spacing.md}
             contentContainerStyle={[
               styles.scrollContent,
               footer ? { paddingBottom: footerInset } : null,
             ]}
-            keyboardDismissMode="on-drag"
+            keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
             style={styles.flex}>

@@ -1,28 +1,27 @@
 import { SymbolView } from 'expo-symbols';
-import {
-  ActivityIndicator,
-  Modal,
-  Pressable,
-  Text,
-  View,
-} from 'react-native';
+import { ActivityIndicator, Modal, Pressable, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { PdfPreviewWebView } from '@/components/pdf/pdf-preview-webview';
 import { useColors, useThemedStyles } from '@/hooks/use-colors';
 import { spacing } from '@/constants/theme/spacing';
 import { textHierarchy } from '@/constants/theme/typography';
+import type { DocumentActionKey } from '@/hooks/use-document-actions';
 
 type PdfPreviewModalProps = {
   visible: boolean;
   pdfUri: string | null;
+  /** Le web ne produit pas de fichier : l'aperçu affiche le HTML source. */
+  pdfHtml?: string | null;
   title: string;
-  loading?: boolean;
   pdfLoading?: boolean;
+  errorMessage?: string | null;
   pageCount?: number;
+  /** Action en cours, pour n'afficher le spinner que sur le bon bouton. */
+  busyAction?: DocumentActionKey | null;
   onClose: () => void;
   onShare: () => void;
-  onSave?: () => void;
+  onDownload?: () => void;
   onPrint?: () => void;
   onEmail?: () => void;
   onPageCountChange?: (count: number) => void;
@@ -31,13 +30,15 @@ type PdfPreviewModalProps = {
 export function PdfPreviewModal({
   visible,
   pdfUri,
+  pdfHtml,
   title,
-  loading = false,
   pdfLoading = false,
+  errorMessage,
   pageCount,
+  busyAction,
   onClose,
   onShare,
-  onSave,
+  onDownload,
   onPrint,
   onEmail,
   onPageCountChange,
@@ -45,6 +46,7 @@ export function PdfPreviewModal({
   const insets = useSafeAreaInsets();
   const styles = useStyles();
   const colors = useColors();
+  const busy = Boolean(busyAction);
 
   return (
     <Modal
@@ -89,8 +91,26 @@ export function PdfPreviewModal({
               <ActivityIndicator color={colors.primary} size="small" />
               <Text style={styles.emptyText}>Génération du PDF…</Text>
             </View>
-          ) : pdfUri ? (
-            <PdfPreviewWebView onPageCountChange={onPageCountChange} pdfUri={pdfUri} preferPdfJs />
+          ) : errorMessage ? (
+            <View style={styles.empty}>
+              <SymbolView
+                name={{
+                  ios: 'exclamationmark.triangle',
+                  android: 'warning',
+                  web: 'warning',
+                }}
+                size={28}
+                tintColor={colors.error}
+              />
+              <Text style={[styles.emptyText, { color: colors.error }]}>{errorMessage}</Text>
+            </View>
+          ) : pdfUri || pdfHtml ? (
+            <PdfPreviewWebView
+              html={pdfHtml ?? undefined}
+              onPageCountChange={onPageCountChange}
+              pdfUri={pdfUri}
+              preferPdfJs
+            />
           ) : (
             <View style={styles.empty}>
               <Text style={styles.emptyText}>Préparation de l’aperçu…</Text>
@@ -101,31 +121,37 @@ export function PdfPreviewModal({
         <View style={[styles.actions, { paddingBottom: Math.max(insets.bottom, spacing.md) }]}>
           {onPrint ? (
             <ActionButton
+              disabled={busy && busyAction !== 'print'}
               icon={{ ios: 'printer', android: 'print', web: 'print' }}
               label="Imprimer"
+              loading={busyAction === 'print'}
               onPress={onPrint}
             />
           ) : null}
-          {onSave ? (
+          {onDownload ? (
             <ActionButton
-              icon={{ ios: 'square.and.arrow.down', android: 'download', web: 'download' }}
-              label="Enregistrer"
-              loading={loading}
-              onPress={onSave}
+              disabled={busy && busyAction !== 'download'}
+              icon={{ ios: 'arrow.down.circle', android: 'download', web: 'download' }}
+              label="Télécharger"
+              loading={busyAction === 'download'}
+              onPress={onDownload}
             />
           ) : null}
           {onEmail ? (
             <ActionButton
+              disabled={busy && busyAction !== 'email'}
               icon={{ ios: 'envelope', android: 'mail', web: 'mail' }}
               label="E-mail"
+              loading={busyAction === 'email'}
               onPress={onEmail}
             />
           ) : null}
           <ActionButton
+            disabled={busy && busyAction !== 'share'}
             highlight
             icon={{ ios: 'square.and.arrow.up', android: 'share', web: 'share' }}
             label="Partager"
-            loading={loading}
+            loading={busyAction === 'share'}
             onPress={onShare}
           />
         </View>
@@ -135,7 +161,7 @@ export function PdfPreviewModal({
 }
 
 type ActionIcon = {
-  ios: 'printer' | 'square.and.arrow.down' | 'square.and.arrow.up' | 'envelope';
+  ios: 'printer' | 'arrow.down.circle' | 'square.and.arrow.up' | 'envelope';
   android: 'print' | 'download' | 'share' | 'mail';
   web: 'print' | 'download' | 'share' | 'mail';
 };
@@ -144,31 +170,46 @@ type ActionButtonProps = {
   label: string;
   onPress: () => void;
   loading?: boolean;
+  disabled?: boolean;
   highlight?: boolean;
   icon: ActionIcon;
 };
 
-function ActionButton({ label, onPress, loading = false, highlight = false, icon }: ActionButtonProps) {
+function ActionButton({
+  label,
+  onPress,
+  loading = false,
+  disabled = false,
+  highlight = false,
+  icon,
+}: ActionButtonProps) {
   const styles = useStyles();
   const colors = useColors();
+  const isDisabled = loading || disabled;
 
   return (
     <Pressable
+      accessibilityLabel={label}
       accessibilityRole="button"
-      disabled={loading}
+      accessibilityState={{ busy: loading, disabled: isDisabled }}
+      disabled={isDisabled}
       onPress={onPress}
       style={({ pressed }) => [
         styles.actionButton,
         highlight && styles.actionButtonHighlight,
-        pressed && styles.pressed,
-        loading && styles.actionButtonDisabled,
+        pressed && !isDisabled && styles.pressed,
+        isDisabled && styles.actionButtonDisabled,
       ]}>
-      <SymbolView
-        name={icon}
-        size={20}
-        tintColor={highlight ? '#FFFFFF' : colors.text}
-        type="hierarchical"
-      />
+      {loading ? (
+        <ActivityIndicator color={highlight ? '#FFFFFF' : colors.primary} size="small" />
+      ) : (
+        <SymbolView
+          name={icon}
+          size={20}
+          tintColor={highlight ? '#FFFFFF' : colors.text}
+          type="hierarchical"
+        />
+      )}
       <Text style={[styles.actionLabel, highlight && styles.actionLabelHighlight]}>{label}</Text>
     </Pressable>
   );
@@ -256,7 +297,7 @@ function useStyles() {
       backgroundColor: colors.primary,
     },
     actionButtonDisabled: {
-      opacity: 0.6,
+      opacity: 0.5,
     },
     actionLabel: {
       ...textHierarchy.caption,
