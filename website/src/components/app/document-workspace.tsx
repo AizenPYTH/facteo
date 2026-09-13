@@ -74,6 +74,8 @@ import { getInvoiceErrorMessage } from '@/lib/invoices/errors';
 import { getQuoteErrorMessage } from '@/lib/quotes/errors';
 import { invoicesQueryKeys, quotesQueryKeys } from '@/lib/domain/supabase/query-keys';
 import { buildInvoicePdfHtml, buildQuotePdfHtml } from '@/lib/domain/pdf/document-pdf';
+import { htmlStringToPdfBlob } from '@/lib/domain/pdf/pdf-export';
+import { SendDocumentEmailError, sendDocumentEmail } from '@/lib/email/send-document';
 import {
   downloadPdfFromHtml,
   openMailto,
@@ -751,6 +753,48 @@ export function InvoicesWorkspace() {
     }
   }
 
+  /**
+   * Envoi réel au client, via Resend côté serveur.
+   *
+   * Le succès n'est annoncé que si le serveur a accepté le message. Ouvrir un
+   * client de messagerie n'est pas un envoi : c'est l'action distincte
+   * « Ouvrir mon client mail ».
+   */
+  async function emailInvoice(invoice: InvoiceDetail) {
+    if (!scope) return;
+    setActionLoading('email');
+    try {
+      const html = await buildInvoicePdfHtml(
+        requireScope(scope),
+        invoice,
+        user?.email,
+        previewTemplateId || undefined,
+      );
+      const result = await sendDocumentEmail({
+        documentType: 'invoice',
+        documentId: invoice.id,
+        pdfBlob: await htmlStringToPdfBlob(html),
+        pdfFileName: `Facture-${invoice.number}.pdf`,
+      });
+      showSuccess(
+        result.recipient
+          ? `Facture ${invoice.number} envoyée à ${result.recipient}.`
+          : `Facture ${invoice.number} envoyée.`,
+      );
+      void queryClient.invalidateQueries({ queryKey: invoicesQueryKeys.all });
+    } catch (error) {
+      const message =
+        error instanceof SendDocumentEmailError
+          ? error.allowsMailFallback
+            ? `${error.message} Vous pouvez utiliser « Ouvrir mon client mail ».`
+            : error.message
+          : 'L’envoi de l’e-mail a échoué.';
+      showError(message);
+    } finally {
+      setActionLoading(null);
+    }
+  }
+
   const duplicateMutation = useMutation({
     mutationFn: (invoiceId: string) => duplicateInvoice(requireScope(scope), invoiceId),
     onSuccess: (invoice) => {
@@ -894,6 +938,13 @@ export function InvoicesWorkspace() {
       {
         key: 'email',
         label: 'Envoyer par e-mail',
+        icon: Mail,
+        onSelect: () => void emailInvoice(invoice),
+        disabled: actionLoading !== null,
+      },
+      {
+        key: 'mailto',
+        label: 'Ouvrir mon client mail',
         icon: Mail,
         onSelect: () =>
           openMailto(
@@ -1201,6 +1252,41 @@ export function QuotesWorkspace() {
     );
   }
 
+  /** Envoi réel du devis au client, via Resend côté serveur. */
+  async function emailQuote(quote: QuoteDetail) {
+    if (!scope) return;
+    setActionLoading('email');
+    try {
+      const html = await buildQuotePdfHtml(
+        requireScope(scope),
+        quote,
+        user?.email,
+        previewTemplateId || undefined,
+      );
+      const result = await sendDocumentEmail({
+        documentType: 'quote',
+        documentId: quote.id,
+        pdfBlob: await htmlStringToPdfBlob(html),
+        pdfFileName: `Devis-${quote.number}.pdf`,
+      });
+      showSuccess(
+        result.recipient
+          ? `Devis ${quote.number} envoyé à ${result.recipient}.`
+          : `Devis ${quote.number} envoyé.`,
+      );
+    } catch (error) {
+      const message =
+        error instanceof SendDocumentEmailError
+          ? error.allowsMailFallback
+            ? `${error.message} Vous pouvez utiliser « Ouvrir mon client mail ».`
+            : error.message
+          : 'L’envoi de l’e-mail a échoué.';
+      showError(message);
+    } finally {
+      setActionLoading(null);
+    }
+  }
+
   function clearFilters() {
     setSearch('');
     setStatus('all');
@@ -1276,6 +1362,13 @@ export function QuotesWorkspace() {
       {
         key: 'email',
         label: 'Envoyer par e-mail',
+        icon: Mail,
+        onSelect: () => void emailQuote(quote),
+        disabled: actionLoading !== null,
+      },
+      {
+        key: 'mailto',
+        label: 'Ouvrir mon client mail',
         icon: Mail,
         onSelect: () => relanceMailto(quote),
       },
