@@ -80,6 +80,11 @@ type DocumentRecord = {
   clientId: string | null;
 };
 
+/** Code Postgres 42703 : la colonne demandée n'existe pas sur cette base. */
+function isUndefinedColumn(error: { code?: string; message?: string }): boolean {
+  return error.code === '42703' || /does not exist/i.test(error.message ?? '');
+}
+
 type DocumentLookup =
   | { ok: true; document: DocumentRecord }
   | { ok: false; reason: 'missing' | 'deleted' | 'forbidden' | 'error' };
@@ -102,11 +107,24 @@ async function loadDocument(
 ): Promise<DocumentLookup> {
   const table = documentType === 'quote' ? 'quotes' : 'invoices';
 
-  const { data, error } = await serviceClient
+  const SAFE_COLUMNS = 'id, number, company_id, client_id, user_id';
+
+  // `deleted_at` n'existe pas sur toutes les bases : en Postgres, une colonne
+  // absente fait ÉCHOUER la requête au lieu de la laisser vide. On tente donc
+  // avec, puis sans, plutôt que de prendre l'échec pour un document absent.
+  let { data, error } = await serviceClient
     .from(table)
-    .select('id, number, company_id, client_id, user_id, deleted_at')
+    .select(`${SAFE_COLUMNS}, deleted_at`)
     .eq('id', documentId)
     .maybeSingle();
+
+  if (error && isUndefinedColumn(error)) {
+    ({ data, error } = await serviceClient
+      .from(table)
+      .select(SAFE_COLUMNS)
+      .eq('id', documentId)
+      .maybeSingle());
+  }
 
   if (error) {
     console.error('[send-document-email] lookup', error.message);
@@ -115,7 +133,8 @@ async function loadDocument(
   if (!data) {
     return { ok: false, reason: 'missing' };
   }
-  if (data.deleted_at) {
+  // Absente du schéma : le document ne peut pas être en corbeille.
+  if ((data as { deleted_at?: string | null }).deleted_at) {
     return { ok: false, reason: 'deleted' };
   }
   if (data.user_id !== userId) {
