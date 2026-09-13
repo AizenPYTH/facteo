@@ -8,15 +8,21 @@
 # Dépendances : EAS les réinstalle lui-même depuis package-lock.json.
 node_modules/
 
+# ATTENTION aux motifs de dossier : sans barre oblique initiale, `supabase/`
+# correspond à N'IMPORTE QUEL dossier de ce nom, à n'importe quelle profondeur
+# — il emportait `src/lib/supabase/`, et le bundle ne compilait plus. Tout
+# dossier de premier niveau doit donc être ancré par une barre oblique.
+
 # Le site Next.js (inveq.fr). C'est une application indépendante, sans rapport
 # avec le build iOS, et la plus grosse part de l'archive : ses dépendances et
 # son cache de build pesaient à eux seuls près de 900 Mo.
-website/
+/website/
 
 # Supabase (Edge Functions, migrations) : déployé séparément par la CLI.
-supabase/
+# Ancré : ne doit surtout pas emporter `src/lib/supabase/`.
+/supabase/
 
-# Sorties de build, caches et exports
+# Sorties de build, caches et exports (à toute profondeur : voulu)
 .expo/
 .expo-export-test/
 dist/
@@ -32,12 +38,12 @@ web-build/
 .kotlin/
 
 # Documentation et maquettes
-docs/
+/docs/
 
 # Historique Git et outillage de dépôt
-.git/
-.github/
-.claude/
+/.git/
+/.github/
+/.claude/
 
 # Journaux et fichiers système
 *.log
