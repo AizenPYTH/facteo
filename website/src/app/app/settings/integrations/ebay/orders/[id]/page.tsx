@@ -10,7 +10,7 @@ import { PrimaryButton, SecondaryButton } from '@/components/app/form-fields';
 import { LoadingState, Panel } from '@/components/app/ui';
 import { useInfiniteClients } from '@/hooks/use-clients';
 import { createClient } from '@/lib/domain/supabase/clients';
-import { createInvoice } from '@/lib/domain/supabase/invoices';
+import { addInvoicePayment, createInvoice } from '@/lib/domain/supabase/invoices';
 import { requireScope } from '@/lib/domain/tenant/scope';
 import { fetchEbayOrderById, linkOrderToInvoice } from '@/lib/integrations/ebay/api';
 import { integrationsQueryKeys } from '@/lib/integrations/query-keys';
@@ -127,19 +127,52 @@ export default function EbayOrderPage() {
     if (!order || !draft || !selectedClientId || !scope) return;
     setBusy(true);
     setError(null);
+
+    // L'acheteur a réglé sur eBay au moment de la commande : la facture est un
+    // justificatif produit après coup, pas une demande de paiement. Aucune
+    // échéance future ne doit donc apparaître.
+    const settledAt = order.orderCreatedAt;
+
+    let invoice;
     try {
-      const invoice = await createInvoice(requireScope(scope), {
+      invoice = await createInvoice(requireScope(scope), {
         clientId: selectedClientId,
         lines: draft.lines,
         notes: draft.notes,
+        dueAt: settledAt,
       });
       // La base refuse tout second rattachement pour la même commande.
       await linkOrderToInvoice(order.id, invoice.id);
-      router.push(`/app/invoices?selected=${invoice.id}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Création de la facture impossible.');
       setBusy(false);
+      return;
     }
+
+    // Encaissement enregistré tout de suite, avec la date et la référence eBay :
+    // sans lui la facture apparaîtrait « à encaisser » et son PDF réclamerait un
+    // virement pour de l'argent déjà reçu.
+    try {
+      if (invoice.totalTtc > 0) {
+        await addInvoicePayment(requireScope(scope), invoice.id, {
+          amount: invoice.totalTtc,
+          paidAt: settledAt ?? undefined,
+          paymentMethod: 'Paiement eBay',
+          paymentReference: `Commande eBay ${order.externalOrderId}`,
+        });
+      }
+    } catch (err) {
+      const reason = err instanceof Error ? err.message : 'raison inconnue';
+      setError(
+        `La facture ${invoice.number} a bien été créée et rattachée à la commande, ` +
+          `mais l'encaissement eBay n'a pas pu être enregistré (${reason}). ` +
+          'Ouvrez la facture et enregistrez le paiement à la main avant de l’envoyer.',
+      );
+      setBusy(false);
+      return;
+    }
+
+    router.push(`/app/invoices?selected=${invoice.id}`);
   }
 
   if (loading) {
@@ -294,8 +327,8 @@ export default function EbayOrderPage() {
       {alreadyInvoiced ? (
         <Panel title="Facturation">
           <Notice tone="info">
-            Cette commande a déjà donné lieu à une facture INVEQ. Une commande ne peut être
-            facturée qu’une seule fois.
+            Cette commande a déjà donné lieu à une facture INVEQ. Une commande ne peut donner
+            lieu qu’à une seule facture.
           </Notice>
           <Link
             className="mt-3 inline-flex items-center rounded-[9px] border border-app-border bg-app-surface px-[14px] py-[9px] text-[13.5px] font-medium text-app-text-2 transition hover:bg-app-hover"
@@ -338,6 +371,13 @@ export default function EbayOrderPage() {
             ) : null}
 
             {error ? <Notice tone="danger">{error}</Notice> : null}
+
+            <p className="mb-3 text-[12.5px] leading-relaxed text-app-muted">
+              La facture sera créée <strong>acquittée</strong> : le paiement eBay
+              {order.orderCreatedAt ? ` du ${formatDate(order.orderCreatedAt)}` : ''} y est
+              enregistré, avec le numéro de commande en référence. Elle ne réclamera donc ni
+              échéance, ni virement, ni QR de paiement.
+            </p>
 
             <div className="mt-3">
               <PrimaryButton disabled={!canSubmit || busy} onClick={() => void handleCreateInvoice()}>

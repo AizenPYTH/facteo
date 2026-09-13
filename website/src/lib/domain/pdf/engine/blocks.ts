@@ -134,12 +134,39 @@ export function buildDocumentMeta(input: PdfDocumentInput): {
   };
 }
 
+/**
+ * Facture dont le solde est déjà nul : vente encaissée avant émission du
+ * document (marketplace, paiement à la commande, acompte total…).
+ *
+ * Le montant restant dû est calculé à partir des paiements enregistrés ; il
+ * n'est renseigné que pour une facture réelle, pas pour un brouillon en cours
+ * de composition, d'où le test de type.
+ */
+function isSettledInvoice(input: PdfDocumentInput): boolean {
+  return (
+    input.kind === 'invoice' &&
+    typeof input.totals.amountDue === 'number' &&
+    input.totals.amountDue <= 0.01
+  );
+}
+
 export function buildPaymentSection(input: PdfDocumentInput): string {
   const paymentTermsDays = input.settings?.paymentTermsDays ?? 30;
   const { company } = input;
   const methods = company.paymentMethods ?? [];
   const iban = company.iban?.trim() ?? '';
   const bic = company.bic?.trim() ?? '';
+
+  // Réclamer un délai de paiement, un IBAN ou un QR de virement sur une facture
+  // déjà réglée invite l'acheteur à payer une seconde fois.
+  if (isSettledInvoice(input)) {
+    return `
+    <div class="payment">
+      <h3>Règlement</h3>
+      <div><strong>Facture acquittée.</strong> Aucun règlement n’est attendu.</div>
+    </div>
+  `;
+  }
 
   if (methods.length === 0 && !iban && !bic) {
     return '';

@@ -128,7 +128,9 @@ export async function buildInvoicePdfInput(
     company,
     client: client ?? fallbackClient(invoice.clientName),
     settings,
-    showPaymentQr: true,
+    // Facture déjà soldée (vente encaissée avant émission) : pas de QR de
+    // virement, il ferait payer une seconde fois.
+    showPaymentQr: invoice.amountDue > 0,
     clientSignature: documentSignature
       ? { url: documentSignature.signatureUrl, signedAt: documentSignature.signedAt }
       : null,

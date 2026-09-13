@@ -251,6 +251,12 @@ function buildQrSvg(input: PdfDocumentInput, amountDue: number): string | null {
     return null;
   }
 
+  // Facture déjà soldée (vente encaissée avant émission : marketplace, paiement
+  // à la commande, acompte total). Un QR de virement inviterait à payer deux fois.
+  if (amountDue <= 0.005) {
+    return null;
+  }
+
   const result = buildSepaCreditTransferPayload({
     beneficiaryName: clean(input.company.companyName) ?? clean(
       [input.company.firstName, input.company.lastName].filter(Boolean).join(' '),
@@ -290,11 +296,17 @@ export function buildTemplateContext(input: PdfDocumentInput): TemplateContext {
   const methods = (input.company.paymentMethods ?? []).map(
     (id: PaymentMethodId) => PAYMENT_METHOD_LABELS[id],
   );
+  // Solde nul sur une facture : le document est un justificatif, pas une demande
+  // de paiement. On l'annonce au lieu d'un délai et on tait les coordonnées
+  // bancaires, qui feraient payer une seconde fois.
+  const settled = !isQuote && amountDue <= 0.005;
   const terms = isQuote
     ? null
-    : paymentTermsDays
-      ? `Paiement sous ${paymentTermsDays} jours`
-      : null;
+    : settled
+      ? 'Facture acquittée — aucun règlement attendu'
+      : paymentTermsDays
+        ? `Paiement sous ${paymentTermsDays} jours`
+        : null;
 
   const issuedAt = input.issuedAt ? formatDate(input.issuedAt) : null;
   const secondaryDate = input.dueOrValidUntil ? formatDate(input.dueOrValidUntil) : null;
@@ -327,8 +339,11 @@ export function buildTemplateContext(input: PdfDocumentInput): TemplateContext {
     meta.push({ label: 'Conditions', value: terms });
   }
 
-  const summaryParts = [terms, iban ? `IBAN ${formatIban(iban)}` : null, bic ? `BIC ${bic}` : null]
-    .filter((part): part is string => Boolean(part));
+  const summaryParts = [
+    terms,
+    settled || !iban ? null : `IBAN ${formatIban(iban)}`,
+    settled || !bic ? null : `BIC ${bic}`,
+  ].filter((part): part is string => Boolean(part));
 
   return {
     kind: input.kind,
@@ -370,9 +385,9 @@ export function buildTemplateContext(input: PdfDocumentInput): TemplateContext {
     },
     payment: {
       terms,
-      iban: iban ? formatIban(iban) : null,
-      bic,
-      methods,
+      iban: settled || !iban ? null : formatIban(iban),
+      bic: settled ? null : bic,
+      methods: settled ? [] : methods,
       summary: summaryParts.length > 0 ? summaryParts.join(' — ') : null,
     },
     qrSvg: buildQrSvg(input, amountDue),

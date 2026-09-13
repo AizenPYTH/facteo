@@ -25,9 +25,14 @@ import { useTenant } from '@/providers/company-provider';
 import { describeFulfillmentStatus, describePaymentStatus } from '@/types/integrations';
 import { cn } from '@/lib/utils';
 
+/**
+ * Sur eBay l'acheteur paie au moment de la commande : rien n'est « à facturer »
+ * au sens d'un encaissement à obtenir. Le filtre distingue seulement les
+ * commandes pour lesquelles un justificatif a déjà été produit.
+ */
 const FILTERS: { key: ExternalOrderFilter; label: string }[] = [
-  { key: 'pending', label: 'À facturer' },
-  { key: 'invoiced', label: 'Facturées' },
+  { key: 'pending', label: 'Sans facture' },
+  { key: 'invoiced', label: 'Facture créée' },
   { key: 'all', label: 'Toutes' },
 ];
 
@@ -119,6 +124,11 @@ export default function EbayOrdersPage() {
           </SecondaryButton>
         }
         title="Commandes eBay">
+        <p className="mb-4 text-[13px] leading-relaxed text-app-muted">
+          L’acheteur a déjà payé sur eBay. La facture INVEQ est un justificatif que vous créez
+          quand il vous en demande un : elle est émise acquittée, sans échéance ni demande de
+          virement.
+        </p>
         <div className="mb-4 flex gap-2">
           {FILTERS.map((entry) => (
             <button
@@ -161,7 +171,7 @@ export default function EbayOrdersPage() {
               {search
                 ? `Aucune commande ne correspond à « ${search} ».`
                 : filter === 'pending'
-                ? 'Aucune commande eBay en attente de facturation. Lancez une synchronisation pour récupérer les dernières commandes.'
+                ? 'Aucune commande eBay sans facture. Lancez une synchronisation pour récupérer les dernières commandes.'
                 : filter === 'invoiced'
                   ? 'Aucune commande eBay n’a encore donné lieu à une facture.'
                   : 'Lancez une synchronisation pour importer vos commandes eBay.'}
@@ -203,7 +213,7 @@ export default function EbayOrdersPage() {
                     {order.invoiceId ? (
                       <Badge variant="success">Facture créée</Badge>
                     ) : (
-                      <Badge>Pas encore facturée</Badge>
+                      <Badge>Aucune facture</Badge>
                     )}
                   </span>
                 </Link>
