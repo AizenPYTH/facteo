@@ -14,8 +14,15 @@
 import type { EbayConfig } from './config.ts';
 
 export const EBAY_MAX_LIMIT = 200;
-/** Les PII acheteur disparaissent au-delà de 90 jours : inutile de remonter plus loin. */
-export const EBAY_FIRST_SYNC_DAYS = 90;
+/**
+ * Fenêtre de la première synchronisation, en jours.
+ *
+ * Plafond technique : au-delà de 90 jours, eBay ne renvoie plus le nom ni la
+ * rue de l'acheteur, ce qui rend la facture inexploitable. La valeur retenue
+ * est plus courte, pour n'importer que les commandes récentes.
+ */
+export const EBAY_FIRST_SYNC_DAYS = 30;
+export const EBAY_MAX_USEFUL_SYNC_DAYS = 90;
 
 export type EbayOrder = Record<string, unknown>;
 

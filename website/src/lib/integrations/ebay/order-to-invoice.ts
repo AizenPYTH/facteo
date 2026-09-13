@@ -35,6 +35,16 @@ export type OrderDraftWarning = {
   message: string;
 };
 
+/**
+ * Taux de TVA appliqué par défaut aux lignes importées.
+ *
+ * INVEQ ne lit aucun taux dans la réponse eBay : l'API ne fournit pas la TVA
+ * vendeur. C'est une valeur de départ, affichée et modifiable avant création,
+ * pas une déduction. Elle est ignorée dès qu'eBay a lui-même collecté la taxe,
+ * cas où l'utilisateur doit trancher.
+ */
+export const DEFAULT_EBAY_VAT_RATE = '20';
+
 export type OrderInvoiceDraft = {
   lines: InvoiceLineValue[];
   notes: string;
@@ -68,7 +78,14 @@ function lineDescription(order: ExternalOrder, line: ExternalOrder['lines'][numb
   return [cleanTitle(line.title), ...details].filter(Boolean).join('\n');
 }
 
-export function buildInvoiceLinesFromOrder(order: ExternalOrder): InvoiceLineValue[] {
+export function buildInvoiceLinesFromOrder(
+  order: ExternalOrder,
+  vatRate: string = DEFAULT_EBAY_VAT_RATE,
+): InvoiceLineValue[] {
+  // Quand eBay a collecté et reversé la taxe, aucun taux vendeur n'est
+  // pré-rempli : l'utilisateur doit décider en connaissance de cause.
+  const appliedVat = order.collectAndRemit ? '' : vatRate;
+
   const lines: InvoiceLineValue[] = order.lines.map((line) => ({
     id: createLocalInvoiceLineId(),
     productId: null,
@@ -76,8 +93,7 @@ export function buildInvoiceLinesFromOrder(order: ExternalOrder): InvoiceLineVal
     quantity: String(line.quantity),
     unit: 'unité',
     unitPrice: line.unitPrice,
-    // TVA volontairement vide : INVEQ ne devine pas un taux eBay.
-    vatRate: '',
+    vatRate: appliedVat,
     discountPercent: '0',
   }));
 
@@ -89,7 +105,7 @@ export function buildInvoiceLinesFromOrder(order: ExternalOrder): InvoiceLineVal
       quantity: '1',
       unit: 'forfait',
       unitPrice: order.shippingAmount,
-      vatRate: '',
+      vatRate: appliedVat,
       discountPercent: '0',
     });
   }
@@ -128,8 +144,9 @@ export function collectOrderWarnings(order: ExternalOrder): OrderDraftWarning[] 
   warnings.push({
     code: 'vat-not-set',
     level: 'info',
-    message:
-      'Aucun taux de TVA n’a été appliqué automatiquement : INVEQ ne déduit pas la TVA d’une commande eBay. Renseignez le taux ligne par ligne avant validation.',
+    message: order.collectAndRemit
+      ? 'Aucun taux de TVA n’a été pré-rempli : eBay a déjà collecté la taxe sur cette commande. Décidez du traitement avant de valider.'
+      : 'Le taux de TVA proposé est une valeur par défaut, pas une donnée eBay : l’API ne transmet pas la TVA vendeur. Vérifiez-le avant de valider.',
   });
 
   if (!order.buyer.fullName && !order.buyer.companyName) {
@@ -187,10 +204,13 @@ export function collectOrderWarnings(order: ExternalOrder): OrderDraftWarning[] 
   return warnings;
 }
 
-export function buildOrderInvoiceDraft(order: ExternalOrder): OrderInvoiceDraft {
+export function buildOrderInvoiceDraft(
+  order: ExternalOrder,
+  vatRate: string = DEFAULT_EBAY_VAT_RATE,
+): OrderInvoiceDraft {
   const warnings = collectOrderWarnings(order);
   return {
-    lines: buildInvoiceLinesFromOrder(order),
+    lines: buildInvoiceLinesFromOrder(order, vatRate),
     notes: buildOrderNotes(order),
     warnings,
     requiresAcknowledgement: warnings.some((warning) => warning.level === 'blocking'),

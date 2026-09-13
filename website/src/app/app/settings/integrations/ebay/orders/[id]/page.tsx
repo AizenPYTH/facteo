@@ -16,10 +16,12 @@ import { fetchEbayOrderById, linkOrderToInvoice } from '@/lib/integrations/ebay/
 import { integrationsQueryKeys } from '@/lib/integrations/query-keys';
 import { formatMoney } from '@/lib/integrations/money';
 import {
+  DEFAULT_EBAY_VAT_RATE,
   buildClientFormFromBuyer,
   buildOrderInvoiceDraft,
   draftTotalMismatch,
 } from '@/lib/integrations/ebay/order-to-invoice';
+import { orderPrimaryLabel } from '@/lib/integrations/ebay/order-display';
 import { useTenant } from '@/providers/company-provider';
 import {
   describeFulfillmentStatus,
@@ -79,6 +81,7 @@ export default function EbayOrderPage() {
   const [error, setError] = useState<string | null>(null);
   const [selectedClientId, setSelectedClientId] = useState('');
   const [acknowledged, setAcknowledged] = useState(false);
+  const [vatRate, setVatRate] = useState(DEFAULT_EBAY_VAT_RATE);
 
   const clientsQuery = useInfiniteClients('');
   const clients = useMemo(
@@ -95,7 +98,10 @@ export default function EbayOrderPage() {
   const order: ExternalOrder | null = orderQuery.data ?? null;
   const loading = orderQuery.isLoading;
 
-  const draft = useMemo(() => (order ? buildOrderInvoiceDraft(order) : null), [order]);
+  const draft = useMemo(
+    () => (order ? buildOrderInvoiceDraft(order, vatRate) : null),
+    [order, vatRate],
+  );
   const mismatch = useMemo(
     () => (order && draft ? draftTotalMismatch(order, draft.lines) : null),
     [draft, order],
@@ -128,7 +134,7 @@ export default function EbayOrderPage() {
       });
       // La base refuse tout second rattachement pour la même commande.
       await linkOrderToInvoice(order.id, invoice.id);
-      router.push(`/app/invoices/${invoice.id}`);
+      router.push(`/app/invoices?selected=${invoice.id}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Création de la facture impossible.');
       setBusy(false);
@@ -181,7 +187,7 @@ export default function EbayOrderPage() {
             ← Toutes les commandes
           </Link>
         }
-        title={`Commande ${order.externalOrderId}`}>
+        title={orderPrimaryLabel(order)}>
         <Row label="Numéro eBay" value={order.externalOrderId} />
         {order.orderReference ? (
           <Row label="Référence des ventes" value={order.orderReference} />
@@ -232,6 +238,31 @@ export default function EbayOrderPage() {
       ) : null}
 
       <Panel title="Lignes proposées">
+        <div className="mb-3 flex flex-wrap items-center gap-2">
+          <label className="text-[13px] text-app-muted" htmlFor="ebay-vat-rate">
+            Taux de TVA appliqué
+          </label>
+          <div className="flex items-center gap-1.5">
+            <input
+              className="w-[84px] rounded-[9px] border border-app-border bg-app-surface px-3 py-[7px] text-[13.5px] text-app-text outline-none focus:border-app-accent"
+              id="ebay-vat-rate"
+              inputMode="decimal"
+              onChange={(event) => setVatRate(event.target.value)}
+              value={vatRate}
+            />
+            <span className="text-[13px] text-app-muted">%</span>
+          </div>
+          {[0, 5.5, 10, 20].map((rate) => (
+            <button
+              className="rounded-full bg-app-subtle px-2.5 py-1 text-[12px] font-medium text-app-muted transition hover:bg-app-hover"
+              key={rate}
+              onClick={() => setVatRate(String(rate).replace('.', '.'))}
+              type="button">
+              {String(rate).replace('.', ',')} %
+            </button>
+          ))}
+        </div>
+
         <ul className="flex flex-col">
           {draft.lines.map((line) => (
             <li className="border-b border-app-border-soft py-2.5 last:border-b-0" key={line.id}>
@@ -239,14 +270,16 @@ export default function EbayOrderPage() {
                 {line.description}
               </p>
               <p className="mt-0.5 text-[12.5px] text-app-muted">
-                {line.quantity} × {formatMoney(line.unitPrice, order.currency)} · TVA à renseigner
+                {line.quantity} × {formatMoney(line.unitPrice, order.currency)} ·{' '}
+                {line.vatRate ? `TVA ${line.vatRate} %` : 'TVA à renseigner'}
               </p>
             </li>
           ))}
         </ul>
         <p className="mt-3 text-[12.5px] leading-relaxed text-app-muted">
-          Les taux de TVA sont volontairement vides. Vous les renseignerez dans la facture, qui
-          reste modifiable tant qu’elle est en brouillon.
+          {order.collectAndRemit
+            ? 'Aucun taux n’est pré-rempli : eBay a déjà collecté la taxe sur cette commande. Renseignez la TVA vous-même après avoir vérifié le traitement applicable.'
+            : 'Ce taux est une valeur par défaut, pas une donnée eBay : l’API ne transmet pas la TVA vendeur. La facture reste modifiable tant qu’elle est en brouillon.'}
         </p>
       </Panel>
 
@@ -258,7 +291,7 @@ export default function EbayOrderPage() {
           </Notice>
           <Link
             className="mt-3 inline-flex items-center rounded-[9px] border border-app-border bg-app-surface px-[14px] py-[9px] text-[13.5px] font-medium text-app-text-2 transition hover:bg-app-hover"
-            href={`/app/invoices/${order.invoiceId}`}>
+            href={`/app/invoices?selected=${order.invoiceId}`}>
             Ouvrir la facture
           </Link>
         </Panel>
