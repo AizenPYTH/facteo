@@ -13,7 +13,9 @@
 import { createLocalInvoiceLineId, type InvoiceLineValue } from '@/types/invoice';
 import { createEmptyClientFormValues, type ClientFormValues } from '@/types/client';
 import {
+  centsIncludingVat,
   centsToDecimalString,
+  decimalExcludingVat,
   decimalStringToCents,
   isPositiveAmount,
 } from '@/lib/integrations/money';
@@ -21,10 +23,21 @@ import type { ExternalOrder, ExternalOrderBuyer } from '@/types/integrations';
 
 export type OrderDraftWarningLevel = 'blocking' | 'info';
 
+/**
+ * eBay masque l'adresse de l'acheteur derrière un relais `@members.ebay.com`.
+ * Les messages y sont transférés, mais ce n'est pas l'adresse personnelle de
+ * l'acheteur et elle cesse de fonctionner après la transaction.
+ */
+export function isEbayRelayEmail(email: string | null): boolean {
+  return typeof email === 'string' && /@members\.ebay\.com\s*$/i.test(email);
+}
+
 export type OrderDraftWarning = {
   code:
     | 'collect-and-remit'
     | 'vat-not-set'
+    | 'prices-include-vat'
+    | 'relay-email'
     | 'buyer-name-missing'
     | 'buyer-address-incomplete'
     | 'buyer-email-missing'
@@ -44,6 +57,26 @@ export type OrderDraftWarning = {
  * cas où l'utilisateur doit trancher.
  */
 export const DEFAULT_EBAY_VAT_RATE = '20';
+
+/**
+ * Les prix renvoyés par eBay sont TTC.
+ *
+ * Vérifié sur une facture eBay réelle : « Prix de l'objet 29,00 EUR », « Taux
+ * de TVA 20 % », « Montant de la TVA 4,83 EUR », HT 24,17 EUR. INVEQ facture
+ * en HT + taux : il faut donc retirer la TVA du prix eBay, faute de quoi la
+ * facture dépasserait de 20 % ce que l'acheteur a réellement payé.
+ */
+export const EBAY_PRICES_INCLUDE_VAT = true;
+
+function parseRate(vatRate: string): number {
+  const parsed = Number.parseFloat((vatRate || '').replace(',', '.'));
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
+}
+
+/** Prix unitaire HT à porter sur la facture, à partir du prix eBay TTC. */
+export function invoiceUnitPrice(ebayPrice: string, vatRate: string): string {
+  return EBAY_PRICES_INCLUDE_VAT ? decimalExcludingVat(ebayPrice, vatRate) : ebayPrice;
+}
 
 export type OrderInvoiceDraft = {
   lines: InvoiceLineValue[];
@@ -92,7 +125,7 @@ export function buildInvoiceLinesFromOrder(
     description: lineDescription(order, line),
     quantity: String(line.quantity),
     unit: 'unité',
-    unitPrice: line.unitPrice,
+    unitPrice: invoiceUnitPrice(line.unitPrice, appliedVat),
     vatRate: appliedVat,
     discountPercent: '0',
   }));
@@ -104,7 +137,7 @@ export function buildInvoiceLinesFromOrder(
       description: 'Frais de livraison\nMontant facturé par eBay pour cette commande.',
       quantity: '1',
       unit: 'forfait',
-      unitPrice: order.shippingAmount,
+      unitPrice: invoiceUnitPrice(order.shippingAmount, appliedVat),
       vatRate: appliedVat,
       discountPercent: '0',
     });
@@ -168,6 +201,24 @@ export function collectOrderWarnings(order: ExternalOrder): OrderDraftWarning[] 
     });
   }
 
+  if (EBAY_PRICES_INCLUDE_VAT && !order.collectAndRemit) {
+    warnings.push({
+      code: 'prices-include-vat',
+      level: 'info',
+      message:
+        'Les prix eBay sont TTC. Ils ont été convertis en HT au taux choisi, pour que le total de la facture corresponde à ce que l’acheteur a payé.',
+    });
+  }
+
+  if (isEbayRelayEmail(order.buyer.email)) {
+    warnings.push({
+      code: 'relay-email',
+      level: 'info',
+      message:
+        'L’adresse e-mail fournie par eBay est un relais @members.ebay.com, pas l’adresse personnelle de l’acheteur. Les messages lui sont transférés, mais ce relais cesse de fonctionner quelque temps après la vente.',
+    });
+  }
+
   if (!order.buyer.email) {
     warnings.push({
       code: 'buyer-email-missing',
@@ -217,6 +268,17 @@ export function buildOrderInvoiceDraft(
   };
 }
 
+/** Somme TTC du brouillon, en centimes : c'est ce que l'acheteur doit payer. */
+export function draftLinesTotalTtcCents(lines: InvoiceLineValue[]): number {
+  return lines.reduce((total, line) => {
+    const unitHt = decimalStringToCents(line.unitPrice) ?? 0;
+    const quantity = Number(line.quantity);
+    const lineHt = unitHt * (Number.isFinite(quantity) ? quantity : 0);
+    return total + centsIncludingVat(lineHt, parseRate(line.vatRate));
+  }, 0);
+}
+
+/** Somme HT du brouillon, en centimes. */
 export function draftLinesTotalCents(lines: InvoiceLineValue[]): number {
   return lines.reduce((total, line) => {
     const unit = decimalStringToCents(line.unitPrice) ?? 0;
@@ -226,17 +288,21 @@ export function draftLinesTotalCents(lines: InvoiceLineValue[]): number {
 }
 
 /**
- * Écart entre le brouillon et le total eBay hors taxe marketplace.
- * Renvoie null si la comparaison n'a pas de sens (montants absents).
+ * Écart entre le TTC du brouillon et ce qu'eBay a facturé à l'acheteur.
+ * Un écart de quelques centimes est normal (arrondi au centime par ligne) ;
+ * un écart plus large signale une remise ou un frais non repris.
  */
 export function draftTotalMismatch(order: ExternalOrder, lines: InvoiceLineValue[]): string | null {
   const orderTotal = decimalStringToCents(order.totalAmount);
-  const marketplaceTax = decimalStringToCents(order.marketplaceTaxAmount) ?? 0;
   if (orderTotal === null) return null;
 
-  const expected = orderTotal - marketplaceTax;
-  const delta = draftLinesTotalCents(lines) - expected;
-  return delta === 0 ? null : centsToDecimalString(delta);
+  // Quand eBay a collecté la taxe, elle n'est pas refacturée par le vendeur.
+  const marketplaceTax = order.collectAndRemit
+    ? (decimalStringToCents(order.marketplaceTaxAmount) ?? 0)
+    : 0;
+
+  const delta = draftLinesTotalTtcCents(lines) - (orderTotal - marketplaceTax);
+  return Math.abs(delta) <= lines.length ? null : centsToDecimalString(delta);
 }
 
 /** Fiche client pré-remplie à partir du snapshot acheteur. */

@@ -14,11 +14,12 @@ import { createInvoice } from '@/lib/domain/supabase/invoices';
 import { requireScope } from '@/lib/domain/tenant/scope';
 import { fetchEbayOrderById, linkOrderToInvoice } from '@/lib/integrations/ebay/api';
 import { integrationsQueryKeys } from '@/lib/integrations/query-keys';
-import { formatMoney } from '@/lib/integrations/money';
+import { centsToDecimalString, formatMoney } from '@/lib/integrations/money';
 import {
   DEFAULT_EBAY_VAT_RATE,
   buildClientFormFromBuyer,
   buildOrderInvoiceDraft,
+  draftLinesTotalTtcCents,
   draftTotalMismatch,
 } from '@/lib/integrations/ebay/order-to-invoice';
 import { orderPrimaryLabel } from '@/lib/integrations/ebay/order-display';
@@ -270,16 +271,23 @@ export default function EbayOrderPage() {
                 {line.description}
               </p>
               <p className="mt-0.5 text-[12.5px] text-app-muted">
-                {line.quantity} × {formatMoney(line.unitPrice, order.currency)} ·{' '}
+                {line.quantity} × {formatMoney(line.unitPrice, order.currency)} HT ·{' '}
                 {line.vatRate ? `TVA ${line.vatRate} %` : 'TVA à renseigner'}
               </p>
             </li>
           ))}
         </ul>
+        <div className="mt-3 flex items-baseline justify-between gap-4 rounded-[9px] bg-app-subtle px-3 py-2">
+          <span className="text-[13px] text-app-muted">Total TTC de la facture</span>
+          <span className="text-[14px] font-semibold text-app-text">
+            {formatMoney(centsToDecimalString(draftLinesTotalTtcCents(draft.lines)), order.currency)}
+          </span>
+        </div>
+
         <p className="mt-3 text-[12.5px] leading-relaxed text-app-muted">
           {order.collectAndRemit
             ? 'Aucun taux n’est pré-rempli : eBay a déjà collecté la taxe sur cette commande. Renseignez la TVA vous-même après avoir vérifié le traitement applicable.'
-            : 'Ce taux est une valeur par défaut, pas une donnée eBay : l’API ne transmet pas la TVA vendeur. La facture reste modifiable tant qu’elle est en brouillon.'}
+            : 'Les prix eBay sont TTC : ils sont convertis en HT au taux ci-dessus, pour que le total de la facture corresponde à ce que l’acheteur a payé. Ce taux est une valeur par défaut, pas une donnée eBay. La facture reste modifiable tant qu’elle est en brouillon.'}
         </p>
       </Panel>
 
