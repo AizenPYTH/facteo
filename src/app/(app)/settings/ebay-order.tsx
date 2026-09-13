@@ -53,7 +53,7 @@ export default function EbayOrderScreen() {
   const queryClient = useQueryClient();
 
   const { data: order, isLoading } = useEbayOrder(id ?? '');
-  const { createInvoice } = useInvoiceMutations();
+  const { addPayment, createInvoice } = useInvoiceMutations();
   const { createClient } = useClientMutations();
 
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
@@ -68,7 +68,7 @@ export default function EbayOrderScreen() {
     [order, draft],
   );
 
-  const busy = createInvoice.isPending || createClient.isPending;
+  const busy = createInvoice.isPending || addPayment.isPending || createClient.isPending;
 
   const handleCreateClient = useCallback(async () => {
     if (!order) return;
@@ -83,21 +83,63 @@ export default function EbayOrderScreen() {
 
   const handleCreateInvoice = useCallback(async () => {
     if (!order || !draft || !selectedClientId) return;
+
+    // L'acheteur a réglé sur eBay au moment de la commande : la facture est un
+    // justificatif produit après coup, pas une demande de paiement. Aucune
+    // échéance future ne doit donc apparaître.
+    const settledAt = order.orderCreatedAt;
+
+    let invoice;
     try {
-      const invoice = await createInvoice.mutateAsync({
+      invoice = await createInvoice.mutateAsync({
         clientId: selectedClientId,
         lines: draft.lines,
         notes: draft.notes,
+        dueAt: settledAt,
       });
       // Le rattachement est refusé par la base si la commande est déjà facturée.
       await linkOrderToInvoice(order.id, invoice.id);
-      await queryClient.invalidateQueries({ queryKey: integrationsQueryKeys.all });
-      showSuccess(`Facture ${invoice.number} créée.`);
-      router.replace(`/invoices/${invoice.id}` as Href);
     } catch (error) {
       showError(error instanceof Error ? error.message : 'Création de la facture impossible.');
+      return;
     }
-  }, [createInvoice, draft, order, queryClient, selectedClientId, showError, showSuccess]);
+
+    // Encaissement enregistré tout de suite, avec la date et la référence eBay :
+    // sans lui la facture apparaîtrait « à encaisser » et son PDF réclamerait un
+    // virement pour de l'argent déjà reçu.
+    try {
+      if (invoice.totalTtc > 0) {
+        await addPayment.mutateAsync({
+          invoiceId: invoice.id,
+          input: {
+            amount: invoice.totalTtc,
+            paidAt: settledAt ?? undefined,
+            paymentMethod: 'Paiement eBay',
+            paymentReference: `Commande eBay ${order.externalOrderId}`,
+          },
+        });
+      }
+    } catch (error) {
+      const reason = error instanceof Error ? error.message : 'raison inconnue';
+      showError(
+        `Facture ${invoice.number} créée, mais l'encaissement eBay n'a pas pu être enregistré ` +
+          `(${reason}). Enregistrez le paiement à la main avant de l'envoyer.`,
+      );
+    }
+
+    await queryClient.invalidateQueries({ queryKey: integrationsQueryKeys.all });
+    showSuccess(`Facture ${invoice.number} créée, acquittée du paiement eBay.`);
+    router.replace(`/invoices/${invoice.id}` as Href);
+  }, [
+    addPayment,
+    createInvoice,
+    draft,
+    order,
+    queryClient,
+    selectedClientId,
+    showError,
+    showSuccess,
+  ]);
 
   if (isLoading) {
     return (
