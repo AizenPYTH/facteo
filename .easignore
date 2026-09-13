@@ -8,19 +8,27 @@
 # Dépendances : EAS les réinstalle lui-même depuis package-lock.json.
 node_modules/
 
-# ATTENTION aux motifs de dossier : sans barre oblique initiale, `supabase/`
-# correspond à N'IMPORTE QUEL dossier de ce nom, à n'importe quelle profondeur
-# — il emportait `src/lib/supabase/`, et le bundle ne compilait plus. Tout
-# dossier de premier niveau doit donc être ancré par une barre oblique.
+# DEUX PIÈGES, appris à nos dépens sur deux builds ratés :
+#
+# 1. Sans barre oblique initiale, un motif de dossier correspond à ce nom à
+#    N'IMPORTE QUELLE PROFONDEUR. `supabase/` emportait `src/lib/supabase/`,
+#    et le bundle ne compilait plus.
+# 2. Avec une barre oblique initiale, l'exclusion n'a pas été appliquée :
+#    `/website/` a laissé repartir tout le site dans l'archive.
+#
+# Donc : on n'exclut par nom de dossier QUE des noms qui n'existent nulle part
+# ailleurs dans l'arborescence, et on écrit les deux formes par sécurité.
 
-# Le site Next.js (inveq.fr). C'est une application indépendante, sans rapport
-# avec le build iOS, et la plus grosse part de l'archive : ses dépendances et
-# son cache de build pesaient à eux seuls près de 900 Mo.
+# Le site Next.js (inveq.fr). Application indépendante, sans rapport avec le
+# build iOS, et la plus grosse part de l'archive : dépendances et cache de
+# build pesaient à eux seuls près de 900 Mo. Aucun autre dossier ne porte ce
+# nom, les deux formes sont donc sans danger.
+website/
 /website/
 
-# Supabase (Edge Functions, migrations) : déployé séparément par la CLI.
-# Ancré : ne doit surtout pas emporter `src/lib/supabase/`.
-/supabase/
+# `supabase/` n'est volontairement PAS exclu : le dossier racine ne pèse que
+# 776 Ko, et l'exclure a déjà cassé un build en emportant `src/lib/supabase/`.
+# Le jeu n'en vaut pas la chandelle.
 
 # Sorties de build, caches et exports (à toute profondeur : voulu)
 .expo/
@@ -37,13 +45,14 @@ web-build/
 /android
 .kotlin/
 
-# Documentation et maquettes
+# Documentation et maquettes. Aucun autre dossier `docs` dans l'arborescence.
+docs/
 /docs/
 
 # Historique Git et outillage de dépôt
-/.git/
-/.github/
-/.claude/
+.git/
+.github/
+.claude/
 
 # Journaux et fichiers système
 *.log
