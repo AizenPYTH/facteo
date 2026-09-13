@@ -89,8 +89,13 @@ export function ebayReturnUrl(params: Record<string, string>, target: 'web' | 'a
       ? Deno.env.get('EBAY_APP_RETURN_URL')?.trim() || 'inveq://settings/integrations-ebay'
       : null) ||
     Deno.env.get('EBAY_RETURN_URL')?.trim() ||
-    Deno.env.get('INVEQ_SITE_URL')?.trim() ||
-    'https://www.inveq.fr/app/settings/integrations-ebay';
+    // Route du site Next.js (inveq.fr). L'app iOS revient par
+    // EBAY_APP_RETURN_URL sur le schéma inveq://.
+    //
+    // INVEQ_SITE_URL n'est volontairement pas consulté : ce secret est partagé
+    // avec SUPER PDP et peut désigner la racine du site, ce qui renverrait
+    // l'utilisateur sur une page sans rapport.
+    'https://www.inveq.fr/app/settings/integrations/ebay';
   const url = new URL(base);
   for (const [key, value] of Object.entries(params)) {
     url.searchParams.set(key, value);
