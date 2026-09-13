@@ -80,31 +80,56 @@ type DocumentRecord = {
   clientId: string | null;
 };
 
+type DocumentLookup =
+  | { ok: true; document: DocumentRecord }
+  | { ok: false; reason: 'missing' | 'deleted' | 'forbidden' | 'error' };
+
+/**
+ * Relit le document côté serveur.
+ *
+ * La recherche se fait d'abord sur le seul identifiant, puis les contrôles
+ * sont appliqués un par un : un « introuvable » et un « pas à vous » n'ont ni
+ * la même cause ni la même réponse à donner à l'utilisateur.
+ *
+ * L'appartenance suit exactement la RLS de la table (`auth.uid() = user_id`) :
+ * cette fonction n'ouvre aucun accès que l'application n'accorderait pas.
+ */
 async function loadDocument(
   serviceClient: SupabaseClient,
   userId: string,
   documentType: DocumentType,
   documentId: string,
-): Promise<DocumentRecord | null> {
+): Promise<DocumentLookup> {
   const table = documentType === 'quote' ? 'quotes' : 'invoices';
 
   const { data, error } = await serviceClient
     .from(table)
-    .select('id, number, company_id, client_id, user_id')
+    .select('id, number, company_id, client_id, user_id, deleted_at')
     .eq('id', documentId)
-    .eq('user_id', userId)
-    .is('deleted_at', null)
     .maybeSingle();
 
-  if (error || !data) {
-    return null;
+  if (error) {
+    console.error('[send-document-email] lookup', error.message);
+    return { ok: false, reason: 'error' };
+  }
+  if (!data) {
+    return { ok: false, reason: 'missing' };
+  }
+  if (data.deleted_at) {
+    return { ok: false, reason: 'deleted' };
+  }
+  if (data.user_id !== userId) {
+    return { ok: false, reason: 'forbidden' };
   }
 
   return {
-    id: data.id as string,
-    number: data.number as string,
-    companyId: (data.company_id as string | null) ?? null,
-    clientId: (data.client_id as string | null) ?? null,
+    ok: true,
+    document: {
+      id: data.id as string,
+      number: data.number as string,
+      companyId: (data.company_id as string | null) ?? null,
+      clientId: (data.client_id as string | null) ?? null,
+    },
   };
 }
 
@@ -150,11 +175,24 @@ Deno.serve(async (request) => {
     return jsonResponse({ error: 'Le PDF est trop volumineux pour être envoyé par e-mail.' }, 413);
   }
 
-  const document = await loadDocument(serviceClient, userId, documentType, documentId);
+  const lookup = await loadDocument(serviceClient, userId, documentType, documentId);
 
-  if (!document) {
-    return jsonResponse({ error: 'Document introuvable.' }, 404);
+  if (!lookup.ok) {
+    const label = documentType === 'quote' ? 'devis' : 'facture';
+    const responses = {
+      missing: { error: `Cette ${label} n’existe pas dans la base.`, status: 404 },
+      deleted: { error: `Cette ${label} a été supprimée.`, status: 404 },
+      forbidden: {
+        error: `Cette ${label} appartient à un autre compte utilisateur.`,
+        status: 403,
+      },
+      error: { error: 'Lecture du document impossible.', status: 500 },
+    } as const;
+    const chosen = responses[lookup.reason];
+    return jsonResponse({ error: chosen.error, reason: lookup.reason }, chosen.status);
   }
+
+  const document = lookup.document;
 
   const [{ data: client }, { data: company }] = await Promise.all([
     document.clientId

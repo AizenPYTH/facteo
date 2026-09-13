@@ -16,6 +16,8 @@ export type SendDocumentReason =
   | 'provider'
   | 'network'
   | 'auth'
+  | 'forbidden'
+  | 'missing'
   | 'unknown';
 
 export class SendDocumentEmailError extends Error {
@@ -38,7 +40,11 @@ export class SendDocumentEmailError extends Error {
 }
 
 function reasonFromStatus(status: number): SendDocumentReason {
-  if (status === 401 || status === 403) return 'auth';
+  // 401 : session invalide, rouvrir Mail n'y changerait rien.
+  // 403 / 404 : problème sur le document lui-même ; l'envoi manuel reste possible.
+  if (status === 401) return 'auth';
+  if (status === 403) return 'forbidden';
+  if (status === 404) return 'missing';
   if (status === 422) return 'recipient';
   if (status === 503) return 'not-configured';
   if (status >= 500) return 'provider';
