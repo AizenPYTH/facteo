@@ -1,0 +1,58 @@
+# Ce qui NE part PAS dans l'archive envoyée à EAS Build.
+#
+# ATTENTION : dès que ce fichier existe, EAS l'utilise À LA PLACE du
+# `.gitignore`. Tout ce qui doit rester hors de l'archive doit donc être listé
+# ici, `node_modules` compris — sans quoi l'archive repasse au-dessus de la
+# limite de 2 Go et l'envoi est refusé.
+
+# Dépendances : EAS les réinstalle lui-même depuis package-lock.json.
+node_modules/
+
+# Le site Next.js (inveq.fr). C'est une application indépendante, sans rapport
+# avec le build iOS, et la plus grosse part de l'archive : ses dépendances et
+# son cache de build pesaient à eux seuls près de 900 Mo.
+website/
+
+# Supabase (Edge Functions, migrations) : déployé séparément par la CLI.
+supabase/
+
+# Sorties de build, caches et exports
+.expo/
+.expo-export-test/
+dist/
+web-build/
+.next/
+.vercel/
+*.tsbuildinfo
+.metro-health-check*
+
+# Dossiers natifs : régénérés par `prebuild` sur les serveurs EAS.
+/ios
+/android
+.kotlin/
+
+# Documentation et maquettes
+docs/
+
+# Historique Git et outillage de dépôt
+.git/
+.github/
+.claude/
+
+# Journaux et fichiers système
+*.log
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+.DS_Store
+
+# Secrets de signature : ils ne doivent jamais transiter dans une archive.
+# `.env` n'est PAS exclu : il ne contient que des variables `EXPO_PUBLIC_*`,
+# publiques par nature, et le build en a besoin pour joindre Supabase.
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.pem
+.env*.local

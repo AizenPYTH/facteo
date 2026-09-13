@@ -47,3 +47,6 @@ example
 /android
 .vercel
 .env.local
+
+# export de test généré par `expo export`
+.expo-export-test/
