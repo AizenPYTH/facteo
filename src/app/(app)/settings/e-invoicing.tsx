@@ -142,7 +142,7 @@ export default function EInvoicingSettingsScreen() {
 
   return (
     <SettingsScreenFrame title="Facturation électronique">
-      <SettingsSection title="Facturation électronique">
+      <SettingsSection variant="plain" title="Facturation électronique">
         <Text style={styles.lead}>
           Connectez votre entreprise à une Plateforme Agréée pour envoyer et recevoir vos factures
           électroniques.
@@ -217,7 +217,7 @@ export default function EInvoicingSettingsScreen() {
         )}
       </SettingsSection>
 
-      <SettingsSection title="Portabilité">
+      <SettingsSection variant="plain" title="Portabilité">
         <Text style={styles.lead}>
           Si votre entreprise était rattachée à une autre plateforme (ex. Qonto), le transfert
           administratif est géré par SUPER PDP. Utilisez « Vérifier la connexion » après migration.
@@ -253,6 +253,7 @@ function useStyles() {
       },
       button: {
         marginTop: spacing.sm,
+        marginHorizontal: spacing.md,
       },
     }),
   );

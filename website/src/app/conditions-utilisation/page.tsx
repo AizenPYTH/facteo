@@ -2,8 +2,10 @@ import type { Metadata } from 'next';
 
 import { LegalPage } from '@/components/legal/legal-page';
 import { LEGAL_LAST_UPDATED, TERMS_SECTIONS } from '@/lib/legal-content';
+import { SITE_URL } from '@/lib/constants';
 
 export const metadata: Metadata = {
+  alternates: { canonical: `${SITE_URL}/conditions-utilisation` },
   title: 'Conditions générales d’utilisation',
   description: 'CGU INVEQ — abonnement, responsabilités, paiement et droits des utilisateurs.',
 };

@@ -3,7 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { QuoteTotals } from '@/components/quotes/quote-totals';
 import { CollapsibleSection } from '@/components/ui/collapsible-section';
 import { TextField } from '@/components/ui/text-field';
-import { useColors, useThemedStyles } from '@/hooks/use-colors';
+import { useThemedStyles } from '@/hooks/use-colors';
 import { radius } from '@/constants/theme/radius';
 import { spacing } from '@/constants/theme/spacing';
 import { typography } from '@/constants/theme/typography';
@@ -38,7 +38,6 @@ export function DocumentFinalizeStep({
   onSecondaryDateChange,
 }: DocumentFinalizeStepProps) {
   const styles = useStyles();
-  const colors = useColors();
   const expirationLabel =
     documentType === 'quote' ? "Date d'expiration" : "Date d'échéance";
   const secondaryDate = secondaryDateValue ?? info.validUntil;

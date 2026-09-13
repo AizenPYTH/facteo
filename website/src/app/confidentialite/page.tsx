@@ -2,8 +2,10 @@ import type { Metadata } from 'next';
 
 import { LegalPage } from '@/components/legal/legal-page';
 import { LEGAL_LAST_UPDATED, PRIVACY_SECTIONS } from '@/lib/legal-content';
+import { SITE_URL } from '@/lib/constants';
 
 export const metadata: Metadata = {
+  alternates: { canonical: `${SITE_URL}/confidentialite` },
   title: 'Politique de confidentialité',
   description: 'Politique de confidentialité INVEQ — protection des données, RGPD et sécurité.',
 };

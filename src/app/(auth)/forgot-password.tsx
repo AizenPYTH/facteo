@@ -60,6 +60,7 @@ export default function ForgotPasswordScreen() {
           </Link>
         </Text>
       }
+      onSubmit={handleSubmit(onSubmit)}
       subtitle={
         sent
           ? 'Si un compte existe, un e-mail de réinitialisation vient d’être envoyé.'
@@ -84,8 +85,7 @@ export default function ForgotPasswordScreen() {
               onBlur={onBlur}
               onChangeText={onChange}
               placeholder="vous@entreprise.fr"
-              returnKeyType="done"
-              textContentType="emailAddress"
+                textContentType="emailAddress"
               value={value}
             />
           )}

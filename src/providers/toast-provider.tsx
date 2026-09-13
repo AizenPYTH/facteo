@@ -7,14 +7,19 @@ import {
   useState,
   type PropsWithChildren,
 } from 'react';
+import { SymbolView } from 'expo-symbols';
+import { Text, View } from 'react-native';
 import Animated, { FadeInUp, FadeOutUp } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { useThemedStyles } from '@/hooks/use-colors';
+import { duration } from '@/constants/theme/motion';
 import { radius } from '@/constants/theme/radius';
 import { spacing } from '@/constants/theme/spacing';
 import { typography } from '@/constants/theme/typography';
+import { useColors, useThemedStyles } from '@/hooks/use-colors';
+import { useReduceMotion } from '@/hooks/use-reduce-motion';
 import { GENERIC_ERROR_MESSAGE } from '@/lib/errors/messages';
+import { triggerErrorHaptic, triggerSuccessHaptic } from '@/lib/haptics';
 
 type ToastType = 'success' | 'error' | 'info';
 
@@ -40,17 +45,16 @@ const ToastContext = createContext<ToastContextValue | undefined>(undefined);
 const TOAST_DURATION_MS = 3200;
 
 function formatSuccessMessage(message: string): string {
-  const trimmed = message.trim();
-  if (!trimmed) {
-    return '✓ Action réussie';
-  }
-
-  return trimmed.startsWith('✓') ? trimmed : `✓ ${trimmed}`;
+  // La coche est désormais portée par l'icône : la garder dans le texte la
+  // ferait lire deux fois par VoiceOver.
+  return message.trim() || 'Action réussie';
 }
 
 export function ToastProvider({ children }: PropsWithChildren) {
   const styles = useStyles();
+  const colors = useColors();
   const [toast, setToast] = useState<ToastState | null>(null);
+  const reduceMotion = useReduceMotion();
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const insets = useSafeAreaInsets();
 
@@ -67,6 +71,12 @@ export function ToastProvider({ children }: PropsWithChildren) {
     (type: ToastType, message: string) => {
       clearToast();
       setToast({ id: Date.now(), type, message });
+
+      // Retour haptique sur l'issue de l'action — c'est le seul endroit de
+      // l'app où l'on vibre pour un résultat, pas pour un appui. Une
+      // information neutre ne vibre pas : ce n'est ni une réussite ni une panne.
+      if (type === 'success') void triggerSuccessHaptic();
+      else if (type === 'error') void triggerErrorHaptic();
 
       timeoutRef.current = setTimeout(() => {
         setToast(null);
@@ -91,8 +101,8 @@ export function ToastProvider({ children }: PropsWithChildren) {
       {children}
       {toast ? (
         <Animated.View
-          entering={FadeInUp.duration(220)}
-          exiting={FadeOutUp.duration(180)}
+          entering={reduceMotion ? undefined : FadeInUp.duration(duration.base)}
+          exiting={reduceMotion ? undefined : FadeOutUp.duration(duration.fast)}
           style={[
             styles.container,
             { top: insets.top + spacing.sm },
@@ -102,18 +112,40 @@ export function ToastProvider({ children }: PropsWithChildren) {
                 ? styles.error
                 : styles.info,
           ]}>
-          <Animated.Text
-            accessibilityLiveRegion="polite"
-            style={[
-              styles.message,
-              toast.type === 'success'
-                ? styles.successMessage
-                : toast.type === 'error'
-                  ? styles.errorMessage
-                  : styles.infoMessage,
-            ]}>
-            {toast.message}
-          </Animated.Text>
+          <View style={styles.row}>
+            <SymbolView
+              name={
+                toast.type === 'success'
+                  ? { ios: 'checkmark.circle.fill', android: 'check_circle', web: 'check_circle' }
+                  : toast.type === 'error'
+                    ? { ios: 'exclamationmark.circle.fill', android: 'error', web: 'error' }
+                    : { ios: 'info.circle.fill', android: 'info', web: 'info' }
+              }
+              size={18}
+              tintColor={
+                toast.type === 'success'
+                  ? colors.success
+                  : toast.type === 'error'
+                    ? colors.error
+                    : colors.textSecondary
+              }
+              type="hierarchical"
+            />
+            <Text
+              accessibilityLiveRegion="polite"
+              accessibilityRole={toast.type === 'error' ? 'alert' : 'text'}
+              maxFontSizeMultiplier={1.5}
+              style={[
+                styles.message,
+                toast.type === 'success'
+                  ? styles.successMessage
+                  : toast.type === 'error'
+                    ? styles.errorMessage
+                    : styles.infoMessage,
+              ]}>
+              {toast.message}
+            </Text>
+          </View>
         </Animated.View>
       ) : null}
     </ToastContext.Provider>
@@ -142,6 +174,11 @@ function useStyles() {
     paddingVertical: spacing.md,
     borderWidth: 1,
   },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
   success: {
     backgroundColor: colors.successSubtle,
     borderColor: colors.success,
@@ -156,7 +193,7 @@ function useStyles() {
   },
   message: {
     ...typography.subheadlineMedium,
-    textAlign: 'center',
+    flex: 1,
   },
   successMessage: {
     color: colors.success,

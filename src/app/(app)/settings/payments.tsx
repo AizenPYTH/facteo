@@ -1,23 +1,24 @@
 import { router, type Href } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
 import { InvoicesList } from '@/components/invoices';
+import { Card } from '@/components/ui/card';
+import { FilterChipBar } from '@/components/ui/filter-chip';
 import { SettingsScreenFrame } from '@/components/web/desktop/settings-screen-frame';
-import { useDashboard } from '@/hooks/use-dashboard';
-import { useInfiniteInvoices } from '@/hooks/use-invoices';
-import { useThemedStyles } from '@/hooks/use-colors';
-import { formatCurrency } from '@/lib/format/currency';
-import { radius } from '@/constants/theme/radius';
 import { spacing } from '@/constants/theme/spacing';
 import { typography } from '@/constants/theme/typography';
+import { useThemedStyles } from '@/hooks/use-colors';
+import { useDashboard } from '@/hooks/use-dashboard';
+import { useInfiniteInvoices } from '@/hooks/use-invoices';
+import { formatCurrency } from '@/lib/format/currency';
 
 type PeriodId = 'month' | 'quarter' | 'year';
 
-const PERIODS: { id: PeriodId; label: string }[] = [
-  { id: 'month', label: 'Ce mois' },
-  { id: 'quarter', label: 'Trimestre' },
-  { id: 'year', label: 'Année' },
+const PERIODS: { value: PeriodId; label: string }[] = [
+  { value: 'month', label: 'Ce mois' },
+  { value: 'quarter', label: 'Trimestre' },
+  { value: 'year', label: 'Année' },
 ];
 
 function periodStart(period: PeriodId): Date {
@@ -54,32 +55,12 @@ export default function PaymentsSettingsScreen() {
   return (
     <SettingsScreenFrame scrollable={false} title="Paiements">
       <View style={styles.stats}>
-        <View style={styles.stat}>
-          <Text style={styles.statLabel}>Encaissé ce mois</Text>
-          <Text style={styles.statValue}>{formatCurrency(stats.monthlyRevenue)}</Text>
-        </View>
-        <View style={styles.stat}>
-          <Text style={styles.statLabel}>En attente</Text>
-          <Text style={styles.statValue}>{formatCurrency(stats.outstandingAmount)}</Text>
-        </View>
-        <View style={[styles.stat, styles.statDanger]}>
-          <Text style={styles.statLabel}>En retard</Text>
-          <Text style={[styles.statValue, styles.statDangerValue]}>{String(stats.lateInvoices)}</Text>
-        </View>
+        <PaymentStat label="Encaissé ce mois" value={formatCurrency(stats.monthlyRevenue)} />
+        <PaymentStat label="En attente" value={formatCurrency(stats.outstandingAmount)} />
+        <PaymentStat danger label="En retard" value={String(stats.lateInvoices)} />
       </View>
 
-      <View style={styles.chips}>
-        {PERIODS.map((item) => (
-          <Pressable
-            key={item.id}
-            onPress={() => setPeriod(item.id)}
-            style={[styles.chip, period === item.id && styles.chipActive]}>
-            <Text style={[styles.chipLabel, period === item.id && styles.chipLabelActive]}>
-              {item.label}
-            </Text>
-          </Pressable>
-        ))}
-      </View>
+      <FilterChipBar onChange={setPeriod} options={PERIODS} value={period} />
 
       <InvoicesList
         invoices={visible}
@@ -96,6 +77,34 @@ export default function PaymentsSettingsScreen() {
   );
 }
 
+/** Indicateur financier de l'en-tête. Même surface que les cartes de l'app. */
+function PaymentStat({
+  label,
+  value,
+  danger = false,
+}: {
+  label: string;
+  value: string;
+  danger?: boolean;
+}) {
+  const styles = useStyles();
+
+  return (
+    <Card style={styles.stat} variant="surface">
+      <Text maxFontSizeMultiplier={1.4} numberOfLines={2} style={styles.statLabel}>
+        {label}
+      </Text>
+      <Text
+        adjustsFontSizeToFit
+        maxFontSizeMultiplier={1.3}
+        numberOfLines={1}
+        style={[styles.statValue, danger && styles.statDangerValue]}>
+        {value}
+      </Text>
+    </Card>
+  );
+}
+
 function useStyles() {
   return useThemedStyles((colors) => ({
     stats: {
@@ -108,15 +117,7 @@ function useStyles() {
       flexGrow: 1,
       flexBasis: '30%',
       minWidth: 96,
-      backgroundColor: colors.surface,
-      borderRadius: radius.card,
-      borderWidth: StyleSheet.hairlineWidth,
-      borderColor: colors.border,
-      padding: spacing.md,
-      gap: 4,
-    },
-    statDanger: {
-      borderColor: colors.error,
+      gap: spacing[0.5],
     },
     statLabel: {
       ...typography.caption1,
@@ -128,30 +129,6 @@ function useStyles() {
     },
     statDangerValue: {
       color: colors.error,
-    },
-    chips: {
-      flexDirection: 'row',
-      gap: spacing.sm,
-      marginBottom: spacing.md,
-    },
-    chip: {
-      borderRadius: radius.full,
-      borderWidth: 1,
-      borderColor: colors.border,
-      backgroundColor: colors.surface,
-      paddingHorizontal: spacing.md,
-      paddingVertical: spacing.sm,
-    },
-    chipActive: {
-      backgroundColor: colors.primarySubtle,
-      borderColor: colors.primary,
-    },
-    chipLabel: {
-      ...typography.subheadlineMedium,
-      color: colors.textSecondary,
-    },
-    chipLabelActive: {
-      color: colors.primary,
     },
   }));
 }

@@ -1,9 +1,12 @@
 import type { Metadata } from 'next';
 
+import { SITE_URL } from '@/lib/constants';
+
 import { CtaSection, PageHero, PricingSection } from '@/components/sections/landing-sections';
 import { SUBSCRIPTION_PRICING_COPY } from '@/lib/subscription-plans';
 
 export const metadata: Metadata = {
+  alternates: { canonical: `${SITE_URL}/tarifs` },
   title: 'Tarifs',
   description:
     'Offres INVEQ : Micro gratuit, Basique, Standard et Pro. Paiement mensuel ou annuel HT, sans engagement.',

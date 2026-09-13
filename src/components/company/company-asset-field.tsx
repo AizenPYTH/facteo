@@ -2,8 +2,9 @@ import { router, type Href } from 'expo-router';
 import { Image } from 'expo-image';
 import { SymbolView } from 'expo-symbols';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, Text, View } from 'react-native';
+import { ActivityIndicator, Text, View } from 'react-native';
 
+import { PressableScale } from '@/components/ui/pressable-scale';
 import { useColors, useThemedStyles } from '@/hooks/use-colors';
 import { spacing } from '@/constants/theme/spacing';
 import { textHierarchy } from '@/constants/theme/typography';
@@ -99,11 +100,14 @@ export function CompanyAssetField({ kind, value }: CompanyAssetFieldProps) {
 
   return (
     <View style={styles.container}>
-      <Pressable
+      <PressableScale
+        accessibilityLabel={getAssetLabel(kind)}
         accessibilityRole="button"
+        accessibilityState={{ disabled: isLoading }}
         disabled={isLoading}
+        intensity="subtle"
         onPress={handleUpload}
-        style={({ pressed }) => [styles.row, pressed && styles.pressed]}>
+        style={styles.row}>
         <View style={styles.copy}>
           <Text style={styles.label}>{getAssetLabel(kind)}</Text>
           <Text style={styles.action}>
@@ -133,16 +137,16 @@ export function CompanyAssetField({ kind, value }: CompanyAssetFieldProps) {
             />
           )}
         </View>
-      </Pressable>
+      </PressableScale>
 
       {displayUrl ? (
-        <Pressable
+        <PressableScale
           accessibilityRole="button"
           disabled={isLoading}
           onPress={handleDelete}
-          style={({ pressed }) => [styles.deleteRow, pressed && styles.pressed]}>
+          style={styles.deleteRow}>
           <Text style={styles.deleteLabel}>Supprimer {getAssetLabel(kind).toLowerCase()}</Text>
-        </Pressable>
+        </PressableScale>
       ) : null}
     </View>
   );
@@ -187,9 +191,6 @@ function useStyles() {
       gap: spacing.md,
       paddingHorizontal: spacing.md,
       paddingVertical: spacing.md,
-    },
-    pressed: {
-      opacity: 0.85,
     },
     copy: {
       flex: 1,

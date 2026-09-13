@@ -1,34 +1,43 @@
-import { forwardRef } from 'react';
 import { Text, TextInput, View, type TextInputProps } from 'react-native';
 
-import { useColors, useThemedStyles } from '@/hooks/use-colors';
+import { useFieldNavigation } from '@/components/ui/form/form-navigation';
+import { components } from '@/constants/theme/design-system';
 import { spacing } from '@/constants/theme/spacing';
 import { typography } from '@/constants/theme/typography';
+import { useColors, useThemedStyles } from '@/hooks/use-colors';
 
 type TextFieldProps = TextInputProps & {
   label?: string;
   error?: string;
-  /** Texte d'aide sous le champ. */
+  /** Exclut le champ de l'enchaînement clavier du formulaire. */
+  skipFieldNavigation?: boolean;
+  /** Texte d'aide sous le champ, par exemple « Vide = 0 % ». */
   hint?: string;
 };
 
 /**
- * Champ de saisie de l'app.
+ * Champ de saisie canonique.
  *
- * Deux points volontairement traités ici plutôt que sur chaque écran :
- * - `submitBehavior` remplace `blurOnSubmit` (déprécié). Sur un champ multiligne,
- *   la touche Entrée doit insérer un retour à la ligne, pas fermer le clavier :
- *   c'est ce qui rendait les descriptions impossibles à saisir sur plusieurs lignes.
- * - `autoCapitalize` par défaut à `sentences` : les champs de l'app sont d'abord
- *   du texte en français (titre de prestation, description, notes, adresse).
- *   Les champs techniques (e-mail, IBAN…) passent explicitement `none`.
+ * S'inscrit automatiquement dans la chaîne de navigation du formulaire quand il
+ * est rendu sous un `FormNavigationProvider` : « Suivant » enchaîne, le dernier
+ * champ valide. Les props explicitement fournies par l'appelant restent
+ * prioritaires sur ce câblage automatique.
  */
-export const TextField = forwardRef<TextInput, TextFieldProps>(function TextField(
-  { label, error, hint, style, accessibilityLabel, multiline, ...props },
-  ref,
-) {
+export function TextField({
+  label,
+  error,
+  hint,
+  style,
+  accessibilityLabel,
+  skipFieldNavigation = false,
+  ...props
+}: TextFieldProps) {
   const styles = useStyles();
   const colors = useColors();
+  const navigation = useFieldNavigation({
+    multiline: props.multiline,
+    enabled: !skipFieldNavigation && props.editable !== false,
+  });
 
   return (
     <View style={styles.container}>
@@ -38,20 +47,27 @@ export const TextField = forwardRef<TextInput, TextFieldProps>(function TextFiel
         </Text>
       ) : null}
       <TextInput
-        {...props}
         accessibilityLabel={accessibilityLabel ?? label ?? props.placeholder}
+        // Les champs de l'app portent d'abord du texte français (titre de
+        // prestation, description, notes, adresse) : la majuscule automatique en
+        // début de phrase est le bon défaut. Les champs techniques (e-mail,
+        // IBAN…) passent explicitement `none`.
         autoCapitalize={props.autoCapitalize ?? 'sentences'}
         autoCorrect={props.autoCorrect ?? false}
-        multiline={multiline}
         placeholderTextColor={props.placeholderTextColor ?? colors.textPlaceholder}
-        ref={ref}
+        ref={navigation?.ref}
+        returnKeyType={navigation?.returnKeyType}
+        submitBehavior={
+          navigation ? navigation.submitBehavior : props.multiline ? 'newline' : 'blurAndSubmit'
+        }
+        onSubmitEditing={navigation?.onSubmitEditing}
         style={[
           styles.input,
-          multiline ? styles.inputMultiline : null,
+          props.multiline ? styles.inputMultiline : null,
           error ? styles.inputError : null,
           style,
         ]}
-        submitBehavior={props.submitBehavior ?? (multiline ? 'newline' : 'blurAndSubmit')}
+        {...props}
       />
       {error ? (
         <Text accessibilityRole="alert" maxFontSizeMultiplier={1.5} style={styles.error}>
@@ -64,7 +80,7 @@ export const TextField = forwardRef<TextInput, TextFieldProps>(function TextFiel
       ) : null}
     </View>
   );
-});
+}
 
 function useStyles() {
   return useThemedStyles((colors) => ({
@@ -78,7 +94,7 @@ function useStyles() {
     input: {
       ...typography.body,
       color: colors.text,
-      minHeight: 44,
+      minHeight: components.inputHeight,
       paddingVertical: spacing.sm,
       paddingHorizontal: 0,
       margin: 0,
@@ -90,13 +106,13 @@ function useStyles() {
     inputError: {
       color: colors.error,
     },
-    error: {
-      ...typography.caption1,
-      color: colors.error,
-    },
     hint: {
       ...typography.caption1,
       color: colors.textTertiary,
+    },
+    error: {
+      ...typography.caption1,
+      color: colors.error,
     },
   }));
 }

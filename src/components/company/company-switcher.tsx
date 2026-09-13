@@ -1,10 +1,11 @@
 import { Image } from 'expo-image';
 import { SymbolView } from 'expo-symbols';
 import { useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import { CompanyWorkspaceSheet } from '@/components/company/company-workspace-sheet';
 import { AppText } from '@/components/ui/app-text';
+import { PressableScale } from '@/components/ui/pressable-scale';
 import { useColors, useThemedStyles } from '@/hooks/use-colors';
 import { components } from '@/constants/theme/design-system';
 import { radius } from '@/constants/theme/radius';
@@ -29,11 +30,12 @@ export function CompanySwitcher({
 
   return (
     <>
-      <Pressable
+      <PressableScale
         accessibilityLabel="Changer d'entreprise"
         accessibilityRole="button"
         onPress={() => setOpen(true)}
-        style={({ pressed }) => [styles.trigger, pressed && styles.pressed]}>
+        intensity="subtle"
+        style={styles.trigger}>
         <View style={styles.avatar}>
           {activeCompany?.logoUrl ? (
             <Image
@@ -60,7 +62,7 @@ export function CompanySwitcher({
           size={16}
           tintColor={colors.textSecondary}
         />
-      </Pressable>
+      </PressableScale>
 
       <CompanyWorkspaceSheet
         activeCompany={activeCompany}

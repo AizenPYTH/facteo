@@ -1,23 +1,17 @@
-import type { Metadata } from 'next';
+import { permanentRedirect } from 'next/navigation';
 
-import { CtaSection, FeaturesGrid, PageHero } from '@/components/sections/landing-sections';
-import { FEATURES } from '@/lib/content';
-
-export const metadata: Metadata = {
-  title: 'Fonctionnalités',
-  description: 'Découvrez toutes les fonctionnalités de INVEQ : clients, devis, factures, PDF, signatures et paiements.',
-};
-
-export default function FeaturesPage() {
-  return (
-    <>
-      <PageHero subtitle={FEATURES.subtitle} title={FEATURES.title} />
-      <section className="px-6 py-20 lg:px-8">
-        <div className="mx-auto max-w-6xl">
-          <FeaturesGrid showAll />
-        </div>
-      </section>
-      <CtaSection />
-    </>
-  );
+/**
+ * `/fonctionnalites` décrivait le produit avec les deux mêmes sections que
+ * `/logiciel-facturation`, qui en compte cinq de plus. Deux pages répondant à
+ * la même intention se seraient concurrencées sans mieux renseigner personne :
+ * on consolide sur la page pivot plutôt que de diviser le signal.
+ *
+ * La redirection conserve la valeur de l'ancienne URL si elle était liée, et le
+ * visiteur arrive sur un contenu qui englobe celui qu'il cherchait.
+ *
+ * `permanentRedirect` et non `redirect` : le 308 demande la substitution de
+ * l'URL dans l'index, là où le 307 laisserait les deux coexister.
+ */
+export default function FonctionnalitesRedirect() {
+  permanentRedirect('/logiciel-facturation');
 }

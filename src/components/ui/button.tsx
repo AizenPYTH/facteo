@@ -1,18 +1,15 @@
-import {
-  ActivityIndicator,
-  Pressable,
-  Text,
-  type PressableProps,
-} from 'react-native';
+import { ActivityIndicator, Text, type PressableProps, type StyleProp, type ViewStyle } from 'react-native';
 
-import { triggerImpactHaptic } from '@/lib/haptics';
-import { useColors, useThemedStyles } from '@/hooks/use-colors';
+import { PressableScale } from '@/components/ui/pressable-scale';
 import { radius } from '@/constants/theme/radius';
 import { spacing } from '@/constants/theme/spacing';
-import { typography } from '@/constants/theme/typography';
 import { shadows } from '@/constants/theme/theme';
+import { typography } from '@/constants/theme/typography';
+import { useColors, useThemedStyles } from '@/hooks/use-colors';
+import { triggerImpactHaptic } from '@/lib/haptics';
 
-type ButtonProps = PressableProps & {
+type ButtonProps = Omit<PressableProps, 'style'> & {
+  style?: StyleProp<ViewStyle>;
   title: string;
   loading?: boolean;
   variant?: 'primary' | 'ghost';
@@ -37,7 +34,7 @@ export function Button({
   const isPrimary = variant === 'primary';
 
   return (
-    <Pressable
+    <PressableScale
       accessibilityLabel={accessibilityLabel ?? title}
       accessibilityRole="button"
       accessibilityState={{ disabled: isDisabled, busy: loading }}
@@ -49,18 +46,13 @@ export function Button({
 
         onPress?.(event);
       }}
-      style={(state) => {
-        const resolvedStyle = typeof style === 'function' ? style(state) : style;
-
-        return [
-          styles.base,
-          isPrimary ? styles.primary : styles.ghost,
-          elevated && isPrimary && !isDisabled ? styles.elevated : null,
-          state.pressed && !isDisabled && (isPrimary ? styles.primaryPressed : styles.ghostPressed),
-          isDisabled && styles.disabled,
-          resolvedStyle,
-        ];
-      }}
+      style={[
+        styles.base,
+        isPrimary ? styles.primary : styles.ghost,
+        elevated && isPrimary && !isDisabled ? styles.elevated : null,
+        isDisabled && styles.disabled,
+        style,
+      ]}
       {...props}>
       {loading ? (
         <ActivityIndicator color={isPrimary ? colors.onPrimary : colors.primary} />
@@ -71,7 +63,7 @@ export function Button({
           {title}
         </Text>
       )}
-    </Pressable>
+    </PressableScale>
   );
 }
 
@@ -88,10 +80,6 @@ function useStyles() {
   primary: {
     backgroundColor: colors.primary,
   },
-  primaryPressed: {
-    backgroundColor: colors.primaryPressed,
-    transform: [{ scale: 0.985 }],
-  },
   elevated: {
     ...shadows.md,
     shadowColor: colors.primary,
@@ -99,9 +87,6 @@ function useStyles() {
   },
   ghost: {
     backgroundColor: 'transparent',
-  },
-  ghostPressed: {
-    backgroundColor: colors.primarySubtle,
   },
   disabled: {
     opacity: 0.5,

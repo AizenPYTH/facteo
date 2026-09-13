@@ -1,5 +1,6 @@
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Text, View } from 'react-native';
 
+import { PressableScale } from '@/components/ui/pressable-scale';
 import { triggerImpactHaptic } from '@/lib/haptics';
 import { useColors, useThemedStyles } from '@/hooks/use-colors';
 import { radius } from '@/constants/theme/radius';
@@ -29,20 +30,20 @@ export function WizardActionBar({
 
   return (
     <View style={styles.row}>
-      <Pressable
+      <PressableScale
         accessibilityLabel={backLabel}
         accessibilityRole="button"
         onPress={() => {
           void triggerImpactHaptic();
           onBack();
         }}
-        style={({ pressed }) => [styles.backButton, pressed && styles.backButtonPressed]}>
+        style={styles.backButton}>
         <Text maxFontSizeMultiplier={1.3} style={styles.backLabel}>
           {backLabel}
         </Text>
-      </Pressable>
+      </PressableScale>
 
-      <Pressable
+      <PressableScale
         accessibilityLabel={primaryLabel}
         accessibilityRole="button"
         accessibilityState={{ disabled: isDisabled, busy: primaryLoading }}
@@ -53,11 +54,7 @@ export function WizardActionBar({
             onPrimary();
           }
         }}
-        style={({ pressed }) => [
-          styles.primaryButton,
-          pressed && !isDisabled && styles.primaryButtonPressed,
-          isDisabled && styles.primaryButtonDisabled,
-        ]}>
+        style={[styles.primaryButton, isDisabled && styles.primaryButtonDisabled]}>
         {primaryLoading ? (
           <ActivityIndicator color={colors.onPrimary} size="small" />
         ) : (
@@ -65,7 +62,7 @@ export function WizardActionBar({
             {primaryLabel}
           </Text>
         )}
-      </Pressable>
+      </PressableScale>
     </View>
   );
 }
@@ -84,9 +81,6 @@ const useStyles = () =>
       justifyContent: 'center',
       borderRadius: radius.button,
     },
-    backButtonPressed: {
-      backgroundColor: colors.primarySubtle,
-    },
     backLabel: {
       ...typography.subheadlineMedium,
       color: colors.primary,
@@ -99,9 +93,6 @@ const useStyles = () =>
       justifyContent: 'center',
       paddingHorizontal: spacing.lg,
       backgroundColor: colors.primary,
-    },
-    primaryButtonPressed: {
-      backgroundColor: colors.primaryPressed,
     },
     primaryButtonDisabled: {
       opacity: 0.5,

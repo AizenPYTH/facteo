@@ -6,6 +6,9 @@ import { CONTACT_EMAIL } from '@/lib/constants';
 
 export const metadata: Metadata = {
   title: 'Carrières',
+  // Aucun poste ouvert : la page reste accessible depuis le pied de page mais
+  // n'a pas à occuper l'index tant qu'elle n'a rien à annoncer.
+  robots: { index: false, follow: true },
   description: 'Rejoignez l’équipe INVEQ.',
 };
 

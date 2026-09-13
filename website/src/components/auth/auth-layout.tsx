@@ -30,14 +30,30 @@ export function AuthLayout({
 
         <div className="relative z-10 flex min-h-0 flex-1 flex-col justify-center">
           {/* -mt-* : légèrement au-dessus du centre géométrique */}
-          <div className="max-w-md -mt-10 xl:-mt-12">
-            <h2 className="text-[1.375rem] font-bold leading-snug tracking-tight xl:text-2xl 2xl:text-[1.75rem]">
-              La facturation moderne pour artisans et PME.
+          <div className="-mt-10 max-w-md xl:-mt-12">
+            <h2 className="text-[1.5rem] font-semibold leading-snug tracking-[-0.02em] xl:text-[1.75rem]">
+              Du devis signé au paiement encaissé.
             </h2>
-            <p className="mt-3 max-w-sm text-sm leading-relaxed text-indigo-100/90 xl:text-[0.9375rem]">
-              Devis, factures et signatures — tout au même endroit, sur ordinateur et
-              mobile.
+            <p className="mt-4 max-w-sm text-sm leading-relaxed text-indigo-100/85 xl:text-[0.9375rem]">
+              Le même compte sur ordinateur et sur iPhone. Vos documents, vos clients et vos
+              encaissements suivent.
             </p>
+
+            <ul className="mt-8 space-y-3">
+              {[
+                'Devis convertis en factures sans ressaisie',
+                'Signature du client intégrée au PDF',
+                'Facturation électronique via plateforme agréée',
+              ].map((item) => (
+                <li className="flex items-start gap-3 text-[13.5px] text-indigo-50/90" key={item}>
+                  <span
+                    aria-hidden
+                    className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-indigo-200/80"
+                  />
+                  {item}
+                </li>
+              ))}
+            </ul>
           </div>
         </div>
 
@@ -51,8 +67,10 @@ export function AuthLayout({
           <Link className="mb-8 flex lg:hidden" href="/">
             <BrandWordmark />
           </Link>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">{title}</h1>
-          {subtitle ? <p className="mt-2 text-sm text-slate-500">{subtitle}</p> : null}
+          <h1 className="text-[1.75rem] font-semibold tracking-[-0.025em] text-slate-900">
+            {title}
+          </h1>
+          {subtitle ? <p className="mt-2.5 text-[15px] text-slate-500">{subtitle}</p> : null}
           <div className="mt-8">{children}</div>
         </div>
       </div>

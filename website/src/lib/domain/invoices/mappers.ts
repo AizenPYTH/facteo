@@ -9,6 +9,7 @@ export function mapInvoiceLineValueToTotals(
 ) {
   const quantity = parseDecimalInput(line.quantity);
   const unitPrice = parseDecimalInput(line.unitPrice);
+  // Champ TVA vide = 0 % : `parseVatRateInput` le traduit au lieu de propager NaN.
   const vatRate = parseVatRateInput(line.vatRate);
   const discountPercent = parseDecimalInput(line.discountPercent || '0');
 

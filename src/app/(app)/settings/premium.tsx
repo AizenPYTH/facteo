@@ -1,10 +1,12 @@
-import { Platform, StyleSheet, Text, View } from 'react-native';
 import { useState } from 'react';
+import { Platform, Text, View } from 'react-native';
 
 import { PlanComparison } from '@/components/subscription/plan-comparison';
-import { SettingsScreenFrame } from '@/components/web/desktop/settings-screen-frame';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { LoadingView } from '@/components/ui/loading-view';
+import { Card } from '@/components/ui/card';
+import { Skeleton, SkeletonText } from '@/components/ui/skeleton';
+import { SettingsScreenFrame } from '@/components/web/desktop/settings-screen-frame';
 import type { ApplePaidPlanId } from '@/constants/iap';
 import { PAID_CATALOG_PLAN_IDS, type CatalogPlanId } from '@/constants/subscription-catalog';
 import { spacing } from '@/constants/theme/spacing';
@@ -118,7 +120,23 @@ export default function PremiumScreen() {
   if (isLoading || (usesAppleIap && appleProductsLoading && !hasPaid)) {
     return (
       <SettingsScreenFrame title="Abonnement">
-        <LoadingView message="Chargement de votre offre..." />
+        <View
+          accessibilityLabel="Chargement de votre offre"
+          accessibilityRole="progressbar"
+          style={styles.content}>
+          <Card variant="elevated">
+            <Skeleton height={26} rounded="sm" width="54%" />
+            <SkeletonText lineHeight={13} lines={2} />
+          </Card>
+          <View style={styles.usageRow}>
+            <Skeleton height={64} rounded="card" style={styles.usageSkeleton} />
+            <Skeleton height={64} rounded="card" style={styles.usageSkeleton} />
+            <Skeleton height={64} rounded="card" style={styles.usageSkeleton} />
+          </View>
+          <Card variant="surface">
+            <SkeletonText lineHeight={13} lines={5} />
+          </Card>
+        </View>
       </SettingsScreenFrame>
     );
   }
@@ -126,9 +144,17 @@ export default function PremiumScreen() {
   return (
     <SettingsScreenFrame title="Abonnement">
       <View style={styles.content}>
-        <View style={styles.hero}>
-          <Text style={styles.heroTitle}>INVEQ {getEffectivePlanDisplayName(currentPlanId)}</Text>
-          <Text style={styles.heroSubtitle}>
+        <Card style={styles.hero} variant="elevated">
+          <View style={styles.heroHead}>
+            <Text accessibilityRole="header" maxFontSizeMultiplier={1.3} style={styles.heroTitle}>
+              INVEQ {getEffectivePlanDisplayName(currentPlanId)}
+            </Text>
+            <Badge
+              label={hasPaid ? 'Actif' : 'Offre gratuite'}
+              tone={hasPaid ? 'success' : 'neutral'}
+            />
+          </View>
+          <Text maxFontSizeMultiplier={1.4} style={styles.heroSubtitle}>
             {hasPaid
               ? usesAppleIap && billingIsApple
                 ? 'Abonnement actif via l’App Store.'
@@ -137,7 +163,7 @@ export default function PremiumScreen() {
                   : 'Abonnement actif sur votre compte INVEQ.'
               : 'Passez à une offre supérieure pour débloquer plus de fonctionnalités.'}
           </Text>
-        </View>
+        </Card>
 
         {usage ? (
           <View style={styles.usageRow}>
@@ -218,13 +244,18 @@ export default function PremiumScreen() {
   );
 }
 
+/** Compteur d'usage du plan courant : trois chiffres, même surface que les cartes. */
 function UsageChip({ label, value }: { label: string; value: number }) {
   const styles = useUsageStyles();
   return (
-    <View style={styles.chip}>
-      <Text style={styles.chipValue}>{value}</Text>
-      <Text style={styles.chipLabel}>{label}</Text>
-    </View>
+    <Card style={styles.chip} variant="surface">
+      <Text maxFontSizeMultiplier={1.3} style={styles.chipValue}>
+        {value}
+      </Text>
+      <Text maxFontSizeMultiplier={1.3} style={styles.chipLabel}>
+        {label}
+      </Text>
+    </Card>
   );
 }
 
@@ -237,13 +268,20 @@ function useStyles() {
   return useThemedStyles((colors) => ({
     content: { gap: spacing.lg },
     hero: { gap: spacing.xs },
-    heroTitle: { ...typography.title1, color: colors.text },
+    heroHead: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: spacing.sm,
+    },
+    heroTitle: { ...typography.title2, color: colors.text, flexShrink: 1 },
     heroSubtitle: {
       ...typography.body,
       color: colors.textSecondary,
       lineHeight: 22,
     },
     usageRow: { flexDirection: 'row', gap: spacing.sm },
+    usageSkeleton: { flex: 1, minWidth: 0 },
     actions: { gap: spacing.sm, paddingTop: spacing.xs },
     footnote: {
       ...typography.caption1,
@@ -257,14 +295,11 @@ function useUsageStyles() {
   return useThemedStyles((colors) => ({
     chip: {
       flex: 1,
+      minWidth: 0,
       alignItems: 'center',
+      gap: spacing[0.5],
       paddingVertical: spacing.sm,
       paddingHorizontal: spacing.xs,
-      borderRadius: 12,
-      backgroundColor: colors.surface,
-      borderWidth: StyleSheet.hairlineWidth,
-      borderColor: colors.border,
-      gap: 2,
     },
     chipValue: { ...typography.headline, color: colors.text },
     chipLabel: { ...typography.caption1, color: colors.textSecondary },

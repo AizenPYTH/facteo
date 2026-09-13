@@ -1,9 +1,12 @@
 import type { Metadata } from 'next';
 
+import { SITE_URL } from '@/lib/constants';
+
 import { FadeIn } from '@/components/ui/fade-in';
 import { PageHero } from '@/components/sections/landing-sections';
 
 export const metadata: Metadata = {
+  alternates: { canonical: `${SITE_URL}/a-propos` },
   title: 'À propos',
   description: 'Découvrez la mission et les valeurs de INVEQ.',
 };

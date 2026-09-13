@@ -9,6 +9,7 @@ import {
   View,
 } from 'react-native';
 
+import { PressableScale } from '@/components/ui/pressable-scale';
 import { useThemedStyles } from '@/hooks/use-colors';
 import { radius } from '@/constants/theme/radius';
 import { spacing } from '@/constants/theme/spacing';
@@ -62,21 +63,28 @@ export function usePlatformActionSheet() {
           <Pressable onPress={(event) => event.stopPropagation()} style={styles.sheet}>
             {androidSheet.title ? <Text style={styles.title}>{androidSheet.title}</Text> : null}
             {androidSheet.options.map((option) => (
-              <Pressable
+              <PressableScale
                 key={option.label}
+                accessibilityLabel={option.label}
+                accessibilityRole="button"
+                intensity="subtle"
                 onPress={() => {
                   closeAndroidSheet();
                   option.onPress();
                 }}
-                style={({ pressed }) => [styles.row, pressed && styles.pressed]}>
+                style={styles.row}>
                 <Text style={[styles.rowLabel, option.destructive && styles.destructiveLabel]}>
                   {option.label}
                 </Text>
-              </Pressable>
+              </PressableScale>
             ))}
-            <Pressable onPress={closeAndroidSheet} style={({ pressed }) => [styles.row, pressed && styles.pressed]}>
+            <PressableScale
+              accessibilityRole="button"
+              intensity="subtle"
+              onPress={closeAndroidSheet}
+              style={styles.row}>
               <Text style={styles.cancelLabel}>Annuler</Text>
-            </Pressable>
+            </PressableScale>
           </Pressable>
         </Pressable>
       </Modal>
@@ -131,9 +139,6 @@ function useStyles() {
       ...typography.callout,
       color: colors.textSecondary,
       fontWeight: '600',
-    },
-    pressed: {
-      backgroundColor: colors.surfaceSecondary,
     },
   }));
 }

@@ -14,7 +14,10 @@ export function isQuoteLineValid(line: QuoteLineValue): boolean {
   const unitPrice = parseDecimalInput(line.unitPrice);
   // Champ TVA vide = 0 % : l'utilisateur n'a pas à écrire « 0 ».
   const vatRate = parseVatRateInput(line.vatRate);
-  const discount = line.discountPercent.trim() ? parseDecimalInput(line.discountPercent) : 0;
+  // La remise a été ajoutée à la saisie sans être ajoutée ici : une valeur non
+  // numérique passait la validation et produisait des totaux NaN enregistrés en
+  // base. Le validateur des factures, lui, la contrôlait déjà.
+  const discount = parseDecimalInput(line.discountPercent || '0');
 
   return (
     quantity > 0 &&

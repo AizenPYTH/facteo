@@ -1,9 +1,10 @@
 import { router, type Href } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
-import { Pressable, View, type ViewStyle } from 'react-native';
+import { View, type ViewStyle } from 'react-native';
 
 import { CompanySwitcher } from '@/components/company/company-switcher';
 import { AppText } from '@/components/ui/app-text';
+import { PressableScale } from '@/components/ui/pressable-scale';
 import { useColors, useThemedStyles } from '@/hooks/use-colors';
 import { spacing } from '@/constants/theme/spacing';
 import type { TenantCompany } from '@/types/tenant';
@@ -54,19 +55,20 @@ export function DashboardHeader({
             </AppText>
           ) : null}
         </View>
-        <Pressable
+        <PressableScale
+          accessibilityHint="Ouvre les réglages de l'application"
           accessibilityLabel="Paramètres"
           accessibilityRole="button"
           hitSlop={8}
           onPress={() => router.push('/settings' as Href)}
-          style={({ pressed }) => [styles.settingsButton, pressed && styles.pressed]}>
+          style={styles.settingsButton}>
           <SymbolView
             name={{ ios: 'gearshape.fill', android: 'settings', web: 'settings' }}
             size={22}
             tintColor={colors.iconSecondary}
             type="hierarchical"
           />
-        </Pressable>
+        </PressableScale>
       </View>
     </View>
   );
@@ -97,9 +99,6 @@ function useStyles() {
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
-  },
-  pressed: {
-    opacity: 0.75,
   },
 }));
 }

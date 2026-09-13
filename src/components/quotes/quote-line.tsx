@@ -1,14 +1,17 @@
 import { SymbolView } from 'expo-symbols';
-import { useMemo } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useMemo, useState } from 'react';
+import { StyleSheet, Text, View } from 'react-native';
 
+import { Card } from '@/components/ui/card';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { PressableScale } from '@/components/ui/pressable-scale';
 import { TextField } from '@/components/ui/text-field';
-import { useColors, useThemedStyles } from '@/hooks/use-colors';
 import { radius } from '@/constants/theme/radius';
 import { spacing } from '@/constants/theme/spacing';
 import { typography } from '@/constants/theme/typography';
+import { useColors, useThemedStyles } from '@/hooks/use-colors';
 import { formatPriceHT } from '@/lib/format/currency';
-import { parseVatRateForTotals } from '@/lib/format/decimal';
+import { parseDecimalInput, parseVatRateForTotals } from '@/lib/format/decimal';
 import { mapLineValueToTotals } from '@/lib/quotes/mappers';
 import type { QuoteLineValue } from '@/types/quote';
 
@@ -22,157 +25,311 @@ export type QuoteLineProps = {
   onRemove?: () => void;
 };
 
+/**
+ * Ligne du composer.
+ *
+ * Trois manques corrigés ici :
+ * - la remise et l'unité existaient dans le modèle, dans le calcul des totaux
+ *   et dans l'insertion en base, mais aucun champ ne permettait de les saisir ;
+ * - une ligne remplie occupait autant de hauteur qu'une ligne vide, si bien
+ *   qu'au-delà de trois prestations le document devenait illisible — le corps
+ *   se replie donc dès que la ligne est renseignée ;
+ * - la corbeille supprimait sans confirmation.
+ */
 export function QuoteLine({ index, value, onChange, onRemove }: QuoteLineProps) {
   const styles = useStyles();
   const colors = useColors();
-  const lineTotals = useMemo(() => mapLineValueToTotals(value), [value]);
+  const totals = useMemo(() => mapLineValueToTotals(value), [value]);
   const activeVatRate = parseVatRateForTotals(value.vatRate);
+
+  // Une ligne encore vide s'ouvre : c'est celle que l'utilisateur vient
+  // d'ajouter. Une ligne déjà renseignée reste repliée.
+  const [expanded, setExpanded] = useState(
+    () => !value.title?.trim() && !value.description.trim(),
+  );
+  const [confirmRemove, setConfirmRemove] = useState(false);
+
+  const discount = parseDecimalInput(value.discountPercent || '0');
+  const title = value.title?.trim() || value.description.trim() || `Prestation ${index + 1}`;
+  const summary = `${value.quantity || '0'} ${value.unit || 'unité'} · ${formatPriceHT(totals.lineTotalHt)} HT`;
 
   function updateField<K extends keyof QuoteLineValue>(field: K, fieldValue: QuoteLineValue[K]) {
     onChange({ ...value, [field]: fieldValue });
   }
 
   return (
-    <View style={styles.container}>
+    <Card flush variant="surface">
       <View style={styles.header}>
-        <Text style={styles.lineTitle}>Prestation {index + 1}</Text>
+        <PressableScale
+          accessibilityHint={expanded ? 'Replie la prestation' : 'Déplie la prestation'}
+          accessibilityLabel={`${title}. ${summary}`}
+          accessibilityRole="button"
+          accessibilityState={{ expanded }}
+          intensity="subtle"
+          onPress={() => setExpanded((current) => !current)}
+          style={styles.headerButton}>
+          <View style={styles.headerText}>
+            <Text maxFontSizeMultiplier={1.4} numberOfLines={1} style={styles.title}>
+              {title}
+            </Text>
+            <Text maxFontSizeMultiplier={1.4} numberOfLines={1} style={styles.summary}>
+              {summary}
+            </Text>
+          </View>
+
+          <Text maxFontSizeMultiplier={1.3} numberOfLines={1} style={styles.amount}>
+            {formatPriceHT(totals.lineTotalTtc)}
+          </Text>
+
+          <SymbolView
+            name={
+              expanded
+                ? { ios: 'chevron.up', android: 'expand_less', web: 'expand_less' }
+                : { ios: 'chevron.down', android: 'expand_more', web: 'expand_more' }
+            }
+            size={13}
+            tintColor={colors.iconTertiary}
+            type="hierarchical"
+          />
+        </PressableScale>
+
         {onRemove ? (
-          <Pressable
-            accessibilityLabel={`Supprimer la prestation ${index + 1}`}
+          <PressableScale
+            accessibilityLabel={`Supprimer ${title}`}
             accessibilityRole="button"
-            hitSlop={12}
-            onPress={onRemove}>
+            hitSlop={8}
+            onPress={() => setConfirmRemove(true)}
+            style={styles.removeButton}>
             <SymbolView
               name={{ ios: 'trash', android: 'delete', web: 'delete' }}
-              size={20}
+              size={18}
               tintColor={colors.error}
               type="hierarchical"
             />
-          </Pressable>
+          </PressableScale>
         ) : null}
       </View>
 
-      <TextField
-        label="Titre de la prestation"
-        onChangeText={(text) => updateField('title', text)}
-        placeholder="Installation électrique"
-        returnKeyType="next"
-        value={value.title}
-      />
+      {expanded ? (
+        <View style={styles.body}>
+          <TextField
+            autoCapitalize="sentences"
+            label="Titre de la prestation"
+            onChangeText={(text) => updateField('title', text)}
+            placeholder="Installation électrique"
+            value={value.title ?? ''}
+          />
 
-      <TextField
-        hint="Détaillez ce qui a réellement été réalisé (facultatif)."
-        label="Description"
-        multiline
-        numberOfLines={3}
-        onChangeText={(text) => updateField('description', text)}
-        placeholder="Installation et raccordement de 6 prises dans le salon et la cuisine."
-        value={value.description}
-      />
+          <TextField
+            autoCapitalize="sentences"
+            hint="Détaillez ce qui a réellement été réalisé (facultatif)."
+            label="Description"
+            multiline
+            numberOfLines={2}
+            onChangeText={(text) => updateField('description', text)}
+            placeholder="Installation et raccordement de 6 prises dans le salon et la cuisine."
+            textAlignVertical="top"
+            value={value.description}
+          />
 
-      <View style={styles.row}>
-        <View style={styles.halfField}>
+          <View style={styles.row}>
+            <View style={styles.field}>
+              <TextField
+                keyboardType="decimal-pad"
+                label="Quantité"
+                onChangeText={(text) => updateField('quantity', text)}
+                placeholder="1"
+                value={value.quantity}
+              />
+            </View>
+            <View style={styles.field}>
+              <TextField
+                label="Unité"
+                onChangeText={(text) => updateField('unit', text)}
+                placeholder="unité"
+                value={value.unit}
+              />
+            </View>
+          </View>
+
+          <View style={styles.row}>
+            <View style={styles.field}>
+              <TextField
+                keyboardType="decimal-pad"
+                label="Prix HT"
+                onChangeText={(text) => updateField('unitPrice', text)}
+                placeholder="0"
+                value={value.unitPrice}
+              />
+            </View>
+            <View style={styles.field}>
+              <TextField
+                hint="Vide = 0 %"
+                keyboardType="decimal-pad"
+                label="TVA (%)"
+                onChangeText={(text) => updateField('vatRate', text)}
+                placeholder="20"
+                value={value.vatRate}
+              />
+            </View>
+          </View>
+
+          <View style={styles.vatShortcuts}>
+            {VAT_RATE_SHORTCUTS.map((rate) => {
+              // Un champ vide vaut 0 % au calcul, mais l'utilisateur n'a rien
+              // choisi : aucun raccourci ne doit s'afficher comme sélectionné.
+              const isActive =
+                value.vatRate.trim() !== '' && parseVatRateForTotals(rate) === activeVatRate;
+
+              return (
+                <PressableScale
+                  accessibilityLabel={`Appliquer une TVA de ${rate} %`}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: isActive }}
+                  key={rate}
+                  onPress={() => updateField('vatRate', rate)}
+                  style={({ pressed }) => [
+                    styles.vatChip,
+                    isActive && styles.vatChipActive,
+                    pressed && styles.vatChipPressed,
+                  ]}>
+                  <Text
+                    maxFontSizeMultiplier={1.4}
+                    style={[styles.vatChipLabel, isActive && styles.vatChipLabelActive]}>
+                    {rate} %
+                  </Text>
+                </PressableScale>
+              );
+            })}
+          </View>
+
           <TextField
             keyboardType="decimal-pad"
-            label="Quantité"
-            onChangeText={(text) => updateField('quantity', text)}
-            placeholder="1"
-            value={value.quantity}
-          />
-        </View>
-        <View style={styles.halfField}>
-          <TextField
-            autoCapitalize="none"
-            label="Unité"
-            onChangeText={(text) => updateField('unit', text)}
-            placeholder="prestation"
-            value={value.unit}
-          />
-        </View>
-      </View>
-
-      <View style={styles.row}>
-        <View style={styles.halfField}>
-          <TextField
-            keyboardType="decimal-pad"
-            label="Prix unitaire HT (€)"
-            onChangeText={(text) => updateField('unitPrice', text)}
-            placeholder="450"
-            value={value.unitPrice}
-          />
-        </View>
-        <View style={styles.halfField}>
-          <TextField
-            hint="Vide = 0 %"
-            keyboardType="decimal-pad"
-            label="TVA (%)"
-            onChangeText={(text) => updateField('vatRate', text)}
+            label="Remise (%)"
+            onChangeText={(text) => updateField('discountPercent', text)}
             placeholder="0"
-            value={value.vatRate}
+            value={value.discountPercent}
           />
+
+          <View style={styles.totals}>
+            <TotalRow label="Total HT" value={formatPriceHT(totals.lineTotalHt)} />
+            {discount > 0 ? (
+              <TotalRow
+                label={`Remise ${discount} %`}
+                tone={colors.success}
+                value={`− ${formatPriceHT(totals.discountAmount)}`}
+              />
+            ) : null}
+            <TotalRow label="TVA" value={formatPriceHT(totals.lineVat)} />
+            <TotalRow emphasized label="Total TTC" value={formatPriceHT(totals.lineTotalTtc)} />
+          </View>
         </View>
-      </View>
+      ) : null}
 
-      <View style={styles.vatShortcuts}>
-        {VAT_RATE_SHORTCUTS.map((rate) => {
-          const isActive =
-            value.vatRate.trim() !== '' && parseVatRateForTotals(rate) === activeVatRate;
+      <ConfirmDialog
+        confirmLabel="Supprimer"
+        destructive
+        message={`« ${title} » sera retirée du document.`}
+        onCancel={() => setConfirmRemove(false)}
+        onConfirm={() => {
+          setConfirmRemove(false);
+          onRemove?.();
+        }}
+        title="Supprimer cette prestation ?"
+        visible={confirmRemove}
+      />
+    </Card>
+  );
+}
 
-          return (
-            <Pressable
-              accessibilityLabel={`Appliquer une TVA de ${rate} %`}
-              accessibilityRole="button"
-              accessibilityState={{ selected: isActive }}
-              key={rate}
-              onPress={() => updateField('vatRate', rate)}
-              style={({ pressed }) => [
-                styles.vatChip,
-                isActive && styles.vatChipActive,
-                pressed && styles.vatChipPressed,
-              ]}>
-              <Text style={[styles.vatChipLabel, isActive && styles.vatChipLabelActive]}>
-                {rate} %
-              </Text>
-            </Pressable>
-          );
-        })}
-      </View>
+function TotalRow({
+  label,
+  value,
+  tone,
+  emphasized = false,
+}: {
+  label: string;
+  value: string;
+  tone?: string;
+  emphasized?: boolean;
+}) {
+  const styles = useStyles();
 
-      <View style={styles.totals}>
-        <Text style={styles.totalsLabel}>
-          Prestation : {formatPriceHT(lineTotals.lineTotalHt)} HT ·{' '}
-          {formatPriceHT(lineTotals.lineTotalTtc)} TTC
-        </Text>
-      </View>
+  return (
+    <View style={styles.totalRow}>
+      <Text
+        maxFontSizeMultiplier={1.4}
+        style={emphasized ? styles.totalLabelStrong : styles.totalLabel}>
+        {label}
+      </Text>
+      <Text
+        maxFontSizeMultiplier={1.4}
+        style={[
+          emphasized ? styles.totalValueStrong : styles.totalValue,
+          tone ? { color: tone } : null,
+        ]}>
+        {value}
+      </Text>
     </View>
   );
 }
 
 function useStyles() {
   return useThemedStyles((colors) => ({
-    container: {
-      backgroundColor: colors.surface,
-      borderRadius: radius.card,
-      borderWidth: 1,
-      borderColor: colors.border,
-      padding: spacing.lg,
-      gap: spacing.md,
-    },
     header: {
       flexDirection: 'row',
       alignItems: 'center',
-      justifyContent: 'space-between',
+      paddingRight: spacing[2],
     },
-    lineTitle: {
-      ...typography.headline,
+    headerButton: {
+      flex: 1,
+      minWidth: 0,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing[2],
+      minHeight: 56,
+      paddingLeft: spacing.md,
+      paddingRight: spacing[2],
+    },
+    headerText: {
+      flex: 1,
+      minWidth: 0,
+      gap: spacing[0.5],
+    },
+    title: {
+      ...typography.subheadlineMedium,
       color: colors.text,
+    },
+    summary: {
+      ...typography.caption1,
+      color: colors.textSecondary,
+    },
+    amount: {
+      ...typography.subheadlineMedium,
+      color: colors.text,
+      flexShrink: 1,
+    },
+    removeButton: {
+      width: 44,
+      height: 44,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    body: {
+      gap: spacing.md,
+      paddingHorizontal: spacing.md,
+      paddingBottom: spacing.md,
+      paddingTop: spacing[2],
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: colors.separatorOpaque,
     },
     row: {
       flexDirection: 'row',
       gap: spacing.md,
     },
-    halfField: {
+    field: {
       flex: 1,
+      minWidth: 0,
     },
     vatShortcuts: {
       flexDirection: 'row',
@@ -203,13 +360,32 @@ function useStyles() {
       fontWeight: '600',
     },
     totals: {
-      paddingTop: spacing.xs,
+      gap: spacing[1],
+      paddingTop: spacing[2],
       borderTopWidth: StyleSheet.hairlineWidth,
-      borderTopColor: colors.separator,
+      borderTopColor: colors.separatorOpaque,
     },
-    totalsLabel: {
+    totalRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: spacing.md,
+    },
+    totalLabel: {
       ...typography.footnote,
       color: colors.textSecondary,
+    },
+    totalValue: {
+      ...typography.footnoteMedium,
+      color: colors.text,
+    },
+    totalLabelStrong: {
+      ...typography.subheadlineMedium,
+      color: colors.text,
+    },
+    totalValueStrong: {
+      ...typography.subheadlineMedium,
+      color: colors.primary,
     },
   }));
 }

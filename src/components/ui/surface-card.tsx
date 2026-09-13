@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
-import { Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
+import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 
+import { PressableScale } from '@/components/ui/pressable-scale';
 import { useColors, useThemedStyles } from '@/hooks/use-colors';
 import { radius } from '@/constants/theme/radius';
 import { spacing } from '@/constants/theme/spacing';
@@ -44,12 +45,9 @@ export function SurfaceCard({
   }
 
   return (
-    <Pressable
-      accessibilityRole="button"
-      onPress={onPress}
-      style={({ pressed }) => [pressed && styles.pressed]}>
+    <PressableScale accessibilityRole="button" intensity="subtle" onPress={onPress}>
       {content}
-    </Pressable>
+    </PressableScale>
   );
 }
 
@@ -63,9 +61,5 @@ const useStyles = () =>
       padding: spacing.cardPadding,
       gap: spacing.sm,
       ...shadows.xs,
-    },
-    pressed: {
-      opacity: 0.94,
-      transform: [{ scale: 0.992 }],
     },
   }));

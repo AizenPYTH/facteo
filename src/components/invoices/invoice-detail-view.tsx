@@ -1,17 +1,18 @@
 import { router, type Href } from 'expo-router';
-import { Pressable, StyleSheet, Text, View, type ViewStyle } from 'react-native';
+import { StyleSheet, Text, View, type ViewStyle } from 'react-native';
 
+import { DocumentLinesSection } from '@/components/documents/document-lines-section';
 import { QuoteField } from '@/components/quotes/quote-field';
 import { QuoteTotals } from '@/components/quotes/quote-totals';
 import { Button } from '@/components/ui/button';
-import { useColors, useThemedStyles } from '@/hooks/use-colors';
-import { radius } from '@/constants/theme/radius';
+import { Card } from '@/components/ui/card';
+import { PressableScale } from '@/components/ui/pressable-scale';
 import { spacing } from '@/constants/theme/spacing';
 import { typography } from '@/constants/theme/typography';
-import { formatDate } from '@/lib/format/date';
+import { useThemedStyles } from '@/hooks/use-colors';
 import { formatPriceHT } from '@/lib/format/currency';
-import { parseAmountInput, parseVatRateForTotals } from '@/lib/format/decimal';
-import { mapInvoiceLineValueToTotals, mapInvoiceLinesToDocumentTotals } from '@/lib/invoices/mappers';
+import { formatDate } from '@/lib/format/date';
+import { mapInvoiceLinesToDocumentTotals } from '@/lib/invoices/mappers';
 import {
   formatElectronicInvoiceStatus,
   isElectronicInvoiceFailed,
@@ -34,7 +35,6 @@ export function InvoiceDetailView({
   onAddPayment,
 }: InvoiceDetailViewProps) {
   const styles = useStyles();
-  const colors = useColors();
   const totals = mapInvoiceLinesToDocumentTotals(invoice.lines);
   const electronicStatusLabel = formatElectronicInvoiceStatus(invoice.electronicInvoiceStatus);
 
@@ -45,15 +45,18 @@ export function InvoiceDetailView({
           <Text style={styles.sectionTitle}>Informations</Text>
           <InvoiceStatusBadge status={invoice.status} />
         </View>
-        <View style={styles.card}>
+        <Card variant="surface">
           <QuoteField emphasize label="Numéro" value={invoice.number} />
           <QuoteField label="Client" value={invoice.clientName} />
           {invoice.quoteId ? (
-            <Pressable
+            <PressableScale
+              accessibilityHint="Ouvre le devis dont cette facture est issue"
+              accessibilityLabel="Voir le devis source"
               accessibilityRole="button"
+              intensity="subtle"
               onPress={() => router.push(`/quotes/${invoice.quoteId}` as Href)}>
               <QuoteField emphasize label="Devis d’origine" value="Voir le devis source" />
-            </Pressable>
+            </PressableScale>
           ) : null}
           <QuoteField
             label="Date d’émission"
@@ -75,44 +78,19 @@ export function InvoiceDetailView({
               }
             />
           ) : null}
-          {invoice.electronicInvoiceLastError || isElectronicInvoiceFailed(invoice.electronicInvoiceStatus) ? (
+          {invoice.electronicInvoiceLastError ||
+          isElectronicInvoiceFailed(invoice.electronicInvoiceStatus) ? (
             <QuoteField
               label="Erreur de transmission"
               value={invoice.electronicInvoiceLastError ?? 'La plateforme a rejeté la facture.'}
             />
           ) : null}
-        </View>
+        </Card>
       </View>
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Prestations</Text>
-        <View style={styles.card}>
-          {invoice.lines.map((line, index) => {
-            const lineTotals = mapInvoiceLineValueToTotals(line);
-
-            return (
-              <View key={line.id} style={index > 0 ? styles.lineSeparator : undefined}>
-                <Text style={styles.lineTitle}>
-                  {line.title?.trim() || line.description.trim() || `Prestation ${index + 1}`}
-                </Text>
-                {line.title?.trim() && line.description.trim() ? (
-                  <Text style={styles.lineDescription}>{line.description}</Text>
-                ) : null}
-                <Text style={styles.lineMeta}>
-                  {line.quantity} {line.unit} × {formatPriceHT(parseAmountInput(line.unitPrice))} HT
-                  {parseAmountInput(line.discountPercent) > 0
-                    ? ` · Remise ${line.discountPercent} %`
-                    : ''}
-                </Text>
-                <Text style={styles.lineAmount}>
-                  {formatPriceHT(lineTotals.lineTotalHt)} HT · TVA{' '}
-                  {parseVatRateForTotals(line.vatRate)} % ·{' '}
-                  {formatPriceHT(lineTotals.lineTotalTtc)} TTC
-                </Text>
-              </View>
-            );
-          })}
-        </View>
+        <DocumentLinesSection lines={invoice.lines} />
       </View>
 
       <View style={styles.section}>
@@ -122,7 +100,7 @@ export function InvoiceDetailView({
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Historique des paiements</Text>
-        <View style={styles.card}>
+        <Card variant="surface">
           <View style={styles.paymentRow}>
             <Text style={styles.paymentLabel}>Total TTC</Text>
             <Text style={styles.paymentValue}>{formatPriceHT(invoice.totalTtc)}</Text>
@@ -170,15 +148,15 @@ export function InvoiceDetailView({
               ) : null}
             </View>
           )}
-        </View>
+        </Card>
       </View>
 
       {invoice.notes?.trim() ? (
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Notes</Text>
-          <View style={styles.card}>
+          <Card variant="surface">
             <Text style={styles.notes}>{invoice.notes.trim()}</Text>
-          </View>
+          </Card>
         </View>
       ) : null}
     </View>
@@ -201,35 +179,6 @@ function useStyles() {
   sectionTitle: {
     ...typography.headline,
     color: colors.text,
-  },
-  card: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.card,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing.md,
-    gap: spacing.md,
-  },
-  lineSeparator: {
-    paddingTop: spacing.md,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.separator,
-  },
-  lineTitle: {
-    ...typography.footnoteMedium,
-    color: colors.textSecondary,
-  },
-  lineDescription: {
-    ...typography.bodyMedium,
-    color: colors.text,
-  },
-  lineMeta: {
-    ...typography.footnote,
-    color: colors.textSecondary,
-  },
-  lineAmount: {
-    ...typography.subheadlineMedium,
-    color: colors.primary,
   },
   paymentRow: {
     flexDirection: 'row',

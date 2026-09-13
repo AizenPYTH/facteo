@@ -4,8 +4,13 @@ import { useColorScheme } from 'react-native';
 import { Colors } from '@/constants/theme';
 
 export default function AppTabs() {
+  // `useColorScheme` de react-native renvoie 'light' | 'dark' | null. Le null arrive
+  // notamment parce que ThemePreferenceProvider appelle Appearance.setColorScheme(null)
+  // quand la préférence vaut 'system' (le défaut). Indexer Colors avec null donnait
+  // `undefined`, et le premier accès à une couleur levait un TypeError sur le premier
+  // écran rendu après le splash.
   const scheme = useColorScheme();
-  const colors = Colors[scheme === 'unspecified' ? 'light' : scheme];
+  const colors = scheme === 'dark' ? Colors.dark : Colors.light;
 
   return (
     <NativeTabs

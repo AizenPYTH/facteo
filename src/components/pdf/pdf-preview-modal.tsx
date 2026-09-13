@@ -2,6 +2,7 @@ import { SymbolView } from 'expo-symbols';
 import { ActivityIndicator, Modal, Pressable, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { PressableScale } from '@/components/ui/pressable-scale';
 import { PdfPreviewWebView } from '@/components/pdf/pdf-preview-webview';
 import { useColors, useThemedStyles } from '@/hooks/use-colors';
 import { spacing } from '@/constants/theme/spacing';
@@ -57,19 +58,19 @@ export function PdfPreviewModal({
       visible={visible}>
       <View style={[styles.container, { paddingTop: insets.top }]}>
         <View style={styles.toolbar}>
-          <Pressable
+          <PressableScale
             accessibilityLabel="Fermer l’aperçu"
             accessibilityRole="button"
             hitSlop={12}
             onPress={onClose}
-            style={({ pressed }) => [styles.closeButton, pressed && styles.pressed]}>
+            style={styles.closeButton}>
             <SymbolView
               name={{ ios: 'xmark', android: 'close', web: 'close' }}
               size={18}
               tintColor={colors.text}
               type="hierarchical"
             />
-          </Pressable>
+          </PressableScale>
 
           <View style={styles.titleBlock}>
             <Text numberOfLines={1} style={styles.title}>
@@ -188,16 +189,15 @@ function ActionButton({
   const isDisabled = loading || disabled;
 
   return (
-    <Pressable
+    <PressableScale
       accessibilityLabel={label}
       accessibilityRole="button"
       accessibilityState={{ busy: loading, disabled: isDisabled }}
       disabled={isDisabled}
       onPress={onPress}
-      style={({ pressed }) => [
+      style={[
         styles.actionButton,
         highlight && styles.actionButtonHighlight,
-        pressed && !isDisabled && styles.pressed,
         isDisabled && styles.actionButtonDisabled,
       ]}>
       {loading ? (
@@ -211,7 +211,7 @@ function ActionButton({
         />
       )}
       <Text style={[styles.actionLabel, highlight && styles.actionLabelHighlight]}>{label}</Text>
-    </Pressable>
+    </PressableScale>
   );
 }
 
@@ -306,9 +306,6 @@ function useStyles() {
     },
     actionLabelHighlight: {
       color: '#FFFFFF',
-    },
-    pressed: {
-      opacity: 0.85,
     },
   }));
 }

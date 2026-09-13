@@ -2,12 +2,13 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Link, router, type Href } from 'expo-router';
 import { useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
-import { Platform, Pressable, Text, View } from 'react-native';
+import { Platform, Text, View } from 'react-native';
 
 import { AuthScreen } from '@/components/auth/auth-screen';
 import { AuthTextField } from '@/components/auth/auth-text-field';
 import { SocialAuthButton } from '@/components/auth/social-auth-button';
 import { Button } from '@/components/ui/button';
+import { PressableScale } from '@/components/ui/pressable-scale';
 import { useAuth } from '@/hooks/use-auth';
 import { useAuthScreenStyles } from '@/hooks/use-auth-screen-styles';
 import { useThemedStyles } from '@/hooks/use-colors';
@@ -99,6 +100,7 @@ export default function LoginScreen() {
           </Link>
         </Text>
       }
+      onSubmit={handleSubmit(onSubmit)}
       subtitle="Le même compte INVEQ sur iPhone, Android et inveq.fr."
       title="Connexion">
       <View style={styles.oauthColumn}>
@@ -135,24 +137,6 @@ export default function LoginScreen() {
         <View style={styles.separatorLine} />
       </View>
 
-      <Pressable
-        accessibilityHint="Méthode recommandée si vous êtes déjà connecté sur ordinateur"
-        accessibilityRole="button"
-        disabled={busy}
-        onPress={() => router.push('/login-qr' as Href)}
-        style={({ pressed }) => [styles.qrCard, pressed && styles.qrCardPressed]}>
-        <Text style={styles.qrTitle}>Se connecter avec un QR code</Text>
-        <Text style={styles.qrHint}>
-          Méthode recommandée si vous êtes déjà connecté sur inveq.fr
-        </Text>
-      </Pressable>
-
-      <View style={styles.separatorRow}>
-        <View style={styles.separatorLine} />
-        <Text style={styles.separatorText}>ou avec e-mail</Text>
-        <View style={styles.separatorLine} />
-      </View>
-
       <Controller
         control={control}
         name="email"
@@ -166,7 +150,6 @@ export default function LoginScreen() {
             onBlur={onBlur}
             onChangeText={onChange}
             placeholder="vous@entreprise.fr"
-            returnKeyType="next"
             textContentType="emailAddress"
             value={value}
           />
@@ -185,19 +168,21 @@ export default function LoginScreen() {
               label="Mot de passe"
               onBlur={onBlur}
               onChangeText={onChange}
-              onSubmitEditing={handleSubmit(onSubmit)}
               placeholder="Votre mot de passe"
-              returnKeyType="done"
               textContentType="password"
               value={value}
             />
-            <Pressable
+            <PressableScale
+              accessibilityLabel="Mot de passe oublié"
               accessibilityRole="link"
               hitSlop={8}
+              intensity="subtle"
               onPress={() => router.push('/forgot-password' as Href)}
               style={styles.forgot}>
-              <Text style={styles.forgotLabel}>Mot de passe oublié</Text>
-            </Pressable>
+              <Text maxFontSizeMultiplier={1.4} style={styles.forgotLabel}>
+                Mot de passe oublié
+              </Text>
+            </PressableScale>
           </View>
         )}
       />
@@ -226,33 +211,14 @@ function useStyles() {
       textTransform: 'uppercase' as const,
       letterSpacing: 0.6,
     },
-    qrCard: {
-      borderRadius: 14,
-      borderWidth: 1,
-      borderColor: colors.primary,
-      backgroundColor: colors.primarySubtle,
-      paddingVertical: spacing.md,
-      paddingHorizontal: spacing.md,
-      gap: spacing.xs,
-    },
-    qrCardPressed: {
-      opacity: 0.85,
-    },
-    qrTitle: {
-      ...typography.subheadlineMedium,
-      color: colors.primary,
-      textAlign: 'center' as const,
-    },
-    qrHint: {
-      ...typography.caption1,
-      color: colors.textSecondary,
-      textAlign: 'center' as const,
-    },
     passwordBlock: {
       gap: spacing.xs,
     },
     forgot: {
       alignSelf: 'flex-end' as const,
+      justifyContent: 'center' as const,
+      minHeight: 44,
+      paddingHorizontal: spacing.xs,
     },
     forgotLabel: {
       ...typography.footnote,

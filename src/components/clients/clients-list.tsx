@@ -1,18 +1,19 @@
+import { useCallback } from 'react';
 import {
   ActivityIndicator,
   FlatList,
   RefreshControl,
-  StyleSheet,
-  Text,
   View,
   type ListRenderItem,
   type ViewStyle,
 } from 'react-native';
 
-import { useColors, useThemedStyles } from '@/hooks/use-colors';
+import { DocumentListSkeleton } from '@/components/documents/document-list-skeleton';
+import { ErrorState } from '@/components/ui/error-state';
+import { ListRowSeparator } from '@/components/ui/list-row';
 import { radius } from '@/constants/theme/radius';
 import { spacing } from '@/constants/theme/spacing';
-import { typography } from '@/constants/theme/typography';
+import { useColors, useThemedStyles } from '@/hooks/use-colors';
 import type { Client } from '@/types/client';
 
 import { ClientCard } from './client-card';
@@ -24,6 +25,8 @@ export type ClientsListProps = {
   isRefreshing?: boolean;
   isFetchingNextPage?: boolean;
   isSearching?: boolean;
+  /** Échec du chargement : affiché à la place de la liste, avec reprise. */
+  error?: unknown;
   onRefresh?: () => void;
   onEndReached?: () => void;
   onClientPress?: (client: Client) => void;
@@ -37,6 +40,7 @@ export function ClientsList({
   isRefreshing = false,
   isFetchingNextPage = false,
   isSearching = false,
+  error,
   onRefresh,
   onEndReached,
   onClientPress,
@@ -45,11 +49,14 @@ export function ClientsList({
 }: ClientsListProps) {
   const styles = useStyles();
   const colors = useColors();
-  const renderItem: ListRenderItem<Client> = ({ item, index }) => (
-    <View>
-      <ClientCard client={item} onPress={onClientPress} />
-      {index < clients.length - 1 ? <View style={styles.separator} /> : null}
-    </View>
+  const renderItem = useCallback<ListRenderItem<Client>>(
+    ({ item, index }) => (
+      <View>
+        {index > 0 ? <ListRowSeparator /> : null}
+        <ClientCard client={item} onPress={onClientPress} />
+      </View>
+    ),
+    [onClientPress],
   );
 
   const renderFooter = () => {
@@ -65,11 +72,19 @@ export function ClientsList({
   };
 
   if (isInitialLoading) {
+    return <DocumentListSkeleton />;
+  }
+
+  // Une erreur de chargement se présentait comme une liste vide : « Aucun
+  // client » alors que le réseau avait échoué.
+  if (error && clients.length === 0) {
     return (
-      <View style={styles.loading}>
-        <ActivityIndicator color={colors.primary} size="large" />
-        <Text style={styles.loadingText}>Chargement des clients...</Text>
-      </View>
+      <ErrorState
+        message="Vérifiez votre connexion, puis réessayez."
+        onRetry={onRefresh}
+        title="Impossible de charger vos clients"
+        variant="screen"
+      />
     );
   }
 
@@ -95,6 +110,13 @@ export function ClientsList({
           />
         ) : undefined
       }
+      // Réglages de virtualisation : la liste rendait toutes les lignes montées
+      // dès le premier passage, ce qui se voyait au premier scroll sur les gros
+      // volumes. La hauteur des lignes est fixe côté gabarit, on la déclare.
+      initialNumToRender={8}
+      maxToRenderPerBatch={8}
+      removeClippedSubviews
+      windowSize={9}
       renderItem={renderItem}
       keyboardShouldPersistTaps="handled"
       nestedScrollEnabled
@@ -121,26 +143,10 @@ function useStyles() {
     flexGrow: 1,
     justifyContent: 'center',
   },
-  loading: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: spacing['3xl'],
-    gap: spacing.md,
-  },
-  loadingText: {
-    ...typography.subheadline,
-    color: colors.textSecondary,
-  },
   footer: {
     paddingVertical: spacing.lg,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  separator: {
-    height: StyleSheet.hairlineWidth,
-    backgroundColor: colors.separator,
-    marginLeft: spacing.md,
   },
 }));
 }

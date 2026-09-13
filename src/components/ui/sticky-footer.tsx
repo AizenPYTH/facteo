@@ -20,6 +20,12 @@ type StickyFooterProps = {
   style?: StyleProp<ViewStyle>;
   transparent?: boolean;
   variant?: StickyFooterVariant;
+  /**
+   * Hauteur réelle du pied, mesurée au layout. Un pied dont le contenu varie
+   * (récapitulatif dépliable, second bouton) ne peut pas être réservé par une
+   * constante : l'écran s'abonne à sa hauteur.
+   */
+  onHeightChange?: (height: number) => void;
 };
 
 /**
@@ -43,6 +49,7 @@ export function StickyFooter({
   style,
   transparent = false,
   variant = 'default',
+  onHeightChange,
 }: StickyFooterProps) {
   const styles = useStyles(variant);
   const colors = useColors();
@@ -52,6 +59,11 @@ export function StickyFooter({
   return (
     <KeyboardStickyView offset={{ closed: 0, opened: KEYBOARD_TOOLBAR_HEIGHT }}>
       <View
+        onLayout={
+          onHeightChange
+            ? (event) => onHeightChange(event.nativeEvent.layout.height)
+            : undefined
+        }
         style={[
           styles.footer,
           {

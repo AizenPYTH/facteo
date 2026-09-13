@@ -1,10 +1,11 @@
 import type { ReactNode } from 'react';
 import { router } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
-import { Pressable, Text, View, type ViewStyle } from 'react-native';
+import { Text, View, type ViewStyle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AppText } from '@/components/ui/app-text';
+import { PressableScale } from '@/components/ui/pressable-scale';
 import { triggerImpactHaptic } from '@/lib/haptics';
 import { useColors, useThemedStyles } from '@/hooks/use-colors';
 import { spacing } from '@/constants/theme/spacing';
@@ -53,12 +54,13 @@ export function NavigationHeader({
     <View style={[styles.container, { paddingTop: topPadding }, style]}>
       <View style={styles.topRow}>
         {showBackButton ? (
-          <Pressable
+          <PressableScale
             accessibilityLabel={backLabel}
             accessibilityRole="button"
             hitSlop={8}
+            intensity="subtle"
             onPress={handleBack}
-            style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}>
+            style={styles.backButton}>
             <SymbolView
               name={{ ios: 'chevron.left', android: 'arrow_back', web: 'arrow_back' }}
               size={20}
@@ -66,7 +68,7 @@ export function NavigationHeader({
               type="hierarchical"
             />
             <Text style={styles.backLabel}>{backLabel}</Text>
-          </Pressable>
+          </PressableScale>
         ) : (
           <View style={styles.backButtonPlaceholder} />
         )}
@@ -99,19 +101,19 @@ export function ModalHeader({
   return (
     <View style={[styles.modalHeader, { paddingTop: insets.top + spacing.sm }, style]}>
       <Text style={styles.modalTitle}>{title}</Text>
-      <Pressable
+      <PressableScale
         accessibilityLabel={closeLabel}
         accessibilityRole="button"
         hitSlop={12}
         onPress={onClose}
-        style={({ pressed }) => [styles.closeButton, pressed && styles.pressed]}>
+        style={styles.closeButton}>
         <SymbolView
           name={{ ios: 'xmark.circle.fill', android: 'close', web: 'close' }}
           size={28}
           tintColor={colors.iconTertiary}
           type="hierarchical"
         />
-      </Pressable>
+      </PressableScale>
     </View>
   );
 }
@@ -147,9 +149,6 @@ function useStyles() {
   backLabel: {
     ...typography.subheadlineMedium,
     color: colors.primary,
-  },
-  pressed: {
-    opacity: 0.7,
   },
   modalHeader: {
     flexDirection: 'row',

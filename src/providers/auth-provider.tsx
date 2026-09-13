@@ -16,7 +16,10 @@ import {
 } from 'react';
 
 import { MARKETING_SITE_URL } from '@/constants/marketing/site';
-import { supabase } from '@/lib/supabase';
+import { isSupabaseConfigured, supabase } from '@/lib/supabase';
+
+/** Au-delà de ce délai, on cesse d’attendre la restauration de session. */
+const SESSION_RESTORE_TIMEOUT_MS = 8000;
 
 async function createAppleNonce(): Promise<{ rawNonce: string; hashedNonce: string }> {
   const rawNonce = Crypto.randomUUID().replace(/-/g, '') + Crypto.randomUUID().replace(/-/g, '');
@@ -28,7 +31,14 @@ async function createAppleNonce(): Promise<{ rawNonce: string; hashedNonce: stri
   return { rawNonce, hashedNonce };
 }
 
-WebBrowser.maybeCompleteAuthSession();
+// Appel natif au niveau module : une exception ici sort de l’évaluation du module
+// et échappe donc à AppErrorBoundary, qui ne capture que les erreurs de rendu.
+// Le process mourrait avant le premier frame, sans écran d’erreur.
+try {
+  WebBrowser.maybeCompleteAuthSession();
+} catch (error) {
+  console.error('maybeCompleteAuthSession', error);
+}
 
 export type SignInParams = {
   email: string;
@@ -98,10 +108,27 @@ async function createSessionFromUrl(url: string): Promise<AuthResult> {
 export function AuthProvider({ children }: PropsWithChildren) {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  // Sans configuration Supabase, aucune session ne peut être restaurée : on ne passe
+  // jamais par un état de chargement, sinon le splash resterait affiché indéfiniment.
+  const [loading, setLoading] = useState(isSupabaseConfigured);
 
   useEffect(() => {
     let mounted = true;
+
+    // Sans configuration Supabase (variables EAS absentes), le client pointe sur une
+    // URL placeholder et aucune requête n’aboutira : on n’abonne rien et on laisse
+    // `loading` à false (cf. état initial) pour que le splash soit masqué.
+    if (!isSupabaseConfigured) {
+      return;
+    }
+
+    // Filet de sécurité : si la restauration de session pend (réseau bloqué, DNS,
+    // backend injoignable), on débloque le rendu plutôt que de figer le splash.
+    const restoreTimeout = setTimeout(() => {
+      if (mounted) {
+        setLoading(false);
+      }
+    }, SESSION_RESTORE_TIMEOUT_MS);
 
     async function handleIncomingUrl(url: string | null) {
       if (!url || !url.includes('auth/callback')) {
@@ -157,6 +184,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
 
     return () => {
       mounted = false;
+      clearTimeout(restoreTimeout);
       linkingSub.remove();
       subscription.unsubscribe();
     };

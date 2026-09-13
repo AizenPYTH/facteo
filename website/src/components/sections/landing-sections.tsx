@@ -1,144 +1,20 @@
 'use client';
 
-import type { ElementType } from 'react';
-import {
-  Building2,
-  Cloud,
-  CreditCard,
-  FileText,
-  Monitor,
-  PenLine,
-  Receipt,
-  Shield,
-  Smartphone,
-  Sparkles,
-  Users,
-  BarChart3,
-} from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion, useInView, useReducedMotion } from 'framer-motion';
+import { Smartphone } from 'lucide-react';
+import { useRef } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { FadeIn, Stagger, StaggerItem } from '@/components/ui/fade-in';
-import { AnimatedBackground } from '@/components/marketing/animated-background';
-import InvoiceHero from '@/components/hero/InvoiceHero';
 import {
   CTA,
   FAQ,
-  FEATURES,
   MOBILE,
-  PRESENTATION,
-  TESTIMONIALS,
-  WHY,
 } from '@/lib/content';
 import { APP_REGISTER_URL } from '@/lib/constants';
 
 export { PricingSection } from '@/components/sections/pricing-section';
 
-const ICONS: Record<string, ElementType> = {
-  sparkles: Sparkles,
-  shield: Shield,
-  smartphone: Smartphone,
-  cloud: Cloud,
-  users: Users,
-  'file-text': FileText,
-  receipt: Receipt,
-  file: FileText,
-  'pen-line': PenLine,
-  'credit-card': CreditCard,
-  'bar-chart': BarChart3,
-  'building-2': Building2,
-  monitor: Monitor,
-};
-
-export function HeroSection() {
-  return (
-    <section className="relative overflow-hidden px-5 pb-20 pt-16 sm:px-6 sm:pb-24 sm:pt-20 lg:px-8 lg:pb-28 lg:pt-24">
-      <AnimatedBackground />
-      <div className="relative">
-        <InvoiceHero />
-      </div>
-    </section>
-  );
-}
-
-export function PresentationSection() {
-  return (
-    <section className="px-5 py-20 sm:px-6 sm:py-24 lg:px-8 lg:py-28" id="presentation">
-      <div className="mx-auto max-w-6xl">
-        <FadeIn className="max-w-2xl">
-          <h2 className="text-3xl font-semibold tracking-[-0.03em] text-foreground sm:text-4xl lg:text-[2.75rem] lg:leading-[1.1]">
-            {PRESENTATION.title}
-          </h2>
-          <p className="mt-5 text-base leading-relaxed text-muted sm:text-lg">{PRESENTATION.subtitle}</p>
-        </FadeIn>
-        <Stagger className="mt-12 grid gap-3 sm:mt-14 sm:grid-cols-2 sm:gap-4">
-          {PRESENTATION.bullets.map((bullet) => (
-            <StaggerItem key={bullet}>
-              <div className="card-hover flex items-start gap-3.5 rounded-2xl border border-border/80 bg-surface p-5 sm:p-6">
-                <div className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
-                <p className="text-[15px] leading-relaxed text-foreground/90">{bullet}</p>
-              </div>
-            </StaggerItem>
-          ))}
-        </Stagger>
-      </div>
-    </section>
-  );
-}
-
-export function WhySection() {
-  return (
-    <section className="border-y border-border/60 bg-[#F7F4EF]/70 px-5 py-20 sm:px-6 sm:py-24 lg:px-8 lg:py-28">
-      <div className="mx-auto max-w-6xl text-center">
-        <FadeIn>
-          <h2 className="text-3xl font-semibold tracking-[-0.03em] text-foreground sm:text-4xl">
-            {WHY.title}
-          </h2>
-          <p className="mx-auto mt-4 max-w-xl text-muted">{WHY.subtitle}</p>
-        </FadeIn>
-        <Stagger className="mt-12 grid gap-4 sm:mt-14 sm:grid-cols-2 lg:grid-cols-4">
-          {WHY.items.map((item) => {
-            const Icon = ICONS[item.icon] ?? Sparkles;
-            return (
-              <StaggerItem key={item.title}>
-                <div className="card-hover h-full rounded-2xl border border-border/80 bg-surface p-6 text-left">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-primary">
-                    <Icon size={20} />
-                  </div>
-                  <h3 className="mt-4 font-semibold tracking-tight text-foreground">{item.title}</h3>
-                  <p className="mt-2 text-sm leading-relaxed text-muted">{item.description}</p>
-                </div>
-              </StaggerItem>
-            );
-          })}
-        </Stagger>
-      </div>
-    </section>
-  );
-}
-
-export function FeaturesGrid({ showAll = false }: { showAll?: boolean }) {
-  const items = showAll ? FEATURES.items : FEATURES.items.slice(0, 6);
-
-  return (
-    <Stagger className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-      {items.map((item) => {
-        const Icon = ICONS[item.icon] ?? FileText;
-        return (
-          <StaggerItem key={item.title}>
-            <div className="card-hover group h-full rounded-2xl border border-border bg-surface p-6">
-              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50 text-primary transition-colors group-hover:bg-primary group-hover:text-white">
-                <Icon size={22} />
-              </div>
-              <h3 className="mt-4 font-semibold text-foreground">{item.title}</h3>
-              <p className="mt-2 text-sm leading-relaxed text-muted">{item.description}</p>
-            </div>
-          </StaggerItem>
-        );
-      })}
-    </Stagger>
-  );
-}
 
 export function FaqSection({ compact = false }: { compact?: boolean }) {
   const items = compact ? FAQ.items.slice(0, 4) : FAQ.items;
@@ -163,15 +39,32 @@ export function FaqSection({ compact = false }: { compact?: boolean }) {
 
 export function CtaSection() {
   return (
-    <section className="px-5 py-20 sm:px-6 sm:py-24 lg:px-8 lg:py-28">
+    <section className="px-5 py-[var(--section-y)] sm:px-6 lg:px-8 lg:py-[var(--section-y-lg)]">
       <FadeIn>
-        <div className="mx-auto max-w-4xl rounded-[1.75rem] bg-gradient-to-br from-[#1D4ED8] to-[#0B1220] px-6 py-14 text-center text-white shadow-[0_24px_60px_-24px_rgba(29,78,216,0.55)] sm:px-10 sm:py-16">
-          <h2 className="text-3xl font-semibold tracking-[-0.03em] sm:text-4xl">{CTA.title}</h2>
-          <p className="mx-auto mt-4 max-w-lg text-base text-blue-100/90">{CTA.subtitle}</p>
-          <div className="mt-8">
-            <Button className="!bg-white !text-primary !shadow-none hover:!bg-blue-50" href={APP_REGISTER_URL}>
-              {CTA.cta}
-            </Button>
+        <div className="relative mx-auto max-w-4xl overflow-hidden rounded-[1.75rem] bg-[#0B0E14] px-6 py-16 text-center text-white shadow-[0_40px_80px_-40px_rgba(49,46,129,0.6)] sm:px-10 sm:py-20">
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-0"
+            style={{
+              background:
+                'radial-gradient(ellipse 60% 70% at 50% 0%, rgba(139,92,246,0.4), transparent 65%), radial-gradient(ellipse 50% 60% at 85% 100%, rgba(37,99,235,0.28), transparent 60%)',
+            }}
+          />
+          <div className="relative">
+            <h2 className="mx-auto max-w-xl text-[1.75rem] font-semibold leading-tight tracking-[-0.03em] sm:text-4xl">
+              {CTA.title}
+            </h2>
+            <p className="mx-auto mt-5 max-w-md text-[15px] leading-relaxed text-slate-300">
+              {CTA.subtitle}
+            </p>
+            <div className="mt-9 flex justify-center">
+              <Button
+                className="!bg-white !text-[#0B0E14] !shadow-[0_10px_30px_-10px_rgba(255,255,255,0.4)] hover:!bg-slate-100"
+                href={APP_REGISTER_URL}
+                size="lg">
+                {CTA.cta}
+              </Button>
+            </div>
           </div>
         </div>
       </FadeIn>
@@ -179,36 +72,20 @@ export function CtaSection() {
   );
 }
 
-export function TestimonialsSection() {
-  return (
-    <section className="px-5 py-20 sm:px-6 sm:py-24 lg:px-8 lg:py-28">
-      <div className="mx-auto max-w-6xl">
-        <FadeIn className="text-center">
-          <h2 className="text-3xl font-semibold tracking-[-0.03em] text-foreground sm:text-4xl">
-            {TESTIMONIALS.title}
-          </h2>
-          <p className="mt-4 text-muted">{TESTIMONIALS.subtitle}</p>
-        </FadeIn>
-        <Stagger className="mt-12 grid gap-4 sm:mt-14 md:grid-cols-3 md:gap-5">
-          {TESTIMONIALS.items.map((t) => (
-            <StaggerItem key={t.author}>
-              <blockquote className="card-hover h-full rounded-2xl border border-border/80 bg-surface p-6">
-                <p className="text-[15px] leading-relaxed text-foreground/90">“{t.quote}”</p>
-                <footer className="mt-5 text-sm text-muted">
-                  <strong className="font-semibold text-foreground">{t.author}</strong> — {t.role}
-                </footer>
-              </blockquote>
-            </StaggerItem>
-          ))}
-        </Stagger>
-      </div>
-    </section>
-  );
-}
-
 export function MobileSection() {
+  const reduce = useReducedMotion();
+  const ref = useRef<HTMLDivElement>(null);
+  const inView = useInView(ref, { margin: '-15% 0px' });
+  // Trois boucles infinies tournaient en permanence, y compris hors du champ.
+  // Elles ne s'exécutent plus que lorsque la maquette est visible, et jamais
+  // sous « réduire les animations ».
+  const loop = !reduce && inView;
+
   return (
-    <section className="border-y border-border/60 bg-[#F7F4EF]/60 px-5 py-20 sm:px-6 sm:py-24 lg:px-8 lg:py-28" id="download">
+    <section
+      className="border-y border-border/60 bg-[#F7F4EF]/60 px-5 py-[var(--section-y)] sm:px-6 lg:px-8 lg:py-[var(--section-y-lg)]"
+      id="download"
+      ref={ref}>
       <div className="mx-auto flex max-w-6xl flex-col items-center gap-12 lg:flex-row lg:gap-16">
         <FadeIn className="flex-1">
           <h2 className="text-3xl font-semibold tracking-[-0.03em] text-foreground sm:text-4xl">
@@ -235,9 +112,9 @@ export function MobileSection() {
               className="pointer-events-none absolute -inset-8 rounded-full bg-[radial-gradient(ellipse_at_center,rgba(37,99,235,0.16),transparent_70%)] blur-xl"
             />
             <motion.div
-              animate={{ y: [0, -6, 0] }}
+              animate={loop ? { y: [0, -6, 0] } : { y: 0 }}
               className="relative h-[24rem] w-[11.5rem] overflow-hidden rounded-[2.45rem] border-[6px] border-[#0B1220] bg-[#F8FAFC] shadow-[0_32px_70px_-28px_rgba(15,23,42,0.55)]"
-              transition={{ duration: 5.5, repeat: Infinity, ease: 'easeInOut' }}>
+              transition={loop ? { duration: 5.5, repeat: Infinity, ease: 'easeInOut' } : { duration: 0.3 }}>
               <div className="mx-auto mt-2.5 h-5 w-[4.5rem] rounded-full bg-[#0B1220]" />
               <div className="mt-4 px-3.5">
                 <div className="flex items-center justify-between">
@@ -247,16 +124,16 @@ export function MobileSection() {
                   </span>
                 </div>
                 <motion.div
-                  animate={{ opacity: [0.85, 1, 0.85] }}
+                  animate={loop ? { opacity: [0.85, 1, 0.85] } : { opacity: 1 }}
                   className="mt-3 rounded-xl bg-white p-2.5 shadow-sm ring-1 ring-slate-100"
-                  transition={{ duration: 3.2, repeat: Infinity, ease: 'easeInOut' }}>
+                  transition={loop ? { duration: 3.2, repeat: Infinity, ease: 'easeInOut' } : { duration: 0.3 }}>
                   <p className="text-[9px] font-medium text-slate-500">Martin SARL</p>
                   <p className="mt-0.5 text-[11px] font-semibold text-slate-900">1 435,20 €</p>
                   <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-100">
                     <motion.div
-                      animate={{ width: ['35%', '100%', '35%'] }}
+                      animate={loop ? { width: ['35%', '100%', '35%'] } : { width: '68%' }}
                       className="h-full rounded-full bg-primary"
-                      transition={{ duration: 4.5, repeat: Infinity, ease: 'easeInOut' }}
+                      transition={loop ? { duration: 4.5, repeat: Infinity, ease: 'easeInOut' } : { duration: 0.3 }}
                     />
                   </div>
                 </motion.div>
@@ -277,18 +154,18 @@ export function MobileSection() {
                   ))}
                 </div>
                 <motion.div
-                  animate={{ scale: [1, 1.02, 1] }}
+                  animate={loop ? { scale: [1, 1.02, 1] } : { scale: 1 }}
                   className="mt-3 flex h-9 items-center justify-center rounded-xl bg-primary text-[10px] font-semibold text-white shadow-sm"
-                  transition={{ duration: 2.8, repeat: Infinity, ease: 'easeInOut' }}>
+                  transition={loop ? { duration: 2.8, repeat: Infinity, ease: 'easeInOut' } : { duration: 0.3 }}>
                   Nouvelle facture
                 </motion.div>
               </div>
               <div className="absolute bottom-2 left-1/2 h-1 w-10 -translate-x-1/2 rounded-full bg-slate-300/90" />
             </motion.div>
             <motion.div
-              animate={{ y: [0, 8, 0], opacity: [0.9, 1, 0.9] }}
+              animate={loop ? { y: [0, 8, 0], opacity: [0.9, 1, 0.9] } : { y: 0, opacity: 1 }}
               className="absolute -right-6 top-16 hidden rounded-xl border border-white/80 bg-white/95 px-2.5 py-2 shadow-lg sm:block"
-              transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}>
+              transition={loop ? { duration: 4, repeat: Infinity, ease: 'easeInOut' } : { duration: 0.3 }}>
               <p className="text-[10px] font-semibold text-emerald-700">Paiement reçu</p>
               <p className="text-[9px] text-slate-500">+1 435,20 €</p>
             </motion.div>
@@ -299,13 +176,33 @@ export function MobileSection() {
   );
 }
 
-export function PageHero({ title, subtitle }: { title: string; subtitle?: string }) {
+export function PageHero({
+  eyebrow,
+  title,
+  subtitle,
+}: {
+  eyebrow?: string;
+  title: string;
+  subtitle?: string;
+}) {
   return (
-    <section className="gradient-hero relative overflow-hidden border-b border-border px-6 py-16 lg:px-8 lg:py-20">
-      <AnimatedBackground />
+    <section className="relative isolate overflow-hidden border-b border-border/60 px-5 py-16 sm:px-6 lg:px-8 lg:py-24">
+      <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 bg-aurora" />
+      <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 bg-grid" />
       <FadeIn className="relative mx-auto max-w-3xl text-center">
-        <h1 className="text-4xl font-bold tracking-tight text-foreground lg:text-5xl">{title}</h1>
-        {subtitle ? <p className="mt-4 text-lg text-muted">{subtitle}</p> : null}
+        {eyebrow ? (
+          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">
+            {eyebrow}
+          </p>
+        ) : null}
+        <h1 className="mt-4 text-[2rem] font-semibold leading-[1.1] tracking-[-0.035em] text-foreground sm:text-[2.75rem] lg:text-[3rem]">
+          {title}
+        </h1>
+        {subtitle ? (
+          <p className="mx-auto mt-5 max-w-xl text-base leading-relaxed text-muted sm:text-[1.0625rem]">
+            {subtitle}
+          </p>
+        ) : null}
       </FadeIn>
     </section>
   );

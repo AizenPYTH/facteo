@@ -140,9 +140,10 @@ export default function RegisterScreen() {
           </Link>
         </Text>
       }
+      onSubmit={handleSubmit(onSubmit)}
       subtitle="Commencez en quelques secondes."
       title="Créer un compte">
-      {FIELDS.map((field, index) => (
+      {FIELDS.map((field) => (
         <Controller
           key={field.name}
           control={control}
@@ -159,7 +160,6 @@ export default function RegisterScreen() {
               onBlur={onBlur}
               onChangeText={onChange}
               placeholder={field.placeholder}
-              returnKeyType={index < FIELDS.length - 1 ? 'next' : 'done'}
               textContentType={field.textContentType}
               value={value}
             />

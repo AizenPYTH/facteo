@@ -8,7 +8,7 @@ import {
   type SetStateAction,
 } from 'react';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
-import { Alert, Linking, Platform, Text, View } from 'react-native';
+import { Alert, FlatList, Linking, Platform, Text, View } from 'react-native';
 
 import {
   ProductAnalysisConfirmationModal,
@@ -16,7 +16,8 @@ import {
 } from '@/components/ai/product-analysis-confirmation-modal';
 import { ProductAnalysisLoadingModal } from '@/components/ai/product-analysis-loading-modal';
 import { Button } from '@/components/ui/button';
-import { useStickyFooterInset } from '@/components/ui/sticky-footer';
+import { EmptyState } from '@/components/ui/empty-state';
+import { useWizardFooterInset } from '@/components/ui/wizard-screen';
 import { useAuth } from '@/hooks/use-auth';
 import { useThemedStyles } from '@/hooks/use-colors';
 import { usePlatformActionSheet } from '@/hooks/use-platform-action-sheet';
@@ -51,7 +52,7 @@ export function QuoteAddLinesStep({
   const { user } = useAuth();
   const { hasFeature } = useSubscription();
   const { showError, showSuccess } = useToast();
-  const footerInset = useStickyFooterInset('toolbar');
+  const footerInset = useWizardFooterInset();
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisProgress, setAnalysisProgress] = useState(0.08);
   const [analysisImageUri, setAnalysisImageUri] = useState<string | null>(null);
@@ -174,10 +175,12 @@ export function QuoteAddLinesStep({
       });
 
       onAddLine({
-        ...createEmptyQuoteLine(),
+        id: createEmptyQuoteLine().id,
         productId: product.id,
+        // Titre et description sont deux champs distincts : l'analyse IA les
+        // fournit séparément, on ne les écrase plus l'un par l'autre.
         title: title || product.name,
-        description: title ? description : description || product.name,
+        description,
         quantity: formatDecimalForInput(quantity),
         unit,
         unitPrice: priceHt === null ? '' : formatDecimalForInput(priceHt),
@@ -196,11 +199,18 @@ export function QuoteAddLinesStep({
 
   const listHeader = (
     <View style={styles.headerSection}>
-      <Text style={styles.description}>
-        Ajoutez vos prestations : titre, description, quantité, prix HT et TVA.
+      <Text style={styles.sectionLabel}>
+        {lines.length > 1 ? `${lines.length} prestations` : `${lines.length} prestation`}
       </Text>
+    </View>
+  );
 
-      <Button onPress={handleAddPrestation} title="Ajouter une prestation" />
+  // Le bouton d'ajout est en pied de liste, là où se trouve le pouce après
+  // avoir rempli la dernière ligne — il était en tête, donc hors d'atteinte dès
+  // la deuxième prestation.
+  const listFooter = (
+    <View style={styles.footerSection}>
+      <Button onPress={handleAddPrestation} title="Ajouter une prestation" variant="ghost" />
       {Platform.OS === 'web' ? (
         <Button
           onPress={handleScanProductWithAi}
@@ -208,25 +218,27 @@ export function QuoteAddLinesStep({
           variant="ghost"
         />
       ) : null}
-
-      <View style={styles.prestationsHeader}>
-        <Text style={styles.sectionLabel}>
-          Prestations ({lines.length})
-        </Text>
-      </View>
     </View>
   );
 
   if (lines.length === 0) {
     return (
       <>
-        <View style={[styles.container, { paddingBottom: footerInset }]}>
-          {listHeader}
-          <View style={styles.emptyPrestations}>
-            <Text style={styles.emptyPrestationsText}>
-              Appuyez sur « Ajouter une prestation » pour commencer.
-            </Text>
-          </View>
+        <View style={styles.container}>
+          <EmptyState
+            actionLabel="Ajouter une prestation"
+            description="Titre, description, quantité, prix HT, TVA et remise éventuelle."
+            icon={{ ios: 'list.bullet.rectangle', android: 'list_alt', web: 'list_alt' }}
+            onAction={handleAddPrestation}
+            title="Aucune prestation"
+          />
+          {Platform.OS === 'web' ? (
+            <Button
+              onPress={handleScanProductWithAi}
+              title="Scanner un produit (IA)"
+              variant="ghost"
+            />
+          ) : null}
         </View>
         {actionSheetNode}
         <ProductAnalysisLoadingModal progress={analysisProgress} visible={isAnalyzing} />
@@ -249,31 +261,28 @@ export function QuoteAddLinesStep({
 
   return (
     <>
-      {/*
-        Un seul conteneur de défilement, et c'est `KeyboardAwareScrollView`.
-        Le nombre de prestations d'un devis se compte en unités : la
-        virtualisation d'une FlatList n'apporte rien, alors qu'imbriquer une
-        FlatList dans un scroll géré par le clavier empêchait la librairie de
-        mesurer correctement le champ actif.
-      */}
-      <KeyboardAwareScrollView
-        bottomOffset={spacing.lg}
-        contentContainerStyle={[styles.listContent, { paddingBottom: footerInset + spacing.lg }]}
-        keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
+      <FlatList
+        contentContainerStyle={styles.listContent}
+        data={lines}
+        keyExtractor={(item) => item.id}
+        keyboardDismissMode="on-drag"
         keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
-        style={styles.container}>
-        {listHeader}
-        {lines.map((item, index) => (
+        nestedScrollEnabled
+        ListFooterComponent={listFooter}
+        ListHeaderComponent={listHeader}
+        renderItem={({ item, index }) => (
           <QuoteLine
             index={index}
-            key={item.id}
             onChange={(updatedLine) => onChangeLine(index, updatedLine)}
             onRemove={() => onRemoveLine(index)}
             value={item}
           />
-        ))}
-      </KeyboardAwareScrollView>
+        )}
+        renderScrollComponent={(props) => (
+          <KeyboardAwareScrollView {...props} bottomOffset={footerInset} keyboardShouldPersistTaps="handled" />
+        )}
+        showsVerticalScrollIndicator={false}
+      />
       {actionSheetNode}
       <ProductAnalysisLoadingModal progress={analysisProgress} visible={isAnalyzing} />
       {analysisDraft && analysisImageUri ? (
@@ -297,41 +306,25 @@ function useStyles() {
   return useThemedStyles((colors) => ({
   container: {
     flex: 1,
+    justifyContent: 'center',
+    gap: spacing.md,
   },
   listContent: {
-    flexGrow: 1,
-    gap: spacing.lg,
+    gap: spacing.md,
+    paddingBottom: spacing.lg,
   },
   headerSection: {
-    gap: spacing.lg,
-    paddingBottom: spacing.sm,
+    paddingBottom: spacing.xs,
   },
-  description: {
-    ...typography.subheadline,
-    color: colors.textSecondary,
+  footerSection: {
+    gap: spacing.sm,
+    paddingTop: spacing.xs,
   },
   sectionLabel: {
     ...typography.footnoteMedium,
     color: colors.textSecondary,
     textTransform: 'uppercase',
     letterSpacing: 0.3,
-  },
-  prestationsHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: spacing.sm,
-  },
-  emptyPrestations: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: spacing.xl,
-  },
-  emptyPrestationsText: {
-    ...typography.subheadline,
-    color: colors.textSecondary,
-    textAlign: 'center',
   },
 }));
 }

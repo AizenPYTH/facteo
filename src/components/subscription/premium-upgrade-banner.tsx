@@ -1,7 +1,8 @@
 import { router, type Href } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
+import { PressableScale } from '@/components/ui/pressable-scale';
 import { useColors, useThemedStyles } from '@/hooks/use-colors';
 import { radius } from '@/constants/theme/radius';
 import { spacing } from '@/constants/theme/spacing';
@@ -20,17 +21,18 @@ export function PremiumUpgradeBanner({
   const colors = useColors();
 
   return (
-    <Pressable
+    <PressableScale
       accessibilityRole="button"
       accessibilityLabel={`${message}. Voir les offres`}
       onPress={() => router.push('/settings/premium' as Href)}
-      style={({ pressed }) => [styles.banner, pressed && styles.pressed]}>
+      intensity="subtle"
+      style={styles.banner}>
       <SymbolView name="lock.fill" size={compact ? 12 : 14} tintColor={colors.primary} />
       <Text numberOfLines={2} style={styles.message}>
         {message}
       </Text>
       <Text style={styles.cta}>Voir les offres</Text>
-    </Pressable>
+    </PressableScale>
   );
 }
 

@@ -1,15 +1,16 @@
+import { SymbolView } from 'expo-symbols';
+import { LinearGradient } from 'expo-linear-gradient';
 import type { ReactNode } from 'react';
 import { Image, StyleSheet, Text, View } from 'react-native';
-import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
-import { LinearGradient } from 'expo-linear-gradient';
 
+import { FormNavigationProvider } from '@/components/ui/form/form-navigation';
 import { FormScreen } from '@/components/ui/form-screen';
-import { useColors, useThemedStyles } from '@/hooks/use-colors';
-import { motion } from '@/constants/theme/design-system';
+import { StaggerIn } from '@/components/ui/stagger-in';
 import { radius } from '@/constants/theme/radius';
 import { spacing } from '@/constants/theme/spacing';
-import { typography } from '@/constants/theme/typography';
 import { shadows } from '@/constants/theme/theme';
+import { typography } from '@/constants/theme/typography';
+import { useColors, useThemedStyles } from '@/hooks/use-colors';
 
 type AuthScreenProps = {
   title: string;
@@ -18,8 +19,24 @@ type AuthScreenProps = {
   footer: ReactNode;
   footerLink?: ReactNode;
   error?: string | null;
+  /**
+   * Action déclenchée depuis le dernier champ du formulaire. Les écrans
+   * d'authentification posaient `returnKeyType="next"` sans jamais câbler de
+   * ref : la touche existait, elle ne faisait rien.
+   */
+  onSubmit?: () => void;
+  /** Touche de validation du dernier champ. */
+  submitLabel?: 'done' | 'go' | 'send';
 };
 
+/**
+ * Cadre des écrans d'authentification.
+ *
+ * Les apparitions passaient par les animations d'entrée de Reanimated
+ * (`FadeIn`, `FadeInDown.springify()`), montées avant le premier rendu de
+ * l'app. On reprend `StaggerIn`, piloté par un shared value : même effet, sans
+ * dépendre du cycle de montage natif.
+ */
 export function AuthScreen({
   title,
   subtitle,
@@ -27,6 +44,8 @@ export function AuthScreen({
   footer,
   footerLink,
   error,
+  onSubmit,
+  submitLabel = 'go',
 }: AuthScreenProps) {
   const styles = useStyles();
   const colors = useColors();
@@ -47,44 +66,49 @@ export function AuthScreen({
         footer={footer}
         scrollable
         transparent>
-          <Animated.View entering={FadeIn.duration(motion.slow)} style={styles.header}>
-            <Image
-              accessibilityIgnoresInvertColors
-              accessibilityLabel="INVEQ"
-              source={require('@/assets/images/inveq-logo.png')}
-              style={styles.logo}
+        <StaggerIn index={0} style={styles.header}>
+          <Image
+            accessibilityIgnoresInvertColors
+            accessibilityLabel="INVEQ"
+            source={require('@/assets/images/inveq-logo.png')}
+            style={styles.logo}
+          />
+          <View>
+            <Text accessibilityRole="header" maxFontSizeMultiplier={1.4} style={styles.title}>
+              {title}
+            </Text>
+            <Text maxFontSizeMultiplier={1.4} style={styles.subtitle}>
+              {subtitle}
+            </Text>
+          </View>
+        </StaggerIn>
+
+        {error ? (
+          <View accessibilityRole="alert" style={styles.errorBanner}>
+            <SymbolView
+              name={{ ios: 'exclamationmark.circle.fill', android: 'error', web: 'error' }}
+              size={16}
+              tintColor={colors.error}
+              type="hierarchical"
             />
-            <Animated.View entering={FadeInDown.delay(80).duration(motion.normal).springify()}>
-              <Text accessibilityRole="header" style={styles.title}>
-                {title}
-              </Text>
-              <Text style={styles.subtitle}>{subtitle}</Text>
-            </Animated.View>
-          </Animated.View>
+            <Text maxFontSizeMultiplier={1.5} style={styles.errorBannerText}>
+              {error}
+            </Text>
+          </View>
+        ) : null}
 
-          {error ? (
-            <Animated.View
-              accessibilityRole="alert"
-              entering={FadeInDown.duration(motion.fast)}
-              style={styles.errorBanner}>
-              <Text style={styles.errorBannerText}>{error}</Text>
-            </Animated.View>
-          ) : null}
-
-          <Animated.View
-            entering={FadeInDown.delay(140).duration(motion.normal).springify()}
-            style={styles.card}>
+        <StaggerIn index={1} style={styles.card}>
+          <FormNavigationProvider onSubmit={onSubmit} submitReturnKey={submitLabel}>
             {children}
-          </Animated.View>
+          </FormNavigationProvider>
+        </StaggerIn>
 
-          {footerLink ? (
-            <Animated.View
-              entering={FadeInDown.delay(220).duration(motion.normal)}
-              style={styles.footerLinkWrap}>
-              {footerLink}
-            </Animated.View>
-          ) : null}
-        </FormScreen>
+        {footerLink ? (
+          <StaggerIn index={2} style={styles.footerLinkWrap}>
+            {footerLink}
+          </StaggerIn>
+        ) : null}
+      </FormScreen>
     </View>
   );
 }
@@ -135,6 +159,9 @@ function useStyles() {
       ...shadows.card,
     },
     errorBanner: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
       backgroundColor: colors.errorSubtle,
       borderRadius: radius.lg,
       paddingHorizontal: spacing.md,
@@ -145,7 +172,7 @@ function useStyles() {
     errorBannerText: {
       ...typography.footnote,
       color: colors.error,
-      textAlign: 'center',
+      flex: 1,
     },
     footerLinkWrap: {
       alignItems: 'center',

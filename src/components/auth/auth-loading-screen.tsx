@@ -1,12 +1,11 @@
-import { StyleSheet, View } from 'react-native';
-import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
+import { StyleSheet, View } from 'react-native';
 
 import { BrandLogo } from '@/components/brand-logo';
 import { LoadingView } from '@/components/ui/loading-view';
-import { useColors } from '@/hooks/use-colors';
-import { motion } from '@/constants/theme/design-system';
+import { StaggerIn } from '@/components/ui/stagger-in';
 import { spacing } from '@/constants/theme/spacing';
+import { useColors } from '@/hooks/use-colors';
 
 export function AuthLoadingScreen() {
   const colors = useColors();
@@ -20,12 +19,12 @@ export function AuthLoadingScreen() {
         start={{ x: 0.5, y: 0 }}
         style={StyleSheet.absoluteFill}
       />
-      <Animated.View entering={FadeIn.duration(motion.slow)} style={styles.content}>
+      <StaggerIn index={0} style={styles.content}>
         <BrandLogo size={96} />
-        <Animated.View entering={FadeInDown.delay(160).duration(motion.normal)}>
+        <StaggerIn index={1}>
           <LoadingView message="Chargement…" size="small" />
-        </Animated.View>
-      </Animated.View>
+        </StaggerIn>
+      </StaggerIn>
     </View>
   );
 }

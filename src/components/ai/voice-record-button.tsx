@@ -1,6 +1,7 @@
 import { SymbolView } from 'expo-symbols';
-import { Pressable, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
+import { PressableScale } from '@/components/ui/pressable-scale';
 import { useColors, useThemedStyles } from '@/hooks/use-colors';
 import { radius } from '@/constants/theme/radius';
 import { spacing } from '@/constants/theme/spacing';
@@ -16,11 +17,13 @@ export function VoiceRecordButton({ onPress, disabled = false }: VoiceRecordButt
   const colors = useColors();
 
   return (
-    <Pressable
+    <PressableScale
+      accessibilityLabel="Dicter"
       accessibilityRole="button"
+      accessibilityState={{ disabled }}
       disabled={disabled}
       onPress={onPress}
-      style={({ pressed }) => [styles.container, pressed && !disabled && styles.pressed, disabled && styles.disabled]}>
+      style={[styles.container, disabled && styles.disabled]}>
       <View style={styles.iconWrap}>
         <SymbolView
           name={{ ios: 'mic.fill', android: 'mic', web: 'mic' }}
@@ -30,7 +33,7 @@ export function VoiceRecordButton({ onPress, disabled = false }: VoiceRecordButt
         />
       </View>
       <Text style={styles.label}>🎤 Créer avec la voix</Text>
-    </Pressable>
+    </PressableScale>
   );
 }
 
@@ -59,9 +62,6 @@ function useStyles() {
     label: {
       ...typography.headline,
       color: colors.primary,
-    },
-    pressed: {
-      opacity: 0.82,
     },
     disabled: {
       opacity: 0.5,

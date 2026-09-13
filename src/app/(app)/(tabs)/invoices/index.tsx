@@ -1,7 +1,7 @@
 import { router, type Href } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
   AddInvoiceFab,
@@ -11,11 +11,11 @@ import {
   InvoicesScreenHeader,
 } from '@/components/invoices';
 import { InvoicesDesktopScreen } from '@/components/web/desktop/screens/invoices-desktop-screen';
-import { BottomTabInset } from '@/constants/theme';
 import { useBreakpoint } from '@/hooks/use-breakpoint';
 import { useThemedStyles } from '@/hooks/use-colors';
 import { spacing } from '@/constants/theme/spacing';
 import { useDebouncedValue } from '@/hooks/use-debounced-value';
+import { useScreenInsets } from '@/hooks/use-screen-insets';
 import { useInfiniteInvoices } from '@/hooks/use-invoices';
 import { useTenant } from '@/hooks/use-tenant';
 import type { InvoiceStatusFilter } from '@/types/invoices-list';
@@ -38,7 +38,7 @@ function InvoicesMobileScreen() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<InvoiceStatusFilter>('all');
   const debouncedSearch = useDebouncedValue(search, SEARCH_DEBOUNCE_MS);
-  const insets = useSafeAreaInsets();
+  const insets = useScreenInsets();
   const { isSwitching } = useTenant();
 
   const {
@@ -46,6 +46,7 @@ function InvoicesMobileScreen() {
     data,
     isLoading,
     isRefetching,
+    error,
     isFetchingNextPage,
     hasNextPage,
     fetchNextPage,
@@ -77,8 +78,9 @@ function InvoicesMobileScreen() {
       <View style={styles.listContainer}>
         <InvoicesList
           contentContainerStyle={{
-            paddingBottom: insets.bottom + BottomTabInset + FAB_CLEARANCE,
+            paddingBottom: insets.scrollBottom + FAB_CLEARANCE,
           }}
+          error={error}
           invoices={invoices}
           isFetchingNextPage={isFetchingNextPage}
           isInitialLoading={isInitialLoading}
@@ -92,7 +94,7 @@ function InvoicesMobileScreen() {
       </View>
 
       {showFab ? (
-        <AddInvoiceFab style={{ bottom: insets.bottom + BottomTabInset + spacing.md }} />
+        <AddInvoiceFab style={{ bottom: insets.floatingBottom }} />
       ) : null}
     </SafeAreaView>
   );

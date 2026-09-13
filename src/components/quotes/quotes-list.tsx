@@ -1,18 +1,19 @@
+import { useCallback } from 'react';
 import {
   ActivityIndicator,
   FlatList,
   RefreshControl,
-  StyleSheet,
-  Text,
   View,
   type ListRenderItem,
   type ViewStyle,
 } from 'react-native';
 
-import { useColors, useThemedStyles } from '@/hooks/use-colors';
+import { DocumentListSkeleton } from '@/components/documents/document-list-skeleton';
+import { ErrorState } from '@/components/ui/error-state';
+import { ListRowSeparator } from '@/components/ui/list-row';
 import { radius } from '@/constants/theme/radius';
 import { spacing } from '@/constants/theme/spacing';
-import { typography } from '@/constants/theme/typography';
+import { useColors, useThemedStyles } from '@/hooks/use-colors';
 import type { Quote } from '@/types/quote';
 
 import { EmptyQuotes } from './empty-quotes';
@@ -25,6 +26,8 @@ export type QuotesListProps = {
   isRefreshing?: boolean;
   isFetchingNextPage?: boolean;
   isSearching?: boolean;
+  /** Échec du chargement : affiché à la place de la liste, avec reprise. */
+  error?: unknown;
   onRefresh?: () => void;
   onEndReached?: () => void;
   contentContainerStyle?: ViewStyle;
@@ -37,6 +40,7 @@ export function QuotesList({
   isRefreshing = false,
   isFetchingNextPage = false,
   isSearching = false,
+  error,
   onRefresh,
   onEndReached,
   onQuotePress,
@@ -45,11 +49,14 @@ export function QuotesList({
 }: QuotesListProps) {
   const styles = useStyles();
   const colors = useColors();
-  const renderItem: ListRenderItem<Quote> = ({ item, index }) => (
-    <View>
-      <QuoteCard onPress={onQuotePress} quote={item} />
-      {index < quotes.length - 1 ? <View style={styles.separator} /> : null}
-    </View>
+  const renderItem = useCallback<ListRenderItem<Quote>>(
+    ({ item, index }) => (
+      <View>
+        {index > 0 ? <ListRowSeparator /> : null}
+        <QuoteCard onPress={onQuotePress} quote={item} />
+      </View>
+    ),
+    [onQuotePress],
   );
 
   const renderFooter = () => {
@@ -65,11 +72,19 @@ export function QuotesList({
   };
 
   if (isInitialLoading) {
+    return <DocumentListSkeleton />;
+  }
+
+  // Une erreur de chargement se présentait comme une liste vide : « Aucun
+  // devis » alors que le réseau avait échoué.
+  if (error && quotes.length === 0) {
     return (
-      <View style={styles.loading}>
-        <ActivityIndicator color={colors.primary} size="large" />
-        <Text style={styles.loadingText}>Chargement des devis...</Text>
-      </View>
+      <ErrorState
+        message="Vérifiez votre connexion, puis réessayez."
+        onRetry={onRefresh}
+        title="Impossible de charger vos devis"
+        variant="screen"
+      />
     );
   }
 
@@ -95,6 +110,13 @@ export function QuotesList({
           />
         ) : undefined
       }
+      // Réglages de virtualisation : la liste rendait toutes les lignes montées
+      // dès le premier passage, ce qui se voyait au premier scroll sur les gros
+      // volumes. La hauteur des lignes est fixe côté gabarit, on la déclare.
+      initialNumToRender={8}
+      maxToRenderPerBatch={8}
+      removeClippedSubviews
+      windowSize={9}
       renderItem={renderItem}
       keyboardShouldPersistTaps="handled"
       nestedScrollEnabled
@@ -121,26 +143,10 @@ function useStyles() {
     flexGrow: 1,
     justifyContent: 'center',
   },
-  loading: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: spacing['3xl'],
-    gap: spacing.md,
-  },
-  loadingText: {
-    ...typography.subheadline,
-    color: colors.textSecondary,
-  },
   footer: {
     paddingVertical: spacing.lg,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  separator: {
-    height: StyleSheet.hairlineWidth,
-    backgroundColor: colors.separator,
-    marginLeft: spacing.md,
   },
 }));
 }

@@ -195,8 +195,9 @@ function PlanCard({ plan, interval }: { plan: SubscriptionPlan; interval: Billin
 
       <PlanPrice interval={interval} plan={plan} />
 
-      <div className="mt-6 w-full [&_a]:w-full [&_div]:w-full">
+      <div className="mt-6">
         <Button
+          fullWidth
           href={APP_REGISTER_URL}
           variant={plan.highlighted ? 'primary' : 'secondary'}>
           {plan.cta}
