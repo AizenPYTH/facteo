@@ -2,6 +2,7 @@
   "expo": {
     "name": "INVEQ",
     "slug": "FACTEO",
+    "owner": "influence1s-team",
     "version": "1.2",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -73,10 +74,7 @@
       "reactCompiler": true
     },
     "extra": {
-      "router": {},
-      "eas": {
-        "projectId": "55dde7c8-8d60-4b90-a665-53d800d2aa22"
-      }
+      "router": {}
     }
   }
 }
