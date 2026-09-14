@@ -44,19 +44,25 @@ export function Hero() {
             <span className="tracking-[0.12em]">Facturation pour les pros</span>
           </motion.p>
 
+          {/*
+            Le H1 nommait la promesse sans nommer le produit : « Du devis signé
+            au paiement encaissé » ne dit pas à un visiteur — ni à Google — de
+            quelle catégorie d'outil il s'agit. La catégorie passe donc devant,
+            la promesse reste en seconde ligne.
+          */}
           <motion.h1
             className="mt-6 text-[2.15rem] font-semibold leading-[1.08] tracking-[-0.035em] text-foreground sm:text-[3rem] lg:text-[3.4rem]"
             {...rise(0.06)}>
-            Du devis signé
+            Le logiciel de facturation
             <br className="hidden sm:block" />{' '}
-            <span className="brand-text-gradient">au paiement encaissé.</span>
+            <span className="brand-text-gradient">du devis signé au paiement encaissé.</span>
           </motion.h1>
 
           <motion.p
             className="mt-6 max-w-lg text-base leading-relaxed text-muted sm:text-[1.0625rem]"
             {...rise(0.12)}>
-            Devis, factures, relances et facturation électronique. INVEQ suit chaque document
-            jusqu’au règlement — sur le chantier comme au bureau.
+            Devis, factures, relances et facturation électronique. Tout se fait depuis votre
+            navigateur, rien à installer — et l’application iOS prend le relais sur le chantier.
           </motion.p>
 
           <motion.div className="mt-9 flex flex-wrap items-center gap-3" {...rise(0.18)}>

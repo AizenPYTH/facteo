@@ -18,17 +18,22 @@ const inter = Inter({
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   applicationName: SITE_NAME,
-  alternates: {
-    canonical: SITE_URL,
-  },
+  // PAS de `alternates.canonical` ici. Les métadonnées de l'App Router
+  // descendent dans l'arbre : une canonique posée sur la racine est héritée par
+  // toute page qui n'en déclare pas, et ces pages annonçaient donc à Google que
+  // leur version de référence était la page d'accueil — de quoi les faire
+  // disparaître de l'index malgré leur contenu propre. Chaque page publique
+  // déclare la sienne, y compris `/` (voir src/app/page.tsx).
   title: {
-    // Le titre par défaut se limitait au nom de marque : aucun signal de
-    // recherche pour quelqu'un qui cherche un logiciel de devis ou de facture.
-    default: `${SITE_NAME} — Devis et factures pour artisans, indépendants et TPE`,
+    // La catégorie de produit passe avant la marque : personne ne cherche
+    // « INVEQ », on cherche « logiciel de facturation ». Le mot « en ligne »
+    // dit l'essentiel — le produit s'utilise depuis un navigateur, sans rien
+    // installer ; l'application iOS vient en complément, pas l'inverse.
+    default: `${SITE_NAME} — Logiciel de facturation en ligne pour indépendants, artisans et TPE`,
     template: `%s — ${SITE_NAME}`,
   },
   description:
-    'Créez vos devis, convertissez-les en factures et suivez vos encaissements. Facturation électronique via plateforme agréée. Application iOS et web pour artisans, indépendants et TPE.',
+    'Logiciel de facturation en ligne : créez vos devis, convertissez-les en factures, suivez vos encaissements et préparez la facturation électronique. Utilisable directement dans votre navigateur, avec une application iOS en complément. Offre gratuite sans limite de durée.',
   keywords: [
     'facturation',
     'devis',

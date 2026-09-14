@@ -16,7 +16,20 @@ import { jsonLd, softwareApplicationSchema } from '@/lib/seo/schema';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
+  // La page d'accueil se positionne sur la requête générique. Sans titre propre
+  // elle reprenait celui du layout, correct mais non spécifique à ce qu'on
+  // trouve ici : le parcours complet d'un document.
+  title: 'Logiciel de facturation en ligne — devis, factures et encaissements',
+  description:
+    'INVEQ est un logiciel de facturation en ligne pour indépendants, artisans, auto-entrepreneurs et TPE. Créez un devis, faites-le signer, convertissez-le en facture, envoyez-la par e-mail et suivez le paiement. Depuis votre navigateur ou l’application iOS. Gratuit pour commencer.',
   alternates: { canonical: SITE_URL },
+  openGraph: {
+    type: 'website',
+    url: SITE_URL,
+    title: 'INVEQ — Logiciel de facturation en ligne pour indépendants et TPE',
+    description:
+      'Devis, factures, relances et facturation électronique. Utilisable directement dans votre navigateur.',
+  },
 };
 
 /**

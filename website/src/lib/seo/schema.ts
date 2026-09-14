@@ -47,18 +47,23 @@ export function organizationSchema() {
 export function softwareApplicationSchema() {
   return {
     '@context': 'https://schema.org',
-    '@type': 'SoftwareApplication',
+    // Double type : le produit s'utilise d'abord dans un navigateur, et
+    // accessoirement via l'application iOS. `WebApplication` porte ce premier
+    // usage, que `SoftwareApplication` seul laissait deviner.
+    '@type': ['SoftwareApplication', 'WebApplication'],
     '@id': `${SITE_URL}/#software`,
     name: SITE_NAME,
     applicationCategory: 'BusinessApplication',
     applicationSubCategory: 'Logiciel de facturation',
-    operatingSystem: 'iOS, Web',
+    operatingSystem: 'Web, iOS',
+    browserRequirements: 'Navigateur web moderne avec JavaScript activé',
     url: SITE_URL,
+    installUrl: `${SITE_URL}/register`,
     downloadUrl: IOS_APP_STORE_URL,
     inLanguage: 'fr-FR',
     publisher: { '@id': `${SITE_URL}/#organization` },
     description:
-      'Logiciel de devis et de facturation : création de devis, conversion en facture, signature client, suivi des encaissements et facturation électronique via une plateforme agréée.',
+      'Logiciel de facturation en ligne : création de devis, signature client, conversion en facture, envoi par e-mail, suivi des encaissements et facturation électronique via une plateforme agréée. Utilisable depuis un navigateur, avec une application iOS en complément.',
     offers: {
       '@type': 'Offer',
       price: '0',

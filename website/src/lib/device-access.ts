@@ -5,6 +5,8 @@
  * ENABLE_MOBILE_WEB = false → redirection vers /mobile/ios|android (sauf exemptions)
  *
  * La homepage `/` n’est JAMAIS redirigée : même HTML pour desktop, mobile et Googlebot.
+ * Les robots d’indexation ne sont JAMAIS redirigés non plus, sur aucune route :
+ * voir `isCrawler`.
  * Variable d’env : NEXT_PUBLIC_ENABLE_MOBILE_WEB=true|false
  */
 
@@ -62,6 +64,27 @@ export const MOBILE_GATE_EXEMPT_PREFIXES = [
   '/contact',
 ] as const;
 
+/**
+ * Robots d’indexation, reconnus à leur user-agent.
+ *
+ * Le crawler PRINCIPAL de Google est « Googlebot Smartphone », et son
+ * user-agent contient « Android ». Il était donc pris pour un téléphone et
+ * renvoyé vers `/mobile/android` sur toutes les pages hors exemptions — une
+ * URL elle-même interdite dans robots.txt. Résultat : Search Console ne voyait
+ * plus que des « Page avec redirection », et aucune page produit ou guide ne
+ * pouvait être indexée. Bingbot, sur le même modèle d’user-agent, subissait le
+ * même sort.
+ *
+ * Un robot doit toujours recevoir la page réelle, celle que voit un visiteur
+ * sur ordinateur : c’est le contenu canonique du site.
+ */
+const CRAWLER_PATTERN =
+  /(googlebot|google-inspectiontool|storebot-google|google-extended|adsbot-google|bingbot|bingpreview|applebot|duckduckbot|baiduspider|yandex(bot|images)|slurp|sogou|exabot|facebookexternalhit|facebot|twitterbot|linkedinbot|whatsapp|telegrambot|slackbot|discordbot|embedly|pinterest(bot)?|petalbot|ia_archiver|semrushbot|ahrefsbot|mj12bot|dotbot|screaming frog|chrome-lighthouse|lighthouse|gtmetrix|pagespeed|headlesschrome)/i;
+
+export function isCrawler(userAgent: string): boolean {
+  return CRAWLER_PATTERN.test(userAgent || '');
+}
+
 export function detectDevicePlatform(userAgent: string): DevicePlatform {
   const ua = userAgent || '';
 
@@ -81,6 +104,12 @@ export function shouldRedirectMobile(
   pathname: string,
 ): { redirect: true; to: string } | { redirect: false } {
   if (DEVICE_ACCESS.enableMobileWeb) {
+    return { redirect: false };
+  }
+
+  // Un robot reçoit toujours la page réelle, sur toutes les routes. Le rediriger
+  // rend le site inindexable (voir `isCrawler`).
+  if (isCrawler(userAgent)) {
     return { redirect: false };
   }
 
