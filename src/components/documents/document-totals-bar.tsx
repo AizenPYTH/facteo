@@ -21,8 +21,11 @@ export type DocumentTotalsBarProps = {
  *
  * Le total n'apparaissait qu'à la dernière étape : on saisissait des lignes
  * sans jamais voir où en était le document. Il est désormais visible en
- * permanence, y compris clavier ouvert, et se déplie sur le détail HT / remise
- * / TVA d'un seul appui.
+ * permanence et se déplie sur le détail HT / remise / TVA d'un seul appui.
+ *
+ * Il reste en bas d'écran quand le clavier s'ouvre, et se laisse recouvrir :
+ * le faire remonter empilait le total, la barre « Précédent / Suivant » et le
+ * clavier, ne laissant presque plus de place au champ en cours de saisie.
  */
 export function DocumentTotalsBar({ totals, lineCount }: DocumentTotalsBarProps) {
   const styles = useStyles();

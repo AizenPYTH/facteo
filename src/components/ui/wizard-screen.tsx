@@ -25,7 +25,14 @@ export function useWizardFooterInset(): number {
 type WizardScreenProps = {
   header?: ReactNode;
   children: ReactNode;
-  /** Récapitulatif collé au-dessus des actions — reste visible clavier ouvert. */
+  /**
+   * Récapitulatif (totaux) posé au-dessus des actions.
+   *
+   * Il ne suit PAS le clavier : à l'ouverture il reste en bas d'écran, où le
+   * clavier le recouvre. Le faire monter empilait le total, la barre
+   * « Précédent / Suivant » et le clavier sur la moitié basse de l'écran, ne
+   * laissant presque plus rien pour le champ en cours de saisie.
+   */
   summary?: ReactNode;
   footer?: ReactNode;
   testID?: string;
@@ -78,7 +85,8 @@ export function WizardScreen({
     );
   }
 
-  const hasFooter = Boolean(footer || summary);
+  // Seul le pied collé remonte avec le clavier : lui seul demande une réserve.
+  const hasFooter = Boolean(footer);
 
   return (
     <WizardFooterInsetContext.Provider value={footerInset}>
@@ -104,9 +112,13 @@ export function WizardScreen({
             <View style={styles.body}>{children}</View>
           )}
         </SafeAreaView>
-        {hasFooter ? (
+        {/*
+          Le récapitulatif est volontairement hors du `StickyFooter` : celui-ci
+          remonte avec le clavier, pas lui.
+        */}
+        {summary ? <View style={styles.summary}>{summary}</View> : null}
+        {footer ? (
           <StickyFooter onHeightChange={setMeasuredFooter} variant="toolbar">
-            {summary}
             {footer}
           </StickyFooter>
         ) : null}
@@ -126,6 +138,9 @@ const useStyles = () =>
     },
     flex: {
       flex: 1,
+    },
+    summary: {
+      paddingHorizontal: spacing.screenPaddingHorizontal,
     },
     header: {
       gap: spacing.md,

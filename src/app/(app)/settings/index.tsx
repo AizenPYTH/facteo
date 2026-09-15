@@ -196,26 +196,6 @@ export default function SettingsScreen() {
             />
           </SettingsSection>
 
-          <SettingsSection
-            footer="INVEQ lit vos commandes en lecture seule. Aucune facture n’est créée automatiquement."
-            title="Intégrations">
-            <SettingsRow
-              label="Intégrations e-commerce"
-              onPress={() => router.push('/settings/integrations' as Href)}
-            />
-          </SettingsSection>
-
-          <SettingsSection title="E-commerce">
-            <SettingsRow
-              label="eBay"
-              onPress={() => router.push('/settings/integrations-ebay' as Href)}
-            />
-            <SettingsRow
-              label="Commandes eBay"
-              onPress={() => router.push('/settings/ebay-orders' as Href)}
-            />
-          </SettingsSection>
-
           <NotificationPreferencesSection />
 
           <SettingsSection

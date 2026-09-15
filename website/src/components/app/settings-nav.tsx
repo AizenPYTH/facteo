@@ -14,7 +14,6 @@ import {
   Palette,
   Receipt,
   Shield,
-  ShoppingBag,
   Trash2,
   type LucideIcon,
 } from 'lucide-react';
@@ -60,23 +59,6 @@ export const SETTINGS_NAV_GROUPS: SettingsNavGroup[] = [
         label: 'Facturation électronique',
         icon: Receipt,
         matchPrefixes: ['/app/settings/e-invoicing'],
-      },
-    ],
-  },
-  {
-    title: 'Intégrations',
-    items: [
-      {
-        href: '/app/settings/integrations',
-        label: 'E-commerce',
-        icon: ShoppingBag,
-        matchPrefixes: ['/app/settings/integrations'],
-      },
-      {
-        href: '/app/settings/integrations/ebay/orders',
-        label: 'Commandes eBay',
-        icon: Receipt,
-        matchPrefixes: ['/app/settings/integrations/ebay/orders'],
       },
     ],
   },

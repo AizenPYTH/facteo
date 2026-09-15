@@ -666,63 +666,6 @@ export type SuperPdpReceivedInvoiceRow = {
   updated_at: string;
 };
 
-/**
- * Commande importée depuis une place de marché (eBay en V1).
- * Lecture seule côté client : l'écriture passe par les Edge Functions et par
- * link_external_order_invoice().
- */
-export type ExternalOrderRow = {
-  id: string;
-  company_id: string;
-  provider: string;
-  environment: 'sandbox' | 'production';
-  external_order_id: string;
-  legacy_order_id: string | null;
-  order_reference: string | null;
-  order_created_at: string | null;
-  order_modified_at: string | null;
-  fulfillment_status: string | null;
-  payment_status: string | null;
-  currency: string | null;
-  subtotal_amount: string | number | null;
-  shipping_amount: string | number | null;
-  discount_amount: string | number | null;
-  tax_amount: string | number | null;
-  total_amount: string | number | null;
-  marketplace_tax_amount: string | number;
-  collect_and_remit: boolean;
-  buyer_username: string | null;
-  buyer_snapshot: Record<string, unknown> | null;
-  line_items: Record<string, unknown>[] | null;
-  marketplace_ids: string[] | null;
-  invoice_id: string | null;
-  invoiced_at: string | null;
-  imported_at: string;
-  updated_at: string;
-};
-
-/** Projection publique d'une intégration : aucun jeton. */
-export type IntegrationStatusRow = {
-  id: string;
-  company_id: string;
-  provider: string;
-  environment: 'sandbox' | 'production';
-  status: string;
-  external_account_id: string | null;
-  scopes: string[];
-  connected_at: string | null;
-  last_sync_at: string | null;
-  last_sync_error: string | null;
-  last_synced_modified_at: string | null;
-  access_token_expires_at: string | null;
-  refresh_token_expires_at: string | null;
-  refresh_token_expired: boolean;
-  orders_imported: number;
-  orders_pending_invoice: number;
-  created_at: string;
-  updated_at: string;
-};
-
 export type Database = {
   public: {
     Tables: {
@@ -892,20 +835,8 @@ export type Database = {
         Update: Partial<SuperPdpReceivedInvoiceRow>;
         Relationships: [];
       };
-      external_orders: {
-        Row: ExternalOrderRow;
-        // Aucune écriture directe depuis le client : la RLS ne l'autorise pas.
-        Insert: never;
-        Update: never;
-        Relationships: [];
-      };
     };
-    Views: {
-      integration_status: {
-        Row: IntegrationStatusRow;
-        Relationships: [];
-      };
-    };
+    Views: Record<string, never>;
     Functions: {
       ensure_profile_exists: {
         Args: Record<PropertyKey, never>;
@@ -938,14 +869,6 @@ export type Database = {
       create_company_for_user: {
         Args: { p_name: string };
         Returns: string;
-      };
-      link_external_order_invoice: {
-        Args: { p_external_order_id: string; p_invoice_id: string };
-        Returns: undefined;
-      };
-      disconnect_integration: {
-        Args: { p_company_id: string; p_provider: string };
-        Returns: undefined;
       };
     };
     Enums: Record<string, never>;
