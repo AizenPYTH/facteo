@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useEffect } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, type FieldErrors } from 'react-hook-form';
 import { ActivityIndicator, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -47,11 +47,52 @@ export default function CompanyProfileScreen() {
     defaultValues: createEmptyCompanyProfileFormValues(),
   });
 
+  /**
+   * On ne réinjecte les données du serveur que tant que rien n'a été modifié.
+   *
+   * Sans cette garde, n'importe quel rafraîchissement en arrière-plan écrasait
+   * la saisie en cours et remettait le formulaire à l'état « non modifié » —
+   * ce qui désactivait le bouton « Enregistrer » sous les doigts de
+   * l'utilisateur.
+   */
   useEffect(() => {
-    if (data) {
+    if (data && !isDirty) {
       reset(data);
     }
-  }, [data, reset]);
+  }, [data, isDirty, reset]);
+
+  /**
+   * Champs refusés par la validation.
+   *
+   * `handleSubmit` n'appelle tout simplement pas `onSubmit` quand le schéma
+   * rejette la saisie. Sans second argument, l'appui sur « Enregistrer » ne
+   * produisait donc rien de visible : les messages s'affichaient bien sous les
+   * champs fautifs, mais ceux-ci pouvaient être hors écran. D'où l'impression
+   * d'un bouton mort.
+   */
+  function onInvalid(formErrors: FieldErrors<CompanyProfileFormValues>) {
+    const labels: Partial<Record<keyof CompanyProfileFormValues, string>> = {
+      companyName: 'Nom de l’entreprise',
+      firstName: 'Prénom',
+      lastName: 'Nom',
+      email: 'E-mail',
+      address: 'Adresse',
+      postalCode: 'Code postal',
+      city: 'Ville',
+      country: 'Pays',
+      paymentMethods: 'Moyens de paiement',
+    };
+
+    const missing = Object.keys(formErrors)
+      .map((key) => labels[key as keyof CompanyProfileFormValues] ?? key)
+      .slice(0, 3);
+
+    showError(
+      missing.length > 0
+        ? `Champs à corriger : ${missing.join(', ')}.`
+        : 'Certains champs sont incomplets.',
+    );
+  }
 
   async function onSubmit(values: CompanyProfileFormValues) {
     try {
@@ -116,9 +157,9 @@ export default function CompanyProfileScreen() {
         <DesktopPage>
           {form}
           <Button
-            disabled={!isDirty}
+            disabled={isSubmitting || updateProfile.isPending}
             loading={isSubmitting || updateProfile.isPending}
-            onPress={handleSubmit(onSubmit)}
+            onPress={handleSubmit(onSubmit, onInvalid)}
             title="Enregistrer"
           />
         </DesktopPage>
@@ -130,9 +171,9 @@ export default function CompanyProfileScreen() {
     <FormScreen
       footer={
         <Button
-          disabled={!isDirty}
+          disabled={isSubmitting || updateProfile.isPending}
           loading={isSubmitting || updateProfile.isPending}
-          onPress={handleSubmit(onSubmit)}
+          onPress={handleSubmit(onSubmit, onInvalid)}
           title="Enregistrer"
         />
       }
