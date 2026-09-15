@@ -1,5 +1,6 @@
 import type { TemplateContext } from '@/lib/pdf/engine/templates/context';
 import {
+  logoMark,
   FONTS,
   addressLines,
   escapeHtml,
@@ -31,6 +32,8 @@ function render(context: TemplateContext): string {
     11,
   )}; line-height:1.75">
     <div style="min-width:0">
+      ${/* Discret et seulement s'il existe : la sobriété du modèle est préservée. */ ''}
+      ${context.logoUrl ? `<div style="margin-bottom:${u(10)}">${logoMark(context.logoUrl, '', { size: 22, maxWidth: 150 })}</div>` : ''}
       <span style="font-weight:700">${escapeHtml(issuer.name)}</span><br/>
       <span style="color:${MUTED}">${addressLines([
         issuer.addressLines.join(', '),

@@ -1,5 +1,6 @@
 import type { TemplateContext } from '@/lib/pdf/engine/templates/context';
 import {
+  logoMark,
   FONTS,
   addressLines,
   escapeHtml,
@@ -20,7 +21,11 @@ function shortNumber(value: string): string {
   return tail && /\d/.test(tail) ? tail.replace(/^0+(?=\d)/, '') : value;
 }
 
-/** Modèle sans logo : c'est le nom en serif centré qui porte l'identité. */
+/**
+ * L'identité repose sur le nom en serif centré. Le logo, quand il existe, se
+ * pose au-dessus, centré et petit : il complète la composition au lieu de la
+ * remplacer.
+ */
 function render(context: TemplateContext): string {
   const { issuer, client, totals, labels } = context;
 
@@ -28,6 +33,7 @@ function render(context: TemplateContext): string {
     60,
   )} ${u(64)} ${u(46)}">
   <div style="text-align:center; border-bottom:1px solid ${INK}; padding-bottom:${u(22)}">
+    ${context.logoUrl ? `<div style="display:flex; justify-content:center; margin-bottom:${u(12)}">${logoMark(context.logoUrl, '', { size: 26, maxWidth: 190 })}</div>` : ''}
     <div style="font-size:${u(26)}; letter-spacing:${u(0.5)}">${escapeHtml(issuer.name)}</div>
     <div style="font-family:${FONTS.plexSans}; font-size:${u(10)}; color:#7A7A86; margin-top:${u(
       7,

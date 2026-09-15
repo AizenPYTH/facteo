@@ -3,16 +3,23 @@
  *
  * ## Unités
  *
- * Les maquettes sont dessinées en pixels CSS à 96 dpi (page A4 = 794 × 1123 px).
- * `expo-print` compose la page en points à 72 dpi (A4 = 595 × 842 pt). Les
- * valeurs du handoff sont donc reprises **telles quelles** dans le code —
- * lisibles et vérifiables face aux specs — et converties à l'écriture par
- * `u()` / `px()`. Un « 11.5 » dans un modèle correspond bien au 11,5 px de la
- * maquette, et mesure la même chose sur le papier.
+ * Les maquettes sont dessinées en pixels CSS à 96 dpi : une page A4 y mesure
+ * 794 × 1123 px. C'est aussi la mesure du CSS, où un pouce vaut TOUJOURS 96 px
+ * par définition — quelle que soit la taille physique de la page demandée.
+ * `@page { size: A4 }` produit donc une boîte de 794 × 1123 px CSS, et les
+ * valeurs des maquettes s'y reportent telles quelles.
+ *
+ * Elles étaient auparavant multipliées par 0,75 pour « convertir en points »,
+ * les 595 × 842 pt qu'`expo-print` attend. C'était une conversion de trop :
+ * ces points décrivent la taille du papier, pas l'unité de mise en page. Le
+ * document se composait donc à 595 px de large dans une page de 794 px —
+ * 75 % de la largeur, 75 % de la hauteur — et la facture apparaissait en
+ * réduction dans le coin supérieur gauche, avec une large bande vide à droite
+ * et en bas.
  */
 
-/** 96 dpi (maquette) → 72 dpi (page PDF). */
-export const DESIGN_SCALE = 0.75;
+/** Maquette et page PDF partagent le pixel CSS : aucune conversion. */
+export const DESIGN_SCALE = 1;
 
 /** Valeur de maquette → longueur CSS de la page PDF. */
 export function u(designPx: number): string {
