@@ -25,6 +25,7 @@ import {
 import { sentDocumentsQueryKeys } from '@/lib/supabase/query-keys';
 import { useToast } from '@/providers/toast-provider';
 import type { SentDocumentType } from '@/types/sent-document';
+import { DEFAULT_PDF_TEMPLATE_ID } from '@/lib/pdf/engine/templates/types';
 
 /** Chaque action du document a son propre état : aucune ne peut « bloquer » les autres. */
 export type DocumentActionKey = 'preview' | 'download' | 'share' | 'print' | 'email';
@@ -66,8 +67,8 @@ export function useDocumentActions({
 
   const defaultTemplateId =
     documentType === 'quote'
-      ? (settings?.quoteTemplateId ?? 'classic-blue')
-      : (settings?.invoiceTemplateId ?? 'classic-blue');
+      ? (settings?.quoteTemplateId ?? DEFAULT_PDF_TEMPLATE_ID)
+      : (settings?.invoiceTemplateId ?? DEFAULT_PDF_TEMPLATE_ID);
 
   const [templateId, setTemplateId] = useState(defaultTemplateId);
   const [previewVisible, setPreviewVisible] = useState(false);
@@ -151,7 +152,10 @@ export function useDocumentActions({
       });
 
       if (!started) {
+        // La même action est déjà en cours pour ce document. Le dire plutôt
+        // que de ne rien faire : un bouton muet passe pour une panne.
         setPendingAction(null);
+        showInfo('Action déjà en cours, patientez un instant.');
         return;
       }
 
@@ -163,7 +167,7 @@ export function useDocumentActions({
         );
       });
     },
-    [documentId, pendingAction, showError],
+    [documentId, pendingAction, showError, showInfo],
   );
 
   function reportOutcome(outcome: PdfOutcome | void, successMessage: string) {

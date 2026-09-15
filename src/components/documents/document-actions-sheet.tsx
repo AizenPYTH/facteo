@@ -1,5 +1,14 @@
 import { SymbolView, type SymbolViewProps } from 'expo-symbols';
-import { Modal, Pressable, StyleSheet, View } from 'react-native';
+import { useCallback, useRef } from 'react';
+import {
+  InteractionManager,
+  Modal,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  useWindowDimensions,
+  View,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AppText } from '@/components/ui/app-text';
@@ -28,10 +37,10 @@ type DocumentActionsSheetProps = {
 
 function ActionRow({
   item,
-  onClose,
+  onSelect,
 }: {
   item: DocumentActionItem;
-  onClose: () => void;
+  onSelect: (item: DocumentActionItem) => void;
 }) {
   const styles = useStyles();
   const colors = useColors();
@@ -43,10 +52,7 @@ function ActionRow({
       accessibilityState={{ disabled: item.disabled || item.loading }}
       disabled={item.disabled || item.loading}
       intensity="subtle"
-      onPress={() => {
-        onClose();
-        item.onPress();
-      }}
+      onPress={() => onSelect(item)}
       style={styles.row}>
       <SymbolView
         name={item.icon}
@@ -71,9 +77,55 @@ export function DocumentActionsSheet({
 }: DocumentActionsSheetProps) {
   const styles = useStyles();
   const insets = useSafeAreaInsets();
+  const { height } = useWindowDimensions();
+  const pendingRef = useRef<DocumentActionItem | null>(null);
+
+  /**
+   * L'action n'est PAS lancée au moment de l'appui.
+   *
+   * Imprimer, Partager et l'ouverture du client mail présentent chacun une vue
+   * native par-dessus l'application. iOS refuse d'en présenter une tant qu'une
+   * autre est en cours de fermeture : la feuille d'actions étant encore en
+   * train de glisser vers le bas, l'appel échouait — sans message, puisque le
+   * texte d'erreur d'iOS contient « dismiss » et passait pour une annulation
+   * volontaire de l'utilisateur. D'où des boutons qui « ne faisaient rien ».
+   *
+   * On mémorise donc l'action et on ne la déclenche qu'une fois la feuille
+   * réellement fermée.
+   */
+  const handleSelect = useCallback(
+    (item: DocumentActionItem) => {
+      pendingRef.current = item;
+      onClose();
+    },
+    [onClose],
+  );
+
+  const runPending = useCallback(() => {
+    const item = pendingRef.current;
+    if (!item) {
+      return;
+    }
+
+    pendingRef.current = null;
+    item.onPress();
+  }, []);
+
+  /**
+   * `onDismiss` n'existe que sur iOS, où se pose le problème. Sur Android on
+   * attend la fin des animations en cours, ce qui suffit.
+   */
+  const handleDismissed = useCallback(() => {
+    void InteractionManager.runAfterInteractions(runPending);
+  }, [runPending]);
 
   return (
-    <Modal animationType="slide" onRequestClose={onClose} transparent visible={visible}>
+    <Modal
+      animationType="slide"
+      onDismiss={handleDismissed}
+      onRequestClose={onClose}
+      transparent
+      visible={visible}>
       <View style={styles.overlay}>
         {/* Zone de fermeture au tap hors feuille : pas de retour visuel, ce
             n'est pas un contrôle mais l'arrière-plan. */}
@@ -83,7 +135,20 @@ export function DocumentActionsSheet({
           onPress={onClose}
           style={StyleSheet.absoluteFill}
         />
-        <View style={[styles.sheet, { paddingBottom: Math.max(insets.bottom, spacing.md) }]}>
+        {/*
+          La feuille grandit avec le nombre d'actions. Sans plafond elle
+          atteignait le haut de l'écran et son titre disparaissait derrière la
+          Dynamic Island. On lui interdit d'empiéter sur l'encoche — insets.top
+          mesuré, plus une marge de respiration — et la liste défile au-delà.
+        */}
+        <View
+          style={[
+            styles.sheet,
+            {
+              maxHeight: height - insets.top - spacing.xl,
+              paddingBottom: Math.max(insets.bottom, spacing.md),
+            },
+          ]}>
           <View style={styles.handle} />
           <View style={styles.header}>
             <AppText variant="title">{title}</AppText>
@@ -94,13 +159,19 @@ export function DocumentActionsSheet({
             ) : null}
           </View>
 
-          {sections.map((section, sectionIndex) => (
-            <View key={`section-${sectionIndex}`} style={styles.section}>
-              {section.map((item) => (
-                <ActionRow key={item.id} item={item} onClose={onClose} />
-              ))}
-            </View>
-          ))}
+          <ScrollView
+            bounces={false}
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={false}
+            style={styles.scroll}>
+            {sections.map((section, sectionIndex) => (
+              <View key={`section-${sectionIndex}`} style={styles.section}>
+                {section.map((item) => (
+                  <ActionRow key={item.id} item={item} onSelect={handleSelect} />
+                ))}
+              </View>
+            ))}
+          </ScrollView>
 
           <PressableScale
             accessibilityLabel="Fermer"
@@ -145,6 +216,13 @@ const useStyles = () =>
       paddingHorizontal: spacing.sm,
       paddingBottom: spacing.xs,
       gap: 2,
+    },
+    scroll: {
+      flexGrow: 0,
+      flexShrink: 1,
+    },
+    scrollContent: {
+      gap: spacing.sm,
     },
     section: {
       backgroundColor: colors.surface,

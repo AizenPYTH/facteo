@@ -65,10 +65,23 @@ export function isPdfActionRunning(key: string): boolean {
   return inFlight.has(key);
 }
 
+/**
+ * Vrai renoncement de l'utilisateur, à distinguer d'un échec technique.
+ *
+ * Le motif retenait auparavant « dismiss », ce qui attrapait aussi les erreurs
+ * de présentation d'iOS — « ... while a presentation is in progress », « is
+ * already presenting » — émises quand on ouvre une vue native alors qu'une
+ * autre se ferme. Ces échecs passaient donc pour des annulations : l'action
+ * ne se produisait pas, et rien n'était affiché.
+ */
 function isUserCancellation(error: unknown): boolean {
   const message = error instanceof Error ? error.message : String(error ?? '');
 
-  return /did not complete|cancel|dismiss|abort/i.test(message);
+  if (/already presenting|presentation is in progress|while presenting|another view controller/i.test(message)) {
+    return false;
+  }
+
+  return /did not complete|cancell?ed|user cancel|dismissed by the user|abort/i.test(message);
 }
 
 function isConcurrentPrint(error: unknown): boolean {
