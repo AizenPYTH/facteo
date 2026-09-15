@@ -1,4 +1,5 @@
-import { PDF_TEMPLATES } from '@/lib/pdf/engine/templates';
+import { PDF_TEMPLATES, resolvePdfTemplate } from '@/lib/pdf/engine/templates';
+import { DEFAULT_PDF_TEMPLATE_ID } from '@/lib/pdf/engine/templates/types';
 
 export type ComposerTemplateOption = {
   id: string;
@@ -7,21 +8,30 @@ export type ComposerTemplateOption = {
   primary: string;
 };
 
-/** Modèles proposés pendant la création (aperçu temps réel). */
-export const COMPOSER_TEMPLATES: ComposerTemplateOption[] = [
-  { id: 'classic-blue', label: 'Classique', description: 'Équilibré et professionnel', primary: '#2563EB' },
-  { id: 'pennylane-clean', label: 'Moderne', description: 'Épuré avec bandeau coloré', primary: '#00B386' },
-  { id: 'stripe-sleek', label: 'Premium', description: 'Design tech haut de gamme', primary: '#635BFF' },
-  { id: 'henrri-minimal', label: 'Minimal', description: 'Ultra sobre', primary: '#18181B' },
-  { id: 'indy-modern', label: 'Indy', description: 'Typographie aérée', primary: '#5B4FFF' },
-  { id: 'quickbooks-pro', label: 'Comptable', description: 'Structure classique', primary: '#2CA01C' },
-];
+/**
+ * Modèles proposés pendant la création, avec aperçu en temps réel.
+ *
+ * La liste était figée sur six identifiants de l'ancien moteur
+ * (`classic-blue`, `pennylane-clean`…). Ils n'existent plus : la bibliothèque
+ * compte désormais les vingt modèles `01` … `20`, partagés avec l'application.
+ * Le choix fait au composer portait donc sur des identifiants inconnus du
+ * rendu, qui retombait silencieusement sur le modèle par défaut.
+ *
+ * La liste dérive maintenant du registre : une seule source, aucun décalage
+ * possible entre ce qui est proposé et ce qui est rendu.
+ */
+export const COMPOSER_TEMPLATES: ComposerTemplateOption[] = PDF_TEMPLATES.map((template) => ({
+  id: template.id,
+  label: template.name,
+  description: template.description,
+  // Les modèles sans couleur d'accent (noir et blanc assumé) retombent sur la
+  // teinte du papier : la pastille reste lisible au lieu d'être vide.
+  primary: template.accent ?? template.paper,
+}));
 
+/** Ramène tout identifiant — y compris hérité — sur un modèle réellement rendu. */
 export function resolveComposerTemplateId(templateId: string): string {
-  const known = COMPOSER_TEMPLATES.some((t) => t.id === templateId);
-  if (known) return templateId;
-  const fallback = PDF_TEMPLATES.find((t) => t.id === templateId);
-  return fallback?.id ?? COMPOSER_TEMPLATES[0].id;
+  return resolvePdfTemplate(templateId).id;
 }
 
 export function getDefaultComposerTemplateId(
@@ -30,6 +40,6 @@ export function getDefaultComposerTemplateId(
 ): string {
   const fromSettings =
     kind === 'invoice' ? settings?.invoiceTemplateId : settings?.quoteTemplateId;
-  if (fromSettings) return resolveComposerTemplateId(fromSettings);
-  return COMPOSER_TEMPLATES[0].id;
+
+  return fromSettings ? resolveComposerTemplateId(fromSettings) : DEFAULT_PDF_TEMPLATE_ID;
 }

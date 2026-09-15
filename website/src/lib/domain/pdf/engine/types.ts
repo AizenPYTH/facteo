@@ -40,6 +40,9 @@ export type PdfClientInfo = Pick<
 >;
 
 export type PdfDocumentLine = {
+  /** Nom court de la prestation. Peut être vide (anciennes lignes : description seule). */
+  title?: string;
+  /** Détail de la prestation. Peut être vide (titre seul). */
   description: string;
   quantity: string;
   unit: string;
@@ -74,4 +77,9 @@ export type PdfDocumentInput = {
     signedAt: string;
   } | null;
   templateId?: string | null;
+  /**
+   * Statut réel du document (`invoices.status` / `quotes.status`).
+   * Seul le modèle 04 l'affiche ; les autres l'ignorent, conformément au handoff.
+   */
+  status?: string | null;
 };

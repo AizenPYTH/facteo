@@ -74,9 +74,12 @@ export default function TemplatesSettingsPage() {
               key={template.id}
               onClick={() => setQuoteTemplateId(template.id)}
               type="button">
+              {/* Pastille d'accent du modèle. Certains n'ont pas de couleur
+                  (noir et blanc assumé) : on montre alors la teinte du papier,
+                  cernée, plutôt qu'un aplat vide. */}
               <div
-                className="mb-3 h-2 rounded-full"
-                style={{ backgroundColor: template.theme.primary }}
+                className="mb-3 h-2 rounded-full border border-app-border"
+                style={{ backgroundColor: template.accent ?? template.paper }}
               />
               <p className="font-semibold text-app-text">{template.name}</p>
               <p className="mt-1 text-[12px] text-app-muted">{template.description}</p>
@@ -104,9 +107,12 @@ export default function TemplatesSettingsPage() {
               key={`inv-${template.id}`}
               onClick={() => setInvoiceTemplateId(template.id)}
               type="button">
+              {/* Pastille d'accent du modèle. Certains n'ont pas de couleur
+                  (noir et blanc assumé) : on montre alors la teinte du papier,
+                  cernée, plutôt qu'un aplat vide. */}
               <div
-                className="mb-3 h-2 rounded-full"
-                style={{ backgroundColor: template.theme.primary }}
+                className="mb-3 h-2 rounded-full border border-app-border"
+                style={{ backgroundColor: template.accent ?? template.paper }}
               />
               <p className="font-semibold text-app-text">{template.name}</p>
               <p className="mt-1 text-[12px] text-app-muted">{template.description}</p>

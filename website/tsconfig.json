@@ -41,6 +41,7 @@
       "@/lib/documents/*": ["./src/lib/domain/documents/*"],
       "@/lib/calculations/*": ["./src/lib/domain/calculations/*"],
       "@/lib/pdf/*": ["./src/lib/domain/pdf/*"],
+      "@/lib/payments/*": ["./src/lib/domain/payments/*"],
       "@/lib/files/*": ["./src/lib/files/*"],
       "@/lib/company-search": ["./src/lib/domain/company-search/index.ts"],
       "@/lib/company-search/*": ["./src/lib/domain/company-search/*"],
