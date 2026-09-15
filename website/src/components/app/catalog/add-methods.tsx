@@ -149,18 +149,18 @@ export function AddProductMethods({
           Ajoutez un produit en quelques secondes
         </h3>
         <p className="mt-1 text-[12.5px] text-app-muted">
-          Trois façons de créer une fiche. La photo est la plus rapide.
+          Trois façons de créer une fiche. La lecture d’une fiche existante est la plus rapide.
         </p>
       </div>
 
       <MethodCard
         busy={isAnalyzing}
-        description="Photo ou capture d’écran. L’IA remplit le nom, la description, la référence, l’unité, le prix et la TVA."
+        description="Capture d’une page web, catalogue, étiquette de prix ou tableau. L’IA lit ce qui y est écrit et remplit le nom, la description, la référence, l’unité, le prix et la TVA. Elle ne reconnaît pas un objet photographié."
         disabled={busy}
         icon={<Sparkles size={17} />}
         meta="Le plus rapide"
         onClick={onScan}
-        title={isAnalyzing ? 'Analyse en cours…' : 'Scanner une image'}
+        title={isAnalyzing ? 'Analyse en cours…' : 'Lire une fiche produit'}
         tone="ai"
       />
 

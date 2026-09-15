@@ -1,3 +1,4 @@
+import { DEFAULT_PDF_TEMPLATE_ID } from '@/lib/pdf/engine/templates/types';
 export type Settings = {
   id: string;
   userId: string;
@@ -48,7 +49,7 @@ export function createDefaultSettingsFormValues(): SettingsFormValues {
     paymentTermsDays: '30',
     quoteFooter: '',
     invoiceFooter: '',
-    quoteTemplateId: 'classic-blue',
-    invoiceTemplateId: 'classic-blue',
+    quoteTemplateId: DEFAULT_PDF_TEMPLATE_ID,
+    invoiceTemplateId: DEFAULT_PDF_TEMPLATE_ID,
   };
 }

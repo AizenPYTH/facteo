@@ -37,8 +37,11 @@ export function ProductImageSourceSheet({
           style={StyleSheet.absoluteFill}
         />
         <View style={[styles.sheet, { paddingBottom: Math.max(insets.bottom, spacing.md) }]}>
-          <Text style={styles.title}>Ajouter avec l’IA</Text>
-          <Text style={styles.subtitle}>Choisissez une source d’image pour analyser le produit.</Text>
+          <Text style={styles.title}>Lire une fiche produit</Text>
+          <Text style={styles.subtitle}>
+            L’IA lit les informations écrites : capture d’une page web, catalogue, étiquette de
+            prix, devis ou tableau. Elle ne reconnaît pas un objet photographié.
+          </Text>
 
           <PressableScale
             accessibilityLabel="Prendre une photo"

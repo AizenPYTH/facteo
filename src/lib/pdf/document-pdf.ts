@@ -13,6 +13,7 @@ import { inlinePdfCompanyImages, inlinePdfClientSignature } from '@/lib/pdf/inli
 import type { InvoiceDetail } from '@/types/invoice';
 import type { QuoteDetail } from '@/types/quote';
 import type { DataScope } from '@/types/tenant';
+import { DEFAULT_PDF_TEMPLATE_ID } from '@/lib/pdf/engine/templates/types';
 
 export async function resolvePdfCompanyInfo(
   scope: DataScope,
@@ -97,7 +98,7 @@ export async function buildQuotePdfInput(
     clientSignature: documentSignature
       ? { url: documentSignature.signatureUrl, signedAt: documentSignature.signedAt }
       : null,
-    templateId: settings?.quoteTemplateId ?? 'classic-blue',
+    templateId: settings?.quoteTemplateId ?? DEFAULT_PDF_TEMPLATE_ID,
   };
 }
 
@@ -134,7 +135,7 @@ export async function buildInvoicePdfInput(
     clientSignature: documentSignature
       ? { url: documentSignature.signatureUrl, signedAt: documentSignature.signedAt }
       : null,
-    templateId: settings?.invoiceTemplateId ?? 'classic-blue',
+    templateId: settings?.invoiceTemplateId ?? DEFAULT_PDF_TEMPLATE_ID,
   };
 }
 

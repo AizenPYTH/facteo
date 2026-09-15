@@ -317,10 +317,24 @@ export function InvoiceWizardScreen({
     }
   }
 
+  /**
+   * Le bouton nomme SA DESTINATION, jamais « Suivant ».
+   *
+   * « Suivant » se lisait comme « champ suivant » : en saisissant le titre
+   * d'une prestation, on appuyait dessus en croyant passer à la description,
+   * et on se retrouvait à l'étape de validation avec une ligne à peine
+   * commencée. Deux sens du même mot cohabitaient à l'écran, celui du clavier
+   * (champ suivant) et celui du pied (étape suivante).
+   *
+   * Le clavier garde « Suivant » pour enchaîner les champs ; le pied annonce
+   * désormais où il mène.
+   */
   const primaryActionLabel =
-    step < TOTAL_STEPS
-      ? 'Suivant'
-      : mode === 'create'
+    step === 1
+      ? 'Ajouter les prestations'
+      : step === 2
+        ? 'Voir le récapitulatif'
+        : mode === 'create'
         ? 'Créer la facture'
         : 'Enregistrer les modifications';
 

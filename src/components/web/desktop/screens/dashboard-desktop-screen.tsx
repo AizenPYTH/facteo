@@ -155,7 +155,7 @@ export function DashboardDesktopScreen() {
                       description="Bientôt disponible"
                       disabled
                       icon={{ ios: 'camera.viewfinder', android: 'document_scanner', web: 'document_scanner' }}
-                      label="Scanner IA"
+                      label="Fiche produit IA"
                       onPress={() => {}}
                     />
                   </View>

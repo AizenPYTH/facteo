@@ -83,7 +83,7 @@ export function QuoteAddLinesStep({
           onPress: handleAddManualPrestation,
         },
         {
-          label: "Scanner un produit avec l'IA",
+          label: 'Lire une fiche produit avec l’IA',
           onPress: handleScanProductWithAi,
         },
       ],
@@ -214,7 +214,7 @@ export function QuoteAddLinesStep({
       {Platform.OS === 'web' ? (
         <Button
           onPress={handleScanProductWithAi}
-          title="Scanner un produit (IA)"
+          title="Lire une fiche produit (IA)"
           variant="ghost"
         />
       ) : null}
@@ -235,7 +235,7 @@ export function QuoteAddLinesStep({
           {Platform.OS === 'web' ? (
             <Button
               onPress={handleScanProductWithAi}
-              title="Scanner un produit (IA)"
+              title="Lire une fiche produit (IA)"
               variant="ghost"
             />
           ) : null}
@@ -356,7 +356,7 @@ async function pickImageSource(source: 'camera' | 'gallery'): Promise<{
     if (!permission.granted) {
       if (!permission.canAskAgain) {
         throw new Error(
-          "Permission caméra bloquée. Activez-la dans Réglages pour scanner un produit avec l'IA.",
+          'Permission caméra bloquée. Activez-la dans Réglages pour photographier une fiche produit.',
         );
       }
       throw new Error('Permission refusée pour utiliser l’appareil photo.');
@@ -459,7 +459,7 @@ function readAiErrorMessage(error: unknown): string {
     const message = error.message;
 
     if (message.includes('Permission refusée')) {
-      return 'Autorisez la caméra ou les fichiers pour scanner un produit avec l’IA.';
+      return 'Autorisez la caméra ou les fichiers pour importer une fiche produit.';
     }
 
     if (message.includes('Permission caméra bloquée')) {

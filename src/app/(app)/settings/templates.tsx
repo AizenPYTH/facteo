@@ -15,6 +15,7 @@ import { PremiumUpgradeBanner } from '@/components/subscription/premium-upgrade-
 import { buildTemplatePreviewHtml } from '@/lib/pdf/template-preview-html';
 import { requireScope } from '@/lib/tenant/scope';
 import { useToast } from '@/providers/toast-provider';
+import { DEFAULT_PDF_TEMPLATE_ID } from '@/lib/pdf/engine/templates/types';
 
 type DocumentKind = 'invoice' | 'quote';
 
@@ -28,8 +29,8 @@ export default function DocumentTemplatesScreen() {
   const updateTemplates = useUpdateDocumentTemplates();
   const { showError } = useToast();
 
-  const [quoteTemplateId, setQuoteTemplateId] = useState(data?.quoteTemplateId ?? 'classic-blue');
-  const [invoiceTemplateId, setInvoiceTemplateId] = useState(data?.invoiceTemplateId ?? 'classic-blue');
+  const [quoteTemplateId, setQuoteTemplateId] = useState(data?.quoteTemplateId ?? DEFAULT_PDF_TEMPLATE_ID);
+  const [invoiceTemplateId, setInvoiceTemplateId] = useState(data?.invoiceTemplateId ?? DEFAULT_PDF_TEMPLATE_ID);
   const [activeKind, setActiveKind] = useState<DocumentKind>('invoice');
   const [galleryVisible, setGalleryVisible] = useState(false);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
