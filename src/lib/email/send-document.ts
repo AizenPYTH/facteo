@@ -72,6 +72,20 @@ export function isServerEmailConfigured(): boolean {
   return Boolean(resolveEndpoint());
 }
 
+/**
+ * Plafond accepté par l'Edge Function, exprimé en octets de fichier.
+ *
+ * Elle refuse au-delà de 12 000 000 caractères de base64 (HTTP 413). Le base64
+ * gonfle de 4/3 : on repasse donc à la taille du fichier pour pouvoir trancher
+ * avant lecture, des deux côtés avec la même limite.
+ */
+const MAX_PDF_BASE64_LENGTH = 12_000_000;
+const MAX_PDF_BYTES = Math.floor((MAX_PDF_BASE64_LENGTH * 3) / 4);
+
+function formatMegabytes(bytes: number): string {
+  return `${(bytes / (1024 * 1024)).toFixed(1)} Mo`;
+}
+
 export async function sendDocumentEmail(
   input: SendDocumentEmailInput,
 ): Promise<SendDocumentEmailResult> {
@@ -89,6 +103,41 @@ export async function sendDocumentEmail(
 
   if (!accessToken) {
     throw new SendDocumentEmailError('Session expirée. Reconnectez-vous.', 'auth');
+  }
+
+  // Le poids est vérifié AVANT lecture.
+  //
+  // Envoyer le PDF fait vivre trois copies du même contenu dans la mémoire JS :
+  // la chaîne base64, celle produite par `JSON.stringify`, puis le corps de la
+  // requête. Sur un document lourd — un logo en haute définition suffit — cela
+  // représente plusieurs dizaines de méga-octets d'un coup, et l'application
+  // peut être tuée par le système avant même d'avoir joint le serveur, qui
+  // aurait de toute façon refusé au-delà de `MAX_PDF_BASE64_LENGTH`.
+  let fileSize = 0;
+
+  try {
+    const info = await FileSystem.getInfoAsync(input.pdfUri);
+
+    if (!info.exists) {
+      throw new SendDocumentEmailError('PDF introuvable sur l’appareil.', 'unknown');
+    }
+
+    fileSize = info.size ?? 0;
+  } catch (error) {
+    if (error instanceof SendDocumentEmailError) {
+      throw error;
+    }
+
+    throw new SendDocumentEmailError('PDF introuvable sur l’appareil.', 'unknown');
+  }
+
+  if (fileSize > MAX_PDF_BYTES) {
+    throw new SendDocumentEmailError(
+      `Le PDF pèse ${formatMegabytes(fileSize)} : au-delà de ${formatMegabytes(
+        MAX_PDF_BYTES,
+      )} il ne peut pas être envoyé par e-mail. Allégez le logo de l’entreprise, puis réessayez.`,
+      'provider',
+    );
   }
 
   let pdfBase64: string;
