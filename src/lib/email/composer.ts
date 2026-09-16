@@ -2,6 +2,7 @@ import * as MailComposer from 'expo-mail-composer';
 import { Platform } from 'react-native';
 
 import { resolveMailAttachmentUri } from '@/lib/pdf/pdf-file';
+import { presentNatively } from '@/lib/native/presentation';
 import { logSentDocument } from '@/lib/supabase/sent-documents';
 import type { SentDocumentType } from '@/types/sent-document';
 
@@ -72,13 +73,19 @@ export async function composeDocumentEmail(input: ComposeDocumentEmailInput): Pr
   let result: MailComposer.MailComposerResult;
 
   try {
-    result = await MailComposer.composeAsync({
-      recipients: [recipient],
-      subject: input.subject,
-      body: input.body,
-      attachments: [attachmentUri],
-      isHtml: false,
-    });
+    // L'app Mail est elle aussi une vue native présentée par-dessus
+    // l'application : elle passe par le même verrou que l'impression et le
+    // partage, faute de quoi deux présentations peuvent se chevaucher et faire
+    // tomber l'application.
+    result = await presentNatively(() =>
+      MailComposer.composeAsync({
+        recipients: [recipient],
+        subject: input.subject,
+        body: input.body,
+        attachments: [attachmentUri],
+        isHtml: false,
+      }),
+    );
   } catch (error) {
     const message =
       error && typeof error === 'object' && 'message' in error

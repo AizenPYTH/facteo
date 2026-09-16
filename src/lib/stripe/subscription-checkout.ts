@@ -5,6 +5,7 @@ import { Platform } from 'react-native';
 import type { CatalogPlanId } from '@/constants/subscription-catalog';
 import { supabase } from '@/lib/supabase';
 import type { EffectivePlanId } from '@/types/subscription';
+import { presentNatively } from '@/lib/native/presentation';
 
 export type CreateSubscriptionCheckoutResult = {
   checkoutUrl: string;
@@ -157,9 +158,13 @@ export async function startPlanCheckoutFlow(
   const checkout = await createSubscriptionCheckout(planId);
   WebBrowser.maybeCompleteAuthSession();
 
-  const browserResult = await WebBrowser.openAuthSessionAsync(checkout.checkoutUrl, returnUrl, {
-    preferEphemeralSession: true,
-  });
+  // Paiement dans une session web native : relancer un abonnement après
+  // avoir fermé la première page enchaînait deux présentations.
+  const browserResult = await presentNatively(() =>
+    WebBrowser.openAuthSessionAsync(checkout.checkoutUrl, returnUrl, {
+      preferEphemeralSession: true,
+    }),
+  );
 
   if (browserResult.type === 'cancel' || browserResult.type === 'dismiss') {
     throw new SubscriptionCheckoutCanceledError();

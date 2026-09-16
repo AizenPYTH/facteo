@@ -3,6 +3,7 @@ import * as ImageManipulator from 'expo-image-manipulator';
 import * as ImagePicker from 'expo-image-picker';
 
 import type { CompanyAssetKind } from '@/lib/supabase/storage';
+import { presentNatively } from '@/lib/native/presentation';
 
 const CACHE_PREFIX = '@inveq/company-asset/';
 
@@ -34,12 +35,16 @@ export async function pickCompanyAsset(kind: CompanyAssetKind): Promise<{
     throw new Error('Permission refusée pour accéder à la photothèque.');
   }
 
-  const result = await ImagePicker.launchImageLibraryAsync({
-    mediaTypes: ['images'],
-    allowsEditing: true,
-    aspect: kind === 'logo' ? [3, 1] : [4, 1],
-    quality: 1,
-  });
+  // La photothèque est une vue native : choisir un logo puis enchaîner sur la
+  // signature présentait deux contrôleurs qui se chevauchaient.
+  const result = await presentNatively(() =>
+    ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: kind === 'logo' ? [3, 1] : [4, 1],
+      quality: 1,
+    }),
+  );
 
   if (result.canceled || !result.assets[0]) {
     return null;

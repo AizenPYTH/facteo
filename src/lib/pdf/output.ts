@@ -4,6 +4,7 @@ import * as Sharing from 'expo-sharing';
 import { Platform } from 'react-native';
 
 import { A4_PRINT_OPTIONS } from '@/lib/pdf/a4';
+import { presentNatively } from '@/lib/native/presentation';
 import { ensurePdfFileUri, sanitizePdfFileName } from '@/lib/pdf/pdf-file';
 
 /**
@@ -230,11 +231,13 @@ export async function sharePdf(pdf: GeneratedPdf, dialogTitle: string): Promise<
   }
 
   try {
-    await Sharing.shareAsync(pdf.uri, {
-      mimeType: 'application/pdf',
-      dialogTitle,
-      UTI: 'com.adobe.pdf',
-    });
+    await presentNatively(() =>
+      Sharing.shareAsync(pdf.uri as string, {
+        mimeType: 'application/pdf',
+        dialogTitle,
+        UTI: 'com.adobe.pdf',
+      }),
+    );
   } catch (error) {
     if (isUserCancellation(error)) {
       return { status: 'cancelled' };
@@ -303,7 +306,7 @@ async function saveToAndroidFolder(pdf: GeneratedPdf): Promise<PdfOutcome | null
   let permissions: Awaited<ReturnType<typeof saf.requestDirectoryPermissionsAsync>>;
 
   try {
-    permissions = await saf.requestDirectoryPermissionsAsync();
+    permissions = await presentNatively(() => saf.requestDirectoryPermissionsAsync());
   } catch {
     return null;
   }
@@ -346,7 +349,7 @@ export async function printPdf(pdf: GeneratedPdf): Promise<PdfOutcome> {
   }
 
   try {
-    await Print.printAsync({ uri: pdf.uri });
+    await presentNatively(() => Print.printAsync({ uri: pdf.uri as string }));
   } catch (error) {
     // iOS rejette la promesse quand la fenêtre d'impression est fermée sans
     // lancer l'impression : c'est une annulation, pas une panne.

@@ -33,6 +33,7 @@ import { createEmptyQuoteLine, formatDecimalForInput } from '@/types/quote';
 import { router, type Href } from 'expo-router';
 
 import { QuoteLine } from './quote-line';
+import { presentNatively } from '@/lib/native/presentation';
 
 type QuoteAddLinesStepProps = {
   lines: QuoteLineValue[];
@@ -370,18 +371,21 @@ async function pickImageSource(source: 'camera' | 'gallery'): Promise<{
     }
   }
 
-  const result =
+  // Appareil photo et photothèque sont des vues natives : scanner une fiche,
+  // revenir, puis en scanner une autre enchaînait deux présentations.
+  const result = await presentNatively(() =>
     source === 'camera'
-      ? await ImagePicker.launchCameraAsync({
+      ? ImagePicker.launchCameraAsync({
           mediaTypes: ['images'],
           quality: 0.9,
           base64: true,
         })
-      : await ImagePicker.launchImageLibraryAsync({
+      : ImagePicker.launchImageLibraryAsync({
           mediaTypes: ['images'],
           quality: 0.9,
           base64: true,
-        });
+        }),
+  );
 
   if (result.canceled || !result.assets[0]) {
     return null;
