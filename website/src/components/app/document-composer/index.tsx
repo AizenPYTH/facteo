@@ -51,6 +51,12 @@ import { fetchProductsByIds } from '@/lib/domain/supabase/products';
 import { clientsQueryKeys, invoicesQueryKeys, quotesQueryKeys } from '@/lib/domain/supabase/query-keys';
 import { analyzeProductImage, type ProductImageAnalysis } from '@/lib/domain/ai/product-image-analysis';
 import { calculateLineTotals } from '@/lib/calculations/totals';
+import {
+  addCalendarDaysDateInput,
+  frenchDateInputToIso,
+  frenchLabelFromDateInput,
+  todayDateInput,
+} from '@/lib/domain/format/date-input';
 import { getDefaultComposerTemplateId } from '@/lib/domain/pdf/composer-templates';
 import { requireScope } from '@/lib/domain/tenant/scope';
 import { createEmptyInvoiceLine } from '@inveq/types/invoice';
@@ -271,6 +277,7 @@ export function DocumentComposer({ kind }: { kind: 'invoice' | 'quote' }) {
   const isWizard = useWizardLayout();
 
   const [clientId, setClientId] = useState(preselectedClient);
+  const [issuedAt, setIssuedAt] = useState(() => todayDateInput());
   const [notes, setNotes] = useState('');
   const [templateId, setTemplateId] = useState('');
   const [lines, setLines] = useState<LineValue[]>([
@@ -286,6 +293,7 @@ export function DocumentComposer({ kind }: { kind: 'invoice' | 'quote' }) {
   const initializedFromProductsRef = useRef(false);
 
   const clientRef = useRef<HTMLElement>(null);
+  const termsRef = useRef<HTMLElement>(null);
   const linesRef = useRef<HTMLElement>(null);
   const lineFieldRefs = useRef<
     Record<string, Partial<Record<LineFieldName, HTMLInputElement[]>>>
@@ -370,11 +378,16 @@ export function DocumentComposer({ kind }: { kind: 'invoice' | 'quote' }) {
       if (!target) return;
 
       // En assistant, le champ fautif peut appartenir à une autre étape.
-      setStep(target.type === 'client' ? 0 : 1);
+      setStep(target.type === 'lines' || target.type === 'line' ? 1 : 0);
 
       const reveal = () => {
         if (target.type === 'client') {
           clientRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          return;
+        }
+
+        if (target.type === 'terms') {
+          termsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
           return;
         }
 
@@ -394,13 +407,20 @@ export function DocumentComposer({ kind }: { kind: 'invoice' | 'quote' }) {
     [lines],
   );
 
+  const paymentTermsDays = settings?.paymentTermsDays ?? DEFAULT_PAYMENT_TERMS_DAYS;
+
   const createMutation = useMutation({
     mutationFn: async () => {
-      const errors = validateDocumentDraft(clientId, lines);
+      const errors = validateDocumentDraft(clientId, lines, issuedAt);
       if (hasValidationErrors(errors)) {
         setFieldErrors(errors);
         setSubmitAttempted(true);
         scrollToFirstError(errors);
+        throw new Error('VALIDATION');
+      }
+
+      const issuedAtIso = frenchDateInputToIso(issuedAt);
+      if (!issuedAtIso) {
         throw new Error('VALIDATION');
       }
 
@@ -412,15 +432,22 @@ export function DocumentComposer({ kind }: { kind: 'invoice' | 'quote' }) {
       if (kind === 'quote') {
         return createQuote(activeScope, {
           clientId,
+          issuedAt: issuedAtIso,
           lines: validLines,
           notes: notes.trim() || undefined,
         });
       }
 
+      const dueDate = addCalendarDaysDateInput(issuedAt, paymentTermsDays);
+      const dueAtIso = dueDate ? frenchDateInputToIso(dueDate) : null;
+
       return createInvoice(activeScope, {
         clientId,
+        dueAt: dueAtIso,
+        issuedAt: issuedAtIso,
         lines: validLines,
         notes: notes.trim() || undefined,
+        paymentTermsDays,
       });
     },
     onSuccess: (doc) => {
@@ -449,7 +476,7 @@ export function DocumentComposer({ kind }: { kind: 'invoice' | 'quote' }) {
   });
 
   function handleSubmit() {
-    const errors = validateDocumentDraft(clientId, lines);
+    const errors = validateDocumentDraft(clientId, lines, issuedAt);
     setFieldErrors(errors);
     setSubmitAttempted(true);
     if (hasValidationErrors(errors)) {
@@ -463,7 +490,7 @@ export function DocumentComposer({ kind }: { kind: 'invoice' | 'quote' }) {
     setLines((prev) => {
       const next = prev.map((line) => (line.id === id ? { ...line, ...patch } : line));
       if (submitAttempted) {
-        setFieldErrors(validateDocumentDraft(clientId, next));
+        setFieldErrors(validateDocumentDraft(clientId, next, issuedAt));
       }
       return next;
     });
@@ -476,7 +503,7 @@ export function DocumentComposer({ kind }: { kind: 'invoice' | 'quote' }) {
         kind === 'invoice' ? createEmptyInvoiceLine() : createEmptyQuoteLine(),
       ];
       if (submitAttempted) {
-        setFieldErrors(validateDocumentDraft(clientId, next));
+        setFieldErrors(validateDocumentDraft(clientId, next, issuedAt));
       }
       return next;
     });
@@ -498,7 +525,7 @@ export function DocumentComposer({ kind }: { kind: 'invoice' | 'quote' }) {
         }
       }
       if (submitAttempted) {
-        setFieldErrors(validateDocumentDraft(clientId, next));
+        setFieldErrors(validateDocumentDraft(clientId, next, issuedAt));
       }
       return next;
     });
@@ -573,7 +600,7 @@ export function DocumentComposer({ kind }: { kind: 'invoice' | 'quote' }) {
           }
         }
         if (submitAttempted) {
-          setFieldErrors(validateDocumentDraft(clientId, next));
+          setFieldErrors(validateDocumentDraft(clientId, next, issuedAt));
         }
         return next;
       });
@@ -589,7 +616,7 @@ export function DocumentComposer({ kind }: { kind: 'invoice' | 'quote' }) {
     setLines((prev) => {
       const next = prev.length <= 1 ? prev : prev.filter((l) => l.id !== id);
       if (submitAttempted) {
-        setFieldErrors(validateDocumentDraft(clientId, next));
+        setFieldErrors(validateDocumentDraft(clientId, next, issuedAt));
       }
       return next;
     });
@@ -598,7 +625,14 @@ export function DocumentComposer({ kind }: { kind: 'invoice' | 'quote' }) {
   function handleClientChange(id: string) {
     setClientId(id);
     if (submitAttempted) {
-      setFieldErrors(validateDocumentDraft(id, lines));
+      setFieldErrors(validateDocumentDraft(id, lines, issuedAt));
+    }
+  }
+
+  function handleIssuedAtChange(value: string) {
+    setIssuedAt(value);
+    if (submitAttempted) {
+      setFieldErrors(validateDocumentDraft(clientId, lines, value));
     }
   }
 
@@ -613,8 +647,12 @@ export function DocumentComposer({ kind }: { kind: 'invoice' | 'quote' }) {
   const clients = clientsQuery.data?.clients ?? [];
   const title = kind === 'invoice' ? 'Nouvelle facture' : 'Nouveau devis';
   const submitLabel = kind === 'invoice' ? 'Créer la facture' : 'Créer le devis';
-  const paymentTermsDays = settings?.paymentTermsDays ?? DEFAULT_PAYMENT_TERMS_DAYS;
   const selectedClient = clients.find((client) => client.id === clientId) ?? null;
+  const issuedAtLabel = frenchLabelFromDateInput(issuedAt) ?? '';
+  const dueDateInput =
+    kind === 'invoice' ? addCalendarDaysDateInput(issuedAt, paymentTermsDays) : null;
+  const dueLabel =
+    kind === 'quote' ? 'Non définie' : (frenchLabelFromDateInput(dueDateInput ?? '') ?? '');
 
   /** Reproduit le format de `reserve_next_*_number` sans requête supplémentaire. */
   const forecastNumber = settings
@@ -632,7 +670,7 @@ export function DocumentComposer({ kind }: { kind: 'invoice' | 'quote' }) {
       ? 'saved'
       : 'draft';
 
-  const bannerMessages = [fieldErrors.clientId, fieldErrors.linesGlobal].filter(
+  const bannerMessages = [fieldErrors.clientId, fieldErrors.issuedAt, fieldErrors.linesGlobal].filter(
     (message): message is string => Boolean(message),
   );
 
@@ -653,7 +691,16 @@ export function DocumentComposer({ kind }: { kind: 'invoice' | 'quote' }) {
     />
   );
 
-  const termsCard = <ComposerTermsCard kind={kind} paymentTermsDays={paymentTermsDays} />;
+  const termsCard = (
+    <ComposerTermsCard
+      containerRef={termsRef}
+      errorMessage={submitAttempted ? fieldErrors.issuedAt : undefined}
+      issuedAt={issuedAt}
+      kind={kind}
+      onIssuedAtChange={handleIssuedAtChange}
+      paymentTermsDays={paymentTermsDays}
+    />
+  );
 
   const templateCard = (
     <ComposerCard title="Modèle PDF">
@@ -760,9 +807,10 @@ export function DocumentComposer({ kind }: { kind: 'invoice' | 'quote' }) {
             <>
               <ComposerRecapCard
                 clientName={selectedClient ? composerClientLabel(selectedClient) : null}
+                dueLabel={dueLabel}
+                issuedAtLabel={issuedAtLabel}
                 kind={kind}
                 lineCount={lines.filter((line) => line.description.trim()).length}
-                paymentTermsDays={paymentTermsDays}
                 totals={totals}
               />
               {templateCard}

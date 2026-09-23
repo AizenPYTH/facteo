@@ -48,7 +48,11 @@ export function frenchDateInputToIso(value: string): string | null {
     const [, year, month, day] = isoMatch;
     const date = new Date(Date.UTC(Number(year), Number(month) - 1, Number(day)));
 
-    if (Number.isNaN(date.getTime())) {
+    if (
+      date.getUTCFullYear() !== Number(year) ||
+      date.getUTCMonth() !== Number(month) - 1 ||
+      date.getUTCDate() !== Number(day)
+    ) {
       return null;
     }
 
@@ -56,6 +60,49 @@ export function frenchDateInputToIso(value: string): string | null {
   }
 
   return null;
+}
+
+/** Aujourd’hui au format AAAA-MM-JJ (valeur d’un champ date). */
+export function todayDateInput(): string {
+  const date = new Date();
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+
+  return `${year}-${month}-${day}`;
+}
+
+/** Libellé JJ/MM/AAAA, calendrier UTC de la date stockée (minuit UTC). */
+export function frenchLabelFromDateInput(value: string): string | null {
+  const iso = frenchDateInputToIso(value);
+
+  if (!iso) {
+    return null;
+  }
+
+  const date = new Date(iso);
+  const day = String(date.getUTCDate()).padStart(2, '0');
+  const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+  const year = date.getUTCFullYear();
+
+  return `${day}/${month}/${year}`;
+}
+
+/** Ajoute des jours calendaires. Retourne AAAA-MM-JJ, ou null si la date est invalide. */
+export function addCalendarDaysDateInput(value: string, days: number): string | null {
+  const iso = frenchDateInputToIso(value);
+
+  if (!iso) {
+    return null;
+  }
+
+  const date = new Date(iso);
+  date.setUTCDate(date.getUTCDate() + days);
+  const year = date.getUTCFullYear();
+  const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+  const day = String(date.getUTCDate()).padStart(2, '0');
+
+  return `${year}-${month}-${day}`;
 }
 
 export function todayFrenchDateInput(): string {

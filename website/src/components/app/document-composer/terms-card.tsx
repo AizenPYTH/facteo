@@ -1,37 +1,64 @@
 'use client';
 
 import { ComposerCard, ComposerReadOnlyValue } from '@/components/app/document-composer/composer-card';
-import { addDaysFrenchDateInput, todayFrenchDateInput } from '@/lib/domain/format/date-input';
+import { InlineFieldError } from '@/components/app/document-composer/field-errors';
+import { TextInput } from '@/components/app/form-fields';
+import {
+  addCalendarDaysDateInput,
+  frenchLabelFromDateInput,
+} from '@/lib/domain/format/date-input';
 import { cn } from '@/lib/utils';
 
 const PAYMENT_TERM_SEGMENTS = [30, 45, 60];
 
 /**
- * Bloc en lecture seule : le composer ne transmet aucune date à `createInvoice` /
- * `createQuote`, les valeurs affichées sont celles que la création applique
- * (émission = aujourd'hui, échéance = paramètres de facturation).
+ * Dates du document. La date d’émission est libre (y compris dans le passé) :
+ * elle est transmise à `createInvoice` / `createQuote`. L’échéance d’une
+ * facture suit cette date et le délai de paiement des paramètres.
  */
 export function ComposerTermsCard({
+  containerRef,
+  errorMessage,
+  issuedAt,
   kind,
+  onIssuedAtChange,
   paymentTermsDays,
 }: {
+  containerRef?: React.Ref<HTMLElement>;
+  errorMessage?: string;
+  issuedAt: string;
   kind: 'invoice' | 'quote';
+  onIssuedAtChange: (value: string) => void;
   paymentTermsDays: number;
 }) {
   const segments = PAYMENT_TERM_SEGMENTS.includes(paymentTermsDays)
     ? PAYMENT_TERM_SEGMENTS
     : [...PAYMENT_TERM_SEGMENTS, paymentTermsDays];
+  const dueDate = addCalendarDaysDateInput(issuedAt, paymentTermsDays);
+  const dueLabel = dueDate ? frenchLabelFromDateInput(dueDate) : null;
 
   return (
-    <ComposerCard title="Dates et conditions">
+    <ComposerCard containerRef={containerRef} title="Dates et conditions">
       <div className="space-y-3">
-        <ComposerReadOnlyValue label="Date d’émission" value={todayFrenchDateInput()} />
+        <div>
+          <label
+            className="mb-1.5 block text-[12px] font-medium text-app-text-3"
+            htmlFor="composer-issued-at">
+            Date d’émission
+          </label>
+          <TextInput
+            aria-invalid={Boolean(errorMessage)}
+            className="app-num"
+            id="composer-issued-at"
+            onChange={(event) => onIssuedAtChange(event.target.value)}
+            type="date"
+            value={issuedAt}
+          />
+          <InlineFieldError message={errorMessage} />
+        </div>
 
         {kind === 'invoice' ? (
-          <ComposerReadOnlyValue
-            label="Échéance"
-            value={addDaysFrenchDateInput(paymentTermsDays)}
-          />
+          <ComposerReadOnlyValue label="Échéance" value={dueLabel ?? '—'} />
         ) : (
           <ComposerReadOnlyValue label="Valable jusqu’au" muted value="Non définie" />
         )}
@@ -62,8 +89,8 @@ export function ComposerTermsCard({
 
         <p className="text-[11.5px] leading-relaxed text-app-muted-2">
           {kind === 'invoice'
-            ? 'Émission et délai de paiement sont appliqués à la création, d’après les paramètres de facturation.'
-            : 'La date d’émission est appliquée à la création. La validité du devis n’est pas fixée ici.'}
+            ? 'La date d’émission peut être antérieure à aujourd’hui. L’échéance est calculée à partir de cette date et du délai de paiement.'
+            : 'La date d’émission peut être antérieure à aujourd’hui. La validité du devis n’est pas fixée ici.'}
         </p>
       </div>
     </ComposerCard>

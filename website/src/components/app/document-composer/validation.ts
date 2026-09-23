@@ -1,10 +1,13 @@
 import type { InvoiceLineValue } from '@inveq/types/invoice';
 import type { QuoteLineValue } from '@inveq/types/quote';
 
+import { frenchDateInputToIso } from '@/lib/domain/format/date-input';
+
 export type LineValue = QuoteLineValue | InvoiceLineValue;
 
 export type FieldErrors = {
   clientId?: string;
+  issuedAt?: string;
   linesGlobal?: string;
   lineErrors?: Record<string, { description?: string; quantity?: string; unitPrice?: string }>;
 };
@@ -16,11 +19,19 @@ function parseDecimal(value: string): number | null {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
-export function validateDocumentDraft(clientId: string, lines: LineValue[]): FieldErrors {
+export function validateDocumentDraft(
+  clientId: string,
+  lines: LineValue[],
+  issuedAt?: string,
+): FieldErrors {
   const errors: FieldErrors = {};
 
   if (!clientId.trim()) {
     errors.clientId = 'Sélectionnez un client pour continuer.';
+  }
+
+  if (issuedAt !== undefined && frenchDateInputToIso(issuedAt) === null) {
+    errors.issuedAt = 'Indiquez une date d’émission valide.';
   }
 
   const filledLines = lines.filter((line) => line.description.trim());
@@ -60,6 +71,7 @@ export function validateDocumentDraft(clientId: string, lines: LineValue[]): Fie
 export function hasValidationErrors(errors: FieldErrors): boolean {
   return Boolean(
     errors.clientId ||
+      errors.issuedAt ||
       errors.linesGlobal ||
       (errors.lineErrors && Object.keys(errors.lineErrors).length > 0),
   );
@@ -67,11 +79,13 @@ export function hasValidationErrors(errors: FieldErrors): boolean {
 
 export type ErrorTarget =
   | { type: 'client' }
+  | { type: 'terms' }
   | { type: 'lines' }
   | { type: 'line'; lineId: string; field: 'description' | 'quantity' | 'unitPrice' };
 
 export function getFirstErrorTarget(errors: FieldErrors, lines: LineValue[]): ErrorTarget | null {
   if (errors.clientId) return { type: 'client' };
+  if (errors.issuedAt) return { type: 'terms' };
   if (errors.linesGlobal) return { type: 'lines' };
 
   if (errors.lineErrors) {

@@ -3,7 +3,6 @@
 import { ComposerCard } from '@/components/app/document-composer/composer-card';
 import { PrimaryButton } from '@/components/app/form-fields';
 import { formatCurrency } from '@/lib/domain/format/currency';
-import { addDaysFrenchDateInput, todayFrenchDateInput } from '@/lib/domain/format/date-input';
 import { cn } from '@/lib/utils';
 
 export const COMPOSER_WIZARD_STEPS = ['Client', 'Lignes', 'Récapitulatif'] as const;
@@ -65,26 +64,32 @@ export function ComposerWizardShell({
 
 export function ComposerRecapCard({
   clientName,
+  dueLabel,
+  issuedAtLabel,
   kind,
   lineCount,
-  paymentTermsDays,
   totals,
 }: {
   clientName: string | null;
+  dueLabel: string;
+  issuedAtLabel: string;
   kind: 'invoice' | 'quote';
   lineCount: number;
-  paymentTermsDays: number;
   totals: { subtotal: number; total: number; vat: number };
 }) {
   return (
     <ComposerCard title="Récapitulatif">
       <dl className="divide-y divide-app-border-soft">
         <RecapRow label="Client" value={clientName ?? 'À sélectionner'} muted={!clientName} />
-        <RecapRow label="Date d’émission" value={todayFrenchDateInput()} />
+        <RecapRow
+          label="Date d’émission"
+          muted={!issuedAtLabel}
+          value={issuedAtLabel || 'Date invalide'}
+        />
         <RecapRow
           label={kind === 'invoice' ? 'Échéance' : 'Valable jusqu’au'}
-          muted={kind === 'quote'}
-          value={kind === 'invoice' ? addDaysFrenchDateInput(paymentTermsDays) : 'Non définie'}
+          muted={kind === 'quote' || !dueLabel}
+          value={dueLabel || '—'}
         />
         <RecapRow label="Lignes remplies" value={String(lineCount)} />
         <RecapRow label="Total HT" value={formatCurrency(totals.subtotal)} />
