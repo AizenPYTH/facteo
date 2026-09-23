@@ -113,6 +113,8 @@ export type CreateInvoiceInput = {
   issuedAt?: string | null;
   dueAt?: string | null;
   paymentTermsDays?: number | null;
+  /** Facture déjà réglée : pas d’échéance, statut payé. */
+  alreadyPaid?: boolean;
   notes?: string;
 };
 

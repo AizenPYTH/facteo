@@ -279,8 +279,9 @@ export async function createInvoice(scope: DataScope, input: CreateInvoiceInput)
 
   const settings = await fetchSettings(scope);
   const number = await reserveNextInvoiceNumber(scope.companyId);
-  const defaultDueAt =
-    input.dueAt ?? computeDueDate(input.paymentTermsDays ?? settings?.paymentTermsDays ?? 30);
+  const defaultDueAt = input.alreadyPaid
+    ? null
+    : (input.dueAt ?? computeDueDate(input.paymentTermsDays ?? settings?.paymentTermsDays ?? 30));
   const { invoice, lines } = mapCreateInvoiceInputToInsert(scope, number, input, defaultDueAt);
 
   const { data: createdInvoice, error: invoiceError } = await supabase
@@ -299,6 +300,19 @@ export async function createInvoice(scope: DataScope, input: CreateInvoiceInput)
 
   try {
     await insertInvoiceItems(invoiceRow.id, lines);
+    if (input.alreadyPaid && invoice.total_ttc > 0 && invoice.paid_at) {
+      const { error: paymentError } = await supabase.from('invoice_payments').insert({
+        invoice_id: invoiceRow.id,
+        user_id: scope.userId,
+        amount: invoice.total_ttc,
+        paid_at: invoice.paid_at,
+      });
+
+      if (paymentError) {
+        logSupabaseError('createInvoice.payment', paymentError);
+        throw paymentError;
+      }
+    }
   } catch (error) {
     await supabase
       .from('invoices')

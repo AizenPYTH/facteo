@@ -278,6 +278,7 @@ export function DocumentComposer({ kind }: { kind: 'invoice' | 'quote' }) {
 
   const [clientId, setClientId] = useState(preselectedClient);
   const [issuedAt, setIssuedAt] = useState(() => todayDateInput());
+  const [paymentChoice, setPaymentChoice] = useState<number | 'paid' | null>(null);
   const [notes, setNotes] = useState('');
   const [templateId, setTemplateId] = useState('');
   const [lines, setLines] = useState<LineValue[]>([
@@ -407,7 +408,10 @@ export function DocumentComposer({ kind }: { kind: 'invoice' | 'quote' }) {
     [lines],
   );
 
-  const paymentTermsDays = settings?.paymentTermsDays ?? DEFAULT_PAYMENT_TERMS_DAYS;
+  const settingsPaymentTerms = settings?.paymentTermsDays ?? DEFAULT_PAYMENT_TERMS_DAYS;
+  const selectedPayment = paymentChoice ?? settingsPaymentTerms;
+  const alreadyPaid = selectedPayment === 'paid';
+  const paymentTermsDays = alreadyPaid ? null : selectedPayment;
 
   const createMutation = useMutation({
     mutationFn: async () => {
@@ -438,7 +442,19 @@ export function DocumentComposer({ kind }: { kind: 'invoice' | 'quote' }) {
         });
       }
 
-      const dueDate = addCalendarDaysDateInput(issuedAt, paymentTermsDays);
+      if (alreadyPaid) {
+        return createInvoice(activeScope, {
+          alreadyPaid: true,
+          clientId,
+          dueAt: null,
+          issuedAt: issuedAtIso,
+          lines: validLines,
+          notes: notes.trim() || undefined,
+        });
+      }
+
+      const dueDays = paymentTermsDays ?? settingsPaymentTerms;
+      const dueDate = addCalendarDaysDateInput(issuedAt, dueDays);
       const dueAtIso = dueDate ? frenchDateInputToIso(dueDate) : null;
 
       return createInvoice(activeScope, {
@@ -447,7 +463,7 @@ export function DocumentComposer({ kind }: { kind: 'invoice' | 'quote' }) {
         issuedAt: issuedAtIso,
         lines: validLines,
         notes: notes.trim() || undefined,
-        paymentTermsDays,
+        paymentTermsDays: dueDays,
       });
     },
     onSuccess: (doc) => {
@@ -636,6 +652,10 @@ export function DocumentComposer({ kind }: { kind: 'invoice' | 'quote' }) {
     }
   }
 
+  function handlePaymentTermsChange(value: number | 'paid') {
+    setPaymentChoice(value);
+  }
+
   function handleCancel() {
     router.replace(kind === 'quote' ? '/app/quotes' : '/app/invoices');
   }
@@ -650,9 +670,15 @@ export function DocumentComposer({ kind }: { kind: 'invoice' | 'quote' }) {
   const selectedClient = clients.find((client) => client.id === clientId) ?? null;
   const issuedAtLabel = frenchLabelFromDateInput(issuedAt) ?? '';
   const dueDateInput =
-    kind === 'invoice' ? addCalendarDaysDateInput(issuedAt, paymentTermsDays) : null;
+    kind === 'invoice' && paymentTermsDays !== null
+      ? addCalendarDaysDateInput(issuedAt, paymentTermsDays)
+      : null;
   const dueLabel =
-    kind === 'quote' ? 'Non définie' : (frenchLabelFromDateInput(dueDateInput ?? '') ?? '');
+    kind === 'quote'
+      ? 'Non définie'
+      : alreadyPaid
+        ? 'Déjà payée'
+        : (frenchLabelFromDateInput(dueDateInput ?? '') ?? '');
 
   /** Reproduit le format de `reserve_next_*_number` sans requête supplémentaire. */
   const forecastNumber = settings
@@ -698,6 +724,7 @@ export function DocumentComposer({ kind }: { kind: 'invoice' | 'quote' }) {
       issuedAt={issuedAt}
       kind={kind}
       onIssuedAtChange={handleIssuedAtChange}
+      onPaymentTermsChange={handlePaymentTermsChange}
       paymentTermsDays={paymentTermsDays}
     />
   );

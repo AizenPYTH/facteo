@@ -49,7 +49,7 @@ function mapInvoiceMetadata(
 ) {
   return {
     issued_at: input.issuedAt ?? fallbackIssuedAt,
-    due_at: input.dueAt ?? fallbackDueAt,
+    due_at: input.alreadyPaid ? null : (input.dueAt ?? fallbackDueAt),
     notes: input.notes?.trim() || null,
   };
 }
@@ -63,17 +63,19 @@ export function mapCreateInvoiceInputToInsert(
   const totals = mapInvoiceLinesToDocumentTotals(input.lines);
   const now = new Date().toISOString();
 
+  const issuedAt = input.issuedAt ?? now;
   const invoice: InvoiceInsert = {
     user_id: scope.userId,
     company_id: scope.companyId,
     client_id: input.clientId,
     quote_id: input.quoteId ?? null,
     number,
-    status: 'draft',
+    status: input.alreadyPaid ? 'paid' : 'draft',
     subtotal_ht: totals.subtotalHt,
     total_vat: totals.totalVat,
     total_ttc: totals.totalTtc,
-    ...mapInvoiceMetadata(input, now, defaultDueAt),
+    paid_at: input.alreadyPaid ? issuedAt : null,
+    ...mapInvoiceMetadata(input, now, input.alreadyPaid ? null : defaultDueAt),
     updated_at: now,
   };
 
