@@ -1,8 +1,18 @@
-import { useWatch, type Control, Controller, type FieldErrors } from 'react-hook-form';
+import { useState } from 'react';
+import {
+  useWatch,
+  type Control,
+  Controller,
+  type FieldErrors,
+  type UseFormSetValue,
+} from 'react-hook-form';
 import { StyleSheet, View } from 'react-native';
 
 import { CollapsibleSection } from '@/components/ui/collapsible-section';
 import { TextField } from '@/components/ui/text-field';
+import type { CompanyLookupResult } from '@/lib/company-search/types';
+
+import { OwnCompanyLookup } from './own-company-lookup';
 import { spacing } from '@/constants/theme/spacing';
 import type { CompanyProfileFormValues } from '@/types/company-profile';
 
@@ -18,14 +28,44 @@ type CompanyProfileFormProps = {
     logoUrl: string | null;
     signatureUrl: string | null;
   };
+  /** Présent : bloc « Remplir avec le SIREN ou le SIRET » en tête du formulaire. */
+  setValue?: UseFormSetValue<CompanyProfileFormValues>;
 };
 
-export function CompanyProfileForm({ control, errors, assets }: CompanyProfileFormProps) {
+export function CompanyProfileForm({ control, errors, assets, setValue }: CompanyProfileFormProps) {
   const paymentMethods = useWatch({ control, name: 'paymentMethods' });
   const showBankDetails = paymentMethods?.includes('bank_transfer') ?? false;
+  const [registrationNumber, setRegistrationNumber] = useState('');
+
+  function applyRegistration(result: CompanyLookupResult) {
+    if (!setValue) return;
+    const options = { shouldDirty: true, shouldValidate: true } as const;
+    setValue('companyName', result.companyName, options);
+    setValue('address', result.address, options);
+    setValue('postalCode', result.postalCode, options);
+    setValue('city', result.city, options);
+    setValue('country', result.country, options);
+    setValue('siret', result.siret, options);
+    setValue('siren', result.siren, options);
+    if (result.vatNumber) setValue('vatNumber', result.vatNumber, options);
+  }
 
   return (
     <View style={styles.form}>
+      {setValue ? (
+        <FormSection
+          footer="Vérifiez puis enregistrez."
+          title="Remplir avec le SIREN ou le SIRET">
+          <FormField>
+            <OwnCompanyLookup
+              onChange={setRegistrationNumber}
+              onFound={applyRegistration}
+              value={registrationNumber}
+            />
+          </FormField>
+        </FormSection>
+      ) : null}
+
       <FormSection title="Informations">
         <FormField>
           <Controller
@@ -211,6 +251,24 @@ export function CompanyProfileForm({ control, errors, assets }: CompanyProfileFo
                   placeholder="France"
                   textContentType="countryName"
                   value={value}
+                />
+              )}
+            />
+          </FormField>
+          <FormDivider />
+          <FormField>
+            <Controller
+              control={control}
+              name="siren"
+              render={({ field: { onChange, onBlur, value } }) => (
+                <TextField
+                  error={errors.siren?.message}
+                  keyboardType="number-pad"
+                  label="SIREN"
+                  onBlur={onBlur}
+                  onChangeText={onChange}
+                  placeholder="123 456 789"
+                  value={value ?? ''}
                 />
               )}
             />

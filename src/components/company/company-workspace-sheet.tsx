@@ -1,5 +1,10 @@
 import { Image } from 'expo-image';
 import { SymbolView } from 'expo-symbols';
+import { useQueryClient } from '@tanstack/react-query';
+import { OwnCompanyLookup } from '@/components/company/own-company-lookup';
+import type { CompanyLookupResult } from '@/lib/company-search/types';
+import { applyCompanyRegistration } from '@/lib/supabase/companies';
+import { companiesQueryKeys, profilesQueryKeys } from '@/lib/supabase/query-keys';
 import { useState } from 'react';
 import { Alert, Modal, Pressable, StyleSheet, TextInput, View } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
@@ -49,6 +54,9 @@ export function CompanyWorkspaceSheet({
   const { uploadAsset } = useCompanyAsset('logo');
 
   const [createName, setCreateName] = useState('');
+  const [registrationNumber, setRegistrationNumber] = useState('');
+  const [registration, setRegistration] = useState<CompanyLookupResult | null>(null);
+  const queryClient = useQueryClient();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState('');
 
@@ -59,8 +67,15 @@ export function CompanyWorkspaceSheet({
     }
 
     try {
-      await createCompany.mutateAsync({ name: createName.trim() });
+      const companyId = await createCompany.mutateAsync({ name: createName.trim() });
+      if (registration) {
+        await applyCompanyRegistration(companyId, registration);
+        await queryClient.invalidateQueries({ queryKey: companiesQueryKeys.all });
+        await queryClient.invalidateQueries({ queryKey: profilesQueryKeys.all });
+      }
       setCreateName('');
+      setRegistrationNumber('');
+      setRegistration(null);
       showSuccess('Entreprise créée.');
     } catch (error) {
       showError(readErrorMessage(error));
@@ -242,6 +257,15 @@ export function CompanyWorkspaceSheet({
             <AppText medium variant="body">
               Nouvelle entreprise
             </AppText>
+            <OwnCompanyLookup
+              label="SIREN ou SIRET (facultatif)"
+              onChange={setRegistrationNumber}
+              onFound={(result) => {
+                setRegistration(result);
+                setCreateName(result.companyName);
+              }}
+              value={registrationNumber}
+            />
             <TextInput
               onChangeText={setCreateName}
               placeholder="Nom de l’entreprise"

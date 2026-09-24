@@ -24,6 +24,11 @@ import {
   type InvoicesPageParams,
 } from '@/types/invoices-list';
 import type { DataScope } from '@/types/tenant';
+import {
+  parseInvoicePdfOptions,
+  serializeInvoicePdfOptions,
+  type InvoicePdfOptions,
+} from '@/types/pdf-options';
 import type { InvoiceItemInsert, InvoiceItemRow, InvoicePaymentRow, InvoiceWithClient, InvoiceInsert } from '@/types/database';
 
 export { INVOICES_PAGE_SIZE };
@@ -38,6 +43,64 @@ const INVOICE_ITEM_COLUMNS =
 
 const PAYMENT_COLUMNS =
   'id, invoice_id, user_id, amount, paid_at, payment_method, payment_reference, notes, created_at' as const;
+
+/**
+ * `invoices.pdf_options` peut ne pas encore exister en base (migration
+ * 20260924120000). Lecture et écriture passent donc par des requêtes à part,
+ * qui n'empêchent jamais de créer ou d'afficher une facture.
+ */
+export async function fetchInvoicePdfOptions(
+  scope: DataScope,
+  invoiceId: string,
+): Promise<InvoicePdfOptions> {
+  const { data, error } = await supabase
+    .from('invoices')
+    .select('pdf_options')
+    .eq('id', invoiceId)
+    .eq('company_id', scope.companyId)
+    .maybeSingle();
+
+  if (error) {
+    logSupabaseError('fetchInvoicePdfOptions', error);
+  }
+
+  return parseInvoicePdfOptions((data as { pdf_options?: unknown } | null)?.pdf_options);
+}
+
+/** Modifie une partie de la présentation d'une facture existante, sans toucher au reste. */
+export async function updateInvoicePdfOptions(
+  scope: DataScope,
+  invoiceId: string,
+  patch: Partial<InvoicePdfOptions>,
+): Promise<void> {
+  const current = await fetchInvoicePdfOptions(scope, invoiceId);
+  await saveInvoicePdfOptions(scope, invoiceId, { ...current, ...patch });
+}
+
+/** Change le modèle PDF d'une facture existante. */
+export async function updateInvoiceTemplate(
+  scope: DataScope,
+  invoiceId: string,
+  templateId: string,
+): Promise<void> {
+  await updateInvoicePdfOptions(scope, invoiceId, { templateId });
+}
+
+async function saveInvoicePdfOptions(
+  scope: DataScope,
+  invoiceId: string,
+  options: InvoicePdfOptions,
+): Promise<void> {
+  const { error } = await supabase
+    .from('invoices')
+    .update({ pdf_options: serializeInvoicePdfOptions(options) } as Partial<InvoiceInsert>)
+    .eq('id', invoiceId)
+    .eq('company_id', scope.companyId);
+
+  if (error) {
+    logSupabaseError('saveInvoicePdfOptions', error);
+  }
+}
 
 function sanitizeSearchTerm(search: string): string {
   return search.trim().replace(/[%_,]/g, '');
@@ -278,16 +341,31 @@ export async function createInvoice(scope: DataScope, input: CreateInvoiceInput)
   }
 
   const settings = await fetchSettings(scope);
-  const number = await reserveNextInvoiceNumber(scope.companyId);
   const defaultDueAt =
     input.dueAt ?? computeDueDate(input.paymentTermsDays ?? settings?.paymentTermsDays ?? 30);
-  const { invoice, lines } = mapCreateInvoiceInputToInsert(scope, number, input, defaultDueAt);
+  const customNumber = input.number?.trim() || null;
 
-  const { data: createdInvoice, error: invoiceError } = await supabase
-    .from('invoices')
-    .insert(invoice)
-    .select(INVOICE_COLUMNS)
-    .single();
+  // Un numéro saisi à la main peut occuper le prochain numéro automatique :
+  // on en réserve alors un autre au lieu d'échouer.
+  let attempt = 0;
+  let insertResult;
+  let invoice: InvoiceInsert;
+  let lines: Omit<InvoiceItemInsert, 'invoice_id'>[];
+  for (;;) {
+    const number = customNumber ?? (await reserveNextInvoiceNumber(scope.companyId));
+    ({ invoice, lines } = mapCreateInvoiceInputToInsert(scope, number, input, defaultDueAt));
+    insertResult = await supabase.from('invoices').insert(invoice).select(INVOICE_COLUMNS).single();
+
+    const duplicate = insertResult.error?.code === '23505';
+    if (!duplicate) break;
+    if (customNumber) {
+      throw new Error(`Le numéro « ${customNumber} » est déjà utilisé par une autre facture.`);
+    }
+    attempt += 1;
+    if (attempt >= 5) break;
+  }
+
+  const { data: createdInvoice, error: invoiceError } = insertResult;
 
   if (invoiceError || !createdInvoice) {
     logSupabaseError('createInvoice', invoiceError);
@@ -306,6 +384,10 @@ export async function createInvoice(scope: DataScope, input: CreateInvoiceInput)
       .eq('id', invoiceRow.id)
       .eq('company_id', scope.companyId);
     throw error;
+  }
+
+  if (input.pdfOptions) {
+    await saveInvoicePdfOptions(scope, invoiceRow.id, input.pdfOptions);
   }
 
   const { data: fullInvoice, error: fetchError } = await supabase
@@ -377,6 +459,28 @@ export async function updateInvoice(
   return updated;
 }
 
+/**
+ * Suppression définitive. Lignes, paiements et liens de paiement partent avec
+ * la facture (clés étrangères en cascade) ; un devis converti est détaché.
+ */
+export async function deleteInvoice(scope: DataScope, invoiceId: string): Promise<void> {
+  const { data, error } = await supabase
+    .from('invoices')
+    .delete()
+    .eq('id', invoiceId)
+    .eq('company_id', scope.companyId)
+    .select('id');
+
+  if (error) {
+    logSupabaseError('deleteInvoice', error);
+    throw error;
+  }
+
+  if (!data || data.length === 0) {
+    throw new Error('Facture introuvable ou déjà supprimée.');
+  }
+}
+
 export async function duplicateInvoice(scope: DataScope, invoiceId: string): Promise<Invoice> {
   const source = await fetchInvoiceById(scope, invoiceId);
 
@@ -384,7 +488,10 @@ export async function duplicateInvoice(scope: DataScope, invoiceId: string): Pro
     throw new Error('Invoice not found.');
   }
 
+  const pdfOptions = await fetchInvoicePdfOptions(scope, invoiceId);
+
   return createInvoice(scope, {
+    pdfOptions,
     clientId: source.clientId,
     lines: source.lines.map((line) => ({
       ...line,
