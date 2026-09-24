@@ -533,6 +533,7 @@ export function InvoiceBatch() {
                 </div>
                 <div className="mt-4">
                   <AddressesPicker
+                    client={clients.find((client) => client.id === draft.clientChoice) ?? null}
                     company={activeCompany}
                     onChange={(addresses) => update(draft.key, { addresses })}
                     value={draft.addresses}

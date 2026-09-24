@@ -1,7 +1,9 @@
 'use client';
 
 import { TextArea } from '@/components/app/form-fields';
+import type { Client } from '@/types/client';
 import {
+  clientAddresses,
   INVOICE_ADDRESS_KEYS,
   INVOICE_ADDRESS_LABELS,
   MARKETPLACE_PRESETS,
@@ -25,13 +27,17 @@ const CHIP =
  * chaque frappe.
  */
 export function AddressesPicker({
+  client,
   company,
   onChange,
   onCommit,
   value,
 }: {
+  /** Client de la facture : sa fiche remplit facturation et livraison. */
+  client?: Client | null;
   company: {
     name: string;
+    vatNumber?: string | null;
     address: string | null;
     postalCode: string | null;
     city: string | null;
@@ -47,15 +53,22 @@ export function AddressesPicker({
     if (commit) onCommit?.(next);
   }
 
-  function fillSoldByFromCompany() {
-    if (!company) return;
-    const lines = [
+  function companySoldBy(): string {
+    if (!company) return '';
+    return [
       company.name,
       company.address,
       [company.postalCode, company.city].filter(Boolean).join(' '),
       company.country,
-    ].filter((line): line is string => Boolean(line?.trim()));
-    set({ soldBy: lines.join('\n') }, true);
+      company.vatNumber ? `TVA ${company.vatNumber}` : null,
+    ]
+      .filter((line): line is string => Boolean(line?.trim()))
+      .join('\n');
+  }
+
+  function fillSoldByFromCompany() {
+    if (!company) return;
+    set({ soldBy: companySoldBy() }, true);
   }
 
   return (
@@ -66,7 +79,10 @@ export function AddressesPicker({
           <button
             className={CHIP}
             key={preset.label}
-            onClick={() => set({ marketplace: preset.value }, true)}
+            onClick={() =>
+              // Vendu sur une place de marché : le vendeur, c'est votre entreprise.
+              set({ marketplace: preset.value, soldBy: value.soldBy.trim() || companySoldBy() }, true)
+            }
             type="button">
             {preset.label}
           </button>
@@ -74,6 +90,11 @@ export function AddressesPicker({
         {company ? (
           <button className={CHIP} onClick={fillSoldByFromCompany} type="button">
             Vendu par : mon entreprise
+          </button>
+        ) : null}
+        {client ? (
+          <button className={CHIP} onClick={() => set(clientAddresses(client), true)} type="button">
+            Facturation et livraison : depuis le client
           </button>
         ) : null}
       </div>

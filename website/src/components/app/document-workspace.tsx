@@ -4,6 +4,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   useMutation,
+  useQuery,
   useQueryClient,
   type QueryClient,
   type QueryKey,
@@ -92,6 +93,8 @@ import {
 import { getDefaultComposerTemplateId } from '@/lib/domain/pdf/composer-templates';
 import { LegalIdsPicker } from '@/components/app/document-composer/legal-ids-picker';
 import { StampPicker } from '@/components/app/document-composer/stamp-picker';
+import { fetchClientById } from '@/lib/domain/supabase/clients';
+import type { Client } from '@/types/client';
 import { AddressesPicker } from '@/components/app/document-composer/addresses-picker';
 import {
   createEmptyInvoiceAddresses,
@@ -647,6 +650,7 @@ function DocumentDetailPanel({
   addresses,
   onAddressesChange,
   onAddressesCommit,
+  client,
 }: {
   kind: DocumentKind;
   document: InvoiceDetail | QuoteDetail;
@@ -684,6 +688,8 @@ function DocumentDetailPanel({
   addresses?: InvoiceAddresses;
   onAddressesChange?: (value: InvoiceAddresses) => void;
   onAddressesCommit?: (value: InvoiceAddresses) => void;
+  /** Fiche du client de la facture : remplit facturation et livraison. */
+  client?: Client | null;
 }) {
   const PrimaryIcon = primaryAction.icon;
 
@@ -786,6 +792,7 @@ function DocumentDetailPanel({
             </summary>
             <div className="mt-3">
               <AddressesPicker
+                client={client}
                 company={company ?? null}
                 onChange={onAddressesChange}
                 onCommit={onAddressesCommit}
@@ -911,6 +918,12 @@ export function InvoicesWorkspace() {
     await updateInvoicePdfOptions(requireScope(scope), detail.id, { legalIds: value });
     void queryClient.invalidateQueries({ queryKey: ['pdf-preview'] });
   }
+
+  const invoiceClientQuery = useQuery({
+    queryKey: ['invoice-client', detail?.clientId],
+    queryFn: () => fetchClientById(requireScope(scope), detail!.clientId!),
+    enabled: Boolean(scope && detail?.clientId),
+  });
 
   async function commitAddresses(value: InvoiceAddresses) {
     if (!detail || !scope) return;
@@ -1288,6 +1301,7 @@ export function InvoicesWorkspace() {
                 addresses={addresses}
                 onAddressesChange={setAddresses}
                 onAddressesCommit={(value) => void commitAddresses(value)}
+                client={invoiceClientQuery.data ?? null}
                 stamp={stamp}
                 onOpenPreview={() => setQuickPreviewId(detail.id)}
                 onTemplateChange={changeInvoiceTemplate}
