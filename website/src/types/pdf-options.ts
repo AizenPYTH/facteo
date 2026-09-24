@@ -114,6 +114,51 @@ export function rememberLegalIds(legalIds: IssuerLegalId[]): void {
   }
 }
 
+/**
+ * Adresses libres imprimées au-dessus des lignes (texte sur plusieurs lignes).
+ * Pensées pour les ventes en place de marché : une facture refaite pour une
+ * commande Amazon indique qui vend, où la commande a été passée, et les
+ * adresses de facturation et de livraison de l'acheteur.
+ */
+export type InvoiceAddresses = {
+  soldBy: string;
+  marketplace: string;
+  billing: string;
+  shipping: string;
+};
+
+export const INVOICE_ADDRESS_LABELS: Record<keyof InvoiceAddresses, string> = {
+  soldBy: 'Vendu par',
+  marketplace: 'Commande passée sur',
+  billing: 'Adresse de facturation',
+  shipping: 'Adresse de livraison',
+};
+
+export const INVOICE_ADDRESS_KEYS: (keyof InvoiceAddresses)[] = [
+  'soldBy',
+  'marketplace',
+  'billing',
+  'shipping',
+];
+
+/** Places de marché proposées en un clic (adresses publiques de l'opérateur). */
+export const MARKETPLACE_PRESETS: { label: string; value: string }[] = [
+  {
+    label: 'Amazon.fr',
+    value: 'Amazon.fr\nAmazon EU S.à r.l.\n38 avenue John F. Kennedy\nL-1855 Luxembourg',
+  },
+  {
+    label: 'Cdiscount',
+    value: 'Cdiscount.com\nCdiscount SA\n120-126 quai de Bacalan\n33300 Bordeaux',
+  },
+  { label: 'eBay', value: 'eBay.fr\neBay GmbH\nAlbert-Einstein-Ring 2-6\n14532 Kleinmachnow, Allemagne' },
+  { label: 'Vinted', value: 'Vinted\nVinted UAB\nSvitrigailos g. 13\n03228 Vilnius, Lituanie' },
+];
+
+export function createEmptyInvoiceAddresses(): InvoiceAddresses {
+  return { soldBy: '', marketplace: '', billing: '', shipping: '' };
+}
+
 export type InvoicePdfOptions = {
   /** `null` : « Facture ». */
   title: string | null;
@@ -124,6 +169,7 @@ export type InvoicePdfOptions = {
   templateId: string | null;
   /** E-mail de l'entreprise sur la facture. Masqué par défaut, anciennes factures comprises. */
   showEmail: boolean;
+  addresses: InvoiceAddresses;
 };
 
 export function createDefaultInvoicePdfOptions(): InvoicePdfOptions {
@@ -134,6 +180,7 @@ export function createDefaultInvoicePdfOptions(): InvoicePdfOptions {
     stampPosition: 'auto',
     templateId: null,
     showEmail: false,
+    addresses: createEmptyInvoiceAddresses(),
   };
 }
 
@@ -160,7 +207,14 @@ export function parseInvoicePdfOptions(value: unknown): InvoicePdfOptions {
 
   const showEmail = source.show_email === true;
 
-  return { title, legalIds, stampColor, stampPosition, templateId, showEmail };
+  const rawAddresses = (source.addresses ?? {}) as Record<string, unknown>;
+  const addresses = createEmptyInvoiceAddresses();
+  for (const key of INVOICE_ADDRESS_KEYS) {
+    const entry = rawAddresses[key];
+    addresses[key] = typeof entry === 'string' ? entry.slice(0, 600) : '';
+  }
+
+  return { title, legalIds, stampColor, stampPosition, templateId, showEmail, addresses };
 }
 
 export function serializeInvoicePdfOptions(options: InvoicePdfOptions) {
@@ -171,5 +225,6 @@ export function serializeInvoicePdfOptions(options: InvoicePdfOptions) {
     stamp_position: options.stampPosition,
     template_id: options.templateId,
     show_email: options.showEmail,
+    addresses: options.addresses,
   };
 }

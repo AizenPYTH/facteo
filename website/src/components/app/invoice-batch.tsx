@@ -5,6 +5,7 @@ import { ImagePlus, Plus, Sparkles, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useRef, useState } from 'react';
 
+import { AddressesPicker } from '@/components/app/document-composer/addresses-picker';
 import { LegalIdsPicker } from '@/components/app/document-composer/legal-ids-picker';
 import { StampPicker } from '@/components/app/document-composer/stamp-picker';
 import {
@@ -38,8 +39,10 @@ import { createEmptyClientFormValues, type Client } from '@/types/client';
 import { CLIENTS_PAGE_SIZE } from '@inveq/types/clients-list';
 import { createLocalInvoiceLineId, type InvoiceLineValue } from '@inveq/types/invoice';
 import {
+  createEmptyInvoiceAddresses,
   INVOICE_TITLE_SUGGESTIONS,
   readRememberedLegalIds,
+  type InvoiceAddresses,
   type IssuerLegalId,
   type StampColor,
   type StampPosition,
@@ -61,6 +64,7 @@ type Draft = {
   legalIds: IssuerLegalId[];
   stampColor: StampColor;
   stampPosition: StampPosition;
+  addresses: InvoiceAddresses;
   lines: InvoiceLineValue[];
   error: string | null;
 };
@@ -144,6 +148,11 @@ export function InvoiceBatch() {
       legalIds: readRememberedLegalIds(),
       stampColor: 'auto',
       stampPosition: 'auto',
+      // L'adresse lue sur la capture est celle de l'acheteur : livraison par défaut.
+      addresses: {
+        ...createEmptyInvoiceAddresses(),
+        shipping: [invoice.client_name, invoice.client_address].filter(Boolean).join('\n'),
+      },
       lines: invoice.lines.map((line) => ({
         ...toInvoiceLineValues(line),
         id: createLocalInvoiceLineId(),
@@ -238,6 +247,7 @@ export function InvoiceBatch() {
             stampPosition: draft.stampPosition,
             templateId: draft.templateId || null,
             showEmail: false,
+            addresses: draft.addresses,
           },
         });
         created += 1;
@@ -506,7 +516,7 @@ export function InvoiceBatch() {
 
               <details className="mt-3 rounded-app-field border border-app-border-soft px-3 py-2">
                 <summary className="cursor-pointer text-[13px] font-medium text-app-text-3">
-                  SIREN / SIRET / TVA et tampon
+                  SIREN / SIRET / TVA, tampon et adresses
                 </summary>
                 <div className="mt-3 grid gap-4 md:grid-cols-2">
                   <LegalIdsPicker
@@ -519,6 +529,13 @@ export function InvoiceBatch() {
                     onColorChange={(stampColor) => update(draft.key, { stampColor })}
                     onPositionChange={(stampPosition) => update(draft.key, { stampPosition })}
                     position={draft.stampPosition}
+                  />
+                </div>
+                <div className="mt-4">
+                  <AddressesPicker
+                    company={activeCompany}
+                    onChange={(addresses) => update(draft.key, { addresses })}
+                    value={draft.addresses}
                   />
                 </div>
               </details>
