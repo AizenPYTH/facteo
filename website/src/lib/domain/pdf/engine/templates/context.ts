@@ -192,7 +192,7 @@ function buildIssuerLegalIds(input: PdfDocumentInput): TemplateMetaEntry[] {
     .filter((entry): entry is TemplateMetaEntry => entry !== null);
 }
 
-function buildIssuer(company: PdfCompanyInfo): TemplateParty {
+function buildIssuer(company: PdfCompanyInfo, showEmail: boolean): TemplateParty {
   const name =
     clean(company.companyName) ??
     clean([company.firstName, company.lastName].filter(Boolean).join(' ')) ??
@@ -210,7 +210,7 @@ function buildIssuer(company: PdfCompanyInfo): TemplateParty {
     // Rendus en tête de page selon le choix de l'utilisateur (`issuerLegalIds`).
     siret: null,
     vatNumber: null,
-    email: clean(company.email),
+    email: showEmail ? clean(company.email) : null,
     phone: clean(company.phone),
   };
 }
@@ -337,7 +337,7 @@ export function buildTemplateContext(input: PdfDocumentInput): TemplateContext {
   const subtotalBeforeDiscount = input.totals.subtotalHt + discount;
   const paymentTermsDays = input.settings?.paymentTermsDays ?? null;
 
-  const issuer = buildIssuer(input.company);
+  const issuer = buildIssuer(input.company, input.showIssuerEmail ?? isQuote);
   const client = buildClient(input.client);
   const vat = buildVatRows(input);
 

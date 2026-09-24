@@ -92,4 +92,6 @@ export type PdfDocumentInput = {
   /** Cachet « Facture payée ». Absent : couleur et emplacement du modèle. */
   stampColor?: StampColor | null;
   stampPosition?: StampPosition | null;
+  /** Afficher l'e-mail de l'entreprise. Absent : affiché sur un devis, masqué sur une facture. */
+  showIssuerEmail?: boolean;
 };

@@ -129,6 +129,16 @@ export function ComposerPresentationCard({
           </p>
         </div>
 
+        <label className="flex cursor-pointer items-center gap-2.5 text-[12.5px] font-medium text-app-text-3">
+          <input
+            checked={value.showEmail}
+            className="h-[14px] w-[14px] [accent-color:var(--app-accent)]"
+            onChange={(event) => onChange({ ...value, showEmail: event.target.checked })}
+            type="checkbox"
+          />
+          Afficher mon e-mail sur la facture
+        </label>
+
         <div>
           <p className="mb-1.5 text-[12px] font-medium text-app-text-3" id="composer-stamp-color">
             Tampon « Facture payée » : couleur

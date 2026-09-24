@@ -67,14 +67,23 @@ export async function fetchInvoicePdfOptions(
   return parseInvoicePdfOptions((data as { pdf_options?: unknown } | null)?.pdf_options);
 }
 
-/** Change le modèle PDF d'une facture existante, sans toucher au reste de sa présentation. */
+/** Modifie une partie de la présentation d'une facture existante, sans toucher au reste. */
+export async function updateInvoicePdfOptions(
+  scope: DataScope,
+  invoiceId: string,
+  patch: Partial<InvoicePdfOptions>,
+): Promise<void> {
+  const current = await fetchInvoicePdfOptions(scope, invoiceId);
+  await saveInvoicePdfOptions(scope, invoiceId, { ...current, ...patch });
+}
+
+/** Change le modèle PDF d'une facture existante. */
 export async function updateInvoiceTemplate(
   scope: DataScope,
   invoiceId: string,
   templateId: string,
 ): Promise<void> {
-  const current = await fetchInvoicePdfOptions(scope, invoiceId);
-  await saveInvoicePdfOptions(scope, invoiceId, { ...current, templateId });
+  await updateInvoicePdfOptions(scope, invoiceId, { templateId });
 }
 
 async function saveInvoicePdfOptions(
