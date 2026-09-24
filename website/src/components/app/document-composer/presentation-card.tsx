@@ -18,14 +18,21 @@ const CHIP_ON = 'border-app-accent-border bg-app-accent-tint text-app-accent-str
 const CHIP_OFF = 'border-app-border text-app-muted hover:border-app-accent hover:text-app-text';
 
 /**
- * Titre du document et identifiants de l'entreprise émettrice (SIREN, SIRET,
+ * Numéro, titre du document et identifiants de l'entreprise émettrice (SIREN, SIRET,
  * TVA) affichés en tête de la facture.
  */
 export function ComposerPresentationCard({
+  forecastNumber,
+  number,
   onChange,
+  onNumberChange,
   value,
 }: {
+  /** Numéro automatique qui sera attribué si le champ reste vide. */
+  forecastNumber: string | null;
+  number: string;
   onChange: (value: InvoicePdfOptions) => void;
+  onNumberChange: (value: string) => void;
   value: InvoicePdfOptions;
 }) {
   const title = value.title ?? '';
@@ -41,6 +48,25 @@ export function ComposerPresentationCard({
   return (
     <ComposerCard title="Présentation de la facture">
       <div className="space-y-3.5">
+        <div>
+          <label
+            className="mb-1.5 block text-[12px] font-medium text-app-text-3"
+            htmlFor="composer-document-number">
+            Numéro de la facture
+          </label>
+          <TextInput
+            className="app-num"
+            id="composer-document-number"
+            maxLength={40}
+            onChange={(event) => onNumberChange(event.target.value)}
+            placeholder={forecastNumber ?? 'Automatique'}
+            value={number}
+          />
+          <p className="mt-1.5 text-[11.5px] leading-relaxed text-app-muted-2">
+            Laissez vide pour le numéro automatique. Chaque numéro ne peut servir qu’une fois.
+          </p>
+        </div>
+
         <div>
           <label
             className="mb-1.5 block text-[12px] font-medium text-app-text-3"

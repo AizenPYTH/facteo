@@ -284,6 +284,7 @@ export function DocumentComposer({ kind }: { kind: 'invoice' | 'quote' }) {
   const [paymentChoice, setPaymentChoice] = useState<number | 'paid' | null>(null);
   const [notes, setNotes] = useState('');
   const [templateId, setTemplateId] = useState('');
+  const [customNumber, setCustomNumber] = useState('');
   const [pdfOptions, setPdfOptions] = useState<InvoicePdfOptions>(() =>
     createDefaultInvoicePdfOptions(),
   );
@@ -456,6 +457,7 @@ export function DocumentComposer({ kind }: { kind: 'invoice' | 'quote' }) {
           issuedAt: issuedAtIso,
           lines: validLines,
           notes: notes.trim() || undefined,
+          number: customNumber.trim() || null,
           pdfOptions,
         });
       }
@@ -471,6 +473,7 @@ export function DocumentComposer({ kind }: { kind: 'invoice' | 'quote' }) {
         lines: validLines,
         notes: notes.trim() || undefined,
         paymentTermsDays: dueDays,
+        number: customNumber.trim() || null,
         pdfOptions,
       });
     },
@@ -748,7 +751,13 @@ export function DocumentComposer({ kind }: { kind: 'invoice' | 'quote' }) {
 
   const presentationCard =
     kind === 'invoice' ? (
-      <ComposerPresentationCard onChange={setPdfOptions} value={pdfOptions} />
+      <ComposerPresentationCard
+        forecastNumber={forecastNumber}
+        number={customNumber}
+        onChange={setPdfOptions}
+        onNumberChange={setCustomNumber}
+        value={pdfOptions}
+      />
     ) : null;
 
   const notesCard = (
@@ -818,7 +827,7 @@ export function DocumentComposer({ kind }: { kind: 'invoice' | 'quote' }) {
         meta={
           isWizard
             ? `Étape ${step + 1} sur ${COMPOSER_WIZARD_STEPS.length} · ${COMPOSER_WIZARD_STEPS[step]}`
-            : (forecastNumber ?? undefined)
+            : (customNumber.trim() || forecastNumber || undefined)
         }
         onBack={isWizard && step > 0 ? () => setStep(step - 1) : handleCancel}
         title={title}>

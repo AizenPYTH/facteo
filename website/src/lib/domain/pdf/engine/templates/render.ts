@@ -62,15 +62,60 @@ function legalIdsStrip(context: TemplateContext): string {
   return `<div style="display:flex; flex-wrap:wrap; justify-content:center; gap:${u(4)} ${u(22)}; padding:${u(11)} ${u(48)} ${u(10)}; font-size:${u(9.5)}; line-height:1.3; border-bottom:1px solid rgba(20,20,26,.08)">${items}</div>`;
 }
 
+/**
+ * Emplacement du cachet, propre à chaque modèle.
+ * - `beside` : ancré à la fin du contenu principal (espaceur du modèle), bas du
+ *   cachet aligné sur le bas des totaux, dans le vide laissé à côté d'eux. Suit
+ *   la longueur de la facture et ne sort jamais de la page.
+ * - `below` : juste sous le contenu principal, pour les modèles dont les totaux
+ *   occupent toute la largeur.
+ * - `page` : position fixe sur la page, pour les modèles en colonnes étroites.
+ */
+type StampPlacement = {
+  mode: 'beside' | 'below' | 'page';
+  side: 'left' | 'right';
+  x: number;
+  y: number;
+  rotate: number;
+};
+
+const DEFAULT_STAMP: StampPlacement = { mode: 'beside', side: 'left', x: 56, y: 6, rotate: -8 };
+
+const STAMP_PLACEMENTS: Record<string, Partial<StampPlacement>> = {
+  '05': { mode: 'below', side: 'left', x: 40, y: 20 },
+  '06': { mode: 'below', y: 22 },
+  '09': { mode: 'below', y: 22 },
+  '11': { mode: 'below', y: 22 },
+  '13': { mode: 'below', y: 22 },
+  '14': { mode: 'below', y: 22 },
+  '15': { mode: 'page', side: 'left', x: 90, y: 420 },
+  '16': { mode: 'below', y: 22 },
+  '17': { mode: 'below', x: 44, y: 22 },
+  '18': { mode: 'page', side: 'left', x: 90, y: 420 },
+  '19': { mode: 'below', y: 22 },
+  '20': { mode: 'below', y: 26 },
+};
+
+function stampPlacement(templateId: string): StampPlacement {
+  return { ...DEFAULT_STAMP, ...STAMP_PLACEMENTS[templateId] };
+}
+
 /** Cachet « Facture payée » au nom de l'entreprise émettrice. */
-function paidStamp(context: TemplateContext): string {
+function paidStamp(context: TemplateContext, templateId: string): string {
   if (!context.paidStamp) {
     return '';
   }
 
   const { companyName, date } = context.paidStamp;
+  const place = stampPlacement(templateId);
 
-  return `<div aria-hidden="true" style="position:absolute; bottom:${u(190)}; left:${u(64)}; z-index:5; transform:rotate(-9deg); min-width:${u(190)}; max-width:${u(260)}; padding:${u(9)} ${u(18)} ${u(8)}; border:${u(3.5)} double ${STAMP_GREEN}; border-radius:${u(10)}; color:${STAMP_GREEN}; text-align:center; opacity:.88; mix-blend-mode:multiply; font-family:'Plus Jakarta Sans', Arial, sans-serif">
+  const vertical = place.mode === 'beside' ? `bottom:${u(place.y)}` : `top:${u(place.y)}`;
+  const anchor =
+    place.mode === 'page'
+      ? '<div aria-hidden="true" style="position:absolute; inset:0; z-index:5; pointer-events:none">'
+      : '<div aria-hidden="true" style="position:relative; height:0; z-index:5">';
+
+  return `${anchor}<div style="position:absolute; ${vertical}; ${place.side}:${u(place.x)}; transform:rotate(${place.rotate}deg); min-width:${u(190)}; max-width:${u(260)}; padding:${u(9)} ${u(18)} ${u(8)}; border:${u(3.5)} double ${STAMP_GREEN}; border-radius:${u(10)}; color:${STAMP_GREEN}; background:transparent; text-align:center; opacity:.88; mix-blend-mode:multiply; font-family:'Plus Jakarta Sans', Arial, sans-serif">
     <div style="font-size:${u(18)}; font-weight:800; letter-spacing:.14em; line-height:1.1">FACTURE PAYÉE</div>
     ${
       companyName
@@ -80,23 +125,41 @@ function paidStamp(context: TemplateContext): string {
         : ''
     }
     ${date ? `<div style="margin-top:${u(2)}; font-size:${u(9)}; font-weight:600">le ${escapeHtml(date)}</div>` : ''}
-  </div>`;
+  </div></div>`;
 }
 
-/** Insère le bandeau légal et le cachet en tête de la première page du modèle. */
-function withPageExtras(html: string, context: TemplateContext): string {
-  const extras = `${legalIdsStrip(context)}${paidStamp(context)}`;
-  if (!extras) {
-    return html;
+function insertAfter(html: string, pattern: RegExp, extra: string): string | null {
+  const match = html.match(pattern);
+  if (!match || match.index === undefined) return null;
+  const at = match.index + match[0].length;
+  return `${html.slice(0, at)}${extra}${html.slice(at)}`;
+}
+
+function insertBefore(html: string, pattern: RegExp, extra: string): string | null {
+  const match = html.match(pattern);
+  if (!match || match.index === undefined) return null;
+  return `${html.slice(0, match.index)}${extra}${html.slice(match.index)}`;
+}
+
+/** Bandeau légal en tête de page, cachet à la fin du contenu principal. */
+function withPageExtras(html: string, context: TemplateContext, templateId: string): string {
+  let result = html;
+
+  const strip = legalIdsStrip(context);
+  if (strip) {
+    result = insertAfter(result, /<div class="dc-page"[^>]*>/, strip) ?? `${strip}${result}`;
   }
 
-  const match = html.match(/<div class="dc-page"[^>]*>/);
-  if (!match || match.index === undefined) {
-    return `${extras}${html}`;
+  const stamp = paidStamp(context, templateId);
+  if (stamp) {
+    const onPage = stampPlacement(templateId).mode === 'page';
+    result =
+      (onPage ? null : insertBefore(result, /<div class="dc-spacer"/, stamp)) ??
+      insertAfter(result, /<div class="dc-page"[^>]*>/, stamp) ??
+      `${stamp}${result}`;
   }
 
-  const insertAt = match.index + match[0].length;
-  return `${html.slice(0, insertAt)}${extras}${html.slice(insertAt)}`;
+  return result;
 }
 
 export function renderTemplatedDocumentPdfHtml(input: PdfDocumentInput): string {
@@ -112,7 +175,7 @@ export function renderTemplatedDocumentPdfHtml(input: PdfDocumentInput): string 
   <style>${pageStyles()}</style>
 </head>
 <body style="background:${template.paper}">
-${withPageExtras(template.render(context), context)}
+${withPageExtras(template.render(context), context, template.id)}
 </body>
 </html>`;
 }
