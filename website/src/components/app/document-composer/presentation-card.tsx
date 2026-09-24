@@ -6,6 +6,7 @@ import { LegalIdsPicker } from '@/components/app/document-composer/legal-ids-pic
 import { StampPicker } from '@/components/app/document-composer/stamp-picker';
 import { TextInput } from '@/components/app/form-fields';
 import { cn } from '@/lib/utils';
+import type { Client } from '@/types/client';
 import {
   DEFAULT_INVOICE_TITLE,
   INVOICE_TITLE_SUGGESTIONS,
@@ -22,6 +23,7 @@ const CHIP_OFF = 'border-app-border text-app-muted hover:border-app-accent hover
  * TVA) affichés en tête de la facture.
  */
 export function ComposerPresentationCard({
+  client,
   company,
   forecastNumber,
   number,
@@ -29,6 +31,8 @@ export function ComposerPresentationCard({
   onNumberChange,
   value,
 }: {
+  /** Client choisi : sa fiche remplit facturation et livraison. */
+  client: Client | null;
   /** Entreprise émettrice : ses SIRET et TVA sont montrés à côté des cases. */
   company: {
     id: string;
@@ -135,6 +139,7 @@ export function ComposerPresentationCard({
           </summary>
           <div className="mt-3">
             <AddressesPicker
+              client={client}
               company={company}
               onChange={(addresses) => onChange({ ...value, addresses })}
               value={value.addresses}

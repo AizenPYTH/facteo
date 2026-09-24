@@ -45,15 +45,19 @@ export const STAMP_COLOR_LABELS: Record<StampColor, string> = {
   black: 'Noir',
 };
 
-/** Emplacement du cachet. `auto` : près des totaux, à l'endroit prévu pour le modèle. */
-export type StampPosition = 'auto' | 'top' | 'bottom';
+/**
+ * Emplacement du cachet. `auto` : près des totaux, à l'endroit prévu pour le
+ * modèle. `none` : pas de tampon, même si la facture est payée.
+ */
+export type StampPosition = 'auto' | 'top' | 'bottom' | 'none';
 
-export const STAMP_POSITIONS: StampPosition[] = ['auto', 'top', 'bottom'];
+export const STAMP_POSITIONS: StampPosition[] = ['auto', 'top', 'bottom', 'none'];
 
 export const STAMP_POSITION_LABELS: Record<StampPosition, string> = {
   auto: 'Près des totaux',
   top: 'En haut',
   bottom: 'En bas',
+  none: 'Aucun',
 };
 
 function groupDigits(digits: string, sizes: number[]): string {
@@ -154,6 +158,45 @@ export const MARKETPLACE_PRESETS: { label: string; value: string }[] = [
   { label: 'eBay', value: 'eBay.fr\neBay GmbH\nAlbert-Einstein-Ring 2-6\n14532 Kleinmachnow, Allemagne' },
   { label: 'Vinted', value: 'Vinted\nVinted UAB\nSvitrigailos g. 13\n03228 Vilnius, Lituanie' },
 ];
+
+type AddressSource = {
+  lastName: string;
+  firstName: string;
+  company: string | null;
+  phone: string | null;
+  address: string | null;
+  postalCode: string | null;
+  city: string | null;
+  country: string | null;
+  vatNumber: string | null;
+};
+
+function joinLines(lines: (string | null | undefined)[]): string {
+  return lines
+    .map((line) => line?.trim())
+    .filter((line): line is string => Boolean(line))
+    .join('\n');
+}
+
+/** Adresses de l'acheteur tirées de sa fiche client : facturation et livraison. */
+export function clientAddresses(client: AddressSource): Pick<InvoiceAddresses, 'billing' | 'shipping'> {
+  const person = [client.firstName, client.lastName].filter((part) => part.trim()).join(' ');
+  const street = [
+    client.address,
+    [client.postalCode, client.city].filter(Boolean).join(' '),
+    client.country,
+  ];
+
+  return {
+    billing: joinLines([
+      client.company,
+      client.company ? null : person,
+      ...street,
+      client.vatNumber ? `TVA ${client.vatNumber}` : null,
+    ]),
+    shipping: joinLines([person || client.company, client.phone, ...street]),
+  };
+}
 
 export function createEmptyInvoiceAddresses(): InvoiceAddresses {
   return { soldBy: '', marketplace: '', billing: '', shipping: '' };

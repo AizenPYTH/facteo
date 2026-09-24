@@ -453,7 +453,8 @@ export function buildTemplateContext(input: PdfDocumentInput): TemplateContext {
         .map((line) => line.trim())
         .filter(Boolean),
     })).filter((block) => block.lines.length > 0),
-    paidStamp: paid
+    paidStamp:
+      paid && input.stampPosition !== 'none'
       ? {
           companyName: issuer.name,
           date: input.paidAt ? formatDate(input.paidAt) : null,
