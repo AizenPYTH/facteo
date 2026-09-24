@@ -33,6 +33,8 @@ export type CompanyProfileFormValues = {
   postalCode: string;
   city: string;
   country: string;
+  /** Présent uniquement sur la page Entreprise : absent, le SIREN enregistré n'est pas touché. */
+  siren?: string;
   siret: string;
   vatNumber: string;
   iban: string;

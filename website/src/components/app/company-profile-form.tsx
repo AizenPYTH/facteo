@@ -12,7 +12,7 @@ import {
   TextArea,
   TextInput,
 } from '@/components/app/form-fields';
-import { companyProfileSchema } from '@/lib/validations/company-profile';
+import { companyOnlySchema, companyProfileSchema } from '@/lib/validations/company-profile';
 import type { CompanyProfileFormValues } from '@/types/company-profile';
 import { createEmptyCompanyProfileFormValues } from '@/types/company-profile';
 
@@ -30,11 +30,14 @@ export function CompanyProfileForm({
   onSubmit,
   submitLabel = 'Enregistrer',
   showPersonalFields = true,
+  showSiren = false,
 }: {
   defaultValues?: Partial<CompanyProfileFormValues>;
   onSubmit: (values: CompanyProfileFormValues) => Promise<void>;
   submitLabel?: string;
   showPersonalFields?: boolean;
+  /** Champ SIREN (page Entreprise). */
+  showSiren?: boolean;
 }) {
   const {
     register,
@@ -43,7 +46,7 @@ export function CompanyProfileForm({
     setValue,
     formState: { errors, isSubmitting },
   } = useForm<CompanyProfileFormValues>({
-    resolver: zodResolver(companyProfileSchema),
+    resolver: zodResolver(showPersonalFields ? companyProfileSchema : companyOnlySchema),
     defaultValues: { ...createEmptyCompanyProfileFormValues(), ...defaultValues },
   });
 
@@ -61,10 +64,10 @@ export function CompanyProfileForm({
       {showPersonalFields ? (
         <FormSection title="Identité">
           <div className="grid gap-5 sm:grid-cols-2">
-            <FormField error={errors.firstName?.message} label="Prénom *">
+            <FormField error={errors.firstName?.message} label="Prénom">
               <TextInput {...register('firstName')} />
             </FormField>
-            <FormField error={errors.lastName?.message} label="Nom *">
+            <FormField error={errors.lastName?.message} label="Nom">
               <TextInput {...register('lastName')} />
             </FormField>
             <FormField className="sm:col-span-2" error={errors.email?.message} label="E-mail *">
@@ -82,8 +85,13 @@ export function CompanyProfileForm({
           <FormField error={errors.phone?.message} label="Téléphone">
             <TextInput {...register('phone')} />
           </FormField>
+          {showSiren ? (
+            <FormField error={errors.siren?.message} label="SIREN">
+              <TextInput {...register('siren')} inputMode="numeric" placeholder="9 chiffres" />
+            </FormField>
+          ) : null}
           <FormField error={errors.siret?.message} label="SIRET">
-            <TextInput {...register('siret')} />
+            <TextInput {...register('siret')} inputMode="numeric" placeholder="14 chiffres" />
           </FormField>
           <FormField error={errors.vatNumber?.message} label="N° TVA">
             <TextInput {...register('vatNumber')} />
