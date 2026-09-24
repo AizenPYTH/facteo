@@ -8,6 +8,7 @@ import {
   logoBanner,
   qrSlot,
   u,
+  LINES_ANCHOR,
 } from '@/lib/pdf/engine/templates/shared';
 import type { PdfTemplateDefinition } from '@/lib/pdf/engine/templates/types';
 
@@ -86,6 +87,7 @@ function render(context: TemplateContext): string {
     </div>
 
     <div style="margin-top:${u(30)}">
+      ${LINES_ANCHOR}
       ${context.lines
         .map(
           (line) => `<div style="display:flex; gap:${u(10)}; padding:${u(

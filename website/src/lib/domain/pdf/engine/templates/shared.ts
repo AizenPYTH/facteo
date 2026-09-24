@@ -248,6 +248,12 @@ type LineTableContext = {
  * sont jamais coupées en deux. C'est la seule structure qui tient la promesse
  * de pagination du handoff dans un moteur d'impression.
  */
+/**
+ * Repère posé juste avant les lignes de chaque modèle : l'enveloppe commune y
+ * insère le bloc d'adresses (vendu par, facturation, livraison…).
+ */
+export const LINES_ANCHOR = '<!--dc-lines-->';
+
 export function lineTable(context: LineTableContext, options: LineTableOptions = {}): string {
   const {
     columns = ['vat'],
@@ -317,7 +323,7 @@ export function lineTable(context: LineTableContext, options: LineTableOptions =
     })
     .join('');
 
-  return `<table style="width:100%; border-collapse:collapse; table-layout:fixed; font-size:${u(
+  return `${LINES_ANCHOR}<table style="width:100%; border-collapse:collapse; table-layout:fixed; font-size:${u(
     fontSize,
   )}; font-variant-numeric:tabular-nums; ${bordered ? `border:${bordered};` : ''} ${
     radius ? `border-radius:${u(radius)}; overflow:hidden;` : ''

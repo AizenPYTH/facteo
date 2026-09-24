@@ -8,6 +8,7 @@ import {
   legalBlock,
   qrSlot,
   u,
+  LINES_ANCHOR,
 } from '@/lib/pdf/engine/templates/shared';
 import type { PdfTemplateDefinition } from '@/lib/pdf/engine/templates/types';
 
@@ -74,7 +75,8 @@ function render(context: TemplateContext): string {
     )}</span></div>
   </div>
 
-  <div style="margin-top:${u(44)}; border-top:${u(4)} solid ${INK}">
+  <div style="margin-top:${u(44)}">${LINES_ANCHOR}</div>
+  <div style="border-top:${u(4)} solid ${INK}">
     ${context.lines
       .map(
         (line) => `<div style="display:flex; gap:${u(12)}; padding:${u(

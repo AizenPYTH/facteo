@@ -8,6 +8,7 @@ import {
   logoMark,
   qrSlot,
   u,
+  LINES_ANCHOR,
 } from '@/lib/pdf/engine/templates/shared';
 import type { PdfTemplateDefinition } from '@/lib/pdf/engine/templates/types';
 
@@ -105,6 +106,7 @@ function render(context: TemplateContext): string {
     </div>
   </div>
 
+  ${LINES_ANCHOR}
   ${panel(
     `<div style="display:flex; gap:${u(10)}; font-size:${u(9.5)}; letter-spacing:${u(
       1.2,
