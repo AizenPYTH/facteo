@@ -2,16 +2,12 @@
 
 import { ComposerCard } from '@/components/app/document-composer/composer-card';
 import { LegalIdsPicker } from '@/components/app/document-composer/legal-ids-picker';
+import { StampPicker } from '@/components/app/document-composer/stamp-picker';
 import { TextInput } from '@/components/app/form-fields';
 import { cn } from '@/lib/utils';
 import {
   DEFAULT_INVOICE_TITLE,
   INVOICE_TITLE_SUGGESTIONS,
-  STAMP_COLOR_LABELS,
-  STAMP_COLOR_VALUES,
-  STAMP_COLORS,
-  STAMP_POSITION_LABELS,
-  STAMP_POSITIONS,
   type InvoicePdfOptions,
 } from '@/types/pdf-options';
 
@@ -122,62 +118,12 @@ export function ComposerPresentationCard({
           Afficher mon e-mail sur la facture
         </label>
 
-        <div>
-          <p className="mb-1.5 text-[12px] font-medium text-app-text-3" id="composer-stamp-color">
-            Tampon « Facture payée » : couleur
-          </p>
-          <div aria-labelledby="composer-stamp-color" className="flex flex-wrap gap-1.5" role="group">
-            {STAMP_COLORS.map((color) => {
-              const active = value.stampColor === color;
-
-              return (
-                <button
-                  aria-pressed={active}
-                  className={cn(CHIP, 'inline-flex items-center gap-1.5', active ? CHIP_ON : CHIP_OFF)}
-                  key={color}
-                  onClick={() => onChange({ ...value, stampColor: color })}
-                  type="button">
-                  <span
-                    aria-hidden
-                    className="size-2.5 rounded-full border border-black/10"
-                    style={{
-                      background:
-                        color === 'auto'
-                          ? 'conic-gradient(#0B7A4B, #1F4FD1, #C0392B, #0B7A4B)'
-                          : STAMP_COLOR_VALUES[color],
-                    }}
-                  />
-                  {STAMP_COLOR_LABELS[color]}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        <div>
-          <p className="mb-1.5 text-[12px] font-medium text-app-text-3" id="composer-stamp-position">
-            Tampon « Facture payée » : emplacement
-          </p>
-          <div aria-labelledby="composer-stamp-position" className="flex gap-1.5" role="group">
-            {STAMP_POSITIONS.map((position) => {
-              const active = value.stampPosition === position;
-
-              return (
-                <button
-                  aria-pressed={active}
-                  className={cn(CHIP, 'flex-1 px-1.5 text-center', active ? CHIP_ON : CHIP_OFF)}
-                  key={position}
-                  onClick={() => onChange({ ...value, stampPosition: position })}
-                  type="button">
-                  {STAMP_POSITION_LABELS[position]}
-                </button>
-              );
-            })}
-          </div>
-          <p className="mt-1.5 text-[11.5px] leading-relaxed text-app-muted-2">
-            Le tampon apparaît dès que la facture est payée. « Près des totaux » s’adapte au modèle choisi.
-          </p>
-        </div>
+        <StampPicker
+          color={value.stampColor}
+          onColorChange={(stampColor) => onChange({ ...value, stampColor })}
+          onPositionChange={(stampPosition) => onChange({ ...value, stampPosition })}
+          position={value.stampPosition}
+        />
       </div>
     </ComposerCard>
   );
