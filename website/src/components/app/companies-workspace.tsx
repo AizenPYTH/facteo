@@ -4,6 +4,11 @@ import { Suspense, useCallback, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Building2, Check, Plus } from 'lucide-react';
 
+import { useQueryClient } from '@tanstack/react-query';
+import { OwnCompanyLookup } from '@/components/app/own-company-lookup';
+import type { CompanyLookupResult } from '@/lib/company-search/types';
+import { applyCompanyRegistration } from '@/lib/domain/supabase/companies';
+import { companiesQueryKeys } from '@/lib/domain/supabase/query-keys';
 import { AppDialog } from '@/components/app/app-dialog';
 import { AppTopBar } from '@/components/app/app-shell';
 import { EmptyState } from '@/components/app/empty-state';
@@ -127,6 +132,9 @@ function CompaniesWorkspaceInner() {
   const selectedId = searchParams.get('selected');
   const [createOpen, setCreateOpen] = useState(false);
   const [name, setName] = useState('');
+  const queryClient = useQueryClient();
+  const [registrationNumber, setRegistrationNumber] = useState('');
+  const [registration, setRegistration] = useState<CompanyLookupResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -151,8 +159,14 @@ function CompaniesWorkspaceInner() {
     setSaving(true);
     setError(null);
     try {
-      await createNewCompany({ name: trimmed });
+      const companyId = await createNewCompany({ name: trimmed });
+      if (registration) {
+        await applyCompanyRegistration(companyId, registration);
+        await queryClient.invalidateQueries({ queryKey: companiesQueryKeys.all });
+      }
       setName('');
+      setRegistrationNumber('');
+      setRegistration(null);
       setCreateOpen(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Impossible de créer l’entreprise.');
@@ -166,6 +180,8 @@ function CompaniesWorkspaceInner() {
     setCreateOpen(false);
     setError(null);
     setName('');
+    setRegistrationNumber('');
+    setRegistration(null);
   }
 
   if (loading) {
@@ -234,6 +250,18 @@ function CompaniesWorkspaceInner() {
           className="space-y-4 px-[22px] pb-2"
           id="company-workspace-create"
           onSubmit={(event) => void handleCreate(event)}>
+          <label className="block text-xs font-medium text-app-text-3" htmlFor="company-workspace-registration">
+            SIREN ou SIRET (facultatif)
+          </label>
+          <OwnCompanyLookup
+            id="company-workspace-registration"
+            onChange={setRegistrationNumber}
+            onFound={(result) => {
+              setRegistration(result);
+              setName(result.companyName);
+            }}
+            value={registrationNumber}
+          />
           <label className="block text-xs font-medium text-app-text-3" htmlFor="company-workspace-name">
             Nom de l’entreprise
           </label>

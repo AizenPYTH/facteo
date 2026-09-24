@@ -12,6 +12,8 @@ import {
   TextArea,
   TextInput,
 } from '@/components/app/form-fields';
+import { OwnCompanyLookup } from '@/components/app/own-company-lookup';
+import type { CompanyLookupResult } from '@/lib/company-search/types';
 import { companyOnlySchema, companyProfileSchema } from '@/lib/validations/company-profile';
 import type { CompanyProfileFormValues } from '@/types/company-profile';
 import { createEmptyCompanyProfileFormValues } from '@/types/company-profile';
@@ -51,6 +53,19 @@ export function CompanyProfileForm({
   });
 
   const paymentMethods = watch('paymentMethods') ?? [];
+  const [registrationNumber, setRegistrationNumber] = React.useState('');
+
+  function applyRegistration(result: CompanyLookupResult) {
+    const options = { shouldDirty: true, shouldValidate: true } as const;
+    setValue('companyName', result.companyName, options);
+    setValue('address', result.address, options);
+    setValue('postalCode', result.postalCode, options);
+    setValue('city', result.city, options);
+    setValue('country', result.country, options);
+    setValue('siret', result.siret, options);
+    if (showSiren) setValue('siren', result.siren, options);
+    if (result.vatNumber) setValue('vatNumber', result.vatNumber, options);
+  }
 
   function togglePaymentMethod(method: CompanyProfileFormValues['paymentMethods'][number]) {
     const next = paymentMethods.includes(method)
@@ -78,6 +93,19 @@ export function CompanyProfileForm({
       ) : null}
 
       <FormSection title="Entreprise">
+        {showSiren ? (
+          <div className="mb-5 rounded-app-control border border-app-accent-border bg-app-accent-tint/40 p-3.5">
+            <p className="mb-2 text-[13px] font-semibold text-app-text">Remplir avec le SIREN ou le SIRET</p>
+            <OwnCompanyLookup
+              onChange={setRegistrationNumber}
+              onFound={applyRegistration}
+              value={registrationNumber}
+            />
+            <p className="mt-1 text-[11.5px] text-app-muted-2">
+              Vérifiez puis cliquez sur « Enregistrer » en bas de la page.
+            </p>
+          </div>
+        ) : null}
         <div className="grid gap-5 sm:grid-cols-2">
           <FormField className="sm:col-span-2" error={errors.companyName?.message} label="Raison sociale *">
             <TextInput {...register('companyName')} />
