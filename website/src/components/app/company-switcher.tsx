@@ -4,6 +4,11 @@ import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { Building2, Check, ChevronDown, Plus } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
+import { useQueryClient } from '@tanstack/react-query';
+import { OwnCompanyLookup } from '@/components/app/own-company-lookup';
+import type { CompanyLookupResult } from '@/lib/company-search/types';
+import { applyCompanyRegistration } from '@/lib/domain/supabase/companies';
+import { companiesQueryKeys } from '@/lib/domain/supabase/query-keys';
 import { AppDialog } from '@/components/app/app-dialog';
 import { PrimaryButton, SecondaryButton, TextInput } from '@/components/app/form-fields';
 import { useCompany } from '@/providers/company-provider';
@@ -16,6 +21,9 @@ export function CompanySwitcher() {
   const [open, setOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const [name, setName] = useState('');
+  const queryClient = useQueryClient();
+  const [registrationNumber, setRegistrationNumber] = useState('');
+  const [registration, setRegistration] = useState<CompanyLookupResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -45,8 +53,14 @@ export function CompanySwitcher() {
     setSaving(true);
     setError(null);
     try {
-      await createNewCompany({ name: trimmed });
+      const companyId = await createNewCompany({ name: trimmed });
+      if (registration) {
+        await applyCompanyRegistration(companyId, registration);
+        await queryClient.invalidateQueries({ queryKey: companiesQueryKeys.all });
+      }
       setName('');
+      setRegistrationNumber('');
+      setRegistration(null);
       setCreateOpen(false);
       setOpen(false);
     } catch (err) {
@@ -149,6 +163,20 @@ export function CompanySwitcher() {
         size="sm"
         title="Nouvelle entreprise">
         <form className="space-y-4 p-5" onSubmit={(e) => void handleCreate(e)}>
+          <div className="space-y-1.5">
+            <label className="text-[13px] font-medium text-slate-700" htmlFor="company-registration">
+              SIREN ou SIRET (facultatif)
+            </label>
+            <OwnCompanyLookup
+              id="company-registration"
+              onChange={setRegistrationNumber}
+              onFound={(result) => {
+                setRegistration(result);
+                setName(result.companyName);
+              }}
+              value={registrationNumber}
+            />
+          </div>
           <div className="space-y-1.5">
             <label className="text-[13px] font-medium text-slate-700" htmlFor="company-name">
               Nom de l’entreprise
