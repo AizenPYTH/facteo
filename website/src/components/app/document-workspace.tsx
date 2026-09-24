@@ -89,7 +89,13 @@ import {
 } from '@/lib/domain/pdf/document-actions';
 import { getDefaultComposerTemplateId } from '@/lib/domain/pdf/composer-templates';
 import { LegalIdsPicker } from '@/components/app/document-composer/legal-ids-picker';
-import { DEFAULT_ISSUER_LEGAL_IDS, type IssuerLegalId } from '@/types/pdf-options';
+import { StampPicker } from '@/components/app/document-composer/stamp-picker';
+import {
+  DEFAULT_ISSUER_LEGAL_IDS,
+  type IssuerLegalId,
+  type StampColor,
+  type StampPosition,
+} from '@/types/pdf-options';
 import { requireScope } from '@/lib/domain/tenant/scope';
 import { cn } from '@/lib/utils';
 
@@ -631,6 +637,8 @@ function DocumentDetailPanel({
   legalIds,
   onLegalIdsChange,
   company,
+  stamp,
+  onStampChange,
 }: {
   kind: DocumentKind;
   document: InvoiceDetail | QuoteDetail;
@@ -652,6 +660,9 @@ function DocumentDetailPanel({
   legalIds?: IssuerLegalId[];
   onLegalIdsChange?: (value: IssuerLegalId[]) => void;
   company?: { id: string; siret: string | null; vatNumber: string | null } | null;
+  /** Factures uniquement : tampon « Facture payée ». */
+  stamp?: { color: StampColor; position: StampPosition };
+  onStampChange?: (value: { color: StampColor; position: StampPosition }) => void;
 }) {
   const PrimaryIcon = primaryAction.icon;
 
@@ -747,6 +758,16 @@ function DocumentDetailPanel({
             <LegalIdsPicker company={company ?? null} onChange={onLegalIdsChange} value={legalIds} />
           </div>
         ) : null}
+        {stamp && onStampChange ? (
+          <div className="mt-4">
+            <StampPicker
+              color={stamp.color}
+              onColorChange={(color) => onStampChange({ ...stamp, color })}
+              onPositionChange={(position) => onStampChange({ ...stamp, position })}
+              position={stamp.position}
+            />
+          </div>
+        ) : null}
         {onShowEmailChange ? (
           <label className="mt-3 flex cursor-pointer items-center gap-2 text-[12.5px] text-app-text-3">
             <input
@@ -771,6 +792,10 @@ export function InvoicesWorkspace() {
   const [previewTemplateId, setPreviewTemplateId] = useState('');
   const [showEmail, setShowEmail] = useState(false);
   const [legalIds, setLegalIds] = useState<IssuerLegalId[]>(DEFAULT_ISSUER_LEGAL_IDS);
+  const [stamp, setStamp] = useState<{ color: StampColor; position: StampPosition }>({
+    color: 'auto',
+    position: 'auto',
+  });
   const [quickPreviewId, setQuickPreviewId] = useState<string | null>(null);
   const [pdfBusyKey, setPdfBusyKey] = useState<string | null>(null);
   const [checkedIds, setCheckedIds] = useState<string[]>([]);
@@ -827,6 +852,7 @@ export function InvoicesWorkspace() {
         setPreviewTemplateId(options.templateId ?? getDefaultComposerTemplateId('invoice', settings));
         setShowEmail(options.showEmail);
         setLegalIds(options.legalIds);
+        setStamp({ color: options.stampColor, position: options.stampPosition });
       }
     });
     return () => {
@@ -845,6 +871,16 @@ export function InvoicesWorkspace() {
     setLegalIds(value);
     if (!detail || !scope) return;
     await updateInvoicePdfOptions(requireScope(scope), detail.id, { legalIds: value });
+    void queryClient.invalidateQueries({ queryKey: ['pdf-preview'] });
+  }
+
+  async function changeStamp(value: { color: StampColor; position: StampPosition }) {
+    setStamp(value);
+    if (!detail || !scope) return;
+    await updateInvoicePdfOptions(requireScope(scope), detail.id, {
+      stampColor: value.color,
+      stampPosition: value.position,
+    });
     void queryClient.invalidateQueries({ queryKey: ['pdf-preview'] });
   }
 
@@ -1200,6 +1236,8 @@ export function InvoicesWorkspace() {
                 company={activeCompany}
                 legalIds={legalIds}
                 onLegalIdsChange={(value) => void changeLegalIds(value)}
+                onStampChange={(value) => void changeStamp(value)}
+                stamp={stamp}
                 onOpenPreview={() => setQuickPreviewId(detail.id)}
                 onTemplateChange={changeInvoiceTemplate}
                 primaryAction={invoicePrimaryAction(detail)}
