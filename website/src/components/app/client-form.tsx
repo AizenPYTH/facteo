@@ -43,9 +43,9 @@ export function ClientForm({
     <form className="space-y-6" onSubmit={handleSubmit((values) => onSubmit(values))}>
       <ClientCompanyLookup control={control} errors={errors} setValue={setValue} />
 
-      <FormSection description="Informations principales du contact" title="Identité">
+      <FormSection description="Un nom ou une entreprise suffit" title="Identité">
         <div className="grid gap-5 sm:grid-cols-2">
-          <FormField error={errors.lastName?.message} label="Nom *">
+          <FormField error={errors.lastName?.message} label="Nom">
             <TextInput {...register('lastName')} placeholder="Dupont" />
           </FormField>
           <FormField error={errors.firstName?.message} label="Prénom">
