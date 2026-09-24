@@ -4,7 +4,6 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   useMutation,
-  useQuery,
   useQueryClient,
   type QueryClient,
   type QueryKey,
@@ -93,13 +92,8 @@ import {
 import { getDefaultComposerTemplateId } from '@/lib/domain/pdf/composer-templates';
 import { LegalIdsPicker } from '@/components/app/document-composer/legal-ids-picker';
 import { StampPicker } from '@/components/app/document-composer/stamp-picker';
-import { fetchClientById } from '@/lib/domain/supabase/clients';
-import type { Client } from '@/types/client';
-import { AddressesPicker } from '@/components/app/document-composer/addresses-picker';
 import {
-  createEmptyInvoiceAddresses,
   DEFAULT_ISSUER_LEGAL_IDS,
-  type InvoiceAddresses,
   type IssuerLegalId,
   type StampColor,
   type StampPosition,
@@ -647,10 +641,6 @@ function DocumentDetailPanel({
   company,
   stamp,
   onStampChange,
-  addresses,
-  onAddressesChange,
-  onAddressesCommit,
-  client,
 }: {
   kind: DocumentKind;
   document: InvoiceDetail | QuoteDetail;
@@ -671,25 +661,10 @@ function DocumentDetailPanel({
   /** Factures uniquement : SIREN / SIRET / TVA en tête du PDF. */
   legalIds?: IssuerLegalId[];
   onLegalIdsChange?: (value: IssuerLegalId[]) => void;
-  company?: {
-    id: string;
-    name: string;
-    siret: string | null;
-    vatNumber: string | null;
-    address: string | null;
-    postalCode: string | null;
-    city: string | null;
-    country: string | null;
-  } | null;
+  company?: { id: string; siret: string | null; vatNumber: string | null } | null;
   /** Factures uniquement : tampon « Facture payée ». */
   stamp?: { color: StampColor; position: StampPosition };
   onStampChange?: (value: { color: StampColor; position: StampPosition }) => void;
-  /** Factures uniquement : vendu par, place de marché, facturation, livraison. */
-  addresses?: InvoiceAddresses;
-  onAddressesChange?: (value: InvoiceAddresses) => void;
-  onAddressesCommit?: (value: InvoiceAddresses) => void;
-  /** Fiche du client de la facture : remplit facturation et livraison. */
-  client?: Client | null;
 }) {
   const PrimaryIcon = primaryAction.icon;
 
@@ -785,22 +760,6 @@ function DocumentDetailPanel({
             <LegalIdsPicker company={company ?? null} onChange={onLegalIdsChange} value={legalIds} />
           </div>
         ) : null}
-        {addresses && onAddressesChange ? (
-          <details className="mt-4 rounded-app-field border border-app-border-soft px-3 py-2">
-            <summary className="cursor-pointer text-[12.5px] font-medium text-app-text-3">
-              Adresses : vendu par, place de marché, facturation, livraison
-            </summary>
-            <div className="mt-3">
-              <AddressesPicker
-                client={client}
-                company={company ?? null}
-                onChange={onAddressesChange}
-                onCommit={onAddressesCommit}
-                value={addresses}
-              />
-            </div>
-          </details>
-        ) : null}
         {stamp && onStampChange ? (
           <div className="mt-4">
             <StampPicker
@@ -835,7 +794,6 @@ export function InvoicesWorkspace() {
   const [previewTemplateId, setPreviewTemplateId] = useState('');
   const [showEmail, setShowEmail] = useState(false);
   const [legalIds, setLegalIds] = useState<IssuerLegalId[]>(DEFAULT_ISSUER_LEGAL_IDS);
-  const [addresses, setAddresses] = useState<InvoiceAddresses>(createEmptyInvoiceAddresses);
   const [stamp, setStamp] = useState<{ color: StampColor; position: StampPosition }>({
     color: 'auto',
     position: 'auto',
@@ -897,7 +855,6 @@ export function InvoicesWorkspace() {
         setShowEmail(options.showEmail);
         setLegalIds(options.legalIds);
         setStamp({ color: options.stampColor, position: options.stampPosition });
-        setAddresses(options.addresses);
       }
     });
     return () => {
@@ -916,18 +873,6 @@ export function InvoicesWorkspace() {
     setLegalIds(value);
     if (!detail || !scope) return;
     await updateInvoicePdfOptions(requireScope(scope), detail.id, { legalIds: value });
-    void queryClient.invalidateQueries({ queryKey: ['pdf-preview'] });
-  }
-
-  const invoiceClientQuery = useQuery({
-    queryKey: ['invoice-client', detail?.clientId],
-    queryFn: () => fetchClientById(requireScope(scope), detail!.clientId!),
-    enabled: Boolean(scope && detail?.clientId),
-  });
-
-  async function commitAddresses(value: InvoiceAddresses) {
-    if (!detail || !scope) return;
-    await updateInvoicePdfOptions(requireScope(scope), detail.id, { addresses: value });
     void queryClient.invalidateQueries({ queryKey: ['pdf-preview'] });
   }
 
@@ -1298,10 +1243,6 @@ export function InvoicesWorkspace() {
                 legalIds={legalIds}
                 onLegalIdsChange={(value) => void changeLegalIds(value)}
                 onStampChange={(value) => void changeStamp(value)}
-                addresses={addresses}
-                onAddressesChange={setAddresses}
-                onAddressesCommit={(value) => void commitAddresses(value)}
-                client={invoiceClientQuery.data ?? null}
                 stamp={stamp}
                 onOpenPreview={() => setQuickPreviewId(detail.id)}
                 onTemplateChange={changeInvoiceTemplate}

@@ -45,19 +45,15 @@ export const STAMP_COLOR_LABELS: Record<StampColor, string> = {
   black: 'Noir',
 };
 
-/**
- * Emplacement du cachet. `auto` : près des totaux, à l'endroit prévu pour le
- * modèle. `none` : pas de tampon, même si la facture est payée.
- */
-export type StampPosition = 'auto' | 'top' | 'bottom' | 'none';
+/** Emplacement du cachet. `auto` : près des totaux, à l'endroit prévu pour le modèle. */
+export type StampPosition = 'auto' | 'top' | 'bottom';
 
-export const STAMP_POSITIONS: StampPosition[] = ['auto', 'top', 'bottom', 'none'];
+export const STAMP_POSITIONS: StampPosition[] = ['auto', 'top', 'bottom'];
 
 export const STAMP_POSITION_LABELS: Record<StampPosition, string> = {
   auto: 'Près des totaux',
   top: 'En haut',
   bottom: 'En bas',
-  none: 'Aucun',
 };
 
 function groupDigits(digits: string, sizes: number[]): string {
@@ -118,90 +114,6 @@ export function rememberLegalIds(legalIds: IssuerLegalId[]): void {
   }
 }
 
-/**
- * Adresses libres imprimées au-dessus des lignes (texte sur plusieurs lignes).
- * Pensées pour les ventes en place de marché : une facture refaite pour une
- * commande Amazon indique qui vend, où la commande a été passée, et les
- * adresses de facturation et de livraison de l'acheteur.
- */
-export type InvoiceAddresses = {
-  soldBy: string;
-  marketplace: string;
-  billing: string;
-  shipping: string;
-};
-
-export const INVOICE_ADDRESS_LABELS: Record<keyof InvoiceAddresses, string> = {
-  soldBy: 'Vendu par',
-  marketplace: 'Commande passée sur',
-  billing: 'Adresse de facturation',
-  shipping: 'Adresse de livraison',
-};
-
-export const INVOICE_ADDRESS_KEYS: (keyof InvoiceAddresses)[] = [
-  'soldBy',
-  'marketplace',
-  'billing',
-  'shipping',
-];
-
-/** Places de marché proposées en un clic (adresses publiques de l'opérateur). */
-export const MARKETPLACE_PRESETS: { label: string; value: string }[] = [
-  {
-    label: 'Amazon.fr',
-    value: 'Amazon.fr\nAmazon EU S.à r.l.\n38 avenue John F. Kennedy\nL-1855 Luxembourg',
-  },
-  {
-    label: 'Cdiscount',
-    value: 'Cdiscount.com\nCdiscount SA\n120-126 quai de Bacalan\n33300 Bordeaux',
-  },
-  { label: 'eBay', value: 'eBay.fr\neBay GmbH\nAlbert-Einstein-Ring 2-6\n14532 Kleinmachnow, Allemagne' },
-  { label: 'Vinted', value: 'Vinted\nVinted UAB\nSvitrigailos g. 13\n03228 Vilnius, Lituanie' },
-];
-
-type AddressSource = {
-  lastName: string;
-  firstName: string;
-  company: string | null;
-  phone: string | null;
-  address: string | null;
-  postalCode: string | null;
-  city: string | null;
-  country: string | null;
-  vatNumber: string | null;
-};
-
-function joinLines(lines: (string | null | undefined)[]): string {
-  return lines
-    .map((line) => line?.trim())
-    .filter((line): line is string => Boolean(line))
-    .join('\n');
-}
-
-/** Adresses de l'acheteur tirées de sa fiche client : facturation et livraison. */
-export function clientAddresses(client: AddressSource): Pick<InvoiceAddresses, 'billing' | 'shipping'> {
-  const person = [client.firstName, client.lastName].filter((part) => part.trim()).join(' ');
-  const street = [
-    client.address,
-    [client.postalCode, client.city].filter(Boolean).join(' '),
-    client.country,
-  ];
-
-  return {
-    billing: joinLines([
-      client.company,
-      client.company ? null : person,
-      ...street,
-      client.vatNumber ? `TVA ${client.vatNumber}` : null,
-    ]),
-    shipping: joinLines([person || client.company, client.phone, ...street]),
-  };
-}
-
-export function createEmptyInvoiceAddresses(): InvoiceAddresses {
-  return { soldBy: '', marketplace: '', billing: '', shipping: '' };
-}
-
 export type InvoicePdfOptions = {
   /** `null` : « Facture ». */
   title: string | null;
@@ -212,7 +124,6 @@ export type InvoicePdfOptions = {
   templateId: string | null;
   /** E-mail de l'entreprise sur la facture. Masqué par défaut, anciennes factures comprises. */
   showEmail: boolean;
-  addresses: InvoiceAddresses;
 };
 
 export function createDefaultInvoicePdfOptions(): InvoicePdfOptions {
@@ -223,7 +134,6 @@ export function createDefaultInvoicePdfOptions(): InvoicePdfOptions {
     stampPosition: 'auto',
     templateId: null,
     showEmail: false,
-    addresses: createEmptyInvoiceAddresses(),
   };
 }
 
@@ -250,14 +160,7 @@ export function parseInvoicePdfOptions(value: unknown): InvoicePdfOptions {
 
   const showEmail = source.show_email === true;
 
-  const rawAddresses = (source.addresses ?? {}) as Record<string, unknown>;
-  const addresses = createEmptyInvoiceAddresses();
-  for (const key of INVOICE_ADDRESS_KEYS) {
-    const entry = rawAddresses[key];
-    addresses[key] = typeof entry === 'string' ? entry.slice(0, 600) : '';
-  }
-
-  return { title, legalIds, stampColor, stampPosition, templateId, showEmail, addresses };
+  return { title, legalIds, stampColor, stampPosition, templateId, showEmail };
 }
 
 export function serializeInvoicePdfOptions(options: InvoicePdfOptions) {
@@ -268,6 +171,5 @@ export function serializeInvoicePdfOptions(options: InvoicePdfOptions) {
     stamp_position: options.stampPosition,
     template_id: options.templateId,
     show_email: options.showEmail,
-    addresses: options.addresses,
   };
 }
