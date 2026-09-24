@@ -8,7 +8,6 @@ import {
   logoBanner,
   qrSlot,
   u,
-  LINES_ANCHOR,
 } from '@/lib/pdf/engine/templates/shared';
 import type { PdfTemplateDefinition } from '@/lib/pdf/engine/templates/types';
 
@@ -96,7 +95,6 @@ function render(context: TemplateContext): string {
     </div>
   </div>
 
-  <div style="padding:0 ${u(GUTTER)}">${LINES_ANCHOR}</div>
   <div>
     <div style="display:flex; gap:${u(10)}; padding:${u(12)} ${u(
       GUTTER,

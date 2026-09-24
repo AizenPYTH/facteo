@@ -1,12 +1,10 @@
 'use client';
 
 import { ComposerCard } from '@/components/app/document-composer/composer-card';
-import { AddressesPicker } from '@/components/app/document-composer/addresses-picker';
 import { LegalIdsPicker } from '@/components/app/document-composer/legal-ids-picker';
 import { StampPicker } from '@/components/app/document-composer/stamp-picker';
 import { TextInput } from '@/components/app/form-fields';
 import { cn } from '@/lib/utils';
-import type { Client } from '@/types/client';
 import {
   DEFAULT_INVOICE_TITLE,
   INVOICE_TITLE_SUGGESTIONS,
@@ -23,7 +21,6 @@ const CHIP_OFF = 'border-app-border text-app-muted hover:border-app-accent hover
  * TVA) affichés en tête de la facture.
  */
 export function ComposerPresentationCard({
-  client,
   company,
   forecastNumber,
   number,
@@ -31,19 +28,8 @@ export function ComposerPresentationCard({
   onNumberChange,
   value,
 }: {
-  /** Client choisi : sa fiche remplit facturation et livraison. */
-  client: Client | null;
   /** Entreprise émettrice : ses SIRET et TVA sont montrés à côté des cases. */
-  company: {
-    id: string;
-    name: string;
-    siret: string | null;
-    vatNumber: string | null;
-    address: string | null;
-    postalCode: string | null;
-    city: string | null;
-    country: string | null;
-  } | null;
+  company: { id: string; siret: string | null; vatNumber: string | null } | null;
   /** Numéro automatique qui sera attribué si le champ reste vide. */
   forecastNumber: string | null;
   number: string;
@@ -53,7 +39,6 @@ export function ComposerPresentationCard({
 }) {
   const title = value.title ?? '';
   const activeTitle = title.trim() || DEFAULT_INVOICE_TITLE;
-  const hasAddresses = Object.values(value.addresses).some((entry) => entry.trim());
 
   return (
     <ComposerCard title="Présentation de la facture">
@@ -132,20 +117,6 @@ export function ComposerPresentationCard({
           />
           Afficher mon e-mail sur la facture
         </label>
-
-        <details className="rounded-app-field border border-app-border-soft px-3 py-2" open={hasAddresses}>
-          <summary className="cursor-pointer text-[12.5px] font-medium text-app-text-3">
-            Adresses : vendu par, place de marché, facturation, livraison
-          </summary>
-          <div className="mt-3">
-            <AddressesPicker
-              client={client}
-              company={company}
-              onChange={(addresses) => onChange({ ...value, addresses })}
-              value={value.addresses}
-            />
-          </div>
-        </details>
 
         <StampPicker
           color={value.stampColor}

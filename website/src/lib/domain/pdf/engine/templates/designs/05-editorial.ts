@@ -8,7 +8,6 @@ import {
   logoBanner,
   qrSlot,
   u,
-  LINES_ANCHOR,
 } from '@/lib/pdf/engine/templates/shared';
 import type { PdfTemplateDefinition } from '@/lib/pdf/engine/templates/types';
 
@@ -97,7 +96,6 @@ function render(context: TemplateContext): string {
     </div>
 
     <div style="flex:1; display:flex; flex-direction:column; min-width:0">
-      ${LINES_ANCHOR}
       ${context.lines
         .map(
           (line) => `<div style="display:flex; justify-content:space-between; gap:${u(

@@ -1,12 +1,6 @@
 import { buildTemplateContext, type TemplateContext } from '@/lib/pdf/engine/templates/context';
 import { resolvePdfTemplate } from '@/lib/pdf/engine/templates/registry';
-import {
-  escapeHtml,
-  LINES_ANCHOR,
-  PAGE_HEIGHT,
-  PAGE_WIDTH,
-  u,
-} from '@/lib/pdf/engine/templates/shared';
+import { escapeHtml, PAGE_HEIGHT, PAGE_WIDTH, u } from '@/lib/pdf/engine/templates/shared';
 import type { PdfDocumentInput } from '@/lib/pdf/engine/types';
 import type { PdfTemplateDefinition } from '@/lib/pdf/engine/templates/types';
 import { STAMP_COLOR_VALUES } from '@/types/pdf-options';
@@ -180,28 +174,7 @@ function insertBefore(html: string, pattern: RegExp, extra: string): string | nu
   return `${html.slice(0, match.index)}${extra}${html.slice(match.index)}`;
 }
 
-/** Vendu par, place de marché, facturation, livraison : une rangée de blocs sobres. */
-function addressBand(context: TemplateContext): string {
-  if (context.addressBlocks.length === 0) {
-    return '';
-  }
-
-  const blocks = context.addressBlocks
-    .map(
-      (block) => `<div style="flex:1 1 ${u(150)}; min-width:0; padding:${u(10)} ${u(12)}; border:1px solid rgba(20,20,26,.12); border-radius:${u(6)}; background:rgba(255,255,255,.6)">
-        <div style="font-size:${u(8.5)}; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:#8A8A99; margin-bottom:${u(4)}">${escapeHtml(block.label)}</div>
-        <div style="font-size:${u(10)}; line-height:1.45; color:#2A2A36; overflow-wrap:anywhere">${block.lines.map(escapeHtml).join('<br/>')}</div>
-      </div>`,
-    )
-    .join('');
-
-  return `<div class="dc-keep" style="display:flex; flex-wrap:wrap; gap:${u(10)}; margin:0 0 ${u(18)}; font-family:'Plus Jakarta Sans', Arial, sans-serif">${blocks}</div>`;
-}
-
-/**
- * Bandeau légal en tête de page, adresses juste avant les lignes, cachet à la
- * fin du contenu principal.
- */
+/** Bandeau légal en tête de page, cachet à la fin du contenu principal. */
 function withPageExtras(
   html: string,
   context: TemplateContext,
@@ -212,14 +185,6 @@ function withPageExtras(
   const strip = legalIdsStrip(context);
   if (strip) {
     result = insertAfter(result, /<div class="dc-page"[^>]*>/, strip) ?? `${strip}${result}`;
-  }
-
-  const band = addressBand(context);
-  if (band) {
-    result =
-      insertBefore(result, new RegExp(LINES_ANCHOR), band) ??
-      insertAfter(result, /<div class="dc-page"[^>]*>/, band) ??
-      `${band}${result}`;
   }
 
   const stamp = paidStamp(context, template);

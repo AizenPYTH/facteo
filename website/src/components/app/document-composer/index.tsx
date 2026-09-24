@@ -66,7 +66,6 @@ import { createEmptyInvoiceLine } from '@inveq/types/invoice';
 import { createEmptyQuoteLine, createLocalLineId } from '@inveq/types/quote';
 import type { Product } from '@/types/product';
 import {
-  clientAddresses,
   createDefaultInvoicePdfOptions,
   readRememberedLegalIds,
   rememberLegalIds,
@@ -666,28 +665,6 @@ export function DocumentComposer({ kind }: { kind: 'invoice' | 'quote' }) {
   }
 
   function handleClientChange(id: string) {
-    // Facturation et livraison suivent la fiche du client, sauf si elles ont
-    // été modifiées à la main (texte différent de celui du client précédent).
-    const previous = clients.find((client) => client.id === clientId);
-    const next = clients.find((client) => client.id === id);
-    if (next) {
-      const before = previous ? clientAddresses(previous) : { billing: '', shipping: '' };
-      const after = clientAddresses(next);
-      setPdfOptions((current) => ({
-        ...current,
-        addresses: {
-          ...current.addresses,
-          billing:
-            !current.addresses.billing || current.addresses.billing === before.billing
-              ? after.billing
-              : current.addresses.billing,
-          shipping:
-            !current.addresses.shipping || current.addresses.shipping === before.shipping
-              ? after.shipping
-              : current.addresses.shipping,
-        },
-      }));
-    }
     setClientId(id);
     if (submitAttempted) {
       setFieldErrors(validateDocumentDraft(id, lines, issuedAt));
@@ -787,7 +764,6 @@ export function DocumentComposer({ kind }: { kind: 'invoice' | 'quote' }) {
   const presentationCard =
     kind === 'invoice' ? (
       <ComposerPresentationCard
-        client={selectedClient}
         company={activeCompany}
         forecastNumber={forecastNumber}
         number={customNumber}

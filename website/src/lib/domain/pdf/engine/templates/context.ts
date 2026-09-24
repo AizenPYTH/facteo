@@ -10,8 +10,6 @@ import type { PdfClientInfo, PdfCompanyInfo, PdfDocumentInput } from '@/lib/pdf/
 import {
   DEFAULT_ISSUER_LEGAL_IDS,
   formatIssuerLegalIds,
-  INVOICE_ADDRESS_KEYS,
-  INVOICE_ADDRESS_LABELS,
   ISSUER_LEGAL_ID_LABELS,
   type StampColor,
   type StampPosition,
@@ -121,8 +119,6 @@ export type TemplateContext = {
    * affichent plus eux-mêmes : `issuer.siret` et `issuer.vatNumber` valent `null`.
    */
   issuerLegalIds: TemplateMetaEntry[];
-  /** Blocs d'adresses au-dessus des lignes. Seuls les blocs remplis y figurent. */
-  addressBlocks: { label: string; lines: string[] }[];
   /** Facture payée : cachet au nom de l'entreprise émettrice. */
   paidStamp: {
     companyName: string;
@@ -446,15 +442,7 @@ export function buildTemplateContext(input: PdfDocumentInput): TemplateContext {
     showApprovalBlock: isQuote && !input.clientSignature,
     status: input.status ? (STATUS_PILLS[input.status] ?? null) : null,
     issuerLegalIds: buildIssuerLegalIds(input),
-    addressBlocks: INVOICE_ADDRESS_KEYS.map((key) => ({
-      label: INVOICE_ADDRESS_LABELS[key],
-      lines: (input.addresses?.[key] ?? '')
-        .split(/\r?\n/)
-        .map((line) => line.trim())
-        .filter(Boolean),
-    })).filter((block) => block.lines.length > 0),
-    paidStamp:
-      paid && input.stampPosition !== 'none'
+    paidStamp: paid
       ? {
           companyName: issuer.name,
           date: input.paidAt ? formatDate(input.paidAt) : null,

@@ -3,12 +3,7 @@ import type { CompanyProfile } from '@/types/company-profile';
 import type { Settings } from '@/types/settings';
 
 import type { PaymentMethodId } from '@/types/payment-methods';
-import type {
-  InvoiceAddresses,
-  IssuerLegalId,
-  StampColor,
-  StampPosition,
-} from '@/types/pdf-options';
+import type { IssuerLegalId, StampColor, StampPosition } from '@/types/pdf-options';
 
 export type PdfCompanyInfo = Pick<
   CompanyProfile,
@@ -101,6 +96,4 @@ export type PdfDocumentInput = {
   stampPosition?: StampPosition | null;
   /** Afficher l'e-mail de l'entreprise. Absent : affiché sur un devis, masqué sur une facture. */
   showIssuerEmail?: boolean;
-  /** Vendu par, place de marché, facturation, livraison. Vides : non affichés. */
-  addresses?: InvoiceAddresses | null;
 };
