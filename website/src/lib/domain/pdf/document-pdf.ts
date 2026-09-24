@@ -137,11 +137,13 @@ export async function buildInvoicePdfInput(
     clientSignature: documentSignature
       ? { url: documentSignature.signatureUrl, signedAt: documentSignature.signedAt }
       : null,
-    templateId: settings?.invoiceTemplateId ?? DEFAULT_PDF_TEMPLATE_ID,
+    templateId: pdfOptions.templateId ?? settings?.invoiceTemplateId ?? DEFAULT_PDF_TEMPLATE_ID,
     // Seul `paidAt` signale le paiement : `status` activerait la pastille du modèle 04.
     paidAt: invoice.status === 'paid' ? (invoice.paidAt ?? invoice.updatedAt) : null,
     documentTitle: pdfOptions.title,
     issuerLegalIds: pdfOptions.legalIds,
+    stampColor: pdfOptions.stampColor,
+    stampPosition: pdfOptions.stampPosition,
   };
 }
 

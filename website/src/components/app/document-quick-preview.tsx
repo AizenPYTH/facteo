@@ -87,11 +87,14 @@ export function DocumentQuickPreviewModal({
   kind,
   documentId,
   onClose,
+  templateId,
 }: {
   open: boolean;
   kind: 'invoice' | 'quote';
   documentId: string | null;
   onClose: () => void;
+  /** Modèle affiché à côté de l'aperçu. Absent : modèle enregistré du document. */
+  templateId?: string | null;
 }) {
   const reduceMotion = useReducedMotion();
   const invoiceQuery = useInvoiceDetail(kind === 'invoice' ? documentId : null);
@@ -150,7 +153,7 @@ export function DocumentQuickPreviewModal({
                   Chargement de l’aperçu…
                 </div>
               ) : (
-                <PdfPreviewPanel document={detail ?? null} kind={kind} />
+                <PdfPreviewPanel document={detail ?? null} kind={kind} templateId={templateId} />
               )}
             </div>
           </motion.div>

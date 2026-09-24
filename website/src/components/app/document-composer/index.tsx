@@ -43,6 +43,7 @@ import { PrimaryButton, SecondaryButton, TextArea } from '@/components/app/form-
 import { useAuth } from '@/providers/auth-provider';
 import { useTenant } from '@/providers/company-provider';
 import { useImagePaste } from '@/hooks/use-image-paste';
+import { useToast } from '@/providers/toast-provider';
 import { useSettings } from '@/hooks/use-settings';
 import { fetchClientsPage } from '@/lib/domain/supabase/clients';
 import { createInvoice } from '@/lib/domain/supabase/invoices';
@@ -277,6 +278,7 @@ export function DocumentComposer({ kind }: { kind: 'invoice' | 'quote' }) {
   const { scope, loading: tenantLoading } = useTenant();
   const { settings, loading: settingsLoading } = useSettings();
   const queryClient = useQueryClient();
+  const { showError } = useToast();
   const isWizard = useWizardLayout();
 
   const [clientId, setClientId] = useState(preselectedClient);
@@ -458,7 +460,7 @@ export function DocumentComposer({ kind }: { kind: 'invoice' | 'quote' }) {
           lines: validLines,
           notes: notes.trim() || undefined,
           number: customNumber.trim() || null,
-          pdfOptions,
+          pdfOptions: { ...pdfOptions, templateId: templateId || null },
         });
       }
 
@@ -474,7 +476,7 @@ export function DocumentComposer({ kind }: { kind: 'invoice' | 'quote' }) {
         notes: notes.trim() || undefined,
         paymentTermsDays: dueDays,
         number: customNumber.trim() || null,
-        pdfOptions,
+        pdfOptions: { ...pdfOptions, templateId: templateId || null },
       });
     },
     onSuccess: (doc) => {
@@ -499,6 +501,9 @@ export function DocumentComposer({ kind }: { kind: 'invoice' | 'quote' }) {
       }
       setFieldErrors({ linesGlobal: err.message });
       setSubmitAttempted(true);
+      // Le bandeau d'erreur est en haut de l'éditeur, souvent hors de vue au
+      // moment du clic : on l'annonce aussi par une notification.
+      showError(err.message);
     },
   });
 
