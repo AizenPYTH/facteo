@@ -2,8 +2,8 @@ import { z } from 'zod';
 
 export const registerSchema = z
   .object({
-    firstName: z.string().trim().min(1, 'Champ obligatoire.'),
-    lastName: z.string().trim().min(1, 'Champ obligatoire.'),
+    firstName: z.string().trim(),
+    lastName: z.string().trim(),
     companyName: z.string().trim().min(1, 'Champ obligatoire.'),
     email: z
       .string()

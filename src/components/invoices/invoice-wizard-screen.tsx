@@ -1,6 +1,7 @@
 import { router, type Href } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 
+import { InvoicePresentationSection } from '@/components/invoices/invoice-presentation-section';
 import { InvoiceScreenHeader } from '@/components/invoices/invoice-screen-header';
 import { DocumentFinalizeStep } from '@/components/quotes/document-finalize-step';
 import { QuoteAddLinesStep } from '@/components/quotes/quote-add-lines-step';
@@ -33,6 +34,12 @@ import { useToast } from '@/providers/toast-provider';
 import { getClientDisplayName, type Client } from '@/types/client';
 import type { InvoiceLineValue } from '@/types/invoice';
 import { createEmptyQuoteLine, type QuoteLineValue } from '@/types/quote';
+import {
+  createDefaultInvoicePdfOptions,
+  readRememberedLegalIds,
+  rememberLegalIds,
+  type InvoicePdfOptions,
+} from '@/types/pdf-options';
 
 const TOTAL_STEPS = 3;
 
@@ -70,6 +77,28 @@ export function InvoiceWizardScreen({
   const [state, setState] = useState<InvoiceWizardState>(
     initialState ?? createEmptyInvoiceWizardState(),
   );
+
+  // Présentation (création uniquement) : numéro libre, titre, modèle, SIREN…
+  const [customNumber, setCustomNumber] = useState('');
+  const [pdfOptions, setPdfOptions] = useState<InvoicePdfOptions>(createDefaultInvoicePdfOptions);
+
+  useEffect(() => {
+    if (mode !== 'create') return;
+    let cancelled = false;
+    void readRememberedLegalIds().then((legalIds) => {
+      if (!cancelled) setPdfOptions((current) => ({ ...current, legalIds }));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [mode]);
+
+  const templateId = pdfOptions.templateId ?? settings?.invoiceTemplateId ?? null;
+  const forecastNumber = settings
+    ? `${settings.invoicePrefix?.trim() || 'FAC'}-${new Date().getUTCFullYear()}-${String(
+        settings.nextInvoiceNumber,
+      ).padStart(6, '0')}`
+    : null;
 
   const totals = useMemo(() => mapInvoiceLinesToDocumentTotals(state.lines), [state.lines]);
   const companyName = companyProfile?.companyName?.trim() || 'Votre entreprise';
@@ -254,7 +283,12 @@ export function InvoiceWizardScreen({
 
     try {
       if (mode === 'create') {
-        await createInvoice.mutateAsync(input);
+        await createInvoice.mutateAsync({
+          ...input,
+          number: customNumber.trim() || null,
+          pdfOptions: { ...pdfOptions, templateId },
+        });
+        void rememberLegalIds(pdfOptions.legalIds);
         showSuccess('Facture créée.');
         router.replace('/invoices' as Href);
         return;
@@ -310,6 +344,18 @@ export function InvoiceWizardScreen({
             secondaryDateLabel="Date d'échéance"
             secondaryDateValue={state.info.dueAt}
             totals={totals}
+            footer={
+              mode === 'create' ? (
+                <InvoicePresentationSection
+                  company={companyProfile ?? null}
+                  forecastNumber={forecastNumber}
+                  number={customNumber}
+                  onChange={setPdfOptions}
+                  onNumberChange={setCustomNumber}
+                  value={{ ...pdfOptions, templateId }}
+                />
+              ) : null
+            }
           />
         );
       default:

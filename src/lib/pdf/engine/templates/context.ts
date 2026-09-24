@@ -7,6 +7,13 @@ import { buildSepaCreditTransferPayload } from '@/lib/payments/sepa-qr';
 import { renderQrCodeSvg } from '@/lib/pdf/qr-svg';
 import { mapLineValueToTotals } from '@/lib/quotes/mappers';
 import type { PdfClientInfo, PdfCompanyInfo, PdfDocumentInput } from '@/lib/pdf/engine/types';
+import {
+  DEFAULT_ISSUER_LEGAL_IDS,
+  formatIssuerLegalIds,
+  ISSUER_LEGAL_ID_LABELS,
+  type StampColor,
+  type StampPosition,
+} from '@/types/pdf-options';
 
 /**
  * Vue de rendu partagée par les 20 modèles.
@@ -106,6 +113,19 @@ export type TemplateContext = {
   showApprovalBlock: boolean;
   /** Pastille de statut. Affichée par le modèle 04 uniquement. */
   status: { label: string; background: string; color: string } | null;
+  /**
+   * Identifiants de l'émetteur choisis pour le document (SIREN, SIRET, TVA),
+   * rendus en tête de page par l'enveloppe commune. Les modèles ne les
+   * affichent plus eux-mêmes : `issuer.siret` et `issuer.vatNumber` valent `null`.
+   */
+  issuerLegalIds: TemplateMetaEntry[];
+  /** Facture payée : cachet au nom de l'entreprise émettrice. */
+  paidStamp: {
+    companyName: string;
+    date: string | null;
+    color: StampColor;
+    position: StampPosition;
+  } | null;
 };
 
 /**
@@ -143,7 +163,20 @@ function clean(value: string | null | undefined): string | null {
   return trimmed ? trimmed : null;
 }
 
-function buildIssuer(company: PdfCompanyInfo): TemplateParty {
+function buildIssuerLegalIds(input: PdfDocumentInput): TemplateMetaEntry[] {
+  const selected = input.issuerLegalIds ?? DEFAULT_ISSUER_LEGAL_IDS;
+  const values = formatIssuerLegalIds(
+    input.company.siret,
+    input.company.vatNumber,
+    input.company.siren,
+  );
+
+  return selected
+    .map((id) => (values[id] ? { label: ISSUER_LEGAL_ID_LABELS[id], value: values[id] } : null))
+    .filter((entry): entry is TemplateMetaEntry => entry !== null);
+}
+
+function buildIssuer(company: PdfCompanyInfo, showEmail: boolean): TemplateParty {
   const name =
     clean(company.companyName) ??
     clean([company.firstName, company.lastName].filter(Boolean).join(' ')) ??
@@ -158,9 +191,10 @@ function buildIssuer(company: PdfCompanyInfo): TemplateParty {
       clean([company.postalCode, company.city].filter(Boolean).join(' ')),
       clean(company.country),
     ].filter((line): line is string => Boolean(line)),
-    siret: clean(company.siret),
-    vatNumber: clean(company.vatNumber),
-    email: clean(company.email),
+    // Rendus en tête de page selon le choix de l'utilisateur (`issuerLegalIds`).
+    siret: null,
+    vatNumber: null,
+    email: showEmail ? clean(company.email) : null,
     phone: clean(company.phone),
   };
 }
@@ -287,7 +321,7 @@ export function buildTemplateContext(input: PdfDocumentInput): TemplateContext {
   const subtotalBeforeDiscount = input.totals.subtotalHt + discount;
   const paymentTermsDays = input.settings?.paymentTermsDays ?? null;
 
-  const issuer = buildIssuer(input.company);
+  const issuer = buildIssuer(input.company, input.showIssuerEmail ?? isQuote);
   const client = buildClient(input.client);
   const vat = buildVatRows(input);
 
@@ -303,7 +337,7 @@ export function buildTemplateContext(input: PdfDocumentInput): TemplateContext {
   const terms = isQuote
     ? null
     : settled
-      ? 'Facture acquittée — aucun règlement attendu'
+      ? 'Facture payée — aucun règlement attendu'
       : paymentTermsDays
         ? `Paiement sous ${paymentTermsDays} jours`
         : null;
@@ -345,11 +379,14 @@ export function buildTemplateContext(input: PdfDocumentInput): TemplateContext {
     settled || !bic ? null : `BIC ${bic}`,
   ].filter((part): part is string => Boolean(part));
 
+  const documentLabel = clean(input.documentTitle) ?? (isQuote ? 'Devis' : 'Facture');
+  const paid = !isQuote && (input.status === 'paid' || Boolean(input.paidAt) || settled);
+
   return {
     kind: input.kind,
     labels: {
-      document: isQuote ? 'Devis' : 'Facture',
-      documentUpper: isQuote ? 'DEVIS' : 'FACTURE',
+      document: documentLabel,
+      documentUpper: documentLabel.toLocaleUpperCase('fr-FR'),
       number: 'N°',
       issuedAt: "Date d'émission",
       secondaryDate: isQuote ? 'Validité' : 'Échéance',
@@ -404,5 +441,14 @@ export function buildTemplateContext(input: PdfDocumentInput): TemplateContext {
       : null,
     showApprovalBlock: isQuote && !input.clientSignature,
     status: input.status ? (STATUS_PILLS[input.status] ?? null) : null,
+    issuerLegalIds: buildIssuerLegalIds(input),
+    paidStamp: paid
+      ? {
+          companyName: issuer.name,
+          date: input.paidAt ? formatDate(input.paidAt) : null,
+          color: input.stampColor ?? 'auto',
+          position: input.stampPosition ?? 'auto',
+        }
+      : null,
   };
 }

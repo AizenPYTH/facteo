@@ -23,6 +23,8 @@ type DocumentFinalizeStepProps = {
   secondaryDateLabel?: string;
   secondaryDateValue?: string;
   onSecondaryDateChange?: (value: string) => void;
+  /** Contenu ajouté sous les informations (présentation de la facture). */
+  footer?: React.ReactNode;
 };
 
 export function DocumentFinalizeStep({
@@ -36,6 +38,7 @@ export function DocumentFinalizeStep({
   secondaryDateLabel,
   secondaryDateValue,
   onSecondaryDateChange,
+  footer,
 }: DocumentFinalizeStepProps) {
   const styles = useStyles();
   const expirationLabel =
@@ -117,6 +120,8 @@ export function DocumentFinalizeStep({
         })}
         <QuoteTotals totals={totals} />
       </View>
+
+      {footer}
 
       <CollapsibleSection title="Options avancées">
         <View style={styles.card}>
