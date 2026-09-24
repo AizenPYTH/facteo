@@ -24,6 +24,8 @@ export type PdfCompanyInfo = Pick<
   paymentMethods?: PaymentMethodId[];
   logoUrl?: string | null;
   signatureUrl?: string | null;
+  /** SIREN saisi à part. Absent : 9 premiers chiffres du SIRET. */
+  siren?: string | null;
 };
 
 export type PdfClientInfo = Pick<

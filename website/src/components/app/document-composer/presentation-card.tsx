@@ -33,7 +33,7 @@ export function ComposerPresentationCard({
   value,
 }: {
   /** Entreprise émettrice : ses SIRET et TVA sont montrés à côté des cases. */
-  company: { siret: string | null; vatNumber: string | null } | null;
+  company: { id: string; siret: string | null; vatNumber: string | null } | null;
   /** Numéro automatique qui sera attribué si le champ reste vide. */
   forecastNumber: string | null;
   number: string;

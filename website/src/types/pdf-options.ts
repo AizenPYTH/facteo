@@ -74,13 +74,16 @@ function groupDigits(digits: string, sizes: number[]): string {
 export function formatIssuerLegalIds(
   siretInput: string | null | undefined,
   vatInput: string | null | undefined,
+  sirenInput?: string | null,
 ): Record<IssuerLegalId, string | null> {
   const siretRaw = siretInput?.trim() ?? '';
   const siret = siretRaw.replace(/\D/g, '');
   const vat = vatInput?.replace(/\s/g, '').toUpperCase() ?? '';
+  // SIREN saisi dans la page Entreprise en priorité, sinon tiré du SIRET.
+  const siren = sirenInput?.replace(/\D/g, '') || siret.slice(0, 9);
 
   return {
-    siren: siret.length >= 9 ? groupDigits(siret.slice(0, 9), [3, 3, 3]) : null,
+    siren: siren.length === 9 ? groupDigits(siren, [3, 3, 3]) : null,
     siret: siret.length === 14 ? groupDigits(siret, [3, 3, 3, 5]) : siretRaw || null,
     vat: vat || null,
   };

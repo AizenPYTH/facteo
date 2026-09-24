@@ -12,8 +12,8 @@ export type ActivityType = (typeof ACTIVITY_TYPES)[number]['value'];
 
 export const registerSchema = z
   .object({
-    firstName: z.string().trim().min(1, 'Champ obligatoire.'),
-    lastName: z.string().trim().min(1, 'Champ obligatoire.'),
+    firstName: z.string().trim(),
+    lastName: z.string().trim(),
     email: z
       .string()
       .trim()

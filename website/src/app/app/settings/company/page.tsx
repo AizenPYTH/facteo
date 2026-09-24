@@ -1,11 +1,15 @@
 'use client';
 
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { CompanyAssetsPanel } from '@/components/app/company-assets-panel';
 import { CompanyProfileForm } from '@/components/app/company-profile-form';
 import { LoadingState } from '@/components/app/ui';
-import { mapCompanyToFormValues, updateCompanyProfile } from '@/lib/domain/supabase/companies';
+import {
+  fetchCompanySiren,
+  mapCompanyToFormValues,
+  updateCompanyProfile,
+} from '@/lib/domain/supabase/companies';
 import { companiesQueryKeys } from '@/lib/domain/supabase/query-keys';
 import { useTenant } from '@/providers/company-provider';
 import { useToast } from '@/providers/toast-provider';
@@ -17,21 +21,29 @@ export default function CompanySettingsPage() {
   const queryClient = useQueryClient();
   const { showSuccess, showError } = useToast();
 
+  const sirenQuery = useQuery({
+    queryKey: ['company-siren', activeCompany?.id],
+    queryFn: () => fetchCompanySiren(activeCompany!.id),
+    enabled: Boolean(activeCompany?.id),
+  });
+
   const mutation = useMutation({
     mutationFn: (values: CompanyProfileFormValues) =>
       updateCompanyProfile(activeCompany!.id, values),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: companiesQueryKeys.all });
+      void queryClient.invalidateQueries({ queryKey: ['company-siren'] });
+      void queryClient.invalidateQueries({ queryKey: ['pdf-preview'] });
       showSuccess('Profil entreprise enregistré.');
     },
     onError: (error) => showError(toUserFacingError(error.message)),
   });
 
-  if (loading || !activeCompany) {
+  if (loading || !activeCompany || sirenQuery.isLoading) {
     return <LoadingState message="Chargement de l’entreprise…" />;
   }
 
-  const defaults = mapCompanyToFormValues(activeCompany);
+  const defaults = { ...mapCompanyToFormValues(activeCompany), siren: sirenQuery.data ?? '' };
 
   return (
     <div className="mx-auto max-w-[720px] p-5 sm:p-6">
@@ -48,7 +60,9 @@ export default function CompanySettingsPage() {
         onSubmit={async (values) => {
           await mutation.mutateAsync(values);
         }}
+        key={`${activeCompany.id}-${sirenQuery.data ?? ''}`}
         showPersonalFields={false}
+        showSiren
       />
     </div>
   );

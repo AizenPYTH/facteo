@@ -165,7 +165,11 @@ function clean(value: string | null | undefined): string | null {
 
 function buildIssuerLegalIds(input: PdfDocumentInput): TemplateMetaEntry[] {
   const selected = input.issuerLegalIds ?? DEFAULT_ISSUER_LEGAL_IDS;
-  const values = formatIssuerLegalIds(input.company.siret, input.company.vatNumber);
+  const values = formatIssuerLegalIds(
+    input.company.siret,
+    input.company.vatNumber,
+    input.company.siren,
+  );
 
   return selected
     .map((id) => (values[id] ? { label: ISSUER_LEGAL_ID_LABELS[id], value: values[id] } : null))

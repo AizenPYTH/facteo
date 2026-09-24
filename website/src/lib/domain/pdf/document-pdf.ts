@@ -1,6 +1,10 @@
 import { fetchClientById } from '@/lib/supabase/clients';
 import { fetchInvoicePdfOptions } from '@/lib/domain/supabase/invoices';
-import { fetchCompanyById, mapCompanyToFormValues } from '@/lib/supabase/companies';
+import {
+  fetchCompanyById,
+  fetchCompanySiren,
+  mapCompanyToFormValues,
+} from '@/lib/supabase/companies';
 import { fetchDocumentSignature } from '@/lib/supabase/subscriptions';
 import { fetchUserProfile } from '@/lib/supabase/profiles';
 import { fetchSettings } from '@/lib/supabase/settings';
@@ -20,9 +24,10 @@ export async function resolvePdfCompanyInfo(
   scope: DataScope,
   authEmail?: string | null,
 ): Promise<PdfCompanyInfo> {
-  const [company, profileRow] = await Promise.all([
+  const [company, profileRow, siren] = await Promise.all([
     fetchCompanyById(scope.companyId),
     fetchUserProfile(scope.userId),
+    fetchCompanySiren(scope.companyId),
   ]);
 
   const companyForm = mapCompanyToFormValues(
@@ -49,6 +54,7 @@ export async function resolvePdfCompanyInfo(
     paymentMethods: company?.paymentMethods ?? companyForm.paymentMethods,
     logoUrl: company?.logoUrl ?? null,
     signatureUrl: company?.signatureUrl ?? null,
+    siren: siren || null,
   };
 }
 

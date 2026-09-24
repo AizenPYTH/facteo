@@ -651,7 +651,7 @@ function DocumentDetailPanel({
   /** Factures uniquement : SIREN / SIRET / TVA en tête du PDF. */
   legalIds?: IssuerLegalId[];
   onLegalIdsChange?: (value: IssuerLegalId[]) => void;
-  company?: { siret: string | null; vatNumber: string | null } | null;
+  company?: { id: string; siret: string | null; vatNumber: string | null } | null;
 }) {
   const PrimaryIcon = primaryAction.icon;
 

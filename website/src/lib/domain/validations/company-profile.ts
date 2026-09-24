@@ -6,20 +6,16 @@ function normalizeDigits(value: string): string {
   return value.replace(/\s/g, '');
 }
 
-export const companyProfileSchema = z.object({
+const companyFields = {
   companyName: z.string().trim().min(1, 'Champ obligatoire.'),
-  firstName: z.string().trim().min(1, 'Champ obligatoire.'),
-  lastName: z.string().trim().min(1, 'Champ obligatoire.'),
-  email: z
-    .string()
-    .trim()
-    .min(1, 'Champ obligatoire.')
-    .email('Adresse e-mail invalide.'),
   phone: optionalText,
   address: optionalText,
   postalCode: optionalText.max(40),
   city: optionalText,
   country: optionalText,
+  siren: optionalText
+    .refine((value) => !value || /^\d{9}$/.test(normalizeDigits(value)), 'Le SIREN doit contenir 9 chiffres')
+    .optional(),
   siret: optionalText.refine(
     (value) => !value || /^\d{14}$/.test(normalizeDigits(value)),
     'Le SIRET doit contenir 14 chiffres',
@@ -39,6 +35,32 @@ export const companyProfileSchema = z.object({
   paymentMethods: z
     .array(z.enum(['bank_transfer', 'cash', 'card', 'cheque', 'paypal', 'stripe']))
     .min(1, 'Sélectionnez au moins un moyen de paiement.'),
+};
+
+/** Profil complet : prénom et nom facultatifs, e-mail obligatoire. */
+export const companyProfileSchema = z.object({
+  ...companyFields,
+  firstName: optionalText,
+  lastName: optionalText,
+  email: z
+    .string()
+    .trim()
+    .min(1, 'Champ obligatoire.')
+    .email('Adresse e-mail invalide.'),
+});
+
+/**
+ * Page Entreprise : prénom, nom et e-mail n'y sont pas affichés. Les exiger
+ * bloquait l'enregistrement sans aucun message visible.
+ */
+export const companyOnlySchema = z.object({
+  ...companyFields,
+  firstName: optionalText,
+  lastName: optionalText,
+  email: optionalText.refine(
+    (value) => !value || z.string().email().safeParse(value).success,
+    'Adresse e-mail invalide.',
+  ),
 });
 
 export type CompanyProfileSchemaValues = z.infer<typeof companyProfileSchema>;

@@ -1,5 +1,8 @@
 'use client';
 
+import { useQuery } from '@tanstack/react-query';
+
+import { fetchCompanySiren } from '@/lib/domain/supabase/companies';
 import { cn } from '@/lib/utils';
 import {
   formatIssuerLegalIds,
@@ -18,11 +21,16 @@ export function LegalIdsPicker({
   onChange,
   value,
 }: {
-  company: { siret: string | null; vatNumber: string | null } | null;
+  company: { id: string; siret: string | null; vatNumber: string | null } | null;
   onChange: (value: IssuerLegalId[]) => void;
   value: IssuerLegalId[];
 }) {
-  const values = formatIssuerLegalIds(company?.siret, company?.vatNumber);
+  const sirenQuery = useQuery({
+    queryKey: ['company-siren', company?.id],
+    queryFn: () => fetchCompanySiren(company!.id),
+    enabled: Boolean(company?.id),
+  });
+  const values = formatIssuerLegalIds(company?.siret, company?.vatNumber, sirenQuery.data);
 
   function toggle(id: IssuerLegalId, checked: boolean) {
     onChange(ISSUER_LEGAL_IDS.filter((entry) => (entry === id ? checked : value.includes(entry))));
