@@ -20,7 +20,7 @@ type ProductImageAnalysisResponse = ProductImageAnalysis & {
   analysis?: ProductImageAnalysis;
 };
 
-async function readErrorMessage(error: unknown): Promise<string> {
+export async function readErrorMessage(error: unknown): Promise<string> {
   const status = readStatusCode(error);
   const edgeMessage = await readEdgeContextMessage(error);
 

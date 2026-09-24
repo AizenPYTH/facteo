@@ -10,6 +10,62 @@ const corsHeaders = {
 type AnalyzeProductBody = {
   imageBase64?: string;
   mimeType?: string;
+  /** `invoices` : découpe l'image en factures (écran « Créer plusieurs factures »). */
+  mode?: 'products' | 'invoices';
+};
+
+/**
+ * Règle commune aux deux modes : l'IA recopie, elle ne calcule jamais.
+ * Les erreurs constatées venaient de montants recalculés ou « corrigés »
+ * par le modèle. Toute conversion (TTC → HT, total → prix unitaire) est
+ * faite ensuite par le code, de façon déterministe.
+ */
+const COPY_ONLY_RULES = [
+  'RÈGLE ABSOLUE : tu RECOPIES, tu ne calcules JAMAIS.',
+  'Recopie chaque nombre exactement comme il est imprimé, chiffre par chiffre, virgule décimale comprise (1 234,50 → 1234.5).',
+  'N’additionne rien, ne multiplie rien, ne convertis rien entre HT et TTC, n’arrondis rien, ne corrige aucune valeur même si elle te semble fausse.',
+  'Si une valeur n’est pas imprimée, mets null (ou une chaîne vide) : ne la déduis pas des autres.',
+  'Recopie les libellés mot pour mot, sans les reformuler ni les traduire.',
+  'Relis chaque nombre sur l’image avant de répondre : un chiffre mal lu est la pire erreur possible.',
+];
+
+const INVOICE_LINE_SCHEMA = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    title: { type: 'string' },
+    description: { type: 'string' },
+    quantity: { type: ['number', 'null'] },
+    unit: { type: 'string' },
+    unit_price: { type: ['number', 'null'] },
+    price_kind: { type: 'string', enum: ['ht', 'ttc', 'unknown'] },
+    vat_rate: { type: ['number', 'null'] },
+    line_total: { type: ['number', 'null'] },
+  },
+  required: ['title', 'description', 'quantity', 'unit', 'unit_price', 'price_kind', 'vat_rate', 'line_total'],
+};
+
+const INVOICES_SCHEMA = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    invoices: {
+      type: 'array',
+      items: {
+        type: 'object',
+        additionalProperties: false,
+        properties: {
+          client_name: { type: 'string' },
+          client_address: { type: 'string' },
+          issued_date: { type: ['string', 'null'] },
+          reference: { type: 'string' },
+          lines: { type: 'array', items: INVOICE_LINE_SCHEMA },
+        },
+        required: ['client_name', 'client_address', 'issued_date', 'reference', 'lines'],
+      },
+    },
+  },
+  required: ['invoices'],
 };
 
 type ProductAnalysis = {
@@ -161,19 +217,51 @@ Deno.serve(async (request) => {
 
     const mimeType = (body.mimeType ?? 'image/jpeg').trim() || 'image/jpeg';
     const imageDataUrl = `data:${mimeType};base64,${body.imageBase64}`;
-    const model = Deno.env.get('OPENAI_VISION_MODEL')?.trim() || 'gpt-4.1-mini';
+    // gpt-4.1 lit nettement mieux les chiffres que la version mini ; le secret
+    // OPENAI_VISION_MODEL permet toujours d'en choisir un autre.
+    const model = Deno.env.get('OPENAI_VISION_MODEL')?.trim() || 'gpt-4.1';
+
+    if (body.mode === 'invoices') {
+      const invoicesOutput = await requestOpenAiJsonSchema({
+        apiKey: openAiApiKey,
+        model,
+        temperature: 0,
+        schemaName: 'invoices_analysis',
+        schema: INVOICES_SCHEMA,
+        systemPrompt: [
+          'Tu es un assistant INVEQ qui transforme une capture (commandes, ventes, relevé, tableau) en factures à émettre.',
+          ...COPY_ONLY_RULES,
+          'Une facture = un client ou une commande distincte. Si l’image montre plusieurs commandes ou plusieurs clients, crée une entrée par commande, dans l’ordre de l’image.',
+          'Pour chaque facture, recopie TOUTES les lignes facturées, frais compris (livraison, port, service, emballage…), sans les sous-totaux, totaux ni montants de TVA.',
+          'client_name : nom du client ou de l’acheteur tel qu’imprimé, sinon chaîne vide. client_address : son adresse telle qu’imprimée, sinon chaîne vide.',
+          'issued_date : date de la commande au format AAAA-MM-JJ si elle est imprimée, sinon null.',
+          'reference : numéro de commande ou de référence tel qu’imprimé, sinon chaîne vide.',
+          'Pour chaque ligne : title = libellé exact ; description = détail éventuel (taille, couleur…) ou chaîne vide ; quantity = quantité imprimée ou null ; unit_price = prix unitaire imprimé ou null ; line_total = total de la ligne imprimé ou null ; vat_rate = taux de TVA imprimé ou null.',
+          'price_kind : "ht" si le document indique que les prix sont HT, "ttc" s’il indique TTC ou s’il s’agit manifestement d’un prix payé par un particulier, sinon "unknown".',
+          'Une ligne de frais offerte (0 €) est recopiée avec 0.',
+        ].join('\n'),
+        userContent: [
+          { type: 'input_text', text: 'Recopie les factures présentes sur cette image au format JSON, sans rien calculer.' },
+          { type: 'input_image', image_url: imageDataUrl, detail: 'high' },
+        ],
+      });
+
+      const parsedInvoices = JSON.parse(invoicesOutput) as { invoices?: unknown[] };
+      return jsonResponse({ invoices: normalizeInvoices(parsedInvoices.invoices) }, 200);
+    }
 
     const modelOutput = await requestOpenAiJsonSchema({
       apiKey: openAiApiKey,
       model,
+      temperature: 0,
       schemaName: 'product_analysis',
       schema: PRODUCT_ANALYSIS_SCHEMA,
       systemPrompt: [
         'Tu es un assistant INVEQ qui extrait des produits depuis une photo.',
-        'Tu dois comprendre le contexte visuel, pas seulement lire du texte.',
+        ...COPY_ONLY_RULES,
         'Si plusieurs prix existent, choisis le prix actuel (et non barré).',
-        'Si un prix est présent TTC avec TVA visible, renseigne aussi le HT.',
-        'Si aucune TVA n’est visible mais le prix semble TTC, laisse vat à null.',
+        'Si le prix imprimé est TTC, mets-le dans price_ttc et laisse price_ht à null ; s’il est HT, mets-le dans price_ht et laisse price_ttc à null. Ne remplis les deux que si les deux sont imprimés.',
+        'Si aucune TVA n’est imprimée, laisse vat à null.',
         'Si aucune information n’est visible, retourne des champs vides/null sans inventer.',
         'La quantité par défaut est 1. L’unité par défaut est "pièce".',
         'La devise par défaut est EUR pour un contexte francophone.',
@@ -195,6 +283,7 @@ Deno.serve(async (request) => {
         {
           type: 'input_image',
           image_url: imageDataUrl,
+          detail: 'high',
         },
       ],
     });
@@ -253,6 +342,52 @@ function normalizeProducts(
 
   const filtered = normalized.filter((item) => item.title || item.description || item.reference);
   return filtered.length > 0 ? filtered : [fallback];
+}
+
+type InvoiceLineAnalysis = {
+  title: string;
+  description: string;
+  quantity: number | null;
+  unit: string;
+  unit_price: number | null;
+  price_kind: 'ht' | 'ttc' | 'unknown';
+  vat_rate: number | null;
+  line_total: number | null;
+};
+
+function normalizeInvoices(raw: unknown[] | undefined) {
+  return (Array.isArray(raw) ? raw : [])
+    .slice(0, 30)
+    .map((entry) => {
+      const source = (entry ?? {}) as Record<string, unknown>;
+      const lines = (Array.isArray(source.lines) ? source.lines : [])
+        .slice(0, 80)
+        .map((line): InvoiceLineAnalysis => {
+          const item = (line ?? {}) as Record<string, unknown>;
+          const kind = item.price_kind;
+          return {
+            title: normalizeText(item.title),
+            description: normalizeText(item.description),
+            quantity: toNullableNumber(item.quantity),
+            unit: normalizeText(item.unit),
+            unit_price: toNullableNumber(item.unit_price),
+            price_kind: kind === 'ht' || kind === 'ttc' ? kind : 'unknown',
+            vat_rate: toNullableNumber(item.vat_rate),
+            line_total: toNullableNumber(item.line_total),
+          };
+        })
+        .filter((line) => line.title || line.description);
+      const issued = normalizeText(source.issued_date);
+
+      return {
+        client_name: normalizeText(source.client_name),
+        client_address: normalizeText(source.client_address),
+        issued_date: /^\d{4}-\d{2}-\d{2}$/.test(issued) ? issued : null,
+        reference: normalizeText(source.reference),
+        lines,
+      };
+    })
+    .filter((invoice) => invoice.lines.length > 0);
 }
 
 function toNullableNumber(value: unknown): number | null {

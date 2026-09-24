@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation';
 
 import { DocumentComposer } from '@/components/app/document-composer';
 import { InvoicesWorkspace } from '@/components/app/document-workspace';
+import { InvoiceBatch } from '@/components/app/invoice-batch';
 import { LoadingState } from '@/components/app/ui';
 
 function InvoicesPageInner() {
@@ -13,6 +14,10 @@ function InvoicesPageInner() {
 
   if (isCreating) {
     return <DocumentComposer kind="invoice" />;
+  }
+
+  if (searchParams.get('batch') === '1') {
+    return <InvoiceBatch />;
   }
 
   return <InvoicesWorkspace />;
