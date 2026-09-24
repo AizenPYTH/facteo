@@ -272,6 +272,7 @@ function BulkActionsBar({
   busy,
   onDownload,
   onDuplicate,
+  onDelete,
   onClear,
 }: {
   kind: DocumentKind;
@@ -279,6 +280,7 @@ function BulkActionsBar({
   busy: boolean;
   onDownload: () => void;
   onDuplicate: () => void;
+  onDelete?: () => void;
   onClear: () => void;
 }) {
   const label =
@@ -298,6 +300,12 @@ function BulkActionsBar({
           <Copy className="text-app-muted-2" size={15} />
           Dupliquer
         </SecondaryButton>
+        {onDelete ? (
+          <SecondaryButton className="text-app-danger-text" disabled={busy} onClick={onDelete}>
+            <Trash2 size={15} />
+            Supprimer
+          </SecondaryButton>
+        ) : null}
         <GhostButton onClick={onClear}>Tout désélectionner</GhostButton>
       </div>
     </div>
@@ -327,6 +335,8 @@ function DocumentListPanel({
   bulkBusy,
   onBulkDownload,
   onBulkDuplicate,
+  onDelete,
+  onBulkDelete,
 }: {
   kind: DocumentKind;
   items: ListItem[];
@@ -350,6 +360,9 @@ function DocumentListPanel({
   bulkBusy: boolean;
   onBulkDownload: () => void;
   onBulkDuplicate: () => void;
+  /** Absent : pas de suppression (devis). */
+  onDelete?: (id: string) => void;
+  onBulkDelete?: () => void;
 }) {
   const noun = kind === 'invoice' ? 'facture' : 'devis';
   const plural = kind === 'invoice' ? 'factures' : 'devis';
@@ -362,7 +375,7 @@ function DocumentListPanel({
     { key: 'due', label: kind === 'invoice' ? 'Échéance' : 'Validité', className: 'max-md:hidden' },
     { key: 'total', label: 'Total TTC', align: 'right' },
     { key: 'status', label: 'Statut' },
-    { key: 'actions', label: '', className: 'w-[112px]' },
+    { key: 'actions', label: '', className: onDelete ? 'w-[140px]' : 'w-[112px]' },
   ];
 
   const rows = items.map((item) => ({
@@ -406,6 +419,19 @@ function DocumentListPanel({
           type="button">
           <Download size={15} />
         </button>
+        {onDelete ? (
+          <button
+            aria-label={`Supprimer la ${noun}`}
+            className={cn(ROW_ICON_BUTTON, 'hover:text-app-danger-text')}
+            onClick={(event) => {
+              event.stopPropagation();
+              onDelete(item.id);
+            }}
+            title={`Supprimer la ${noun}`}
+            type="button">
+            <Trash2 size={15} />
+          </button>
+        ) : null}
         <ActionMenu
           items={[
             {
@@ -420,6 +446,17 @@ function DocumentListPanel({
               icon: Copy,
               onSelect: () => onDuplicate(item.id),
             },
+            ...(onDelete
+              ? [
+                  {
+                    key: 'delete',
+                    label: `Supprimer la ${noun}`,
+                    icon: Trash2,
+                    tone: 'danger' as const,
+                    onSelect: () => onDelete(item.id),
+                  },
+                ]
+              : []),
           ]}
         />
       </div>
@@ -475,6 +512,7 @@ function DocumentListPanel({
           count={selectedIds.length}
           kind={kind}
           onClear={() => onSelectionChange([])}
+          onDelete={onBulkDelete}
           onDownload={onBulkDownload}
           onDuplicate={onBulkDuplicate}
         />
@@ -584,6 +622,7 @@ function DocumentDetailPanel({
   templateId,
   onTemplateChange,
   onOpenPreview,
+  onDelete,
 }: {
   kind: DocumentKind;
   document: InvoiceDetail | QuoteDetail;
@@ -597,6 +636,7 @@ function DocumentDetailPanel({
   templateId: string;
   onTemplateChange: (id: string) => void;
   onOpenPreview: () => void;
+  onDelete?: () => void;
 }) {
   const PrimaryIcon = primaryAction.icon;
 
@@ -637,6 +677,15 @@ function DocumentDetailPanel({
             title="Télécharger le PDF">
             <Download size={16} />
           </SecondaryButton>
+          {onDelete ? (
+            <SecondaryButton
+              aria-label={kind === 'invoice' ? 'Supprimer la facture' : 'Supprimer le devis'}
+              className="w-10 shrink-0 px-0 text-app-danger-text"
+              onClick={onDelete}
+              title={kind === 'invoice' ? 'Supprimer la facture' : 'Supprimer le devis'}>
+              <Trash2 size={16} />
+            </SecondaryButton>
+          ) : null}
           <ActionMenu
             iconSize={16}
             items={menuItems}
@@ -825,21 +874,40 @@ export function InvoicesWorkspace() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (invoiceId: string) => deleteInvoice(requireScope(scope), invoiceId),
-    onSuccess: () => {
-      setSelectedId(null);
-      void queryClient.invalidateQueries({ queryKey: invoicesQueryKeys.all });
-      showSuccess('Facture supprimée.');
+    mutationFn: async (invoiceIds: string[]) => {
+      const activeScope = requireScope(scope);
+      for (const id of invoiceIds) {
+        await deleteInvoice(activeScope, id);
+      }
+      return invoiceIds;
+    },
+    onSuccess: (invoiceIds) => {
+      if (selectedId && invoiceIds.includes(selectedId)) setSelectedId(null);
+      setCheckedIds((current) => current.filter((id) => !invoiceIds.includes(id)));
+      showSuccess(
+        invoiceIds.length > 1 ? `${invoiceIds.length} factures supprimées.` : 'Facture supprimée.',
+      );
     },
     onError: (error) => showError(toUserFacingError(error.message)),
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: invoicesQueryKeys.all });
+    },
   });
 
-  function confirmDeleteInvoice(invoice: InvoiceDetail) {
+  function confirmDeleteInvoices(invoiceIds: string[]) {
+    if (invoiceIds.length === 0) return;
+    const numbers = invoiceIds.map(
+      (id) => items.find((item) => item.id === id)?.number ?? (detail?.id === id ? detail.number : ''),
+    );
+    const label =
+      invoiceIds.length === 1
+        ? `la facture ${numbers[0]}`.trim()
+        : `ces ${invoiceIds.length} factures`;
     const confirmed = window.confirm(
-      `Supprimer définitivement la facture ${invoice.number} ?\n\nElle disparaîtra de la liste avec ses paiements. Cette action est irréversible.`,
+      `Supprimer définitivement ${label} ?\n\nElle${invoiceIds.length > 1 ? 's' : ''} disparaîtr${invoiceIds.length > 1 ? 'ont' : 'a'} de la liste avec les paiements. Cette action est irréversible.`,
     );
     if (confirmed) {
-      deleteMutation.mutate(invoice.id);
+      deleteMutation.mutate(invoiceIds);
     }
   }
 
@@ -1003,7 +1071,7 @@ export function InvoicesWorkspace() {
         label: 'Supprimer la facture',
         icon: Trash2,
         tone: 'danger',
-        onSelect: () => confirmDeleteInvoice(invoice),
+        onSelect: () => confirmDeleteInvoices([invoice.id]),
         disabled: deleteMutation.isPending,
       },
     ];
@@ -1074,6 +1142,7 @@ export function InvoicesWorkspace() {
                 kind="invoice"
                 menuItems={invoiceMenuItems(detail)}
                 onDownload={() => void runPdfAction('download')}
+                onDelete={() => confirmDeleteInvoices([detail.id])}
                 onOpenPreview={() => setQuickPreviewId(detail.id)}
                 onTemplateChange={changeInvoiceTemplate}
                 primaryAction={invoicePrimaryAction(detail)}
@@ -1094,9 +1163,11 @@ export function InvoicesWorkspace() {
               kind="invoice"
               loadingMore={listQuery.isFetchingNextPage}
               newHref="/app/invoices?create=1"
+              onBulkDelete={() => confirmDeleteInvoices(selection)}
               onBulkDownload={() => void downloadPdfs(selection, 'bulk')}
               onBulkDuplicate={() => setDuplicateConfirmOpen(true)}
               onClearFilters={clearFilters}
+              onDelete={(id) => confirmDeleteInvoices([id])}
               onDownload={(id) => void downloadPdfs([id], id)}
               onDuplicate={(id) => duplicateMutation.mutate(id)}
               onLoadMore={() => void listQuery.fetchNextPage()}
