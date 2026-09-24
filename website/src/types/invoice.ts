@@ -117,6 +117,8 @@ export type CreateInvoiceInput = {
   /** Facture déjà réglée : pas d’échéance, statut payé. */
   alreadyPaid?: boolean;
   notes?: string;
+  /** Numéro choisi à la main. Absent ou vide : numéro automatique. */
+  number?: string | null;
   /** Titre et identifiants affichés sur le PDF. Absent : présentation par défaut. */
   pdfOptions?: InvoicePdfOptions;
 };

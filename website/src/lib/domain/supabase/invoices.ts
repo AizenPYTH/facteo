@@ -322,17 +322,32 @@ export async function createInvoice(scope: DataScope, input: CreateInvoiceInput)
   }
 
   const settings = await fetchSettings(scope);
-  const number = await reserveNextInvoiceNumber(scope.companyId);
   const defaultDueAt = input.alreadyPaid
     ? null
     : (input.dueAt ?? computeDueDate(input.paymentTermsDays ?? settings?.paymentTermsDays ?? 30));
-  const { invoice, lines } = mapCreateInvoiceInputToInsert(scope, number, input, defaultDueAt);
+  const customNumber = input.number?.trim() || null;
 
-  const { data: createdInvoice, error: invoiceError } = await supabase
-    .from('invoices')
-    .insert(invoice)
-    .select(INVOICE_COLUMNS)
-    .single();
+  // Un numéro saisi à la main peut occuper le prochain numéro automatique :
+  // on en réserve alors un autre au lieu d'échouer.
+  let attempt = 0;
+  let insertResult;
+  let invoice: InvoiceInsert;
+  let lines: Omit<InvoiceItemInsert, 'invoice_id'>[];
+  for (;;) {
+    const number = customNumber ?? (await reserveNextInvoiceNumber(scope.companyId));
+    ({ invoice, lines } = mapCreateInvoiceInputToInsert(scope, number, input, defaultDueAt));
+    insertResult = await supabase.from('invoices').insert(invoice).select(INVOICE_COLUMNS).single();
+
+    const duplicate = insertResult.error?.code === '23505';
+    if (!duplicate) break;
+    if (customNumber) {
+      throw new Error(`Le numéro « ${customNumber} » est déjà utilisé par une autre facture.`);
+    }
+    attempt += 1;
+    if (attempt >= 5) break;
+  }
+
+  const { data: createdInvoice, error: invoiceError } = insertResult;
 
   if (invoiceError || !createdInvoice) {
     logSupabaseError('createInvoice', invoiceError);
