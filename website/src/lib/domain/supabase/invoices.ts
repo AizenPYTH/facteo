@@ -464,6 +464,28 @@ export async function updateInvoice(
   return updated;
 }
 
+/**
+ * Suppression définitive. Lignes, paiements et liens de paiement partent avec
+ * la facture (clés étrangères en cascade) ; un devis converti est détaché.
+ */
+export async function deleteInvoice(scope: DataScope, invoiceId: string): Promise<void> {
+  const { data, error } = await supabase
+    .from('invoices')
+    .delete()
+    .eq('id', invoiceId)
+    .eq('company_id', scope.companyId)
+    .select('id');
+
+  if (error) {
+    logSupabaseError('deleteInvoice', error);
+    throw error;
+  }
+
+  if (!data || data.length === 0) {
+    throw new Error('Facture introuvable ou déjà supprimée.');
+  }
+}
+
 export async function duplicateInvoice(scope: DataScope, invoiceId: string): Promise<Invoice> {
   const source = await fetchInvoiceById(scope, invoiceId);
 

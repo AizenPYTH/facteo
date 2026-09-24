@@ -21,6 +21,7 @@ import {
   Receipt,
   Send,
   Share2,
+  Trash2,
   type LucideIcon,
 } from 'lucide-react';
 import {
@@ -64,6 +65,7 @@ import { useToast } from '@/providers/toast-provider';
 import { toUserFacingError } from '@/lib/errors/messages';
 import {
   convertQuoteToInvoice,
+  deleteInvoice,
   duplicateInvoice,
   fetchInvoiceById,
   fetchInvoicePdfOptions,
@@ -822,6 +824,25 @@ export function InvoicesWorkspace() {
     onError: (error) => showError(toUserFacingError(error.message)),
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: (invoiceId: string) => deleteInvoice(requireScope(scope), invoiceId),
+    onSuccess: () => {
+      setSelectedId(null);
+      void queryClient.invalidateQueries({ queryKey: invoicesQueryKeys.all });
+      showSuccess('Facture supprimée.');
+    },
+    onError: (error) => showError(toUserFacingError(error.message)),
+  });
+
+  function confirmDeleteInvoice(invoice: InvoiceDetail) {
+    const confirmed = window.confirm(
+      `Supprimer définitivement la facture ${invoice.number} ?\n\nElle disparaîtra de la liste avec ses paiements. Cette action est irréversible.`,
+    );
+    if (confirmed) {
+      deleteMutation.mutate(invoice.id);
+    }
+  }
+
   const sendMutation = useMutation({
     mutationFn: (invoiceId: string) => updateInvoiceStatus(requireScope(scope), invoiceId, 'sent'),
     onSuccess: () => {
@@ -976,6 +997,14 @@ export function InvoicesWorkspace() {
         icon: Copy,
         onSelect: () => duplicateMutation.mutate(invoice.id),
         disabled: duplicateMutation.isPending,
+      },
+      {
+        key: 'delete',
+        label: 'Supprimer la facture',
+        icon: Trash2,
+        tone: 'danger',
+        onSelect: () => confirmDeleteInvoice(invoice),
+        disabled: deleteMutation.isPending,
       },
     ];
   }
