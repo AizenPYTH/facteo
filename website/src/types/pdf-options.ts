@@ -56,6 +56,61 @@ export const STAMP_POSITION_LABELS: Record<StampPosition, string> = {
   bottom: 'En bas',
 };
 
+function groupDigits(digits: string, sizes: number[]): string {
+  const parts: string[] = [];
+  let cursor = 0;
+  for (const size of sizes) {
+    if (cursor >= digits.length) break;
+    parts.push(digits.slice(cursor, cursor + size));
+    cursor += size;
+  }
+  return parts.join(' ');
+}
+
+/**
+ * Valeurs affichables de l'entreprise émettrice. Le SIREN n'est pas saisi à
+ * part : ce sont les 9 premiers chiffres du SIRET. `null` : non renseigné.
+ */
+export function formatIssuerLegalIds(
+  siretInput: string | null | undefined,
+  vatInput: string | null | undefined,
+): Record<IssuerLegalId, string | null> {
+  const siretRaw = siretInput?.trim() ?? '';
+  const siret = siretRaw.replace(/\D/g, '');
+  const vat = vatInput?.replace(/\s/g, '').toUpperCase() ?? '';
+
+  return {
+    siren: siret.length >= 9 ? groupDigits(siret.slice(0, 9), [3, 3, 3]) : null,
+    siret: siret.length === 14 ? groupDigits(siret, [3, 3, 3, 5]) : siretRaw || null,
+    vat: vat || null,
+  };
+}
+
+const LEGAL_IDS_STORAGE_KEY = 'inveq:invoice-legal-ids';
+
+/** Dernier choix SIREN / SIRET / TVA de ce navigateur, repris à la facture suivante. */
+export function readRememberedLegalIds(): IssuerLegalId[] {
+  try {
+    if (typeof window === 'undefined') return [...DEFAULT_ISSUER_LEGAL_IDS];
+    const raw = window.localStorage.getItem(LEGAL_IDS_STORAGE_KEY);
+    if (!raw) return [...DEFAULT_ISSUER_LEGAL_IDS];
+    const parsed: unknown = JSON.parse(raw);
+    return Array.isArray(parsed)
+      ? ISSUER_LEGAL_IDS.filter((id) => parsed.includes(id))
+      : [...DEFAULT_ISSUER_LEGAL_IDS];
+  } catch {
+    return [...DEFAULT_ISSUER_LEGAL_IDS];
+  }
+}
+
+export function rememberLegalIds(legalIds: IssuerLegalId[]): void {
+  try {
+    window.localStorage.setItem(LEGAL_IDS_STORAGE_KEY, JSON.stringify(legalIds));
+  } catch {
+    // Stockage indisponible (navigation privée) : le choix ne sera simplement pas repris.
+  }
+}
+
 export type InvoicePdfOptions = {
   /** `null` : « Facture ». */
   title: string | null;

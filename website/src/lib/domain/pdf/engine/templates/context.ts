@@ -9,6 +9,7 @@ import { mapLineValueToTotals } from '@/lib/quotes/mappers';
 import type { PdfClientInfo, PdfCompanyInfo, PdfDocumentInput } from '@/lib/pdf/engine/types';
 import {
   DEFAULT_ISSUER_LEGAL_IDS,
+  formatIssuerLegalIds,
   ISSUER_LEGAL_ID_LABELS,
   type StampColor,
   type StampPosition,
@@ -162,30 +163,9 @@ function clean(value: string | null | undefined): string | null {
   return trimmed ? trimmed : null;
 }
 
-function digitsOf(value: string | null | undefined): string {
-  return (value ?? '').replace(/\D/g, '');
-}
-
-function groupDigits(digits: string, sizes: number[]): string {
-  const parts: string[] = [];
-  let cursor = 0;
-  for (const size of sizes) {
-    if (cursor >= digits.length) break;
-    parts.push(digits.slice(cursor, cursor + size));
-    cursor += size;
-  }
-  return parts.join(' ');
-}
-
-/** Le SIREN n'est pas saisi à part : ce sont les 9 premiers chiffres du SIRET. */
 function buildIssuerLegalIds(input: PdfDocumentInput): TemplateMetaEntry[] {
   const selected = input.issuerLegalIds ?? DEFAULT_ISSUER_LEGAL_IDS;
-  const siret = digitsOf(input.company.siret);
-  const values = {
-    siren: siret.length >= 9 ? groupDigits(siret.slice(0, 9), [3, 3, 3]) : null,
-    siret: siret.length === 14 ? groupDigits(siret, [3, 3, 3, 5]) : clean(input.company.siret),
-    vat: clean(input.company.vatNumber)?.replace(/\s/g, '').toUpperCase() ?? null,
-  };
+  const values = formatIssuerLegalIds(input.company.siret, input.company.vatNumber);
 
   return selected
     .map((id) => (values[id] ? { label: ISSUER_LEGAL_ID_LABELS[id], value: values[id] } : null))

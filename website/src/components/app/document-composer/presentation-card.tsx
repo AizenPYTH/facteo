@@ -1,20 +1,18 @@
 'use client';
 
 import { ComposerCard } from '@/components/app/document-composer/composer-card';
+import { LegalIdsPicker } from '@/components/app/document-composer/legal-ids-picker';
 import { TextInput } from '@/components/app/form-fields';
 import { cn } from '@/lib/utils';
 import {
   DEFAULT_INVOICE_TITLE,
   INVOICE_TITLE_SUGGESTIONS,
-  ISSUER_LEGAL_ID_LABELS,
-  ISSUER_LEGAL_IDS,
   STAMP_COLOR_LABELS,
   STAMP_COLOR_VALUES,
   STAMP_COLORS,
   STAMP_POSITION_LABELS,
   STAMP_POSITIONS,
   type InvoicePdfOptions,
-  type IssuerLegalId,
 } from '@/types/pdf-options';
 
 const CHIP =
@@ -27,12 +25,15 @@ const CHIP_OFF = 'border-app-border text-app-muted hover:border-app-accent hover
  * TVA) affichés en tête de la facture.
  */
 export function ComposerPresentationCard({
+  company,
   forecastNumber,
   number,
   onChange,
   onNumberChange,
   value,
 }: {
+  /** Entreprise émettrice : ses SIRET et TVA sont montrés à côté des cases. */
+  company: { siret: string | null; vatNumber: string | null } | null;
   /** Numéro automatique qui sera attribué si le champ reste vide. */
   forecastNumber: string | null;
   number: string;
@@ -42,13 +43,6 @@ export function ComposerPresentationCard({
 }) {
   const title = value.title ?? '';
   const activeTitle = title.trim() || DEFAULT_INVOICE_TITLE;
-
-  function toggleLegalId(id: IssuerLegalId) {
-    const legalIds = value.legalIds.includes(id)
-      ? value.legalIds.filter((entry) => entry !== id)
-      : ISSUER_LEGAL_IDS.filter((entry) => entry === id || value.legalIds.includes(entry));
-    onChange({ ...value, legalIds });
-  }
 
   return (
     <ComposerCard title="Présentation de la facture">
@@ -105,27 +99,16 @@ export function ComposerPresentationCard({
         </div>
 
         <div>
-          <p className="mb-1.5 text-[12px] font-medium text-app-text-3" id="composer-legal-ids">
-            En tête de la facture
+          <p className="mb-1.5 text-[12px] font-medium text-app-text-3">
+            En tête de la facture : cochez ce qui doit apparaître
           </p>
-          <div aria-labelledby="composer-legal-ids" className="flex gap-1.5" role="group">
-            {ISSUER_LEGAL_IDS.map((id) => {
-              const active = value.legalIds.includes(id);
-
-              return (
-                <button
-                  aria-pressed={active}
-                  className={cn(CHIP, 'flex-1 text-center', active ? CHIP_ON : CHIP_OFF)}
-                  key={id}
-                  onClick={() => toggleLegalId(id)}
-                  type="button">
-                  {ISSUER_LEGAL_ID_LABELS[id]}
-                </button>
-              );
-            })}
-          </div>
+          <LegalIdsPicker
+            company={company}
+            onChange={(legalIds) => onChange({ ...value, legalIds })}
+            value={value.legalIds}
+          />
           <p className="mt-1.5 text-[11.5px] leading-relaxed text-app-muted-2">
-            Ceux de votre entreprise, repris de la page Entreprise. Le SIREN vient du SIRET.
+            Votre choix est repris pour la facture suivante et reste modifiable après création.
           </p>
         </div>
 

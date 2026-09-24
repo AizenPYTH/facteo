@@ -88,6 +88,8 @@ import {
   sharePdfFromHtml,
 } from '@/lib/domain/pdf/document-actions';
 import { getDefaultComposerTemplateId } from '@/lib/domain/pdf/composer-templates';
+import { LegalIdsPicker } from '@/components/app/document-composer/legal-ids-picker';
+import { DEFAULT_ISSUER_LEGAL_IDS, type IssuerLegalId } from '@/types/pdf-options';
 import { requireScope } from '@/lib/domain/tenant/scope';
 import { cn } from '@/lib/utils';
 
@@ -626,6 +628,9 @@ function DocumentDetailPanel({
   onDelete,
   showEmail,
   onShowEmailChange,
+  legalIds,
+  onLegalIdsChange,
+  company,
 }: {
   kind: DocumentKind;
   document: InvoiceDetail | QuoteDetail;
@@ -643,6 +648,10 @@ function DocumentDetailPanel({
   /** Factures uniquement : e-mail de l'entreprise sur le PDF. */
   showEmail?: boolean;
   onShowEmailChange?: (value: boolean) => void;
+  /** Factures uniquement : SIREN / SIRET / TVA en tête du PDF. */
+  legalIds?: IssuerLegalId[];
+  onLegalIdsChange?: (value: IssuerLegalId[]) => void;
+  company?: { siret: string | null; vatNumber: string | null } | null;
 }) {
   const PrimaryIcon = primaryAction.icon;
 
@@ -730,6 +739,14 @@ function DocumentDetailPanel({
         <div className="mt-3">
           <ComposerTemplateSidebar onChange={onTemplateChange} value={templateId} />
         </div>
+        {onLegalIdsChange && legalIds ? (
+          <div className="mt-4">
+            <p className="mb-1.5 text-[11px] font-bold uppercase tracking-[0.1em] text-app-faint">
+              En tête de la facture
+            </p>
+            <LegalIdsPicker company={company ?? null} onChange={onLegalIdsChange} value={legalIds} />
+          </div>
+        ) : null}
         {onShowEmailChange ? (
           <label className="mt-3 flex cursor-pointer items-center gap-2 text-[12.5px] text-app-text-3">
             <input
@@ -753,6 +770,7 @@ export function InvoicesWorkspace() {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [previewTemplateId, setPreviewTemplateId] = useState('');
   const [showEmail, setShowEmail] = useState(false);
+  const [legalIds, setLegalIds] = useState<IssuerLegalId[]>(DEFAULT_ISSUER_LEGAL_IDS);
   const [quickPreviewId, setQuickPreviewId] = useState<string | null>(null);
   const [pdfBusyKey, setPdfBusyKey] = useState<string | null>(null);
   const [checkedIds, setCheckedIds] = useState<string[]>([]);
@@ -760,7 +778,7 @@ export function InvoicesWorkspace() {
   const { selectedId, setSelectedId, status, setStatus } =
     useWorkspaceParams(INVOICE_FILTER_VALUES);
   const { user } = useAuth();
-  const { scope } = useTenant();
+  const { scope, activeCompany } = useTenant();
   const { settings } = useSettings();
   const { showSuccess, showError } = useToast();
   const queryClient = useQueryClient();
@@ -808,6 +826,7 @@ export function InvoicesWorkspace() {
       if (!cancelled) {
         setPreviewTemplateId(options.templateId ?? getDefaultComposerTemplateId('invoice', settings));
         setShowEmail(options.showEmail);
+        setLegalIds(options.legalIds);
       }
     });
     return () => {
@@ -819,6 +838,13 @@ export function InvoicesWorkspace() {
     setShowEmail(value);
     if (!detail || !scope) return;
     await updateInvoicePdfOptions(requireScope(scope), detail.id, { showEmail: value });
+    void queryClient.invalidateQueries({ queryKey: ['pdf-preview'] });
+  }
+
+  async function changeLegalIds(value: IssuerLegalId[]) {
+    setLegalIds(value);
+    if (!detail || !scope) return;
+    await updateInvoicePdfOptions(requireScope(scope), detail.id, { legalIds: value });
     void queryClient.invalidateQueries({ queryKey: ['pdf-preview'] });
   }
 
@@ -1171,6 +1197,9 @@ export function InvoicesWorkspace() {
                 onDelete={() => confirmDeleteInvoices([detail.id])}
                 onShowEmailChange={(value) => void changeShowEmail(value)}
                 showEmail={showEmail}
+                company={activeCompany}
+                legalIds={legalIds}
+                onLegalIdsChange={(value) => void changeLegalIds(value)}
                 onOpenPreview={() => setQuickPreviewId(detail.id)}
                 onTemplateChange={changeInvoiceTemplate}
                 primaryAction={invoicePrimaryAction(detail)}

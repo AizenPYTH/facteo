@@ -65,7 +65,12 @@ import { requireScope } from '@/lib/domain/tenant/scope';
 import { createEmptyInvoiceLine } from '@inveq/types/invoice';
 import { createEmptyQuoteLine, createLocalLineId } from '@inveq/types/quote';
 import type { Product } from '@/types/product';
-import { createDefaultInvoicePdfOptions, type InvoicePdfOptions } from '@/types/pdf-options';
+import {
+  createDefaultInvoicePdfOptions,
+  readRememberedLegalIds,
+  rememberLegalIds,
+  type InvoicePdfOptions,
+} from '@/types/pdf-options';
 import { CLIENTS_PAGE_SIZE } from '@inveq/types/clients-list';
 
 /** Sous ce palier le composer devient un assistant en 3 étapes (handoff §5). */
@@ -275,7 +280,7 @@ export function DocumentComposer({ kind }: { kind: 'invoice' | 'quote' }) {
   const preselectedClient = searchParams.get('client') ?? '';
   const fromProductsParam = searchParams.get('fromProducts') ?? '';
   const { user, loading: authLoading } = useAuth();
-  const { scope, loading: tenantLoading } = useTenant();
+  const { scope, activeCompany, loading: tenantLoading } = useTenant();
   const { settings, loading: settingsLoading } = useSettings();
   const queryClient = useQueryClient();
   const { showError } = useToast();
@@ -287,9 +292,10 @@ export function DocumentComposer({ kind }: { kind: 'invoice' | 'quote' }) {
   const [notes, setNotes] = useState('');
   const [templateId, setTemplateId] = useState('');
   const [customNumber, setCustomNumber] = useState('');
-  const [pdfOptions, setPdfOptions] = useState<InvoicePdfOptions>(() =>
-    createDefaultInvoicePdfOptions(),
-  );
+  const [pdfOptions, setPdfOptions] = useState<InvoicePdfOptions>(() => ({
+    ...createDefaultInvoicePdfOptions(),
+    legalIds: readRememberedLegalIds(),
+  }));
   const [lines, setLines] = useState<LineValue[]>([
     kind === 'invoice' ? createEmptyInvoiceLine() : createEmptyQuoteLine(),
   ]);
@@ -480,6 +486,7 @@ export function DocumentComposer({ kind }: { kind: 'invoice' | 'quote' }) {
       });
     },
     onSuccess: (doc) => {
+      if (kind === 'invoice') rememberLegalIds(pdfOptions.legalIds);
       void queryClient.invalidateQueries({
         queryKey: kind === 'quote' ? quotesQueryKeys.all : invoicesQueryKeys.all,
       });
@@ -757,6 +764,7 @@ export function DocumentComposer({ kind }: { kind: 'invoice' | 'quote' }) {
   const presentationCard =
     kind === 'invoice' ? (
       <ComposerPresentationCard
+        company={activeCompany}
         forecastNumber={forecastNumber}
         number={customNumber}
         onChange={setPdfOptions}
