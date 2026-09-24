@@ -78,6 +78,8 @@ export async function requestOpenAiJsonSchema(input: {
   userContent?: Array<Record<string, unknown>>;
   schemaName: string;
   schema: Record<string, unknown>;
+  /** 0 pour une lecture fidèle (OCR) : aucune créativité. Absent : défaut du modèle. */
+  temperature?: number;
 }): Promise<string> {
   const userContent =
     input.userContent && input.userContent.length > 0
@@ -92,6 +94,7 @@ export async function requestOpenAiJsonSchema(input: {
     },
     body: JSON.stringify({
       model: input.model,
+      ...(input.temperature !== undefined ? { temperature: input.temperature } : {}),
       input: [
         {
           role: 'system',

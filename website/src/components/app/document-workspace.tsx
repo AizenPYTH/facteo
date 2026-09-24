@@ -21,6 +21,7 @@ import {
   Receipt,
   Send,
   Share2,
+  Sparkles,
   Trash2,
   type LucideIcon,
 } from 'lucide-react';
@@ -47,6 +48,7 @@ import {
   GhostButton,
   PrimaryButton,
   PrimaryLink,
+  SecondaryLink,
   SecondaryButton,
 } from '@/components/app/form-fields';
 import { StatusBadge } from '@/components/app/status-badge';
@@ -1180,6 +1182,10 @@ export function InvoicesWorkspace() {
             status={status}
           />
         }>
+        <SecondaryLink href="/app/invoices?batch=1">
+          <Sparkles size={16} />
+          Plusieurs factures (IA)
+        </SecondaryLink>
         <PrimaryLink href="/app/invoices?create=1">
           <Plus size={16} />
           Nouvelle facture
