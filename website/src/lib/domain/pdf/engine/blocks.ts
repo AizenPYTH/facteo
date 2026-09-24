@@ -163,7 +163,7 @@ export function buildPaymentSection(input: PdfDocumentInput): string {
     return `
     <div class="payment">
       <h3>Règlement</h3>
-      <div><strong>Facture acquittée.</strong> Aucun règlement n’est attendu.</div>
+      <div><strong>Facture payée.</strong> Aucun règlement n’est attendu.</div>
     </div>
   `;
   }

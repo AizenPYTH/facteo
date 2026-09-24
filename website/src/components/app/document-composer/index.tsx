@@ -23,6 +23,7 @@ import {
 import { ComposerErrorBanner } from '@/components/app/document-composer/field-errors';
 import { ComposerLinesCard, type LineFieldName } from '@/components/app/document-composer/lines-card';
 import { ComposerTemplateBar } from '@/components/app/document-composer/template-bar';
+import { ComposerPresentationCard } from '@/components/app/document-composer/presentation-card';
 import { ComposerTermsCard } from '@/components/app/document-composer/terms-card';
 import {
   COMPOSER_WIZARD_STEPS,
@@ -41,6 +42,7 @@ import { LoadingState } from '@/components/app/ui';
 import { PrimaryButton, SecondaryButton, TextArea } from '@/components/app/form-fields';
 import { useAuth } from '@/providers/auth-provider';
 import { useTenant } from '@/providers/company-provider';
+import { useImagePaste } from '@/hooks/use-image-paste';
 import { useSettings } from '@/hooks/use-settings';
 import { fetchClientsPage } from '@/lib/domain/supabase/clients';
 import { createInvoice } from '@/lib/domain/supabase/invoices';
@@ -62,6 +64,7 @@ import { requireScope } from '@/lib/domain/tenant/scope';
 import { createEmptyInvoiceLine } from '@inveq/types/invoice';
 import { createEmptyQuoteLine, createLocalLineId } from '@inveq/types/quote';
 import type { Product } from '@/types/product';
+import { createDefaultInvoicePdfOptions, type InvoicePdfOptions } from '@/types/pdf-options';
 import { CLIENTS_PAGE_SIZE } from '@inveq/types/clients-list';
 
 /** Sous ce palier le composer devient un assistant en 3 étapes (handoff §5). */
@@ -281,6 +284,9 @@ export function DocumentComposer({ kind }: { kind: 'invoice' | 'quote' }) {
   const [paymentChoice, setPaymentChoice] = useState<number | 'paid' | null>(null);
   const [notes, setNotes] = useState('');
   const [templateId, setTemplateId] = useState('');
+  const [pdfOptions, setPdfOptions] = useState<InvoicePdfOptions>(() =>
+    createDefaultInvoicePdfOptions(),
+  );
   const [lines, setLines] = useState<LineValue[]>([
     kind === 'invoice' ? createEmptyInvoiceLine() : createEmptyQuoteLine(),
   ]);
@@ -450,6 +456,7 @@ export function DocumentComposer({ kind }: { kind: 'invoice' | 'quote' }) {
           issuedAt: issuedAtIso,
           lines: validLines,
           notes: notes.trim() || undefined,
+          pdfOptions,
         });
       }
 
@@ -464,6 +471,7 @@ export function DocumentComposer({ kind }: { kind: 'invoice' | 'quote' }) {
         lines: validLines,
         notes: notes.trim() || undefined,
         paymentTermsDays: dueDays,
+        pdfOptions,
       });
     },
     onSuccess: (doc) => {
@@ -547,7 +555,7 @@ export function DocumentComposer({ kind }: { kind: 'invoice' | 'quote' }) {
     });
   }
 
-  async function handleImportFiles(files: FileList | null) {
+  async function handleImportFiles(files: FileList | File[] | null) {
     if (!files || files.length === 0) {
       return;
     }
@@ -627,6 +635,9 @@ export function DocumentComposer({ kind }: { kind: 'invoice' | 'quote' }) {
       setIsImportingAi(false);
     }
   }
+
+  // Une capture copiée se colle directement sur l'éditeur, sans l'enregistrer d'abord.
+  useImagePaste((images) => void handleImportFiles(images), !isImportingAi && !catalogOpen);
 
   function removeLine(id: string) {
     setLines((prev) => {
@@ -735,6 +746,11 @@ export function DocumentComposer({ kind }: { kind: 'invoice' | 'quote' }) {
     </ComposerCard>
   );
 
+  const presentationCard =
+    kind === 'invoice' ? (
+      <ComposerPresentationCard onChange={setPdfOptions} value={pdfOptions} />
+    ) : null;
+
   const notesCard = (
     <ComposerCard title="Notes affichées sur le document">
       <TextArea
@@ -841,6 +857,7 @@ export function DocumentComposer({ kind }: { kind: 'invoice' | 'quote' }) {
                 totals={totals}
               />
               {templateCard}
+              {presentationCard}
             </>
           ) : null}
         </ComposerWizardShell>
@@ -855,6 +872,7 @@ export function DocumentComposer({ kind }: { kind: 'invoice' | 'quote' }) {
                 {termsCard}
                 {notesCard}
                 {templateCard}
+                {presentationCard}
               </div>
 
               {linesCard}

@@ -1,6 +1,6 @@
-import { buildTemplateContext } from '@/lib/pdf/engine/templates/context';
+import { buildTemplateContext, type TemplateContext } from '@/lib/pdf/engine/templates/context';
 import { resolvePdfTemplate } from '@/lib/pdf/engine/templates/registry';
-import { PAGE_HEIGHT, PAGE_WIDTH, u } from '@/lib/pdf/engine/templates/shared';
+import { escapeHtml, PAGE_HEIGHT, PAGE_WIDTH, u } from '@/lib/pdf/engine/templates/shared';
 import type { PdfDocumentInput } from '@/lib/pdf/engine/types';
 
 /**
@@ -39,6 +39,66 @@ function pageStyles(): string {
   `;
 }
 
+const STAMP_GREEN = '#0B7A4B';
+
+/**
+ * SIREN / SIRET / TVA choisis pour le document, en tête de page et identiques
+ * pour les 20 modèles. Rien n'est rendu si aucun n'est choisi ou renseigné.
+ */
+function legalIdsStrip(context: TemplateContext): string {
+  if (context.issuerLegalIds.length === 0) {
+    return '';
+  }
+
+  const items = context.issuerLegalIds
+    .map(
+      (entry) =>
+        `<span style="white-space:nowrap"><span style="font-size:${u(8.5)}; letter-spacing:.08em; text-transform:uppercase; color:#8A8A99">${escapeHtml(
+          entry.label,
+        )}</span>&nbsp;<span style="font-weight:600; color:#3A3A46">${escapeHtml(entry.value)}</span></span>`,
+    )
+    .join('');
+
+  return `<div style="display:flex; flex-wrap:wrap; justify-content:center; gap:${u(4)} ${u(22)}; padding:${u(11)} ${u(48)} ${u(10)}; font-size:${u(9.5)}; line-height:1.3; border-bottom:1px solid rgba(20,20,26,.08)">${items}</div>`;
+}
+
+/** Cachet « Facture payée » au nom de l'entreprise émettrice. */
+function paidStamp(context: TemplateContext): string {
+  if (!context.paidStamp) {
+    return '';
+  }
+
+  const { companyName, date } = context.paidStamp;
+
+  return `<div aria-hidden="true" style="position:absolute; bottom:${u(190)}; left:${u(64)}; z-index:5; transform:rotate(-9deg); min-width:${u(190)}; max-width:${u(260)}; padding:${u(9)} ${u(18)} ${u(8)}; border:${u(3.5)} double ${STAMP_GREEN}; border-radius:${u(10)}; color:${STAMP_GREEN}; text-align:center; opacity:.88; mix-blend-mode:multiply; font-family:'Plus Jakarta Sans', Arial, sans-serif">
+    <div style="font-size:${u(18)}; font-weight:800; letter-spacing:.14em; line-height:1.1">FACTURE PAYÉE</div>
+    ${
+      companyName
+        ? `<div style="margin-top:${u(5)}; padding-top:${u(5)}; border-top:1px solid ${STAMP_GREEN}; font-size:${u(10)}; font-weight:700; letter-spacing:.06em; text-transform:uppercase; overflow:hidden; text-overflow:ellipsis; white-space:nowrap">${escapeHtml(
+            companyName,
+          )}</div>`
+        : ''
+    }
+    ${date ? `<div style="margin-top:${u(2)}; font-size:${u(9)}; font-weight:600">le ${escapeHtml(date)}</div>` : ''}
+  </div>`;
+}
+
+/** Insère le bandeau légal et le cachet en tête de la première page du modèle. */
+function withPageExtras(html: string, context: TemplateContext): string {
+  const extras = `${legalIdsStrip(context)}${paidStamp(context)}`;
+  if (!extras) {
+    return html;
+  }
+
+  const match = html.match(/<div class="dc-page"[^>]*>/);
+  if (!match || match.index === undefined) {
+    return `${extras}${html}`;
+  }
+
+  const insertAt = match.index + match[0].length;
+  return `${html.slice(0, insertAt)}${extras}${html.slice(insertAt)}`;
+}
+
 export function renderTemplatedDocumentPdfHtml(input: PdfDocumentInput): string {
   const template = resolvePdfTemplate(input.templateId);
   const context = buildTemplateContext(input);
@@ -52,7 +112,7 @@ export function renderTemplatedDocumentPdfHtml(input: PdfDocumentInput): string 
   <style>${pageStyles()}</style>
 </head>
 <body style="background:${template.paper}">
-${template.render(context)}
+${withPageExtras(template.render(context), context)}
 </body>
 </html>`;
 }

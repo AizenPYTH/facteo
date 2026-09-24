@@ -155,7 +155,7 @@ export function AddProductMethods({
 
       <MethodCard
         busy={isAnalyzing}
-        description="Capture d’une page web, catalogue, étiquette de prix ou tableau. L’IA lit ce qui y est écrit et remplit le nom, la description, la référence, l’unité, le prix et la TVA. Elle ne reconnaît pas un objet photographié."
+        description="Capture d’une page web, catalogue, étiquette de prix ou tableau. L’IA lit ce qui y est écrit et remplit le nom, la description, la référence, l’unité, le prix et la TVA. Elle ne reconnaît pas un objet photographié. Vous pouvez aussi coller une capture avec Ctrl+V."
         disabled={busy}
         icon={<Sparkles size={17} />}
         meta="Le plus rapide"

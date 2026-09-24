@@ -89,6 +89,7 @@ export function ComposerLinesCard({
               'border-app-accent-violet-border bg-app-accent-violet-tint text-app-accent-violet hover:bg-app-accent-violet-tint/70',
             )}
             onClick={onOpenImport}
+            title="Ou collez une image avec Ctrl+V"
             type="button">
             <Sparkles size={14} strokeWidth={1.9} />
             Import IA · CSV
