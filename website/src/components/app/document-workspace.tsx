@@ -70,6 +70,7 @@ import {
   fetchInvoiceById,
   fetchInvoicePdfOptions,
   markInvoiceAsPaid,
+  updateInvoicePdfOptions,
   updateInvoiceStatus,
   updateInvoiceTemplate,
 } from '@/lib/domain/supabase/invoices';
@@ -623,6 +624,8 @@ function DocumentDetailPanel({
   onTemplateChange,
   onOpenPreview,
   onDelete,
+  showEmail,
+  onShowEmailChange,
 }: {
   kind: DocumentKind;
   document: InvoiceDetail | QuoteDetail;
@@ -637,6 +640,9 @@ function DocumentDetailPanel({
   onTemplateChange: (id: string) => void;
   onOpenPreview: () => void;
   onDelete?: () => void;
+  /** Factures uniquement : e-mail de l'entreprise sur le PDF. */
+  showEmail?: boolean;
+  onShowEmailChange?: (value: boolean) => void;
 }) {
   const PrimaryIcon = primaryAction.icon;
 
@@ -724,6 +730,17 @@ function DocumentDetailPanel({
         <div className="mt-3">
           <ComposerTemplateSidebar onChange={onTemplateChange} value={templateId} />
         </div>
+        {onShowEmailChange ? (
+          <label className="mt-3 flex cursor-pointer items-center gap-2 text-[12.5px] text-app-text-3">
+            <input
+              checked={Boolean(showEmail)}
+              className="h-[14px] w-[14px] [accent-color:var(--app-accent)]"
+              onChange={(event) => onShowEmailChange(event.target.checked)}
+              type="checkbox"
+            />
+            Afficher mon e-mail sur la facture
+          </label>
+        ) : null}
       </div>
 
       <ActivityTimeline documentId={document.id} documentType={kind} />
@@ -735,6 +752,7 @@ export function InvoicesWorkspace() {
   const [search, setSearch] = useState('');
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [previewTemplateId, setPreviewTemplateId] = useState('');
+  const [showEmail, setShowEmail] = useState(false);
   const [quickPreviewId, setQuickPreviewId] = useState<string | null>(null);
   const [pdfBusyKey, setPdfBusyKey] = useState<string | null>(null);
   const [checkedIds, setCheckedIds] = useState<string[]>([]);
@@ -789,12 +807,20 @@ export function InvoicesWorkspace() {
     void fetchInvoicePdfOptions(requireScope(scope), detail.id).then((options) => {
       if (!cancelled) {
         setPreviewTemplateId(options.templateId ?? getDefaultComposerTemplateId('invoice', settings));
+        setShowEmail(options.showEmail);
       }
     });
     return () => {
       cancelled = true;
     };
   }, [detail?.id, settings, scope]);
+
+  async function changeShowEmail(value: boolean) {
+    setShowEmail(value);
+    if (!detail || !scope) return;
+    await updateInvoicePdfOptions(requireScope(scope), detail.id, { showEmail: value });
+    void queryClient.invalidateQueries({ queryKey: ['pdf-preview'] });
+  }
 
   function changeInvoiceTemplate(templateId: string) {
     setPreviewTemplateId(templateId);
@@ -1143,6 +1169,8 @@ export function InvoicesWorkspace() {
                 menuItems={invoiceMenuItems(detail)}
                 onDownload={() => void runPdfAction('download')}
                 onDelete={() => confirmDeleteInvoices([detail.id])}
+                onShowEmailChange={(value) => void changeShowEmail(value)}
+                showEmail={showEmail}
                 onOpenPreview={() => setQuickPreviewId(detail.id)}
                 onTemplateChange={changeInvoiceTemplate}
                 primaryAction={invoicePrimaryAction(detail)}

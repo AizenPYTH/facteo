@@ -64,6 +64,8 @@ export type InvoicePdfOptions = {
   stampPosition: StampPosition;
   /** Modèle PDF de cette facture ('01'…'20'). `null` : modèle par défaut des réglages. */
   templateId: string | null;
+  /** E-mail de l'entreprise sur la facture. Masqué par défaut, anciennes factures comprises. */
+  showEmail: boolean;
 };
 
 export function createDefaultInvoicePdfOptions(): InvoicePdfOptions {
@@ -73,6 +75,7 @@ export function createDefaultInvoicePdfOptions(): InvoicePdfOptions {
     stampColor: 'auto',
     stampPosition: 'auto',
     templateId: null,
+    showEmail: false,
   };
 }
 
@@ -97,7 +100,9 @@ export function parseInvoicePdfOptions(value: unknown): InvoicePdfOptions {
       ? source.template_id
       : null;
 
-  return { title, legalIds, stampColor, stampPosition, templateId };
+  const showEmail = source.show_email === true;
+
+  return { title, legalIds, stampColor, stampPosition, templateId, showEmail };
 }
 
 export function serializeInvoicePdfOptions(options: InvoicePdfOptions) {
@@ -107,5 +112,6 @@ export function serializeInvoicePdfOptions(options: InvoicePdfOptions) {
     stamp_color: options.stampColor,
     stamp_position: options.stampPosition,
     template_id: options.templateId,
+    show_email: options.showEmail,
   };
 }
