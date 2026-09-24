@@ -50,6 +50,7 @@ import { requireScope } from '@/lib/domain/tenant/scope';
 import { toUserFacingError } from '@/lib/errors/messages';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/providers/auth-provider';
+import { useImagePaste } from '@/hooks/use-image-paste';
 import { useTenant } from '@/providers/company-provider';
 import { useToast } from '@/providers/toast-provider';
 import {
@@ -645,6 +646,12 @@ function ProductFormPanel({
   const [detectedProducts, setDetectedProducts] = useState<ProductFormValues[]>([]);
   const [overwriteExistingByReference, setOverwriteExistingByReference] = useState(true);
   const [duplicateReferences, setDuplicateReferences] = useState<string[]>([]);
+
+  // Nouvelle fiche produit : une capture copiée se colle directement (Ctrl+V).
+  useImagePaste(
+    (images) => void handleAiImageSelection(images),
+    !product && type === 'product' && !isAnalyzing,
+  );
   const nameInputRef = useRef<HTMLInputElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const spreadsheetInputRef = useRef<HTMLInputElement | null>(null);
@@ -772,7 +779,7 @@ function ProductFormPanel({
     setValues((prev) => ({ ...prev, [key]: value }));
   }
 
-  async function handleAiImageSelection(files: FileList | null) {
+  async function handleAiImageSelection(files: FileList | File[] | null) {
     const selectedFiles = Array.from(files ?? []);
     if (selectedFiles.length === 0) {
       return;

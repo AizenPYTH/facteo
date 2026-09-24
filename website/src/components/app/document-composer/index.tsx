@@ -42,6 +42,7 @@ import { LoadingState } from '@/components/app/ui';
 import { PrimaryButton, SecondaryButton, TextArea } from '@/components/app/form-fields';
 import { useAuth } from '@/providers/auth-provider';
 import { useTenant } from '@/providers/company-provider';
+import { useImagePaste } from '@/hooks/use-image-paste';
 import { useSettings } from '@/hooks/use-settings';
 import { fetchClientsPage } from '@/lib/domain/supabase/clients';
 import { createInvoice } from '@/lib/domain/supabase/invoices';
@@ -554,7 +555,7 @@ export function DocumentComposer({ kind }: { kind: 'invoice' | 'quote' }) {
     });
   }
 
-  async function handleImportFiles(files: FileList | null) {
+  async function handleImportFiles(files: FileList | File[] | null) {
     if (!files || files.length === 0) {
       return;
     }
@@ -634,6 +635,9 @@ export function DocumentComposer({ kind }: { kind: 'invoice' | 'quote' }) {
       setIsImportingAi(false);
     }
   }
+
+  // Une capture copiée se colle directement sur l'éditeur, sans l'enregistrer d'abord.
+  useImagePaste((images) => void handleImportFiles(images), !isImportingAi && !catalogOpen);
 
   function removeLine(id: string) {
     setLines((prev) => {

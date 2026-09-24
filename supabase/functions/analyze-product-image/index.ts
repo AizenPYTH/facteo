@@ -179,6 +179,11 @@ Deno.serve(async (request) => {
         'La devise par défaut est EUR pour un contexte francophone.',
         'confidence doit représenter ton niveau de certitude entre 0 et 1.',
         'Si plusieurs produits sont visibles (tableau, liste, feuille Excel, capture e-commerce), renseigne products avec tous les produits détectés.',
+        'Sur une commande, un panier, un ticket ou une facture, products doit contenir TOUTES les lignes facturées, dans l’ordre du document, sans en omettre aucune.',
+        'Cela inclut les lignes qui ne sont pas des produits : frais de livraison, frais de port, expédition, emballage, frais de service, frais de dossier, installation, main-d’œuvre, déplacement, supplément, garantie, abonnement.',
+        'Chaque ligne de frais devient une entrée de products avec son libellé exact dans title (par exemple « Frais de livraison ») et son montant, quantité 1 et unité "forfait".',
+        'Une ligne de frais à 0 (livraison offerte) est incluse avec un prix de 0.',
+        'N’ajoute pas comme ligne les sous-totaux, le total, le montant de TVA ni les remises globales.',
         'Chaque entrée de products doit contenir les mêmes champs que le produit principal.',
         'Le produit principal (champs top-level) doit être le premier élément pertinent détecté.',
       ].join('\n'),
@@ -243,7 +248,7 @@ function normalizeProducts(
 ): ProductAnalysis[] {
   const normalized =
     Array.isArray(rawProducts) && rawProducts.length > 0
-      ? rawProducts.slice(0, 20).map(normalizeProductAnalysis)
+      ? rawProducts.slice(0, 60).map(normalizeProductAnalysis)
       : [fallback];
 
   const filtered = normalized.filter((item) => item.title || item.description || item.reference);
