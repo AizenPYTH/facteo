@@ -67,6 +67,16 @@ export async function fetchInvoicePdfOptions(
   return parseInvoicePdfOptions((data as { pdf_options?: unknown } | null)?.pdf_options);
 }
 
+/** Change le modèle PDF d'une facture existante, sans toucher au reste de sa présentation. */
+export async function updateInvoiceTemplate(
+  scope: DataScope,
+  invoiceId: string,
+  templateId: string,
+): Promise<void> {
+  const current = await fetchInvoicePdfOptions(scope, invoiceId);
+  await saveInvoicePdfOptions(scope, invoiceId, { ...current, templateId });
+}
+
 async function saveInvoicePdfOptions(
   scope: DataScope,
   invoiceId: string,

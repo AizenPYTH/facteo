@@ -7,7 +7,12 @@ import { buildSepaCreditTransferPayload } from '@/lib/payments/sepa-qr';
 import { renderQrCodeSvg } from '@/lib/pdf/qr-svg';
 import { mapLineValueToTotals } from '@/lib/quotes/mappers';
 import type { PdfClientInfo, PdfCompanyInfo, PdfDocumentInput } from '@/lib/pdf/engine/types';
-import { DEFAULT_ISSUER_LEGAL_IDS, ISSUER_LEGAL_ID_LABELS } from '@/types/pdf-options';
+import {
+  DEFAULT_ISSUER_LEGAL_IDS,
+  ISSUER_LEGAL_ID_LABELS,
+  type StampColor,
+  type StampPosition,
+} from '@/types/pdf-options';
 
 /**
  * Vue de rendu partagée par les 20 modèles.
@@ -114,7 +119,12 @@ export type TemplateContext = {
    */
   issuerLegalIds: TemplateMetaEntry[];
   /** Facture payée : cachet au nom de l'entreprise émettrice. */
-  paidStamp: { companyName: string; date: string | null } | null;
+  paidStamp: {
+    companyName: string;
+    date: string | null;
+    color: StampColor;
+    position: StampPosition;
+  } | null;
 };
 
 /**
@@ -452,6 +462,8 @@ export function buildTemplateContext(input: PdfDocumentInput): TemplateContext {
       ? {
           companyName: issuer.name,
           date: input.paidAt ? formatDate(input.paidAt) : null,
+          color: input.stampColor ?? 'auto',
+          position: input.stampPosition ?? 'auto',
         }
       : null,
   };

@@ -66,8 +66,10 @@ import {
   convertQuoteToInvoice,
   duplicateInvoice,
   fetchInvoiceById,
+  fetchInvoicePdfOptions,
   markInvoiceAsPaid,
   updateInvoiceStatus,
+  updateInvoiceTemplate,
 } from '@/lib/domain/supabase/invoices';
 import { duplicateQuote, fetchQuoteById, updateQuoteStatus } from '@/lib/domain/supabase/quotes';
 import { getInvoiceErrorMessage } from '@/lib/invoices/errors';
@@ -729,11 +731,26 @@ export function InvoicesWorkspace() {
 
   const detail = detailQuery.data;
 
+  // Chaque facture garde son propre modèle : on repart de celui enregistré.
   useEffect(() => {
-    if (detail) {
-      setPreviewTemplateId(getDefaultComposerTemplateId('invoice', settings));
+    if (!detail || !scope) return;
+    let cancelled = false;
+    void fetchInvoicePdfOptions(requireScope(scope), detail.id).then((options) => {
+      if (!cancelled) {
+        setPreviewTemplateId(options.templateId ?? getDefaultComposerTemplateId('invoice', settings));
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [detail?.id, settings, scope]);
+
+  function changeInvoiceTemplate(templateId: string) {
+    setPreviewTemplateId(templateId);
+    if (detail && scope) {
+      void updateInvoiceTemplate(requireScope(scope), detail.id, templateId);
     }
-  }, [detail?.id, settings]);
+  }
 
   async function runPdfAction(mode: 'download' | 'print' | 'share') {
     if (!detail || !scope) return;
@@ -989,6 +1006,7 @@ export function InvoicesWorkspace() {
         kind="invoice"
         onClose={() => setQuickPreviewId(null)}
         open={Boolean(quickPreviewId)}
+        templateId={quickPreviewId === detail?.id ? previewTemplateId || null : null}
       />
 
       <div className="min-h-0 flex-1">
@@ -1028,7 +1046,7 @@ export function InvoicesWorkspace() {
                 menuItems={invoiceMenuItems(detail)}
                 onDownload={() => void runPdfAction('download')}
                 onOpenPreview={() => setQuickPreviewId(detail.id)}
-                onTemplateChange={setPreviewTemplateId}
+                onTemplateChange={changeInvoiceTemplate}
                 primaryAction={invoicePrimaryAction(detail)}
                 templateId={previewTemplateId}
               />
@@ -1408,6 +1426,7 @@ export function QuotesWorkspace() {
         kind="quote"
         onClose={() => setQuickPreviewId(null)}
         open={Boolean(quickPreviewId)}
+        templateId={quickPreviewId === detail?.id ? previewTemplateId || null : null}
       />
 
       <div className="min-h-0 flex-1">

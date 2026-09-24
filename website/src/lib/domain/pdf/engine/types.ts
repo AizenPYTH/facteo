@@ -3,7 +3,7 @@ import type { CompanyProfile } from '@/types/company-profile';
 import type { Settings } from '@/types/settings';
 
 import type { PaymentMethodId } from '@/types/payment-methods';
-import type { IssuerLegalId } from '@/types/pdf-options';
+import type { IssuerLegalId, StampColor, StampPosition } from '@/types/pdf-options';
 
 export type PdfCompanyInfo = Pick<
   CompanyProfile,
@@ -89,4 +89,7 @@ export type PdfDocumentInput = {
   documentTitle?: string | null;
   /** Identifiants de l'émetteur affichés en tête. Absent : SIRET et TVA. */
   issuerLegalIds?: IssuerLegalId[] | null;
+  /** Cachet « Facture payée ». Absent : couleur et emplacement du modèle. */
+  stampColor?: StampColor | null;
+  stampPosition?: StampPosition | null;
 };

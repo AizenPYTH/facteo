@@ -8,6 +8,11 @@ import {
   INVOICE_TITLE_SUGGESTIONS,
   ISSUER_LEGAL_ID_LABELS,
   ISSUER_LEGAL_IDS,
+  STAMP_COLOR_LABELS,
+  STAMP_COLOR_VALUES,
+  STAMP_COLORS,
+  STAMP_POSITION_LABELS,
+  STAMP_POSITIONS,
   type InvoicePdfOptions,
   type IssuerLegalId,
 } from '@/types/pdf-options';
@@ -121,6 +126,63 @@ export function ComposerPresentationCard({
           </div>
           <p className="mt-1.5 text-[11.5px] leading-relaxed text-app-muted-2">
             Ceux de votre entreprise, repris de la page Entreprise. Le SIREN vient du SIRET.
+          </p>
+        </div>
+
+        <div>
+          <p className="mb-1.5 text-[12px] font-medium text-app-text-3" id="composer-stamp-color">
+            Tampon « Facture payée » : couleur
+          </p>
+          <div aria-labelledby="composer-stamp-color" className="flex flex-wrap gap-1.5" role="group">
+            {STAMP_COLORS.map((color) => {
+              const active = value.stampColor === color;
+
+              return (
+                <button
+                  aria-pressed={active}
+                  className={cn(CHIP, 'inline-flex items-center gap-1.5', active ? CHIP_ON : CHIP_OFF)}
+                  key={color}
+                  onClick={() => onChange({ ...value, stampColor: color })}
+                  type="button">
+                  <span
+                    aria-hidden
+                    className="size-2.5 rounded-full border border-black/10"
+                    style={{
+                      background:
+                        color === 'auto'
+                          ? 'conic-gradient(#0B7A4B, #1F4FD1, #C0392B, #0B7A4B)'
+                          : STAMP_COLOR_VALUES[color],
+                    }}
+                  />
+                  {STAMP_COLOR_LABELS[color]}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <div>
+          <p className="mb-1.5 text-[12px] font-medium text-app-text-3" id="composer-stamp-position">
+            Tampon « Facture payée » : emplacement
+          </p>
+          <div aria-labelledby="composer-stamp-position" className="flex gap-1.5" role="group">
+            {STAMP_POSITIONS.map((position) => {
+              const active = value.stampPosition === position;
+
+              return (
+                <button
+                  aria-pressed={active}
+                  className={cn(CHIP, 'flex-1 px-1.5 text-center', active ? CHIP_ON : CHIP_OFF)}
+                  key={position}
+                  onClick={() => onChange({ ...value, stampPosition: position })}
+                  type="button">
+                  {STAMP_POSITION_LABELS[position]}
+                </button>
+              );
+            })}
+          </div>
+          <p className="mt-1.5 text-[11.5px] leading-relaxed text-app-muted-2">
+            Le tampon apparaît dès que la facture est payée. « Près des totaux » s’adapte au modèle choisi.
           </p>
         </div>
       </div>

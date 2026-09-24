@@ -2,6 +2,8 @@ import { buildTemplateContext, type TemplateContext } from '@/lib/pdf/engine/tem
 import { resolvePdfTemplate } from '@/lib/pdf/engine/templates/registry';
 import { escapeHtml, PAGE_HEIGHT, PAGE_WIDTH, u } from '@/lib/pdf/engine/templates/shared';
 import type { PdfDocumentInput } from '@/lib/pdf/engine/types';
+import type { PdfTemplateDefinition } from '@/lib/pdf/engine/templates/types';
+import { STAMP_COLOR_VALUES } from '@/types/pdf-options';
 
 /**
  * Enveloppe A4 commune. Chaque modèle produit le contenu de la page ; c'est ici
@@ -69,10 +71,12 @@ function legalIdsStrip(context: TemplateContext): string {
  *   la longueur de la facture et ne sort jamais de la page.
  * - `below` : juste sous le contenu principal, pour les modèles dont les totaux
  *   occupent toute la largeur.
- * - `page` : position fixe sur la page, pour les modèles en colonnes étroites.
+ * - `page` : position fixe sur la page (haut ou bas selon `fromBottom`), pour
+ *   les modèles en colonnes étroites et les emplacements choisis à la main.
  */
 type StampPlacement = {
   mode: 'beside' | 'below' | 'page';
+  fromBottom?: boolean;
   side: 'left' | 'right';
   x: number;
   y: number;
@@ -96,30 +100,59 @@ const STAMP_PLACEMENTS: Record<string, Partial<StampPlacement>> = {
   '20': { mode: 'below', y: 26 },
 };
 
-function stampPlacement(templateId: string): StampPlacement {
-  return { ...DEFAULT_STAMP, ...STAMP_PLACEMENTS[templateId] };
+function stampPlacement(
+  templateId: string,
+  position: NonNullable<TemplateContext['paidStamp']>['position'],
+): StampPlacement {
+  const auto = { ...DEFAULT_STAMP, ...STAMP_PLACEMENTS[templateId] };
+
+  switch (position) {
+    case 'top':
+      // Coin supérieur droit, sous le bandeau légal : là où l'on tamponne à la main.
+      return { mode: 'page', side: 'right', x: 36, y: 34, rotate: -8 };
+    case 'bottom':
+      return { mode: 'page', fromBottom: true, side: 'right', x: 56, y: 130, rotate: -8 };
+    default:
+      return auto;
+  }
+}
+
+/** Couleur du modèle si elle est franche, sinon vert encre. */
+function templateStampColor(accent: string | null): string {
+  const match = accent?.match(/^#([0-9a-f]{6})$/i);
+  if (match) {
+    const [r, g, b] = [0, 2, 4].map((i) => parseInt(match[1].slice(i, i + 2), 16) / 255);
+    const max = Math.max(r, g, b);
+    const saturation = max === 0 ? 0 : (max - Math.min(r, g, b)) / max;
+    if (saturation > 0.3 && max > 0.25) {
+      return accent as string;
+    }
+  }
+  return STAMP_GREEN;
 }
 
 /** Cachet « Facture payée » au nom de l'entreprise émettrice. */
-function paidStamp(context: TemplateContext, templateId: string): string {
+function paidStamp(context: TemplateContext, template: PdfTemplateDefinition): string {
   if (!context.paidStamp) {
     return '';
   }
 
-  const { companyName, date } = context.paidStamp;
-  const place = stampPlacement(templateId);
+  const { companyName, date, color, position } = context.paidStamp;
+  const place = stampPlacement(template.id, position);
+  const ink = color === 'auto' ? templateStampColor(template.accent) : STAMP_COLOR_VALUES[color];
 
-  const vertical = place.mode === 'beside' ? `bottom:${u(place.y)}` : `top:${u(place.y)}`;
+  const vertical =
+    place.mode === 'beside' || place.fromBottom ? `bottom:${u(place.y)}` : `top:${u(place.y)}`;
   const anchor =
     place.mode === 'page'
       ? '<div aria-hidden="true" style="position:absolute; inset:0; z-index:5; pointer-events:none">'
       : '<div aria-hidden="true" style="position:relative; height:0; z-index:5">';
 
-  return `${anchor}<div style="position:absolute; ${vertical}; ${place.side}:${u(place.x)}; transform:rotate(${place.rotate}deg); min-width:${u(190)}; max-width:${u(260)}; padding:${u(9)} ${u(18)} ${u(8)}; border:${u(3.5)} double ${STAMP_GREEN}; border-radius:${u(10)}; color:${STAMP_GREEN}; background:transparent; text-align:center; opacity:.88; mix-blend-mode:multiply; font-family:'Plus Jakarta Sans', Arial, sans-serif">
+  return `${anchor}<div style="position:absolute; ${vertical}; ${place.side}:${u(place.x)}; transform:rotate(${place.rotate}deg); min-width:${u(190)}; max-width:${u(260)}; padding:${u(9)} ${u(18)} ${u(8)}; border:${u(3.5)} double ${ink}; border-radius:${u(10)}; color:${ink}; background:transparent; text-align:center; opacity:.88; mix-blend-mode:multiply; font-family:'Plus Jakarta Sans', Arial, sans-serif">
     <div style="font-size:${u(18)}; font-weight:800; letter-spacing:.14em; line-height:1.1">FACTURE PAYÉE</div>
     ${
       companyName
-        ? `<div style="margin-top:${u(5)}; padding-top:${u(5)}; border-top:1px solid ${STAMP_GREEN}; font-size:${u(10)}; font-weight:700; letter-spacing:.06em; text-transform:uppercase; overflow:hidden; text-overflow:ellipsis; white-space:nowrap">${escapeHtml(
+        ? `<div style="margin-top:${u(5)}; padding-top:${u(5)}; border-top:1px solid ${ink}; font-size:${u(10)}; font-weight:700; letter-spacing:.06em; text-transform:uppercase; overflow:hidden; text-overflow:ellipsis; white-space:nowrap">${escapeHtml(
             companyName,
           )}</div>`
         : ''
@@ -142,7 +175,11 @@ function insertBefore(html: string, pattern: RegExp, extra: string): string | nu
 }
 
 /** Bandeau légal en tête de page, cachet à la fin du contenu principal. */
-function withPageExtras(html: string, context: TemplateContext, templateId: string): string {
+function withPageExtras(
+  html: string,
+  context: TemplateContext,
+  template: PdfTemplateDefinition,
+): string {
   let result = html;
 
   const strip = legalIdsStrip(context);
@@ -150,9 +187,9 @@ function withPageExtras(html: string, context: TemplateContext, templateId: stri
     result = insertAfter(result, /<div class="dc-page"[^>]*>/, strip) ?? `${strip}${result}`;
   }
 
-  const stamp = paidStamp(context, templateId);
-  if (stamp) {
-    const onPage = stampPlacement(templateId).mode === 'page';
+  const stamp = paidStamp(context, template);
+  if (stamp && context.paidStamp) {
+    const onPage = stampPlacement(template.id, context.paidStamp.position).mode === 'page';
     result =
       (onPage ? null : insertBefore(result, /<div class="dc-spacer"/, stamp)) ??
       insertAfter(result, /<div class="dc-page"[^>]*>/, stamp) ??
@@ -175,7 +212,7 @@ export function renderTemplatedDocumentPdfHtml(input: PdfDocumentInput): string 
   <style>${pageStyles()}</style>
 </head>
 <body style="background:${template.paper}">
-${withPageExtras(template.render(context), context, template.id)}
+${withPageExtras(template.render(context), context, template)}
 </body>
 </html>`;
 }
