@@ -1,3 +1,4 @@
+import type { InvoicePdfOptions } from '@/types/pdf-options';
 import type { QuoteStatus } from '@/types/quote';
 
 export type InvoiceStatus = 'draft' | 'sent' | 'partially_paid' | 'paid' | 'overdue' | 'canceled';
@@ -116,6 +117,8 @@ export type CreateInvoiceInput = {
   /** Facture déjà réglée : pas d’échéance, statut payé. */
   alreadyPaid?: boolean;
   notes?: string;
+  /** Titre et identifiants affichés sur le PDF. Absent : présentation par défaut. */
+  pdfOptions?: InvoicePdfOptions;
 };
 
 export type UpdateInvoiceInput = CreateInvoiceInput;

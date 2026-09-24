@@ -23,6 +23,7 @@ import {
 import { ComposerErrorBanner } from '@/components/app/document-composer/field-errors';
 import { ComposerLinesCard, type LineFieldName } from '@/components/app/document-composer/lines-card';
 import { ComposerTemplateBar } from '@/components/app/document-composer/template-bar';
+import { ComposerPresentationCard } from '@/components/app/document-composer/presentation-card';
 import { ComposerTermsCard } from '@/components/app/document-composer/terms-card';
 import {
   COMPOSER_WIZARD_STEPS,
@@ -62,6 +63,7 @@ import { requireScope } from '@/lib/domain/tenant/scope';
 import { createEmptyInvoiceLine } from '@inveq/types/invoice';
 import { createEmptyQuoteLine, createLocalLineId } from '@inveq/types/quote';
 import type { Product } from '@/types/product';
+import { createDefaultInvoicePdfOptions, type InvoicePdfOptions } from '@/types/pdf-options';
 import { CLIENTS_PAGE_SIZE } from '@inveq/types/clients-list';
 
 /** Sous ce palier le composer devient un assistant en 3 étapes (handoff §5). */
@@ -281,6 +283,9 @@ export function DocumentComposer({ kind }: { kind: 'invoice' | 'quote' }) {
   const [paymentChoice, setPaymentChoice] = useState<number | 'paid' | null>(null);
   const [notes, setNotes] = useState('');
   const [templateId, setTemplateId] = useState('');
+  const [pdfOptions, setPdfOptions] = useState<InvoicePdfOptions>(() =>
+    createDefaultInvoicePdfOptions(),
+  );
   const [lines, setLines] = useState<LineValue[]>([
     kind === 'invoice' ? createEmptyInvoiceLine() : createEmptyQuoteLine(),
   ]);
@@ -450,6 +455,7 @@ export function DocumentComposer({ kind }: { kind: 'invoice' | 'quote' }) {
           issuedAt: issuedAtIso,
           lines: validLines,
           notes: notes.trim() || undefined,
+          pdfOptions,
         });
       }
 
@@ -464,6 +470,7 @@ export function DocumentComposer({ kind }: { kind: 'invoice' | 'quote' }) {
         lines: validLines,
         notes: notes.trim() || undefined,
         paymentTermsDays: dueDays,
+        pdfOptions,
       });
     },
     onSuccess: (doc) => {
@@ -735,6 +742,11 @@ export function DocumentComposer({ kind }: { kind: 'invoice' | 'quote' }) {
     </ComposerCard>
   );
 
+  const presentationCard =
+    kind === 'invoice' ? (
+      <ComposerPresentationCard onChange={setPdfOptions} value={pdfOptions} />
+    ) : null;
+
   const notesCard = (
     <ComposerCard title="Notes affichées sur le document">
       <TextArea
@@ -841,6 +853,7 @@ export function DocumentComposer({ kind }: { kind: 'invoice' | 'quote' }) {
                 totals={totals}
               />
               {templateCard}
+              {presentationCard}
             </>
           ) : null}
         </ComposerWizardShell>
@@ -855,6 +868,7 @@ export function DocumentComposer({ kind }: { kind: 'invoice' | 'quote' }) {
                 {termsCard}
                 {notesCard}
                 {templateCard}
+                {presentationCard}
               </div>
 
               {linesCard}

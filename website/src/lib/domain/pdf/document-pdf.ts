@@ -1,4 +1,5 @@
 import { fetchClientById } from '@/lib/supabase/clients';
+import { fetchInvoicePdfOptions } from '@/lib/domain/supabase/invoices';
 import { fetchCompanyById, mapCompanyToFormValues } from '@/lib/supabase/companies';
 import { fetchDocumentSignature } from '@/lib/supabase/subscriptions';
 import { fetchUserProfile } from '@/lib/supabase/profiles';
@@ -106,11 +107,12 @@ export async function buildInvoicePdfInput(
   invoice: InvoiceDetail,
   authEmail?: string | null,
 ): Promise<PdfDocumentInput> {
-  const [company, settings, client, documentSignature] = await Promise.all([
+  const [company, settings, client, documentSignature, pdfOptions] = await Promise.all([
     resolvePdfCompanyInfo(scope, authEmail),
     fetchSettings(scope),
     invoice.clientId ? fetchClientById(scope, invoice.clientId) : null,
     fetchDocumentSignature('invoice', invoice.id),
+    fetchInvoicePdfOptions(scope, invoice.id),
   ]);
 
   return {
@@ -136,6 +138,10 @@ export async function buildInvoicePdfInput(
       ? { url: documentSignature.signatureUrl, signedAt: documentSignature.signedAt }
       : null,
     templateId: settings?.invoiceTemplateId ?? DEFAULT_PDF_TEMPLATE_ID,
+    // Seul `paidAt` signale le paiement : `status` activerait la pastille du modèle 04.
+    paidAt: invoice.status === 'paid' ? (invoice.paidAt ?? invoice.updatedAt) : null,
+    documentTitle: pdfOptions.title,
+    issuerLegalIds: pdfOptions.legalIds,
   };
 }
 

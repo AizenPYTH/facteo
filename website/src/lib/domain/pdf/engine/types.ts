@@ -3,6 +3,7 @@ import type { CompanyProfile } from '@/types/company-profile';
 import type { Settings } from '@/types/settings';
 
 import type { PaymentMethodId } from '@/types/payment-methods';
+import type { IssuerLegalId } from '@/types/pdf-options';
 
 export type PdfCompanyInfo = Pick<
   CompanyProfile,
@@ -82,4 +83,10 @@ export type PdfDocumentInput = {
    * Seul le modèle 04 l'affiche ; les autres l'ignorent, conformément au handoff.
    */
   status?: string | null;
+  /** Date d'encaissement, affichée dans le cachet « Payée ». */
+  paidAt?: string | null;
+  /** Remplace « Facture » / « Devis » dans le titre du document. */
+  documentTitle?: string | null;
+  /** Identifiants de l'émetteur affichés en tête. Absent : SIRET et TVA. */
+  issuerLegalIds?: IssuerLegalId[] | null;
 };

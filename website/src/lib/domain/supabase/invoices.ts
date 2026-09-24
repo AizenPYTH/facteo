@@ -24,6 +24,11 @@ import {
   type InvoicesPageParams,
 } from '@/types/invoices-list';
 import type { DataScope } from '@/types/tenant';
+import {
+  parseInvoicePdfOptions,
+  serializeInvoicePdfOptions,
+  type InvoicePdfOptions,
+} from '@/types/pdf-options';
 import type { InvoiceItemInsert, InvoiceItemRow, InvoicePaymentRow, InvoiceWithClient, InvoiceInsert } from '@/types/database';
 
 export { INVOICES_PAGE_SIZE };
@@ -38,6 +43,45 @@ const INVOICE_ITEM_COLUMNS =
 
 const PAYMENT_COLUMNS =
   'id, invoice_id, user_id, amount, paid_at, payment_method, payment_reference, notes, created_at' as const;
+
+/**
+ * `invoices.pdf_options` peut ne pas encore exister en base (migration
+ * 20260924120000). Lecture et écriture passent donc par des requêtes à part,
+ * qui n'empêchent jamais de créer ou d'afficher une facture.
+ */
+export async function fetchInvoicePdfOptions(
+  scope: DataScope,
+  invoiceId: string,
+): Promise<InvoicePdfOptions> {
+  const { data, error } = await supabase
+    .from('invoices')
+    .select('pdf_options')
+    .eq('id', invoiceId)
+    .eq('company_id', scope.companyId)
+    .maybeSingle();
+
+  if (error) {
+    logSupabaseError('fetchInvoicePdfOptions', error);
+  }
+
+  return parseInvoicePdfOptions((data as { pdf_options?: unknown } | null)?.pdf_options);
+}
+
+async function saveInvoicePdfOptions(
+  scope: DataScope,
+  invoiceId: string,
+  options: InvoicePdfOptions,
+): Promise<void> {
+  const { error } = await supabase
+    .from('invoices')
+    .update({ pdf_options: serializeInvoicePdfOptions(options) } as Partial<InvoiceInsert>)
+    .eq('id', invoiceId)
+    .eq('company_id', scope.companyId);
+
+  if (error) {
+    logSupabaseError('saveInvoicePdfOptions', error);
+  }
+}
 
 function sanitizeSearchTerm(search: string): string {
   return search.trim().replace(/[%_,]/g, '');
@@ -322,6 +366,10 @@ export async function createInvoice(scope: DataScope, input: CreateInvoiceInput)
     throw error;
   }
 
+  if (input.pdfOptions) {
+    await saveInvoicePdfOptions(scope, invoiceRow.id, input.pdfOptions);
+  }
+
   const { data: fullInvoice, error: fetchError } = await supabase
     .from('invoices')
     .select(INVOICE_LIST_COLUMNS)
@@ -398,7 +446,10 @@ export async function duplicateInvoice(scope: DataScope, invoiceId: string): Pro
     throw new Error('Invoice not found.');
   }
 
+  const pdfOptions = await fetchInvoicePdfOptions(scope, invoiceId);
+
   return createInvoice(scope, {
+    pdfOptions,
     clientId: source.clientId,
     lines: source.lines.map((line) => ({
       ...line,
