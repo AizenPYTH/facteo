@@ -3,6 +3,7 @@ import type { CompanyProfile } from '@/types/company-profile';
 import type { Settings } from '@/types/settings';
 
 import type { PaymentMethodId } from '@/types/payment-methods';
+import type { IssuerLegalId, StampColor, StampPosition } from '@/types/pdf-options';
 
 export type PdfCompanyInfo = Pick<
   CompanyProfile,
@@ -23,6 +24,8 @@ export type PdfCompanyInfo = Pick<
   paymentMethods?: PaymentMethodId[];
   logoUrl?: string | null;
   signatureUrl?: string | null;
+  /** SIREN saisi à part. Absent : 9 premiers chiffres du SIRET. */
+  siren?: string | null;
 };
 
 export type PdfClientInfo = Pick<
@@ -82,4 +85,15 @@ export type PdfDocumentInput = {
    * Seul le modèle 04 l'affiche ; les autres l'ignorent, conformément au handoff.
    */
   status?: string | null;
+  /** Date d'encaissement, affichée dans le cachet « Payée ». */
+  paidAt?: string | null;
+  /** Remplace « Facture » / « Devis » dans le titre du document. */
+  documentTitle?: string | null;
+  /** Identifiants de l'émetteur affichés en tête. Absent : SIRET et TVA. */
+  issuerLegalIds?: IssuerLegalId[] | null;
+  /** Cachet « Facture payée ». Absent : couleur et emplacement du modèle. */
+  stampColor?: StampColor | null;
+  stampPosition?: StampPosition | null;
+  /** Afficher l'e-mail de l'entreprise. Absent : affiché sur un devis, masqué sur une facture. */
+  showIssuerEmail?: boolean;
 };

@@ -44,6 +44,11 @@ function mapInvoiceErrorMessage(message: string): string {
     case 'Stripe non configuré.':
       return 'Le paiement en ligne n’est pas encore configuré.';
     default: {
+      // Messages déjà rédigés pour l'utilisateur (numéro choisi déjà pris…).
+      if (message.startsWith('Le numéro « ') || message.startsWith('Facture introuvable')) {
+        return message;
+      }
+
       if (message.includes('duplicate key') || message.includes('invoices_user_id_number_key')) {
         return 'Numéro de facture déjà utilisé. Réessayez.';
       }

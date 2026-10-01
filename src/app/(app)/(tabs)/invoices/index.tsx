@@ -1,4 +1,6 @@
 import { router, type Href } from 'expo-router';
+
+import { Button } from '@/components/ui/button';
 import { useCallback, useState } from 'react';
 import { View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -73,6 +75,11 @@ function InvoicesMobileScreen() {
         <InvoicesScreenHeader count={data?.pages[0]?.totalCount ?? invoices.length} />
         <InvoiceSearchBar onChangeText={setSearch} value={search} />
         <InvoiceStatusFilterBar onChange={setStatusFilter} value={statusFilter} />
+        <Button
+          onPress={() => router.push('/invoices/batch' as Href)}
+          title="Plusieurs factures (IA)"
+          variant="ghost"
+        />
       </View>
 
       <View style={styles.listContainer}>

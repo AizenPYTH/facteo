@@ -41,6 +41,7 @@ export default function CompanyProfileScreen() {
     control,
     handleSubmit,
     reset,
+    setValue,
     formState: { errors, isSubmitting, isDirty },
   } = useForm<CompanyProfileFormValues>({
     resolver: zodResolver(companyProfileSchema),
@@ -144,6 +145,7 @@ export default function CompanyProfileScreen() {
       }}
       control={control}
       errors={errors}
+      setValue={setValue}
     />
   );
 

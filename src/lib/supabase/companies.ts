@@ -1,3 +1,4 @@
+import type { CompanyLookupResult } from '@/lib/company-search/types';
 import { supabase } from '@/lib/supabase';
 import { logSupabaseError } from '@/lib/supabase/errors';
 import type { CompanyProfileFormValues, UpdateCompanyProfileInput } from '@/types/company-profile';
@@ -200,7 +201,71 @@ export async function updateCompanyProfile(
     throw error;
   }
 
+  if (input.siren !== undefined) {
+    await saveCompanySiren(companyId, input.siren);
+  }
+
   return mapCompanyRow(data as CompanyRow, 'owner');
+}
+
+/**
+ * `companies.siren` vient d'une migration qui n'est peut-être pas appliquée
+ * partout : lecture et écriture passent par des requêtes à part, qui ne
+ * bloquent jamais le chargement ni l'enregistrement du reste du profil.
+ */
+export async function fetchCompanySiren(companyId: string): Promise<string> {
+  const { data, error } = await supabase
+    .from('companies')
+    .select('siren')
+    .eq('id', companyId)
+    .maybeSingle();
+
+  if (error) {
+    logSupabaseError('fetchCompanySiren', error);
+    return '';
+  }
+
+  return ((data as { siren?: string | null } | null)?.siren ?? '').trim();
+}
+
+/**
+ * Complète une entreprise avec les données officielles trouvées par SIREN /
+ * SIRET. Le nom choisi par l'utilisateur est conservé.
+ */
+export async function applyCompanyRegistration(
+  companyId: string,
+  registration: CompanyLookupResult,
+): Promise<void> {
+  const { error } = await supabase
+    .from('companies')
+    .update({
+      address: toNullableString(registration.address),
+      postal_code: toNullableString(registration.postalCode),
+      city: toNullableString(registration.city),
+      country: toNullableString(registration.country),
+      siret: toNullableString(registration.siret.replace(/\s/g, '')),
+      vat_number: toNullableString((registration.vatNumber ?? '').replace(/\s/g, '').toUpperCase()),
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', companyId);
+
+  if (error) {
+    logSupabaseError('applyCompanyRegistration', error);
+    throw error;
+  }
+
+  await saveCompanySiren(companyId, registration.siren);
+}
+
+async function saveCompanySiren(companyId: string, siren: string): Promise<void> {
+  const { error } = await supabase
+    .from('companies')
+    .update({ siren: toNullableString(siren.replace(/\s/g, '')) })
+    .eq('id', companyId);
+
+  if (error) {
+    logSupabaseError('saveCompanySiren', error);
+  }
 }
 
 export async function updateCompanyName(companyId: string, name: string): Promise<TenantCompany> {

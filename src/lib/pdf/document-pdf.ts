@@ -1,5 +1,10 @@
 import { fetchClientById } from '@/lib/supabase/clients';
-import { fetchCompanyById, mapCompanyToFormValues } from '@/lib/supabase/companies';
+import { fetchInvoicePdfOptions } from '@/lib/supabase/invoices';
+import {
+  fetchCompanyById,
+  fetchCompanySiren,
+  mapCompanyToFormValues,
+} from '@/lib/supabase/companies';
 import { fetchDocumentSignature } from '@/lib/supabase/subscriptions';
 import { fetchUserProfile } from '@/lib/supabase/profiles';
 import { fetchSettings } from '@/lib/supabase/settings';
@@ -19,9 +24,10 @@ export async function resolvePdfCompanyInfo(
   scope: DataScope,
   authEmail?: string | null,
 ): Promise<PdfCompanyInfo> {
-  const [company, profileRow] = await Promise.all([
+  const [company, profileRow, siren] = await Promise.all([
     fetchCompanyById(scope.companyId),
     fetchUserProfile(scope.userId),
+    fetchCompanySiren(scope.companyId),
   ]);
 
   const companyForm = mapCompanyToFormValues(
@@ -48,6 +54,7 @@ export async function resolvePdfCompanyInfo(
     paymentMethods: company?.paymentMethods ?? companyForm.paymentMethods,
     logoUrl: company?.logoUrl ?? null,
     signatureUrl: company?.signatureUrl ?? null,
+    siren: siren || null,
   };
 }
 
@@ -107,11 +114,12 @@ export async function buildInvoicePdfInput(
   invoice: InvoiceDetail,
   authEmail?: string | null,
 ): Promise<PdfDocumentInput> {
-  const [company, settings, client, documentSignature] = await Promise.all([
+  const [company, settings, client, documentSignature, pdfOptions] = await Promise.all([
     resolvePdfCompanyInfo(scope, authEmail),
     fetchSettings(scope),
     invoice.clientId ? fetchClientById(scope, invoice.clientId) : null,
     fetchDocumentSignature('invoice', invoice.id),
+    fetchInvoicePdfOptions(scope, invoice.id),
   ]);
 
   return {
@@ -135,7 +143,14 @@ export async function buildInvoicePdfInput(
     clientSignature: documentSignature
       ? { url: documentSignature.signatureUrl, signedAt: documentSignature.signedAt }
       : null,
-    templateId: settings?.invoiceTemplateId ?? DEFAULT_PDF_TEMPLATE_ID,
+    templateId: pdfOptions.templateId ?? settings?.invoiceTemplateId ?? DEFAULT_PDF_TEMPLATE_ID,
+    // Seul `paidAt` signale le paiement : `status` activerait la pastille du modèle 04.
+    paidAt: invoice.status === 'paid' ? (invoice.paidAt ?? invoice.updatedAt) : null,
+    documentTitle: pdfOptions.title,
+    issuerLegalIds: pdfOptions.legalIds,
+    stampColor: pdfOptions.stampColor,
+    stampPosition: pdfOptions.stampPosition,
+    showIssuerEmail: pdfOptions.showEmail,
   };
 }
 

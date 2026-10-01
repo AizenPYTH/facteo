@@ -3,7 +3,12 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/use-auth';
 import { useTenant } from '@/hooks/use-tenant';
 import { supabase } from '@/lib/supabase';
-import { fetchCompanyById, mapCompanyToFormValues, updateCompanyProfile } from '@/lib/supabase/companies';
+import {
+  fetchCompanyById,
+  fetchCompanySiren,
+  mapCompanyToFormValues,
+  updateCompanyProfile,
+} from '@/lib/supabase/companies';
 import { fetchUserProfile } from '@/lib/supabase/profiles';
 import { requireScope } from '@/lib/tenant/scope';
 import { dashboardQueryKeys, profilesQueryKeys } from '@/lib/supabase/query-keys';
@@ -17,17 +22,21 @@ export function useCompanyProfile() {
     queryKey: profilesQueryKeys.company(scope?.companyId ?? 'anonymous'),
     queryFn: async () => {
       const activeScope = requireScope(scope);
-      const [company, profile] = await Promise.all([
+      const [company, profile, siren] = await Promise.all([
         fetchCompanyById(activeScope.companyId),
         fetchUserProfile(activeScope.userId),
+        fetchCompanySiren(activeScope.companyId),
       ]);
 
-      return mapCompanyToFormValues(
-        company,
-        profile?.first_name ?? '',
-        profile?.last_name ?? '',
-        user!.email ?? null,
-      );
+      return {
+        ...mapCompanyToFormValues(
+          company,
+          profile?.first_name ?? '',
+          profile?.last_name ?? '',
+          user!.email ?? null,
+        ),
+        siren,
+      };
     },
     enabled: Boolean(scope?.companyId) && Boolean(user?.id) && !authLoading && !tenantLoading,
   });

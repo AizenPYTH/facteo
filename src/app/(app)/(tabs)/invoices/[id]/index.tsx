@@ -2,7 +2,8 @@ import { router, type Href } from 'expo-router';
 import { useFocusEffect, useLocalSearchParams } from 'expo-router';
 import * as Linking from 'expo-linking';
 import { SymbolView } from 'expo-symbols';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -18,7 +19,18 @@ import { DocumentDetailSkeleton } from '@/components/documents/document-detail-s
 import { PdfPreviewModal } from '@/components/pdf/pdf-preview-modal';
 import { TemplateGalleryModal } from '@/components/pdf/template-gallery-modal';
 import { DocumentClientSignatureBlock } from '@/components/signatures/document-client-signature-block';
+import { InvoicePresentationSection } from '@/components/invoices/invoice-presentation-section';
+import { CollapsibleSection } from '@/components/ui/collapsible-section';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { PressableScale } from '@/components/ui/pressable-scale';
+import { useCompanyProfile } from '@/hooks/use-company-profile';
+import {
+  deleteInvoice,
+  fetchInvoicePdfOptions,
+  updateInvoicePdfOptions,
+} from '@/lib/supabase/invoices';
+import { invoicesQueryKeys } from '@/lib/supabase/query-keys';
+import type { InvoicePdfOptions } from '@/types/pdf-options';
 import { useDocumentActions } from '@/hooks/use-document-actions';
 import { useElectronicInvoicing } from '@/hooks/use-electronic-invoicing';
 import { useThemedStyles, useColors } from '@/hooks/use-colors';
@@ -74,6 +86,18 @@ export default function InvoiceDetailScreen() {
   const [cancelVisible, setCancelVisible] = useState(false);
   const [paymentVisible, setPaymentVisible] = useState(false);
   const [signModalVisible, setSignModalVisible] = useState(false);
+  const [deleteVisible, setDeleteVisible] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const queryClient = useQueryClient();
+  const { data: companyProfile } = useCompanyProfile();
+
+  // Présentation enregistrée avec la facture (modèle, titre, SIREN, tampon…).
+  const pdfOptionsQuery = useQuery({
+    queryKey: ['invoice-pdf-options', invoiceId],
+    queryFn: () => fetchInvoicePdfOptions(requireScope(scope), invoiceId ?? ''),
+    enabled: Boolean(scope && invoiceId),
+  });
+  const pdfOptions = pdfOptionsQuery.data ?? null;
 
   const { data: sentDocuments = [], isLoading: sentDocumentsLoading } = useSentDocuments(
     'invoice',
@@ -117,9 +141,52 @@ export default function InvoiceDetailScreen() {
     documentId: invoice?.id ?? '',
     documentNumber: invoice?.number ?? '',
     documentType: 'invoice',
-    documentUpdatedAt: invoice?.updatedAt,
+    // La présentation fait partie de la clé : un changement de tampon ou de
+    // SIREN ne doit jamais servir un PDF mémorisé périmé.
+    documentUpdatedAt: `${invoice?.updatedAt ?? ''}|${JSON.stringify(pdfOptions ?? {})}`,
     onSent: handleInvoiceSent,
   });
+
+  // Le PDF part du modèle enregistré avec la facture, pas du modèle par défaut.
+  const appliedSavedTemplateRef = useRef(false);
+  useEffect(() => {
+    if (appliedSavedTemplateRef.current || !pdfOptions) return;
+    appliedSavedTemplateRef.current = true;
+    if (pdfOptions.templateId) {
+      documentActions.applyTemplate(pdfOptions.templateId);
+    }
+  }, [documentActions, pdfOptions]);
+
+  async function savePdfOptions(patch: Partial<InvoicePdfOptions>) {
+    if (!scope || !invoiceId) return;
+    queryClient.setQueryData<InvoicePdfOptions>(['invoice-pdf-options', invoiceId], (current) =>
+      current ? { ...current, ...patch } : current,
+    );
+    // Invalide l'aperçu et le PDF en cours : la prochaine action le régénère.
+    documentActions.applyTemplate(patch.templateId ?? documentActions.templateId);
+    try {
+      await updateInvoicePdfOptions(requireScope(scope), invoiceId, patch);
+    } catch {
+      showError('Modification non enregistrée. Réessayez.');
+      void pdfOptionsQuery.refetch();
+    }
+  }
+
+  async function handleDelete() {
+    if (!scope || !invoiceId) return;
+    setDeleting(true);
+    try {
+      await deleteInvoice(requireScope(scope), invoiceId);
+      void queryClient.invalidateQueries({ queryKey: invoicesQueryKeys.all });
+      setDeleteVisible(false);
+      showSuccess('Facture supprimée.');
+      router.replace('/invoices' as Href);
+    } catch (error) {
+      showError(getInvoiceErrorMessage(readErrorMessage(error)));
+    } finally {
+      setDeleting(false);
+    }
+  }
 
   useEffect(() => {
     if (isFetched && !invoice && invoiceId) {
@@ -442,6 +509,13 @@ export default function InvoiceDetailScreen() {
             },
           ]
         : []),
+      {
+        id: 'delete',
+        label: 'Supprimer la facture',
+        icon: { ios: 'trash', android: 'delete', web: 'delete' } as const,
+        onPress: () => setDeleteVisible(true),
+        destructive: true,
+      },
     ];
 
     return [primary, workflow, manage].filter((section) => section.length > 0);
@@ -509,8 +583,30 @@ export default function InvoiceDetailScreen() {
           signModalVisible={signModalVisible}
         />
 
+        {pdfOptions ? (
+          <CollapsibleSection title="Présentation de la facture">
+            <InvoicePresentationSection
+              company={companyProfile ?? null}
+              onChange={(next) => void savePdfOptions(next)}
+              showTemplate={false}
+              value={pdfOptions}
+            />
+          </CollapsibleSection>
+        ) : null}
+
         <SentDocumentsSection documents={sentDocuments} loading={sentDocumentsLoading} />
       </ScrollView>
+
+      <ConfirmDialog
+        confirmLabel="Supprimer"
+        destructive
+        loading={deleting}
+        message="Elle disparaîtra de la liste avec ses paiements. Cette action est irréversible."
+        onCancel={() => setDeleteVisible(false)}
+        onConfirm={() => void handleDelete()}
+        title={`Supprimer la facture ${invoice.number} ?`}
+        visible={deleteVisible}
+      />
 
       <DocumentActionsSheet
         onClose={() => setActionsVisible(false)}
@@ -524,7 +620,10 @@ export default function InvoiceDetailScreen() {
         buildPreviewHtml={documentActions.buildPreviewHtml}
         cacheKey={`invoice-${invoice.id}`}
         onClose={() => setTemplateGalleryVisible(false)}
-        onSelect={documentActions.applyTemplate}
+        onSelect={(templateId) => {
+          documentActions.applyTemplate(templateId);
+          void savePdfOptions({ templateId });
+        }}
         selectedTemplateId={documentActions.templateId}
         title="Modèle de la facture"
         visible={templateGalleryVisible}

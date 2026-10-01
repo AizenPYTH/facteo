@@ -1,3 +1,4 @@
+import type { InvoicePdfOptions } from '@/types/pdf-options';
 import type { QuoteStatus } from '@/types/quote';
 
 export type InvoiceStatus = 'draft' | 'sent' | 'partially_paid' | 'paid' | 'overdue' | 'canceled';
@@ -121,6 +122,10 @@ export type CreateInvoiceInput = {
   dueAt?: string | null;
   paymentTermsDays?: number | null;
   notes?: string;
+  /** Numéro choisi à la main. Absent ou vide : numéro automatique. */
+  number?: string | null;
+  /** Titre et identifiants affichés sur le PDF. Absent : présentation par défaut. */
+  pdfOptions?: InvoicePdfOptions;
 };
 
 export type UpdateInvoiceInput = CreateInvoiceInput;
