@@ -485,6 +485,29 @@ export async function createProductsBulk(
         .select(LEGACY_PRODUCT_COLUMNS));
     }
 
+    if (error && isDuplicateReferenceConstraintError(error)) {
+      // Une référence du paquet existe déjà : on reprend le paquet ligne par
+      // ligne et on ignore seulement celles en conflit.
+      for (const [index, values] of chunk.entries()) {
+        const single = await supabase
+          .from('products')
+          .insert(payloadAt(values, start + index))
+          .select(hasExtendedProductsSchema === false ? LEGACY_PRODUCT_COLUMNS : PRODUCT_COLUMNS)
+          .single();
+        if (!single.error) {
+          const row = toProductRow(single.data);
+          if (row) {
+            created.push(mapProductRow(row));
+          }
+        } else if (!isDuplicateReferenceConstraintError(single.error)) {
+          logSupabaseError('createProductsBulk', single.error);
+          throw single.error;
+        }
+      }
+      onProgress?.(Math.min(start + chunk.length, items.length));
+      continue;
+    }
+
     if (error) {
       logSupabaseError('createProductsBulk', error);
       throw error;
@@ -497,27 +520,17 @@ export async function createProductsBulk(
   return created;
 }
 
-/** Produits du catalogue dont la référence figure dans la liste (comparaison insensible à la casse côté appelant). */
+/**
+ * Produits et prestations actifs dont la référence figure dans la liste.
+ * L'unicité des références en base vaut pour tout le catalogue du compte,
+ * produits et prestations confondus : la recherche ne filtre donc pas le type.
+ */
 export async function fetchProductsByReferences(
   scope: DataScope,
-  type: ProductType,
   references: string[],
 ): Promise<Product[]> {
   const found: Product[] = [];
   const unique = [...new Set(references.map((reference) => reference.trim()).filter(Boolean))];
-
-  // Références encore tenues par des lignes supprimées : libérées avant l'import.
-  for (let start = 0; start < unique.length; start += BULK_CHUNK_SIZE) {
-    const { error } = await supabase
-      .from('products')
-      .update({ reference: null })
-      .eq('user_id', scope.userId)
-      .not('deleted_at', 'is', null)
-      .in('reference', unique.slice(start, start + BULK_CHUNK_SIZE));
-    if (error) {
-      logSupabaseError('releaseDeletedReferences', error);
-    }
-  }
 
   for (let start = 0; start < unique.length; start += BULK_CHUNK_SIZE) {
     const columns = hasExtendedProductsSchema === false ? LEGACY_PRODUCT_COLUMNS : PRODUCT_COLUMNS;
@@ -525,7 +538,6 @@ export async function fetchProductsByReferences(
       .from('products')
       .select(columns)
       .eq('user_id', scope.userId)
-      .eq('type', type)
       .is('deleted_at', null)
       .in('reference', unique.slice(start, start + BULK_CHUNK_SIZE));
 
@@ -537,6 +549,19 @@ export async function fetchProductsByReferences(
   }
 
   return found;
+}
+
+/** Range un élément du catalogue dans Produits ou Prestations. */
+export async function setProductType(scope: DataScope, productId: string, type: ProductType): Promise<void> {
+  const { error } = await supabase
+    .from('products')
+    .update({ type })
+    .eq('id', productId)
+    .eq('user_id', scope.userId);
+  if (error) {
+    logSupabaseError('setProductType', error);
+    throw error;
+  }
 }
 
 export async function updateProduct(

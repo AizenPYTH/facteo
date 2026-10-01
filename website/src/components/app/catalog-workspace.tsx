@@ -46,6 +46,7 @@ import {
   deleteProduct,
   fetchProducts,
   fetchProductsByReferences,
+  setProductType,
   updateProduct,
 } from '@/lib/domain/supabase/products';
 import { requireScope } from '@/lib/domain/tenant/scope';
@@ -721,14 +722,13 @@ function ProductFormPanel({
         (
           await fetchProductsByReferences(
             activeScope,
-            type,
             items.map((item) => item.reference),
           )
         ).map((entry) => [keyOf(entry.reference ?? ''), entry]),
       );
       const seen = new Set<string>();
       const toCreate: ProductFormValues[] = [];
-      const toUpdate: { id: string; item: ProductFormValues }[] = [];
+      const toUpdate: { id: string; item: ProductFormValues; moveType: boolean }[] = [];
       const duplicates: string[] = [];
       for (const item of items) {
         const key = keyOf(item.reference);
@@ -742,7 +742,8 @@ function ProductFormPanel({
         if (match) {
           duplicates.push(`${item.name.trim()} (réf. ${item.reference.trim()})`);
           if (overwriteExistingByReference) {
-            toUpdate.push({ id: match.id, item });
+            // Une ligne importée par erreur dans l'autre onglet y est déplacée.
+            toUpdate.push({ id: match.id, item, moveType: match.type !== type });
           }
         } else {
           toCreate.push(item);
@@ -751,7 +752,10 @@ function ProductFormPanel({
 
       const created = await createProductsBulk(activeScope, type, toCreate);
       const updated: Product[] = [];
-      for (const { id, item } of toUpdate) {
+      for (const { id, item, moveType } of toUpdate) {
+        if (moveType) {
+          await setProductType(activeScope, id, type);
+        }
         updated.push(await updateProduct(activeScope, id, item));
       }
 
