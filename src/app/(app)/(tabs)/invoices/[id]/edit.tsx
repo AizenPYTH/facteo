@@ -35,7 +35,7 @@ export default function EditInvoiceScreen() {
     }
 
     if (!canEditInvoice(invoice.status)) {
-      showError('Seules les factures en brouillon peuvent être modifiées.');
+      showError('Une facture annulée ne peut plus être modifiée.');
       router.replace(`/invoices/${invoiceId}` as Href);
     }
   }, [invoice, invoiceId, isFetched, showError]);

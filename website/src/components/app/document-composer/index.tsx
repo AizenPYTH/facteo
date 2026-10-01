@@ -46,7 +46,12 @@ import { useImagePaste } from '@/hooks/use-image-paste';
 import { useToast } from '@/providers/toast-provider';
 import { useSettings } from '@/hooks/use-settings';
 import { fetchClientsPage } from '@/lib/domain/supabase/clients';
-import { createInvoice } from '@/lib/domain/supabase/invoices';
+import {
+  createInvoice,
+  fetchInvoiceById,
+  fetchInvoicePdfOptions,
+  updateInvoice,
+} from '@/lib/domain/supabase/invoices';
 import { createQuote } from '@/lib/domain/supabase/quotes';
 import { enforcePlanLimit } from '@/lib/subscription/limit-guard';
 import { PlanLimitError } from '@/types/subscription';
@@ -58,6 +63,7 @@ import {
   addCalendarDaysDateInput,
   frenchDateInputToIso,
   frenchLabelFromDateInput,
+  isoToFrenchDateInput,
   todayDateInput,
 } from '@/lib/domain/format/date-input';
 import { getDefaultComposerTemplateId } from '@/lib/domain/pdf/composer-templates';
@@ -274,7 +280,69 @@ function useWizardLayout(): boolean {
   );
 }
 
-export function DocumentComposer({ kind }: { kind: 'invoice' | 'quote' }) {
+/** Facture existante, chargée pour modification. */
+type InvoiceEditState = {
+  id: string;
+  clientId: string;
+  issuedAt: string;
+  paymentChoice: number | 'paid' | null;
+  notes: string;
+  number: string;
+  pdfOptions: InvoicePdfOptions;
+  lines: LineValue[];
+};
+
+/** Modification d'une facture : charge la facture puis ouvre l'éditeur prérempli. */
+export function InvoiceEditor({ invoiceId }: { invoiceId: string }) {
+  const { scope } = useTenant();
+  const query = useQuery({
+    queryKey: ['invoice-edit', invoiceId],
+    queryFn: async (): Promise<InvoiceEditState | null> => {
+      const activeScope = requireScope(scope);
+      const [invoice, pdfOptions] = await Promise.all([
+        fetchInvoiceById(activeScope, invoiceId),
+        fetchInvoicePdfOptions(activeScope, invoiceId),
+      ]);
+      if (!invoice) {
+        return null;
+      }
+      const days =
+        invoice.issuedAt && invoice.dueAt
+          ? Math.round((Date.parse(invoice.dueAt) - Date.parse(invoice.issuedAt)) / 86_400_000)
+          : null;
+      return {
+        id: invoice.id,
+        clientId: invoice.clientId ?? '',
+        issuedAt: isoToFrenchDateInput(invoice.issuedAt) || todayDateInput(),
+        paymentChoice: invoice.status === 'paid' ? 'paid' : days !== null && days >= 0 ? days : null,
+        notes: invoice.notes ?? '',
+        number: invoice.number,
+        pdfOptions,
+        lines: invoice.lines.length > 0 ? invoice.lines : [createEmptyInvoiceLine()],
+      };
+    },
+    enabled: Boolean(scope?.companyId),
+    staleTime: 0,
+    gcTime: 0,
+  });
+
+  if (query.isLoading || !scope?.companyId) {
+    return <LoadingState message="Chargement de la facture…" />;
+  }
+  if (!query.data) {
+    return <LoadingState message="Facture introuvable." />;
+  }
+  return <DocumentComposer edit={query.data} key={query.data.id} kind="invoice" />;
+}
+
+export function DocumentComposer({
+  kind,
+  edit,
+}: {
+  kind: 'invoice' | 'quote';
+  /** Présent : modification de cette facture au lieu d'une création. */
+  edit?: InvoiceEditState;
+}) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const preselectedClient = searchParams.get('client') ?? '';
@@ -286,19 +354,24 @@ export function DocumentComposer({ kind }: { kind: 'invoice' | 'quote' }) {
   const { showError } = useToast();
   const isWizard = useWizardLayout();
 
-  const [clientId, setClientId] = useState(preselectedClient);
-  const [issuedAt, setIssuedAt] = useState(() => todayDateInput());
-  const [paymentChoice, setPaymentChoice] = useState<number | 'paid' | null>(null);
-  const [notes, setNotes] = useState('');
-  const [templateId, setTemplateId] = useState('');
-  const [customNumber, setCustomNumber] = useState('');
-  const [pdfOptions, setPdfOptions] = useState<InvoicePdfOptions>(() => ({
-    ...createDefaultInvoicePdfOptions(),
-    legalIds: readRememberedLegalIds(),
-  }));
-  const [lines, setLines] = useState<LineValue[]>([
-    kind === 'invoice' ? createEmptyInvoiceLine() : createEmptyQuoteLine(),
-  ]);
+  const [clientId, setClientId] = useState(edit?.clientId ?? preselectedClient);
+  const [issuedAt, setIssuedAt] = useState(() => edit?.issuedAt ?? todayDateInput());
+  const [paymentChoice, setPaymentChoice] = useState<number | 'paid' | null>(
+    edit?.paymentChoice ?? null,
+  );
+  const [notes, setNotes] = useState(edit?.notes ?? '');
+  const [templateId, setTemplateId] = useState(edit?.pdfOptions.templateId ?? '');
+  const [customNumber, setCustomNumber] = useState(edit?.number ?? '');
+  const [pdfOptions, setPdfOptions] = useState<InvoicePdfOptions>(
+    () =>
+      edit?.pdfOptions ?? {
+        ...createDefaultInvoicePdfOptions(),
+        legalIds: readRememberedLegalIds(),
+      },
+  );
+  const [lines, setLines] = useState<LineValue[]>(
+    () => edit?.lines ?? [kind === 'invoice' ? createEmptyInvoiceLine() : createEmptyQuoteLine()],
+  );
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [catalogOpen, setCatalogOpen] = useState(false);
   const [submitAttempted, setSubmitAttempted] = useState(false);
@@ -443,10 +516,25 @@ export function DocumentComposer({ kind }: { kind: 'invoice' | 'quote' }) {
         throw new Error('VALIDATION');
       }
 
-      await enforcePlanLimit('documents', () => undefined);
-
       const activeScope = requireScope(scope);
       const validLines = lines.filter((l) => l.description.trim());
+
+      if (edit) {
+        const dueDays = paymentTermsDays ?? settingsPaymentTerms;
+        const dueDate = alreadyPaid ? null : addCalendarDaysDateInput(issuedAt, dueDays);
+        return updateInvoice(activeScope, edit.id, {
+          alreadyPaid,
+          clientId,
+          dueAt: dueDate ? frenchDateInputToIso(dueDate) : null,
+          issuedAt: issuedAtIso,
+          lines: validLines,
+          notes: notes.trim() || undefined,
+          number: customNumber.trim() || null,
+          pdfOptions: { ...pdfOptions, templateId: templateId || null },
+        });
+      }
+
+      await enforcePlanLimit('documents', () => undefined);
 
       if (kind === 'quote') {
         return createQuote(activeScope, {
@@ -683,7 +771,9 @@ export function DocumentComposer({ kind }: { kind: 'invoice' | 'quote' }) {
   }
 
   function handleCancel() {
-    router.replace(kind === 'quote' ? '/app/quotes' : '/app/invoices');
+    router.replace(
+      kind === 'quote' ? '/app/quotes' : edit ? `/app/invoices?selected=${edit.id}` : '/app/invoices',
+    );
   }
 
   if (authLoading || tenantLoading || settingsLoading) {
@@ -691,8 +781,13 @@ export function DocumentComposer({ kind }: { kind: 'invoice' | 'quote' }) {
   }
 
   const clients = clientsQuery.data?.clients ?? [];
-  const title = kind === 'invoice' ? 'Nouvelle facture' : 'Nouveau devis';
-  const submitLabel = kind === 'invoice' ? 'Créer la facture' : 'Créer le devis';
+  const title = edit ? 'Modifier la facture' : kind === 'invoice' ? 'Nouvelle facture' : 'Nouveau devis';
+  const submitLabel = edit
+    ? 'Enregistrer les modifications'
+    : kind === 'invoice'
+      ? 'Créer la facture'
+      : 'Créer le devis';
+  const pendingLabel = edit ? 'Enregistrement…' : 'Création…';
   const selectedClient = clients.find((client) => client.id === clientId) ?? null;
   const issuedAtLabel = frenchLabelFromDateInput(issuedAt) ?? '';
   const dueDateInput =
@@ -832,7 +927,7 @@ export function DocumentComposer({ kind }: { kind: 'invoice' | 'quote' }) {
               <SecondaryButton onClick={handleCancel}>Annuler</SecondaryButton>
               <PrimaryButton disabled={createMutation.isPending} onClick={handleSubmit}>
                 <Send size={15} strokeWidth={1.9} />
-                {createMutation.isPending ? 'Création…' : submitLabel}
+                {createMutation.isPending ? pendingLabel : submitLabel}
               </PrimaryButton>
             </>
           )
@@ -855,7 +950,7 @@ export function DocumentComposer({ kind }: { kind: 'invoice' | 'quote' }) {
             step < COMPOSER_WIZARD_STEPS.length - 1
               ? 'Continuer'
               : createMutation.isPending
-                ? 'Création…'
+                ? pendingLabel
                 : submitLabel
           }
           total={totals.total}>
