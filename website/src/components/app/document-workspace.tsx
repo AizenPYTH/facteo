@@ -12,6 +12,7 @@ import {
   ArrowDownWideNarrow,
   CheckCircle2,
   Copy,
+  Pencil,
   Download,
   Eye,
   FileQuestion,
@@ -27,6 +28,7 @@ import {
 } from 'lucide-react';
 import {
   canConvertQuoteToInvoice,
+  canEditInvoice,
   canMarkInvoiceAsPaid,
   type InvoiceDetail,
 } from '@inveq/types/invoice';
@@ -634,6 +636,7 @@ function DocumentDetailPanel({
   onTemplateChange,
   onOpenPreview,
   onDelete,
+  onEdit,
   showEmail,
   onShowEmailChange,
   legalIds,
@@ -655,6 +658,8 @@ function DocumentDetailPanel({
   onTemplateChange: (id: string) => void;
   onOpenPreview: () => void;
   onDelete?: () => void;
+  /** Factures uniquement : ouvre l'éditeur prérempli. */
+  onEdit?: () => void;
   /** Factures uniquement : e-mail de l'entreprise sur le PDF. */
   showEmail?: boolean;
   onShowEmailChange?: (value: boolean) => void;
@@ -705,6 +710,15 @@ function DocumentDetailPanel({
             title="Télécharger le PDF">
             <Download size={16} />
           </SecondaryButton>
+          {onEdit ? (
+            <SecondaryButton
+              aria-label="Modifier la facture"
+              className="w-10 shrink-0 px-0"
+              onClick={onEdit}
+              title="Modifier la facture">
+              <Pencil size={16} />
+            </SecondaryButton>
+          ) : null}
           {onDelete ? (
             <SecondaryButton
               aria-label={kind === 'invoice' ? 'Supprimer la facture' : 'Supprimer le devis'}
@@ -789,6 +803,7 @@ function DocumentDetailPanel({
 }
 
 export function InvoicesWorkspace() {
+  const router = useRouter();
   const [search, setSearch] = useState('');
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [previewTemplateId, setPreviewTemplateId] = useState('');
@@ -1149,6 +1164,16 @@ export function InvoicesWorkspace() {
             `Bonjour,\n\nVeuillez trouver ci-joint la facture ${invoice.number}.\n\nCordialement`,
           ),
       },
+      ...(canEditInvoice(invoice.status)
+        ? [
+            {
+              key: 'edit',
+              label: 'Modifier la facture',
+              icon: Pencil,
+              onSelect: () => router.push(`/app/invoices?edit=${invoice.id}`),
+            },
+          ]
+        : []),
       {
         key: 'duplicate',
         label: 'Dupliquer',
@@ -1237,6 +1262,11 @@ export function InvoicesWorkspace() {
                 menuItems={invoiceMenuItems(detail)}
                 onDownload={() => void runPdfAction('download')}
                 onDelete={() => confirmDeleteInvoices([detail.id])}
+                onEdit={
+                  canEditInvoice(detail.status)
+                    ? () => router.push(`/app/invoices?edit=${detail.id}`)
+                    : undefined
+                }
                 onShowEmailChange={(value) => void changeShowEmail(value)}
                 showEmail={showEmail}
                 company={activeCompany}

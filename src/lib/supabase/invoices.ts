@@ -18,6 +18,7 @@ import type {
   InvoiceStatus,
   UpdateInvoiceInput,
 } from '@/types/invoice';
+import { canEditInvoice } from '@/types/invoice';
 import {
   INVOICES_PAGE_SIZE,
   type InvoicesPage,
@@ -415,8 +416,8 @@ export async function updateInvoice(
     throw new Error('Invoice not found.');
   }
 
-  if (existing.status !== 'draft') {
-    throw new Error('Invoice is not editable.');
+  if (!canEditInvoice(existing.status)) {
+    throw new Error('Une facture annulée ne peut plus être modifiée.');
   }
 
   if (!input.clientId || input.lines.length === 0) {
@@ -435,7 +436,6 @@ export async function updateInvoice(
     .update(invoice)
     .eq('id', invoiceId)
     .eq('company_id', scope.companyId)
-    .eq('status', 'draft')
     .select('id')
     .maybeSingle();
 
@@ -445,7 +445,7 @@ export async function updateInvoice(
   }
 
   if (!updatedRow) {
-    throw new Error('Invoice is not editable.');
+    throw new Error('Facture introuvable.');
   }
 
   await replaceInvoiceItems(scope, invoiceId, lines);

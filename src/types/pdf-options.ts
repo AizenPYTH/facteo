@@ -48,14 +48,15 @@ export const STAMP_COLOR_LABELS: Record<StampColor, string> = {
 };
 
 /** Emplacement du cachet. `auto` : près des totaux, à l'endroit prévu pour le modèle. */
-export type StampPosition = 'auto' | 'top' | 'bottom';
+export type StampPosition = 'auto' | 'top' | 'bottom' | 'none';
 
-export const STAMP_POSITIONS: StampPosition[] = ['auto', 'top', 'bottom'];
+export const STAMP_POSITIONS: StampPosition[] = ['auto', 'top', 'bottom', 'none'];
 
 export const STAMP_POSITION_LABELS: Record<StampPosition, string> = {
   auto: 'Près des totaux',
   top: 'En haut',
   bottom: 'En bas',
+  none: 'Sans tampon',
 };
 
 function groupDigits(digits: string, sizes: number[]): string {

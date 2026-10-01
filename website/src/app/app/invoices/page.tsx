@@ -3,7 +3,7 @@
 import { Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 
-import { DocumentComposer } from '@/components/app/document-composer';
+import { DocumentComposer, InvoiceEditor } from '@/components/app/document-composer';
 import { InvoicesWorkspace } from '@/components/app/document-workspace';
 import { InvoiceBatch } from '@/components/app/invoice-batch';
 import { LoadingState } from '@/components/app/ui';
@@ -14,6 +14,11 @@ function InvoicesPageInner() {
 
   if (isCreating) {
     return <DocumentComposer kind="invoice" />;
+  }
+
+  const editId = searchParams.get('edit');
+  if (editId) {
+    return <InvoiceEditor invoiceId={editId} />;
   }
 
   if (searchParams.get('batch') === '1') {

@@ -447,7 +447,8 @@ export function buildTemplateContext(
     showApprovalBlock: isQuote && !input.clientSignature,
     status: input.status ? (STATUS_PILLS[input.status] ?? null) : null,
     issuerLegalIds: buildIssuerLegalIds(input),
-    paidStamp: paid
+    // « Sans tampon » : la facture reste payée, seul le cachet disparaît.
+    paidStamp: paid && input.stampPosition !== 'none'
       ? {
           companyName: issuer.name,
           date: input.paidAt ? formatDate(input.paidAt) : null,

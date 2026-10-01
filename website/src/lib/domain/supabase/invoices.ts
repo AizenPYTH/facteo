@@ -18,6 +18,7 @@ import type {
   InvoiceStatus,
   UpdateInvoiceInput,
 } from '@/types/invoice';
+import { canEditInvoice } from '@/types/invoice';
 import {
   INVOICES_PAGE_SIZE,
   type InvoicesPage,
@@ -418,6 +419,10 @@ export async function createInvoice(scope: DataScope, input: CreateInvoiceInput)
   return mapInvoiceRowToInvoice(fullInvoice as unknown as InvoiceWithClient);
 }
 
+/**
+ * Modification d'une facture : lignes, client, dates, notes, numéro,
+ * présentation. Toute facture non annulée est modifiable.
+ */
 export async function updateInvoice(
   scope: DataScope,
   invoiceId: string,
@@ -426,15 +431,15 @@ export async function updateInvoice(
   const existing = await fetchInvoiceById(scope, invoiceId);
 
   if (!existing) {
-    throw new Error('Invoice not found.');
+    throw new Error('Facture introuvable.');
   }
 
-  if (existing.status !== 'draft') {
-    throw new Error('Invoice is not editable.');
+  if (!canEditInvoice(existing.status)) {
+    throw new Error('Une facture annulée ne peut plus être modifiée.');
   }
 
   if (!input.clientId || input.lines.length === 0) {
-    throw new Error('Invoice must have at least one line.');
+    throw new Error('La facture doit contenir au moins une ligne.');
   }
 
   const { invoice, lines } = mapUpdateInvoiceInputToInsert(
@@ -444,25 +449,59 @@ export async function updateInvoice(
     existing.dueAt,
   );
 
+  const customNumber = input.number?.trim() || null;
+  const patch: Partial<InvoiceInsert> = { ...invoice };
+  if (customNumber && customNumber !== existing.number) {
+    patch.number = customNumber;
+  }
+
+  // Passée en « déjà payée » : statut payé et règlement du reste dû.
+  const markPaid = Boolean(input.alreadyPaid) && existing.status !== 'paid';
+  const paidAt = existing.paidAt ?? new Date().toISOString();
+  if (markPaid) {
+    patch.status = 'paid';
+    patch.paid_at = paidAt;
+  }
+
   const { data: updatedRow, error } = await supabase
     .from('invoices')
-    .update(invoice)
+    .update(patch)
     .eq('id', invoiceId)
     .eq('company_id', scope.companyId)
-    .eq('status', 'draft')
     .select('id')
     .maybeSingle();
 
   if (error) {
+    if (error.code === '23505' && customNumber) {
+      throw new Error(`Le numéro « ${customNumber} » est déjà utilisé par une autre facture.`);
+    }
     logSupabaseError('updateInvoice', error);
     throw error;
   }
 
   if (!updatedRow) {
-    throw new Error('Invoice is not editable.');
+    throw new Error('Facture introuvable.');
   }
 
   await replaceInvoiceItems(scope, invoiceId, lines);
+
+  const remaining = (invoice.total_ttc ?? 0) - existing.amountPaid;
+  if (markPaid && remaining > 0) {
+    const { error: paymentError } = await supabase.from('invoice_payments').insert({
+      invoice_id: invoiceId,
+      user_id: scope.userId,
+      amount: Math.round(remaining * 100) / 100,
+      paid_at: paidAt,
+    });
+    if (paymentError) {
+      logSupabaseError('updateInvoice.payment', paymentError);
+      throw paymentError;
+    }
+  }
+
+  if (input.pdfOptions) {
+    await saveInvoicePdfOptions(scope, invoiceId, input.pdfOptions);
+  }
 
   const updated = await fetchInvoiceById(scope, invoiceId);
 

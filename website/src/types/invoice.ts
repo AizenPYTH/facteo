@@ -133,8 +133,9 @@ export function canConvertQuoteToInvoice(status: QuoteStatus): boolean {
   return status === 'accepted';
 }
 
+/** Toute facture non annulée se modifie (lignes, client, dates, présentation). */
 export function canEditInvoice(status: InvoiceStatus): boolean {
-  return status === 'draft';
+  return status !== 'canceled';
 }
 
 export function canCancelInvoice(status: InvoiceStatus): boolean {
