@@ -30,6 +30,11 @@ import { template29 } from '@/lib/pdf/engine/templates/designs/29-zen';
 import { template30 } from '@/lib/pdf/engine/templates/designs/30-ledger';
 import { template31 } from '@/lib/pdf/engine/templates/designs/31-worksite';
 import { template32 } from '@/lib/pdf/engine/templates/designs/32-shop';
+import { template38 } from '@/lib/pdf/engine/templates/designs/38-retro';
+import { template39 } from '@/lib/pdf/engine/templates/designs/39-sidebar';
+import { template40 } from '@/lib/pdf/engine/templates/designs/40-fees';
+import { template41 } from '@/lib/pdf/engine/templates/designs/41-carbon';
+import { template42 } from '@/lib/pdf/engine/templates/designs/42-neon';
 import { buildTemplateVariants } from '@/lib/pdf/engine/templates/variant-catalog';
 import { DEFAULT_PDF_TEMPLATE_ID, type PdfTemplateDefinition } from '@/lib/pdf/engine/templates/types';
 
@@ -94,6 +99,11 @@ const BASE_TEMPLATES: PdfTemplateDefinition[] = [
   template30,
   template31,
   template32,
+  template38,
+  template39,
+  template40,
+  template41,
+  template42,
 ];
 
 /** Bibliothèque de modèles de document, dans l'ordre de la galerie : modèles dessinés, puis variantes. */
