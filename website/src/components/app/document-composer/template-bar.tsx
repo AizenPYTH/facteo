@@ -1,6 +1,6 @@
 'use client';
 
-import { COMPOSER_TEMPLATES } from '@/lib/domain/pdf/composer-templates';
+import { COMPOSER_TEMPLATE_GROUPS } from '@/lib/domain/pdf/composer-templates';
 import { cn } from '@/lib/utils';
 
 export function ComposerTemplateBar({
@@ -13,42 +13,51 @@ export function ComposerTemplateBar({
   value: string;
 }) {
   return (
-    <div className={cn('grid grid-cols-2 gap-2', className)}>
-      {COMPOSER_TEMPLATES.map((template) => {
-        const active = value === template.id;
+    <div className={cn('space-y-3', className)}>
+      {COMPOSER_TEMPLATE_GROUPS.map((group) => (
+        <div key={group.category}>
+          <p className="mb-1.5 text-[10.5px] font-semibold uppercase tracking-[0.08em] text-app-faint">
+            {group.label}
+          </p>
+          <div className="grid grid-cols-2 gap-2">
+            {group.templates.map((template) => {
+              const active = value === template.id;
 
-        return (
-          <button
-            aria-pressed={active}
-            className={cn(
-              'rounded-app-control border-2 p-1.5 transition-[background-color,border-color,color] duration-150',
-              active
-                ? 'border-app-accent bg-app-accent-soft'
-                : 'border-app-border-soft hover:bg-app-hover',
-            )}
-            key={template.id}
-            onClick={() => onChange(template.id)}
-            title={template.description}
-            type="button">
-            <span className="block overflow-hidden rounded-md border border-app-border-soft bg-app-surface">
-              <span className="block h-2 w-full" style={{ backgroundColor: template.primary }} />
-              <span className="flex flex-col gap-[3px] px-2 py-2">
-                <span className="h-[3px] w-8 rounded-full bg-app-border" />
-                <span className="h-[3px] w-full rounded-full bg-app-border-soft" />
-                <span className="h-[3px] w-full rounded-full bg-app-border-soft" />
-                <span className="h-[3px] w-2/3 rounded-full bg-app-border-soft" />
-              </span>
-            </span>
-            <span
-              className={cn(
-                'mt-1.5 block truncate text-center text-[11.5px] font-semibold',
-                active ? 'text-app-accent-strong' : 'text-app-muted',
-              )}>
-              {template.label}
-            </span>
-          </button>
-        );
-      })}
+              return (
+                <button
+                  aria-pressed={active}
+                  className={cn(
+                    'rounded-app-control border-2 p-1.5 transition-[background-color,border-color,color] duration-150',
+                    active
+                      ? 'border-app-accent bg-app-accent-soft'
+                      : 'border-app-border-soft hover:bg-app-hover',
+                  )}
+                  key={template.id}
+                  onClick={() => onChange(template.id)}
+                  title={template.description}
+                  type="button">
+                  <span className="block overflow-hidden rounded-md border border-app-border-soft bg-app-surface">
+                    <span className="block h-2 w-full" style={{ backgroundColor: template.primary }} />
+                    <span className="flex flex-col gap-[3px] px-2 py-2">
+                      <span className="h-[3px] w-8 rounded-full bg-app-border" />
+                      <span className="h-[3px] w-full rounded-full bg-app-border-soft" />
+                      <span className="h-[3px] w-full rounded-full bg-app-border-soft" />
+                      <span className="h-[3px] w-2/3 rounded-full bg-app-border-soft" />
+                    </span>
+                  </span>
+                  <span
+                    className={cn(
+                      'mt-1.5 block truncate text-center text-[11.5px] font-semibold',
+                      active ? 'text-app-accent-strong' : 'text-app-muted',
+                    )}>
+                    {template.label}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      ))}
     </div>
   );
 }

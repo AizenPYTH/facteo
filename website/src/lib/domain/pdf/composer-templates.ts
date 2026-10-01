@@ -1,11 +1,16 @@
 import { PDF_TEMPLATES, resolvePdfTemplate } from '@/lib/pdf/engine/templates';
-import { DEFAULT_PDF_TEMPLATE_ID } from '@/lib/pdf/engine/templates/types';
+import {
+  DEFAULT_PDF_TEMPLATE_ID,
+  TEMPLATE_CATEGORY_LABELS,
+  type TemplateCategory,
+} from '@/lib/pdf/engine/templates/types';
 
 export type ComposerTemplateOption = {
   id: string;
   label: string;
   description: string;
   primary: string;
+  category: TemplateCategory;
 };
 
 /**
@@ -27,7 +32,25 @@ export const COMPOSER_TEMPLATES: ComposerTemplateOption[] = PDF_TEMPLATES.map((t
   // Les modèles sans couleur d'accent (noir et blanc assumé) retombent sur la
   // teinte du papier : la pastille reste lisible au lieu d'être vide.
   primary: template.accent ?? template.paper,
+  category: template.category ?? 'classique',
 }));
+
+export type ComposerTemplateGroup = {
+  category: TemplateCategory;
+  label: string;
+  templates: ComposerTemplateOption[];
+};
+
+/** Modèles rangés par catégorie, dans l'ordre des libellés. Les groupes vides sont omis. */
+export const COMPOSER_TEMPLATE_GROUPS: ComposerTemplateGroup[] = (
+  Object.keys(TEMPLATE_CATEGORY_LABELS) as TemplateCategory[]
+)
+  .map((category) => ({
+    category,
+    label: TEMPLATE_CATEGORY_LABELS[category],
+    templates: COMPOSER_TEMPLATES.filter((template) => template.category === category),
+  }))
+  .filter((group) => group.templates.length > 0);
 
 /** Ramène tout identifiant — y compris hérité — sur un modèle réellement rendu. */
 export function resolveComposerTemplateId(templateId: string): string {

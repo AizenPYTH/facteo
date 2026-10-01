@@ -8,6 +8,10 @@ import { typography } from '@/constants/theme/typography';
 import { useColors, useThemedStyles } from '@/hooks/use-colors';
 import { PDF_TEMPLATES } from '@/lib/pdf/engine/templates/registry';
 import {
+  TEMPLATE_CATEGORY_LABELS,
+  type TemplateCategory,
+} from '@/lib/pdf/engine/templates/types';
+import {
   DEFAULT_INVOICE_TITLE,
   formatIssuerLegalIds,
   INVOICE_TITLE_SUGGESTIONS,
@@ -33,6 +37,15 @@ type InvoicePresentationSectionProps = {
   /** Le modèle se change ailleurs (galerie) sur une facture existante. */
   showTemplate?: boolean;
 };
+
+/** Modèles rangés par catégorie, groupes vides omis. */
+const TEMPLATE_GROUPS = (Object.keys(TEMPLATE_CATEGORY_LABELS) as TemplateCategory[])
+  .map((category) => ({
+    category,
+    label: TEMPLATE_CATEGORY_LABELS[category],
+    templates: PDF_TEMPLATES.filter((template) => (template.category ?? 'classique') === category),
+  }))
+  .filter((group) => group.templates.length > 0);
 
 /**
  * Présentation de la facture, identique au site : numéro, titre, modèle,
@@ -98,16 +111,21 @@ export function InvoicePresentationSection({
       {showTemplate ? (
         <View style={styles.group}>
           <Text style={styles.label}>Modèle</Text>
-          <ChipRow>
-            {PDF_TEMPLATES.map((template) => (
-              <FilterChip
-                key={template.id}
-                label={`${template.id} · ${template.name}`}
-                onPress={() => onChange({ ...value, templateId: template.id })}
-                selected={value.templateId === template.id}
-              />
-            ))}
-          </ChipRow>
+          {TEMPLATE_GROUPS.map((group) => (
+            <View key={group.category}>
+              <Text style={styles.groupLabel}>{group.label}</Text>
+              <ChipRow>
+                {group.templates.map((template) => (
+                  <FilterChip
+                    key={template.id}
+                    label={`${template.id} · ${template.name}`}
+                    onPress={() => onChange({ ...value, templateId: template.id })}
+                    selected={value.templateId === template.id}
+                  />
+                ))}
+              </ChipRow>
+            </View>
+          ))}
         </View>
       ) : null}
 
@@ -205,6 +223,11 @@ function useStyles() {
     label: {
       ...typography.footnoteMedium,
       color: colors.textSecondary,
+    },
+    groupLabel: {
+      ...typography.footnoteMedium,
+      color: colors.textSecondary,
+      marginTop: spacing[1],
     },
     chipRow: {
       flexDirection: 'row',

@@ -155,7 +155,7 @@ export function parseInvoicePdfOptions(value: unknown): InvoicePdfOptions {
     STAMP_POSITIONS.find((position) => position === source.stamp_position) ?? 'auto';
 
   const templateId =
-    typeof source.template_id === 'string' && /^\d{2}$/.test(source.template_id)
+    typeof source.template_id === 'string' && /^\d{2,3}$/.test(source.template_id)
       ? source.template_id
       : null;
 

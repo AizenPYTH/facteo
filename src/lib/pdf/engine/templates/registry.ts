@@ -18,30 +18,81 @@ import { template17 } from '@/lib/pdf/engine/templates/designs/17-dark-header';
 import { template18 } from '@/lib/pdf/engine/templates/designs/18-side-accent';
 import { template19 } from '@/lib/pdf/engine/templates/designs/19-full-width-modern';
 import { template20 } from '@/lib/pdf/engine/templates/designs/20-ultra-minimal';
+import { template21 } from '@/lib/pdf/engine/templates/designs/21-receipt';
+import { template22 } from '@/lib/pdf/engine/templates/designs/22-letter';
+import { template23 } from '@/lib/pdf/engine/templates/designs/23-form';
+import { template24 } from '@/lib/pdf/engine/templates/designs/24-notebook';
+import { template25 } from '@/lib/pdf/engine/templates/designs/25-saas';
+import { template26 } from '@/lib/pdf/engine/templates/designs/26-magazine';
+import { template27 } from '@/lib/pdf/engine/templates/designs/27-typewriter';
+import { template28 } from '@/lib/pdf/engine/templates/designs/28-brutalist';
+import { template29 } from '@/lib/pdf/engine/templates/designs/29-zen';
+import { template30 } from '@/lib/pdf/engine/templates/designs/30-ledger';
+import { template31 } from '@/lib/pdf/engine/templates/designs/31-worksite';
+import { template32 } from '@/lib/pdf/engine/templates/designs/32-shop';
 import { DEFAULT_PDF_TEMPLATE_ID, type PdfTemplateDefinition } from '@/lib/pdf/engine/templates/types';
+
+/**
+ * Registre de langue et famille des 20 premiers modèles. Le vocabulaire varie
+ * d'un modèle à l'autre pour qu'aucune facture ne « sente » le même logiciel.
+ */
+const LEGACY_STYLE: Record<string, Pick<PdfTemplateDefinition, 'vocabulary' | 'category'>> = {
+  '01': { vocabulary: 'minimal', category: 'minimal' },
+  '02': { vocabulary: 'studio', category: 'elegant' },
+  '03': { vocabulary: 'corporate', category: 'classique' },
+  '04': { vocabulary: 'classic', category: 'moderne' },
+  '05': { vocabulary: 'friendly', category: 'creatif' },
+  '06': { vocabulary: 'studio', category: 'creatif' },
+  '07': { vocabulary: 'formal', category: 'elegant' },
+  '08': { vocabulary: 'minimal', category: 'tech' },
+  '09': { vocabulary: 'friendly', category: 'tech' },
+  '10': { vocabulary: 'formal', category: 'elegant' },
+  '11': { vocabulary: 'studio', category: 'creatif' },
+  '12': { vocabulary: 'friendly', category: 'moderne' },
+  '13': { vocabulary: 'corporate', category: 'classique' },
+  '14': { vocabulary: 'craft', category: 'artisan' },
+  '15': { vocabulary: 'studio', category: 'creatif' },
+  '16': { vocabulary: 'ledger', category: 'classique' },
+  '17': { vocabulary: 'corporate', category: 'moderne' },
+  '18': { vocabulary: 'retail', category: 'commerce' },
+  '19': { vocabulary: 'retail', category: 'commerce' },
+  '20': { vocabulary: 'minimal', category: 'minimal' },
+};
 
 /** Bibliothèque de modèles de document, dans l'ordre de la galerie. */
 export const PDF_TEMPLATES: PdfTemplateDefinition[] = [
-  template01,
-  template02,
-  template03,
-  template04,
-  template05,
-  template06,
-  template07,
-  template08,
-  template09,
-  template10,
-  template11,
-  template12,
-  template13,
-  template14,
-  template15,
-  template16,
-  template17,
-  template18,
-  template19,
-  template20,
+  { ...template01, ...LEGACY_STYLE[template01.id] },
+  { ...template02, ...LEGACY_STYLE[template02.id] },
+  { ...template03, ...LEGACY_STYLE[template03.id] },
+  { ...template04, ...LEGACY_STYLE[template04.id] },
+  { ...template05, ...LEGACY_STYLE[template05.id] },
+  { ...template06, ...LEGACY_STYLE[template06.id] },
+  { ...template07, ...LEGACY_STYLE[template07.id] },
+  { ...template08, ...LEGACY_STYLE[template08.id] },
+  { ...template09, ...LEGACY_STYLE[template09.id] },
+  { ...template10, ...LEGACY_STYLE[template10.id] },
+  { ...template11, ...LEGACY_STYLE[template11.id] },
+  { ...template12, ...LEGACY_STYLE[template12.id] },
+  { ...template13, ...LEGACY_STYLE[template13.id] },
+  { ...template14, ...LEGACY_STYLE[template14.id] },
+  { ...template15, ...LEGACY_STYLE[template15.id] },
+  { ...template16, ...LEGACY_STYLE[template16.id] },
+  { ...template17, ...LEGACY_STYLE[template17.id] },
+  { ...template18, ...LEGACY_STYLE[template18.id] },
+  { ...template19, ...LEGACY_STYLE[template19.id] },
+  { ...template20, ...LEGACY_STYLE[template20.id] },
+  template21,
+  template22,
+  template23,
+  template24,
+  template25,
+  template26,
+  template27,
+  template28,
+  template29,
+  template30,
+  template31,
+  template32,
 ];
 
 export const PDF_TEMPLATE_MAP = new Map(PDF_TEMPLATES.map((template) => [template.id, template]));

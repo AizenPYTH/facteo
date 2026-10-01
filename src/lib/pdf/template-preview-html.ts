@@ -1,4 +1,4 @@
-import { renderDocumentPdfHtml } from '@/lib/pdf/engine';
+import { embedPdfFonts, renderDocumentPdfHtml } from '@/lib/pdf/engine';
 import type { PdfDocumentInput } from '@/lib/pdf/engine/types';
 import { resolvePdfCompanyInfo } from '@/lib/pdf/document-pdf';
 import type { DataScope } from '@/types/tenant';
@@ -65,5 +65,5 @@ export async function buildTemplatePreviewHtml(
 ): Promise<string> {
   const company = await resolvePdfCompanyInfo(scope, authEmail);
   const input = buildSampleDocumentInput(company, kind, templateId);
-  return renderDocumentPdfHtml(input);
+  return embedPdfFonts(renderDocumentPdfHtml(input));
 }

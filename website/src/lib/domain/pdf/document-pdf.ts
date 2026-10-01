@@ -9,6 +9,7 @@ import { fetchDocumentSignature } from '@/lib/supabase/subscriptions';
 import { fetchUserProfile } from '@/lib/supabase/profiles';
 import { fetchSettings } from '@/lib/supabase/settings';
 import {
+  embedPdfFonts,
   renderDocumentPdfHtml,
   type PdfClientInfo,
   type PdfCompanyInfo,
@@ -167,7 +168,7 @@ export async function buildQuotePdfHtml(
     company: await inlinePdfCompanyImages(input.company),
     clientSignature: await inlinePdfClientSignature(input.clientSignature),
   };
-  return renderDocumentPdfHtml(withImages);
+  return embedPdfFonts(renderDocumentPdfHtml(withImages));
 }
 
 export async function buildInvoicePdfHtml(
@@ -183,5 +184,5 @@ export async function buildInvoicePdfHtml(
     company: await inlinePdfCompanyImages(input.company),
     clientSignature: await inlinePdfClientSignature(input.clientSignature),
   };
-  return renderDocumentPdfHtml(withImages);
+  return embedPdfFonts(renderDocumentPdfHtml(withImages));
 }
