@@ -10,6 +10,7 @@ import {
   u,
 } from '@/lib/pdf/engine/templates/shared';
 import type { PdfTemplateDefinition } from '@/lib/pdf/engine/templates/types';
+import { legalIdsText } from '@/lib/pdf/engine/templates/designs/kit';
 
 const BLUE = '#1D6FD1';
 const INK = '#1A1D24';
@@ -51,8 +52,7 @@ function render(context: TemplateContext): string {
           4,
         )}">${addressLines([
           ...issuer.addressLines,
-          issuer.siret ? `SIRET ${issuer.siret}` : '',
-          issuer.vatNumber ? `TVA ${issuer.vatNumber}` : '',
+          legalIdsText(context),
         ])}</div>
       </div>
     </div>
@@ -164,4 +164,5 @@ export const template18: PdfTemplateDefinition = {
   accent: BLUE,
   paper: '#FFFFFF',
   render,
+  ownsLegalIds: true,
 };

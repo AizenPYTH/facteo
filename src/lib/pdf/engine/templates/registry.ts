@@ -30,6 +30,17 @@ import { template29 } from '@/lib/pdf/engine/templates/designs/29-zen';
 import { template30 } from '@/lib/pdf/engine/templates/designs/30-ledger';
 import { template31 } from '@/lib/pdf/engine/templates/designs/31-worksite';
 import { template32 } from '@/lib/pdf/engine/templates/designs/32-shop';
+import { template33 } from '@/lib/pdf/engine/templates/designs/33-postal';
+import { template34 } from '@/lib/pdf/engine/templates/designs/34-blueprint';
+import { template35 } from '@/lib/pdf/engine/templates/designs/35-bistro';
+import { template36 } from '@/lib/pdf/engine/templates/designs/36-dashboard';
+import { template37 } from '@/lib/pdf/engine/templates/designs/37-certificate';
+import { template38 } from '@/lib/pdf/engine/templates/designs/38-retro';
+import { template39 } from '@/lib/pdf/engine/templates/designs/39-sidebar';
+import { template40 } from '@/lib/pdf/engine/templates/designs/40-fees';
+import { template41 } from '@/lib/pdf/engine/templates/designs/41-carbon';
+import { template42 } from '@/lib/pdf/engine/templates/designs/42-neon';
+import { buildTemplateVariants } from '@/lib/pdf/engine/templates/variant-catalog';
 import { DEFAULT_PDF_TEMPLATE_ID, type PdfTemplateDefinition } from '@/lib/pdf/engine/templates/types';
 
 /**
@@ -59,8 +70,8 @@ const LEGACY_STYLE: Record<string, Pick<PdfTemplateDefinition, 'vocabulary' | 'c
   '20': { vocabulary: 'minimal', category: 'minimal' },
 };
 
-/** Bibliothèque de modèles de document, dans l'ordre de la galerie. */
-export const PDF_TEMPLATES: PdfTemplateDefinition[] = [
+/** Modèles dessinés un par un. */
+const BASE_TEMPLATES: PdfTemplateDefinition[] = [
   { ...template01, ...LEGACY_STYLE[template01.id] },
   { ...template02, ...LEGACY_STYLE[template02.id] },
   { ...template03, ...LEGACY_STYLE[template03.id] },
@@ -93,6 +104,22 @@ export const PDF_TEMPLATES: PdfTemplateDefinition[] = [
   template30,
   template31,
   template32,
+  template33,
+  template34,
+  template35,
+  template36,
+  template37,
+  template38,
+  template39,
+  template40,
+  template41,
+  template42,
+];
+
+/** Bibliothèque de modèles de document, dans l'ordre de la galerie : modèles dessinés, puis variantes. */
+export const PDF_TEMPLATES: PdfTemplateDefinition[] = [
+  ...BASE_TEMPLATES,
+  ...buildTemplateVariants(BASE_TEMPLATES),
 ];
 
 export const PDF_TEMPLATE_MAP = new Map(PDF_TEMPLATES.map((template) => [template.id, template]));

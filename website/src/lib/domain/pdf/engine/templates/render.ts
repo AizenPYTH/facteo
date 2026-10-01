@@ -138,7 +138,7 @@ function paidStamp(context: TemplateContext, template: PdfTemplateDefinition): s
   }
 
   const { companyName, date, color, position } = context.paidStamp;
-  const place = stampPlacement(template.id, position);
+  const place = stampPlacement(template.baseId ?? template.id, position);
   const ink = color === 'auto' ? templateStampColor(template.accent) : STAMP_COLOR_VALUES[color];
 
   const vertical =
@@ -189,7 +189,7 @@ function withPageExtras(
 
   const stamp = paidStamp(context, template);
   if (stamp && context.paidStamp) {
-    const onPage = stampPlacement(template.id, context.paidStamp.position).mode === 'page';
+    const onPage = stampPlacement(template.baseId ?? template.id, context.paidStamp.position).mode === 'page';
     result =
       (onPage ? null : insertBefore(result, /<div class="dc-spacer"/, stamp)) ??
       insertAfter(result, /<div class="dc-page"[^>]*>/, stamp) ??

@@ -10,6 +10,7 @@ import {
   u,
 } from '@/lib/pdf/engine/templates/shared';
 import type { PdfTemplateDefinition } from '@/lib/pdf/engine/templates/types';
+import { legalIdsText } from '@/lib/pdf/engine/templates/designs/kit';
 
 const CORAL = '#E8574C';
 const INK = '#1C1620';
@@ -42,10 +43,10 @@ function render(context: TemplateContext): string {
         <div style="font-size:${u(10.5)}; line-height:1.7; color:#7B7280; margin-top:${u(
           6,
         )}">${addressLines([
-          [issuer.addressLines.join(', '), issuer.siret ? `SIRET ${issuer.siret}` : '']
+          [issuer.addressLines.join(', '), '']
             .filter(Boolean)
             .join(' · '),
-          [issuer.vatNumber ? `TVA ${issuer.vatNumber}` : '', issuer.email ?? '']
+          [legalIdsText(context), issuer.email ?? '']
             .filter(Boolean)
             .join(' · '),
         ])}</div>
@@ -176,4 +177,5 @@ export const template15: PdfTemplateDefinition = {
   accent: CORAL,
   paper: '#FFFFFF',
   render,
+  ownsLegalIds: true,
 };
