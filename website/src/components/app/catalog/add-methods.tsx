@@ -124,6 +124,9 @@ export function AddProductMethods({
   success,
   overwriteExisting,
   onOverwriteChange,
+  otherCompaniesCount = 0,
+  copyToOtherCompanies = false,
+  onCopyToOtherCompaniesChange,
   duplicates,
 }: {
   onScan: () => void;
@@ -138,6 +141,10 @@ export function AddProductMethods({
   success: string | null;
   overwriteExisting: boolean;
   onOverwriteChange: (value: boolean) => void;
+  /** Autres entreprises du compte, hors entreprise active. */
+  otherCompaniesCount?: number;
+  copyToOtherCompanies?: boolean;
+  onCopyToOtherCompaniesChange?: (value: boolean) => void;
   duplicates: string[];
 }) {
   const busy = isAnalyzing || isImporting;
@@ -187,6 +194,18 @@ export function AddProductMethods({
               />
               Mettre à jour les produits existants (même référence)
             </label>
+            {otherCompaniesCount > 0 && onCopyToOtherCompaniesChange ? (
+              <label className="flex items-start gap-2 text-[11.5px] leading-snug text-app-text-2">
+                <input
+                  checked={copyToOtherCompanies}
+                  className="mt-0.5 h-[14px] w-[14px] [accent-color:var(--app-accent)]"
+                  onChange={(event) => onCopyToOtherCompaniesChange(event.target.checked)}
+                  type="checkbox"
+                />
+                Ajouter aussi dans le catalogue de mes {otherCompaniesCount} autre
+                {otherCompaniesCount > 1 ? 's' : ''} entreprise{otherCompaniesCount > 1 ? 's' : ''}
+              </label>
+            ) : null}
           </div>
         }
         icon={<FileSpreadsheet size={17} />}
