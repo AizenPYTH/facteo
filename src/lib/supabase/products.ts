@@ -106,10 +106,16 @@ export async function fetchCatalogItems(
     );
   }
 
-  const { data, error } = await query;
-  if (error) {
-    throw error;
+  // Lecture par pages : au-delà de 1 000 lignes, le serveur coupait le catalogue.
+  const rows: ProductRow[] = [];
+  for (let from = 0; ; from += 1000) {
+    const { data, error } = await query.range(from, from + 999);
+    if (error) {
+      throw error;
+    }
+    rows.push(...((data ?? []) as ProductRow[]));
+    if (!data || data.length < 1000) {
+      return rows;
+    }
   }
-
-  return (data ?? []) as ProductRow[];
 }

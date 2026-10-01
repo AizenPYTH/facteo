@@ -28,10 +28,12 @@ import { analyzeProductImage } from '@/lib/ai/product-image-analysis';
 import { createProduct } from '@/lib/supabase/products';
 import { useToast } from '@/providers/toast-provider';
 import type { ProductImageAnalysis } from '@/types/ai-product';
+import type { ProductRow } from '@/types/database';
 import type { QuoteLineValue } from '@/types/quote';
 import { createEmptyQuoteLine, formatDecimalForInput } from '@/types/quote';
 import { router, type Href } from 'expo-router';
 
+import { CatalogPickerModal } from './catalog-picker-modal';
 import { QuoteLine } from './quote-line';
 
 type QuoteAddLinesStepProps = {
@@ -58,6 +60,7 @@ export function QuoteAddLinesStep({
   const [analysisImageUri, setAnalysisImageUri] = useState<string | null>(null);
   const [analysisDraft, setAnalysisDraft] = useState<ProductAnalysisDraft | null>(null);
   const [isSavingProduct, setIsSavingProduct] = useState(false);
+  const [catalogVisible, setCatalogVisible] = useState(false);
   const progressTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
@@ -70,6 +73,31 @@ export function QuoteAddLinesStep({
     onAddLine(createEmptyQuoteLine());
   }
 
+  function handleCatalogSelection(items: ProductRow[]) {
+    for (const item of items) {
+      onAddLine({
+        ...createEmptyQuoteLine(),
+        productId: item.id,
+        title: item.name,
+        description: item.description ?? '',
+        unit: item.unit || 'unité',
+        unitPrice: formatDecimalForInput(item.unit_price),
+        vatRate: formatDecimalForInput(item.vat_rate),
+      });
+    }
+    if (items.length > 0) {
+      showSuccess(items.length > 1 ? `${items.length} lignes ajoutées.` : 'Ligne ajoutée.');
+    }
+  }
+
+  const catalogNode = (
+    <CatalogPickerModal
+      onClose={() => setCatalogVisible(false)}
+      onSelect={handleCatalogSelection}
+      visible={catalogVisible}
+    />
+  );
+
   function handleScanProductWithAi() {
     void handleSourceSelection(Platform.OS === 'web' ? 'gallery' : 'camera');
   }
@@ -78,6 +106,10 @@ export function QuoteAddLinesStep({
     openActionSheet({
       title: 'Ajouter une prestation',
       options: [
+        {
+          label: 'Depuis le catalogue (produits ou prestations)',
+          onPress: () => setCatalogVisible(true),
+        },
         {
           label: 'Ajouter manuellement',
           onPress: handleAddManualPrestation,
@@ -211,6 +243,7 @@ export function QuoteAddLinesStep({
   const listFooter = (
     <View style={styles.footerSection}>
       <Button onPress={handleAddPrestation} title="Ajouter une prestation" variant="ghost" />
+      <Button onPress={() => setCatalogVisible(true)} title="Depuis le catalogue" variant="ghost" />
       {Platform.OS === 'web' ? (
         <Button
           onPress={handleScanProductWithAi}
@@ -232,6 +265,7 @@ export function QuoteAddLinesStep({
             onAction={handleAddPrestation}
             title="Aucune prestation"
           />
+          <Button onPress={() => setCatalogVisible(true)} title="Depuis le catalogue" variant="ghost" />
           {Platform.OS === 'web' ? (
             <Button
               onPress={handleScanProductWithAi}
@@ -241,6 +275,7 @@ export function QuoteAddLinesStep({
           ) : null}
         </View>
         {actionSheetNode}
+        {catalogNode}
         <ProductAnalysisLoadingModal progress={analysisProgress} visible={isAnalyzing} />
         {analysisDraft && analysisImageUri ? (
           <ProductAnalysisConfirmationModal
@@ -284,6 +319,7 @@ export function QuoteAddLinesStep({
         showsVerticalScrollIndicator={false}
       />
       {actionSheetNode}
+        {catalogNode}
       <ProductAnalysisLoadingModal progress={analysisProgress} visible={isAnalyzing} />
       {analysisDraft && analysisImageUri ? (
         <ProductAnalysisConfirmationModal
