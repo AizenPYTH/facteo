@@ -30,6 +30,11 @@ import { template29 } from '@/lib/pdf/engine/templates/designs/29-zen';
 import { template30 } from '@/lib/pdf/engine/templates/designs/30-ledger';
 import { template31 } from '@/lib/pdf/engine/templates/designs/31-worksite';
 import { template32 } from '@/lib/pdf/engine/templates/designs/32-shop';
+import { template33 } from '@/lib/pdf/engine/templates/designs/33-postal';
+import { template34 } from '@/lib/pdf/engine/templates/designs/34-blueprint';
+import { template35 } from '@/lib/pdf/engine/templates/designs/35-bistro';
+import { template36 } from '@/lib/pdf/engine/templates/designs/36-dashboard';
+import { template37 } from '@/lib/pdf/engine/templates/designs/37-certificate';
 import { template38 } from '@/lib/pdf/engine/templates/designs/38-retro';
 import { template39 } from '@/lib/pdf/engine/templates/designs/39-sidebar';
 import { template40 } from '@/lib/pdf/engine/templates/designs/40-fees';
@@ -99,6 +104,11 @@ const BASE_TEMPLATES: PdfTemplateDefinition[] = [
   template30,
   template31,
   template32,
+  template33,
+  template34,
+  template35,
+  template36,
+  template37,
   template38,
   template39,
   template40,
