@@ -42,8 +42,10 @@ import { formatCurrency } from '@/lib/domain/format/currency';
 import { productsQueryKeys } from '@/lib/domain/supabase/query-keys';
 import {
   createProduct,
+  createProductsBulk,
   deleteProduct,
   fetchProducts,
+  fetchProductsByReferences,
   updateProduct,
 } from '@/lib/domain/supabase/products';
 import { requireScope } from '@/lib/domain/tenant/scope';
@@ -626,8 +628,7 @@ function ProductFormPanel({
   onClose: () => void;
   onSaved: (savedProduct: Product) => void;
 }) {
-  const { scope, companies } = useTenant();
-  const otherCompanies = companies.filter((company) => company.id !== scope?.companyId);
+  const { scope } = useTenant();
   const queryClient = useQueryClient();
   const [values, setValues] = useState<ProductFormValues>(
     product ? mapProductToFormValues(product) : createEmptyProductFormValues(),
@@ -646,8 +647,6 @@ function ProductFormPanel({
   const [isImportingSpreadsheet, setIsImportingSpreadsheet] = useState(false);
   const [detectedProducts, setDetectedProducts] = useState<ProductFormValues[]>([]);
   const [overwriteExistingByReference, setOverwriteExistingByReference] = useState(true);
-  // Coché par défaut : un import part dans toutes les entreprises du compte.
-  const [copyToOtherCompanies, setCopyToOtherCompanies] = useState(true);
   const [duplicateReferences, setDuplicateReferences] = useState<string[]>([]);
 
   // Nouvelle fiche produit : une capture copiée se colle directement (Ctrl+V).
@@ -709,95 +708,61 @@ function ProductFormPanel({
   const batchMutation = useMutation({
     mutationFn: async () => {
       const activeScope = requireScope(scope);
-      if (detectedProducts.length === 0) {
-        throw new Error('Aucun produit détecté à créer.');
+      const items = detectedProducts.filter((item) => item.name.trim());
+      if (items.length === 0) {
+        throw new Error('Aucun élément détecté à créer.');
       }
 
-      const createdOrUpdated: Product[] = [];
-      let createdCount = 0;
-      let updatedCount = 0;
+      // Le catalogue est commun à toutes les entreprises du compte. Une référence
+      // déjà présente est mise à jour (ou laissée) au lieu d'être dupliquée ; le
+      // reste part en base par paquets.
+      const keyOf = (reference: string) => reference.trim().toLowerCase();
+      const existing = new Map(
+        (
+          await fetchProductsByReferences(
+            activeScope,
+            type,
+            items.map((item) => item.reference),
+          )
+        ).map((entry) => [keyOf(entry.reference ?? ''), entry]),
+      );
+      const seen = new Set<string>();
+      const toCreate: ProductFormValues[] = [];
+      const toUpdate: { id: string; item: ProductFormValues }[] = [];
       const duplicates: string[] = [];
-      for (const item of detectedProducts) {
-        if (!item.name.trim()) {
+      for (const item of items) {
+        const key = keyOf(item.reference);
+        if (key && seen.has(key)) {
           continue;
         }
-        try {
-          const productEntry = await createProduct(activeScope, 'product', item);
-          createdOrUpdated.push(productEntry);
-          createdCount += 1;
-        } catch (error) {
-          if (!isDuplicateReferenceError(error) || !item.reference.trim()) {
-            throw error;
-          }
-          duplicates.push(`${item.name.trim() || 'Produit'} (réf. ${item.reference.trim()})`);
-
+        if (key) {
+          seen.add(key);
+        }
+        const match = key ? existing.get(key) : undefined;
+        if (match) {
+          duplicates.push(`${item.name.trim()} (réf. ${item.reference.trim()})`);
           if (overwriteExistingByReference) {
-            const existingProducts = await fetchProducts(activeScope, 'product', item.reference.trim());
-            const existing = existingProducts.find(
-              (product) =>
-                (product.reference ?? '').trim().toLowerCase() === item.reference.trim().toLowerCase(),
-            );
-            if (!existing) {
-              throw error;
-            }
-            const updated = await updateProduct(activeScope, existing.id, item);
-            createdOrUpdated.push(updated);
-            updatedCount += 1;
+            toUpdate.push({ id: match.id, item });
           }
+        } else {
+          toCreate.push(item);
         }
       }
-      // Copie dans les autres entreprises du compte, en parallèle par entreprise.
-      // Une référence déjà présente y est mise à jour (ou laissée) selon la même
-      // case ; un échec isolé n'interrompt pas l'import principal.
-      const targets = copyToOtherCompanies ? otherCompanies : [];
-      const copyResults = await Promise.all(
-        targets.map(async (company) => {
-          const targetScope = { ...activeScope, companyId: company.id };
-          let copied = 0;
-          let failed = 0;
-          for (const item of detectedProducts) {
-            if (!item.name.trim()) {
-              continue;
-            }
-            try {
-              await createProduct(targetScope, 'product', item);
-              copied += 1;
-            } catch (error) {
-              const reference = item.reference.trim();
-              if (!isDuplicateReferenceError(error) || !reference) {
-                failed += 1;
-                continue;
-              }
-              if (!overwriteExistingByReference) {
-                continue;
-              }
-              try {
-                const existing = (await fetchProducts(targetScope, 'product', reference)).find(
-                  (product) => (product.reference ?? '').trim().toLowerCase() === reference.toLowerCase(),
-                );
-                if (existing) {
-                  await updateProduct(targetScope, existing.id, item);
-                  copied += 1;
-                }
-              } catch {
-                failed += 1;
-              }
-            }
-          }
-          return { copied, failed };
-        }),
-      );
+
+      const created = await createProductsBulk(activeScope, type, toCreate);
+      const updated: Product[] = [];
+      for (const { id, item } of toUpdate) {
+        updated.push(await updateProduct(activeScope, id, item));
+      }
 
       return {
-        products: createdOrUpdated,
-        createdCount,
-        updatedCount,
+        products: [...created, ...updated],
+        createdCount: created.length,
+        updatedCount: updated.length,
         duplicates,
-        copiedCompanies: copyResults.filter((result) => result.copied > 0).length,
-        copyFailures: copyResults.reduce((sum, result) => sum + result.failed, 0),
       };
     },
-    onSuccess: ({ products, createdCount, updatedCount, duplicates, copiedCompanies, copyFailures }) => {
+    onSuccess: ({ products, createdCount, updatedCount, duplicates }) => {
       void queryClient.invalidateQueries({ queryKey: productsQueryKeys.all });
       setDetectedProducts([]);
       setAnalysisFileName('');
@@ -811,13 +776,7 @@ function ProductFormPanel({
             ? ` · ${duplicates.length} doublon(s) détecté(s)`
             : ` · ${duplicates.length} doublon(s) ignoré(s)`
           : '';
-      const copyMessage =
-        copiedCompanies > 0
-          ? ` · ajoutés aussi dans ${copiedCompanies} autre(s) entreprise(s)${copyFailures > 0 ? ` (${copyFailures} échec(s))` : ''}`
-          : '';
-      setAnalysisSuccess(
-        `${createdCount} créé(s), ${updatedCount} mis à jour${duplicatesMessage}${copyMessage}.`,
-      );
+      setAnalysisSuccess(`${createdCount} créé(s), ${updatedCount} mis à jour${duplicatesMessage}.`);
     },
     onError: (err: Error) => {
       if (isDuplicateReferenceError(err)) {
@@ -1027,7 +986,7 @@ function ProductFormPanel({
           </p>
         </div>
 
-        {!product && type === 'product' ? (
+        {!product ? (
           <>
             <input
               accept="image/*"
@@ -1065,9 +1024,7 @@ function ProductFormPanel({
               onOverwriteChange={setOverwriteExistingByReference}
               onScan={() => fileInputRef.current?.click()}
               overwriteExisting={overwriteExistingByReference}
-              otherCompaniesCount={otherCompanies.length}
-              copyToOtherCompanies={copyToOtherCompanies}
-              onCopyToOtherCompaniesChange={setCopyToOtherCompanies}
+              allowScan={type === 'product'}
               success={analysisSuccess}
             />
 
@@ -1227,7 +1184,7 @@ function ProductFormPanel({
             <SecondaryButton onClick={() => batchMutation.mutate()} type="button">
               {batchMutation.isPending
                 ? 'Création du lot…'
-                : `Créer le lot (${detectedProducts.length} produits)`}
+                : `Créer le lot (${detectedProducts.length} ${type === 'product' ? 'produits' : 'prestations'})`}
             </SecondaryButton>
           ) : null}
           <PrimaryButton loading={mutation.isPending} onClick={() => mutation.mutate()} type="button">

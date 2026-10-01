@@ -124,9 +124,7 @@ export function AddProductMethods({
   success,
   overwriteExisting,
   onOverwriteChange,
-  otherCompaniesCount = 0,
-  copyToOtherCompanies = false,
-  onCopyToOtherCompaniesChange,
+  allowScan = true,
   duplicates,
 }: {
   onScan: () => void;
@@ -141,10 +139,8 @@ export function AddProductMethods({
   success: string | null;
   overwriteExisting: boolean;
   onOverwriteChange: (value: boolean) => void;
-  /** Autres entreprises du compte, hors entreprise active. */
-  otherCompaniesCount?: number;
-  copyToOtherCompanies?: boolean;
-  onCopyToOtherCompaniesChange?: (value: boolean) => void;
+  /** Lecture IA d'une fiche : produits uniquement. */
+  allowScan?: boolean;
   duplicates: string[];
 }) {
   const busy = isAnalyzing || isImporting;
@@ -153,13 +149,16 @@ export function AddProductMethods({
     <section className="space-y-3">
       <div>
         <h3 className="text-[14px] font-semibold tracking-[-0.01em] text-app-text">
-          Ajoutez un produit en quelques secondes
+          {allowScan ? 'Ajoutez un produit en quelques secondes' : 'Ajoutez une prestation en quelques secondes'}
         </h3>
         <p className="mt-1 text-[12.5px] text-app-muted">
-          Trois façons de créer une fiche. La lecture d’une fiche existante est la plus rapide.
+          {allowScan
+            ? 'Trois façons de créer une fiche. La lecture d’une fiche existante est la plus rapide.'
+            : 'Importez un fichier pour en créer plusieurs d’un coup, ou remplissez la fiche.'}
         </p>
       </div>
 
+      {allowScan ? (
       <MethodCard
         busy={isAnalyzing}
         description="Capture d’une page web, catalogue, étiquette de prix ou tableau. L’IA lit ce qui y est écrit et remplit le nom, la description, la référence, l’unité, le prix et la TVA. Elle ne reconnaît pas un objet photographié. Vous pouvez aussi coller une capture avec Ctrl+V."
@@ -170,6 +169,7 @@ export function AddProductMethods({
         title={isAnalyzing ? 'Analyse en cours…' : 'Lire une fiche produit'}
         tone="ai"
       />
+      ) : null}
 
       <MethodCard
         busy={isImporting}
@@ -194,18 +194,6 @@ export function AddProductMethods({
               />
               Mettre à jour les produits existants (même référence)
             </label>
-            {otherCompaniesCount > 0 && onCopyToOtherCompaniesChange ? (
-              <label className="flex items-start gap-2 text-[11.5px] leading-snug text-app-text-2">
-                <input
-                  checked={copyToOtherCompanies}
-                  className="mt-0.5 h-[14px] w-[14px] [accent-color:var(--app-accent)]"
-                  onChange={(event) => onCopyToOtherCompaniesChange(event.target.checked)}
-                  type="checkbox"
-                />
-                Ajouter aussi dans le catalogue de mes {otherCompaniesCount} autre
-                {otherCompaniesCount > 1 ? 's' : ''} entreprise{otherCompaniesCount > 1 ? 's' : ''}
-              </label>
-            ) : null}
           </div>
         }
         icon={<FileSpreadsheet size={17} />}

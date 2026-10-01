@@ -14,7 +14,7 @@ import { formatCurrency } from '@/lib/domain/format/currency';
 import type { Product } from '@/types/product';
 import { cn } from '@/lib/utils';
 
-type CatalogTab = 'all' | 'product' | 'service';
+type CatalogTab = 'product' | 'service';
 
 export function CatalogPicker({
   open,
@@ -29,7 +29,7 @@ export function CatalogPicker({
   const { scope } = useTenant();
   const reduceMotion = useReducedMotion();
   const [search, setSearch] = useState('');
-  const [tab, setTab] = useState<CatalogTab>('all');
+  const [tab, setTab] = useState<CatalogTab>('product');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
   const productsQuery = useQuery({
@@ -47,9 +47,7 @@ export function CatalogPicker({
   const items = useMemo(() => {
     const products = productsQuery.data ?? [];
     const services = servicesQuery.data ?? [];
-    if (tab === 'product') return products;
-    if (tab === 'service') return services;
-    return [...products, ...services].sort((a, b) => a.name.localeCompare(b.name, 'fr'));
+    return tab === 'product' ? products : services;
   }, [productsQuery.data, servicesQuery.data, tab]);
 
   useEffect(() => {
@@ -60,7 +58,11 @@ export function CatalogPicker({
   }, [open]);
 
   const loading = productsQuery.isLoading || servicesQuery.isLoading;
-  const selectedItems = items.filter((item) => selectedIds.includes(item.id));
+  // La sélection survit au changement d'onglet : produits et prestations cochés
+  // s'ajoutent ensemble.
+  const selectedItems = [...(productsQuery.data ?? []), ...(servicesQuery.data ?? [])].filter((item) =>
+    selectedIds.includes(item.id),
+  );
 
   return (
     <AnimatePresence>
@@ -106,25 +108,28 @@ export function CatalogPicker({
               value={search}
             />
           </div>
-          <div className="mt-3 flex gap-2">
+          <div className="mt-3 grid grid-cols-2 gap-1 rounded-xl bg-slate-100 p-1">
             {(
               [
-                { id: 'all', label: 'Tout' },
-                { id: 'product', label: 'Produits' },
-                { id: 'service', label: 'Prestations' },
+                { id: 'product', label: 'Produits', icon: Package, count: productsQuery.data?.length },
+                { id: 'service', label: 'Prestations', icon: Wrench, count: servicesQuery.data?.length },
               ] as const
             ).map((option) => (
               <button
                 className={cn(
-                  'rounded-full px-3 py-1 text-xs font-semibold transition',
+                  'flex items-center justify-center gap-2 rounded-lg py-2 text-sm font-semibold transition',
                   tab === option.id
-                    ? 'bg-primary text-white'
-                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200',
+                    ? 'bg-white text-primary shadow-sm'
+                    : 'text-slate-600 hover:text-slate-900',
                 )}
                 key={option.id}
                 onClick={() => setTab(option.id)}
                 type="button">
+                <option.icon size={15} />
                 {option.label}
+                {option.count !== undefined ? (
+                  <span className="text-xs font-medium text-slate-400">{option.count}</span>
+                ) : null}
               </button>
             ))}
           </div>
@@ -135,7 +140,9 @@ export function CatalogPicker({
             <p className="p-8 text-center text-sm text-slate-500">Chargement du catalogue…</p>
           ) : items.length === 0 ? (
             <div className="p-8 text-center">
-              <p className="text-sm text-slate-500">Aucun élément dans le catalogue.</p>
+              <p className="text-sm text-slate-500">
+                {tab === 'product' ? 'Aucun produit' : 'Aucune prestation'} dans le catalogue.
+              </p>
               <p className="mt-2 text-xs text-slate-400">
                 Ajoutez des produits ou prestations depuis le menu Catalogue.
               </p>

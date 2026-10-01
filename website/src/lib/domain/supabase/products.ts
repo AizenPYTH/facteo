@@ -233,6 +233,29 @@ function mapFormToUpdate(values: ProductFormValues): ProductUpdate {
   return payload;
 }
 
+/** Lignes renvoyées au plus par requête (limite du serveur). */
+const PAGE_SIZE = 1000;
+
+/**
+ * Lit toutes les pages d'une requête : au-delà de 1 000 lignes, le serveur
+ * coupait le catalogue sans le dire.
+ */
+async function fetchAllPages<T>(query: {
+  range: (from: number, to: number) => PromiseLike<{ data: T[] | null; error: unknown }>;
+}): Promise<{ data: T[]; error: unknown }> {
+  const rows: T[] = [];
+  for (let from = 0; ; from += PAGE_SIZE) {
+    const { data, error } = await query.range(from, from + PAGE_SIZE - 1);
+    if (error) {
+      return { data: rows, error };
+    }
+    rows.push(...(data ?? []));
+    if (!data || data.length < PAGE_SIZE) {
+      return { data: rows, error: null };
+    }
+  }
+}
+
 export async function fetchProducts(
   scope: DataScope,
   type: ProductType,
@@ -254,7 +277,7 @@ export async function fetchProducts(
     );
   }
 
-  const { data, error } = await query;
+  const { data, error } = await fetchAllPages(query);
 
   if (!error) {
     markSchemaFromColumns(firstColumns);
@@ -276,7 +299,7 @@ export async function fetchProducts(
         `name.ilike.%${sanitized}%,description.ilike.%${sanitized}%,reference.ilike.%${sanitized}%`,
       );
     }
-    const { data: legacyData, error: legacyError } = await legacyQuery;
+    const { data: legacyData, error: legacyError } = await fetchAllPages(legacyQuery);
     if (legacyError) {
       logSupabaseError('fetchProducts', legacyError);
       return [];
@@ -422,6 +445,85 @@ export async function createProduct(
   }
   logSupabaseError('createProduct', error);
   throw error;
+}
+
+/** Taille des paquets envoyés à la base lors d'un import. */
+const BULK_CHUNK_SIZE = 200;
+
+/**
+ * Création en masse, par paquets : un import de 1 800 lignes passe en une
+ * dizaine de requêtes au lieu de 1 800.
+ */
+export async function createProductsBulk(
+  scope: DataScope,
+  type: ProductType,
+  items: ProductFormValues[],
+  onProgress?: (done: number) => void,
+): Promise<Product[]> {
+  const created: Product[] = [];
+  // Date de création décroissante d'une milliseconde par ligne : la liste,
+  // triée du plus récent au plus ancien, garde l'ordre du fichier.
+  const startedAt = Date.now();
+  const payloadAt = (values: ProductFormValues, index: number) => ({
+    ...mapFormToInsert(scope, type, values),
+    created_at: new Date(startedAt - index).toISOString(),
+  });
+
+  for (let start = 0; start < items.length; start += BULK_CHUNK_SIZE) {
+    const chunk = items.slice(start, start + BULK_CHUNK_SIZE);
+    const columns = hasExtendedProductsSchema === false ? LEGACY_PRODUCT_COLUMNS : PRODUCT_COLUMNS;
+    let { data, error } = await supabase
+      .from('products')
+      .insert(chunk.map((values, index) => payloadAt(values, start + index)))
+      .select(columns);
+
+    if (error && columns === PRODUCT_COLUMNS && isMissingProductColumnError(error)) {
+      hasExtendedProductsSchema = false;
+      ({ data, error } = await supabase
+        .from('products')
+        .insert(chunk.map((values, index) => payloadAt(values, start + index)))
+        .select(LEGACY_PRODUCT_COLUMNS));
+    }
+
+    if (error) {
+      logSupabaseError('createProductsBulk', error);
+      throw error;
+    }
+
+    created.push(...toProductRows(data).map(mapProductRow));
+    onProgress?.(Math.min(start + chunk.length, items.length));
+  }
+
+  return created;
+}
+
+/** Produits du catalogue dont la référence figure dans la liste (comparaison insensible à la casse côté appelant). */
+export async function fetchProductsByReferences(
+  scope: DataScope,
+  type: ProductType,
+  references: string[],
+): Promise<Product[]> {
+  const found: Product[] = [];
+  const unique = [...new Set(references.map((reference) => reference.trim()).filter(Boolean))];
+
+  for (let start = 0; start < unique.length; start += BULK_CHUNK_SIZE) {
+    const columns = hasExtendedProductsSchema === false ? LEGACY_PRODUCT_COLUMNS : PRODUCT_COLUMNS;
+    const { data, error } = await supabase
+      .from('products')
+      .select(columns)
+      .eq('user_id', scope.userId)
+      .eq('type', type)
+      .is('deleted_at', null)
+      .in('reference', unique.slice(start, start + BULK_CHUNK_SIZE));
+
+    if (error) {
+      logSupabaseError('fetchProductsByReferences', error);
+      throw error;
+    }
+    found.push(...toProductRows(data).map(mapProductRow));
+  }
+
+  return found;
 }
 
 export async function updateProduct(
