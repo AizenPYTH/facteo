@@ -26,7 +26,7 @@ import {
 import { getClientDisplayName } from '@/lib/domain/clients/name';
 import { formatCurrency } from '@/lib/domain/format/currency';
 import { frenchDateInputToIso, todayDateInput } from '@/lib/domain/format/date-input';
-import { COMPOSER_TEMPLATES, getDefaultComposerTemplateId } from '@/lib/domain/pdf/composer-templates';
+import { COMPOSER_TEMPLATE_GROUPS, getDefaultComposerTemplateId } from '@/lib/domain/pdf/composer-templates';
 import { createClient, fetchClientsPage } from '@/lib/domain/supabase/clients';
 import { createInvoice } from '@/lib/domain/supabase/invoices';
 import { clientsQueryKeys, invoicesQueryKeys } from '@/lib/domain/supabase/query-keys';
@@ -399,10 +399,14 @@ export function InvoiceBatch() {
                   <SelectInput
                     onChange={(event) => update(draft.key, { templateId: event.target.value })}
                     value={draft.templateId}>
-                    {COMPOSER_TEMPLATES.map((template) => (
-                      <option key={template.id} value={template.id}>
-                        {template.id} · {template.label}
-                      </option>
+                    {COMPOSER_TEMPLATE_GROUPS.map((group) => (
+                      <optgroup key={group.category} label={group.label}>
+                        {group.templates.map((template) => (
+                          <option key={template.id} value={template.id}>
+                            {template.id} · {template.label}
+                          </option>
+                        ))}
+                      </optgroup>
                     ))}
                   </SelectInput>
                 </Field>

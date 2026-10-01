@@ -1,3 +1,4 @@
+import type { VocabularyId } from '@/lib/pdf/engine/templates/vocabulary';
 import type { TemplateContext } from '@/lib/pdf/engine/templates/context';
 
 /**
@@ -17,6 +18,36 @@ export type PdfTemplateDefinition = {
   /** Couleur du papier (fond de page). */
   paper: string;
   render: (context: TemplateContext) => string;
+  /** Registre de langue (Émetteur / De / Prestataire…). Absent : classique. */
+  vocabulary?: VocabularyId;
+  /** Famille de style, pour ranger la galerie. */
+  category?: TemplateCategory;
+  /**
+   * Le modèle place lui-même SIREN / SIRET / TVA (`context.issuerLegalIds`)
+   * dans sa mise en page. Sinon, l'enveloppe commune les met en bandeau.
+   */
+  ownsLegalIds?: boolean;
+};
+
+export type TemplateCategory =
+  | 'classique'
+  | 'moderne'
+  | 'elegant'
+  | 'creatif'
+  | 'minimal'
+  | 'artisan'
+  | 'commerce'
+  | 'tech';
+
+export const TEMPLATE_CATEGORY_LABELS: Record<TemplateCategory, string> = {
+  classique: 'Classique',
+  moderne: 'Moderne',
+  elegant: 'Élégant',
+  creatif: 'Créatif',
+  minimal: 'Minimal',
+  artisan: 'Artisan & BTP',
+  commerce: 'Commerce',
+  tech: 'Tech & SaaS',
 };
 
 /** Modèle « maison » INVEQ. */

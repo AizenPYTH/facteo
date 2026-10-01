@@ -22,6 +22,9 @@ async function waitForLayout(doc: Document): Promise<void> {
         }),
     ),
   );
+  // Polices intégrées (base64) : la capture attend qu'elles soient prêtes,
+  // sinon la première page sortait avec la police de secours.
+  await doc.fonts?.ready;
   await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
   await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
 }

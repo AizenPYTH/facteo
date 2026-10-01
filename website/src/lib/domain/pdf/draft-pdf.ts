@@ -1,6 +1,7 @@
 import { fetchClientById } from '@/lib/supabase/clients';
 import { fetchSettings, computeDueDate, computeValidUntil } from '@/lib/supabase/settings';
 import {
+  embedPdfFonts,
   renderDocumentPdfHtml,
   type PdfClientInfo,
   type PdfDocumentInput,
@@ -146,5 +147,5 @@ export async function buildDraftPdfHtml(
     templateId: draft.templateId,
   };
 
-  return renderDocumentPdfHtml(input);
+  return embedPdfFonts(renderDocumentPdfHtml(input));
 }

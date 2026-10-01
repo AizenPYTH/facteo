@@ -182,7 +182,7 @@ function withPageExtras(
 ): string {
   let result = html;
 
-  const strip = legalIdsStrip(context);
+  const strip = template.ownsLegalIds ? '' : legalIdsStrip(context);
   if (strip) {
     result = insertAfter(result, /<div class="dc-page"[^>]*>/, strip) ?? `${strip}${result}`;
   }
@@ -201,7 +201,7 @@ function withPageExtras(
 
 export function renderTemplatedDocumentPdfHtml(input: PdfDocumentInput): string {
   const template = resolvePdfTemplate(input.templateId);
-  const context = buildTemplateContext(input);
+  const context = buildTemplateContext(input, template.vocabulary);
 
   return `<!DOCTYPE html>
 <html lang="fr">

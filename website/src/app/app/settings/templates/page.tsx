@@ -8,7 +8,7 @@ import { FormActions, PrimaryButton } from '@/components/app/form-fields';
 import { Badge, LoadingState, Panel } from '@/components/app/ui';
 import { useSettings } from '@/hooks/use-settings';
 import { useSubscription } from '@/hooks/use-subscription';
-import { PDF_TEMPLATES } from '@/lib/pdf/engine/templates';
+import { COMPOSER_TEMPLATE_GROUPS } from '@/lib/domain/pdf/composer-templates';
 import { updateDocumentTemplates } from '@/lib/supabase/settings';
 import { settingsQueryKeys } from '@/lib/domain/supabase/query-keys';
 import { requireScope } from '@/lib/domain/tenant/scope';
@@ -61,67 +61,85 @@ export default function TemplatesSettingsPage() {
       ) : null}
 
       <Panel title="Modèle devis">
-        <div className={cn('grid gap-3 sm:grid-cols-2', templatesLocked && 'pointer-events-none opacity-50')}>
-          {PDF_TEMPLATES.map((template) => (
-            <button
-              className={cn(
-                'rounded-[12px] border p-4 text-left transition-colors duration-150',
-                quoteTemplateId === template.id
-                  ? 'border-app-accent bg-app-accent-tint/60'
-                  : 'border-app-border hover:border-app-accent-border',
-              )}
-              disabled={templatesLocked}
-              key={template.id}
-              onClick={() => setQuoteTemplateId(template.id)}
-              type="button">
-              {/* Pastille d'accent du modèle. Certains n'ont pas de couleur
-                  (noir et blanc assumé) : on montre alors la teinte du papier,
-                  cernée, plutôt qu'un aplat vide. */}
-              <div
-                className="mb-3 h-2 rounded-full border border-app-border"
-                style={{ backgroundColor: template.accent ?? template.paper }}
-              />
-              <p className="font-semibold text-app-text">{template.name}</p>
-              <p className="mt-1 text-[12px] text-app-muted">{template.description}</p>
-              {quoteTemplateId === template.id ? (
-                <Badge className="mt-3" variant="info">
-                  Sélectionné
-                </Badge>
-              ) : null}
-            </button>
+        <div className={cn('space-y-5', templatesLocked && 'pointer-events-none opacity-50')}>
+          {COMPOSER_TEMPLATE_GROUPS.map((group) => (
+            <div key={group.category}>
+              <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.1em] text-app-faint">
+                {group.label}
+              </p>
+              <div className="grid gap-3 sm:grid-cols-2">
+                {group.templates.map((template) => (
+                  <button
+                    className={cn(
+                      'rounded-[12px] border p-4 text-left transition-colors duration-150',
+                      quoteTemplateId === template.id
+                        ? 'border-app-accent bg-app-accent-tint/60'
+                        : 'border-app-border hover:border-app-accent-border',
+                    )}
+                    disabled={templatesLocked}
+                    key={template.id}
+                    onClick={() => setQuoteTemplateId(template.id)}
+                    type="button">
+                    {/* Pastille d'accent du modèle. Certains n'ont pas de couleur
+                        (noir et blanc assumé) : on montre alors la teinte du papier,
+                        cernée, plutôt qu'un aplat vide. */}
+                    <div
+                      className="mb-3 h-2 rounded-full border border-app-border"
+                      style={{ backgroundColor: template.primary }}
+                    />
+                    <p className="font-semibold text-app-text">{template.label}</p>
+                    <p className="mt-1 text-[12px] text-app-muted">{template.description}</p>
+                    {quoteTemplateId === template.id ? (
+                      <Badge className="mt-3" variant="info">
+                        Sélectionné
+                      </Badge>
+                    ) : null}
+                  </button>
+                ))}
+              </div>
+            </div>
           ))}
         </div>
       </Panel>
 
       <Panel title="Modèle facture">
-        <div className={cn('grid gap-3 sm:grid-cols-2', templatesLocked && 'pointer-events-none opacity-50')}>
-          {PDF_TEMPLATES.map((template) => (
-            <button
-              className={cn(
-                'rounded-[12px] border p-4 text-left transition-colors duration-150',
-                invoiceTemplateId === template.id
-                  ? 'border-app-accent bg-app-accent-tint/60'
-                  : 'border-app-border hover:border-app-accent-border',
-              )}
-              disabled={templatesLocked}
-              key={`inv-${template.id}`}
-              onClick={() => setInvoiceTemplateId(template.id)}
-              type="button">
-              {/* Pastille d'accent du modèle. Certains n'ont pas de couleur
-                  (noir et blanc assumé) : on montre alors la teinte du papier,
-                  cernée, plutôt qu'un aplat vide. */}
-              <div
-                className="mb-3 h-2 rounded-full border border-app-border"
-                style={{ backgroundColor: template.accent ?? template.paper }}
-              />
-              <p className="font-semibold text-app-text">{template.name}</p>
-              <p className="mt-1 text-[12px] text-app-muted">{template.description}</p>
-              {invoiceTemplateId === template.id ? (
-                <Badge className="mt-3" variant="info">
-                  Sélectionné
-                </Badge>
-              ) : null}
-            </button>
+        <div className={cn('space-y-5', templatesLocked && 'pointer-events-none opacity-50')}>
+          {COMPOSER_TEMPLATE_GROUPS.map((group) => (
+            <div key={group.category}>
+              <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.1em] text-app-faint">
+                {group.label}
+              </p>
+              <div className="grid gap-3 sm:grid-cols-2">
+                {group.templates.map((template) => (
+                  <button
+                    className={cn(
+                      'rounded-[12px] border p-4 text-left transition-colors duration-150',
+                      invoiceTemplateId === template.id
+                        ? 'border-app-accent bg-app-accent-tint/60'
+                        : 'border-app-border hover:border-app-accent-border',
+                    )}
+                    disabled={templatesLocked}
+                    key={`inv-${template.id}`}
+                    onClick={() => setInvoiceTemplateId(template.id)}
+                    type="button">
+                    {/* Pastille d'accent du modèle. Certains n'ont pas de couleur
+                        (noir et blanc assumé) : on montre alors la teinte du papier,
+                        cernée, plutôt qu'un aplat vide. */}
+                    <div
+                      className="mb-3 h-2 rounded-full border border-app-border"
+                      style={{ backgroundColor: template.primary }}
+                    />
+                    <p className="font-semibold text-app-text">{template.label}</p>
+                    <p className="mt-1 text-[12px] text-app-muted">{template.description}</p>
+                    {invoiceTemplateId === template.id ? (
+                      <Badge className="mt-3" variant="info">
+                        Sélectionné
+                      </Badge>
+                    ) : null}
+                  </button>
+                ))}
+              </div>
+            </div>
           ))}
         </div>
       </Panel>

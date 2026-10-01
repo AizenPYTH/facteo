@@ -26,7 +26,10 @@ import { ensureTemplatePreviewPdf } from '@/lib/pdf/template-preview-pdf';
 import { spacing } from '@/constants/theme/spacing';
 import { radius } from '@/constants/theme/radius';
 import { PDF_TEMPLATES } from '@/lib/pdf/engine/templates';
-import type { PdfTemplateDefinition } from '@/lib/pdf/engine/templates/types';
+import {
+  TEMPLATE_CATEGORY_LABELS,
+  type PdfTemplateDefinition,
+} from '@/lib/pdf/engine/templates/types';
 
 type TemplateGalleryModalProps = {
   visible: boolean;
@@ -259,6 +262,11 @@ export function TemplateGalleryModal({
         </View>
 
         <View style={styles.templateMeta}>
+          {activeTemplate.category ? (
+            <AppText color="secondary" variant="caption">
+              {TEMPLATE_CATEGORY_LABELS[activeTemplate.category]}
+            </AppText>
+          ) : null}
           <AppText style={styles.templateName} variant="title">
             {activeTemplate.name}
           </AppText>

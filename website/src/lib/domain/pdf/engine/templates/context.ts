@@ -1,3 +1,4 @@
+import { resolveVocabulary, type VocabularyId } from '@/lib/pdf/engine/templates/vocabulary';
 import { PAYMENT_METHOD_LABELS, type PaymentMethodId } from '@/types/payment-methods';
 import { formatPriceHT, formatVatRate } from '@/lib/format/currency';
 import { formatDate } from '@/lib/format/date';
@@ -312,7 +313,11 @@ function buildQrSvg(input: PdfDocumentInput, amountDue: number): string | null {
   });
 }
 
-export function buildTemplateContext(input: PdfDocumentInput): TemplateContext {
+export function buildTemplateContext(
+  input: PdfDocumentInput,
+  vocabularyId?: VocabularyId,
+): TemplateContext {
+  const words = resolveVocabulary(vocabularyId);
   const isQuote = input.kind === 'quote';
   const totalTtc = input.totals.totalTtc;
   const amountDue = input.totals.amountDue ?? totalTtc;
@@ -337,9 +342,9 @@ export function buildTemplateContext(input: PdfDocumentInput): TemplateContext {
   const terms = isQuote
     ? null
     : settled
-      ? 'Facture payée — aucun règlement attendu'
+      ? words.settled
       : paymentTermsDays
-        ? `Paiement sous ${paymentTermsDays} jours`
+        ? words.paymentTerms(paymentTermsDays)
         : null;
 
   const issuedAt = input.issuedAt ? formatDate(input.issuedAt) : null;
@@ -348,29 +353,29 @@ export function buildTemplateContext(input: PdfDocumentInput): TemplateContext {
   const totalsRows: TemplateTotalsRow[] = [];
 
   if (discount > 0.005) {
-    totalsRows.push({ label: 'Sous-total HT', value: formatPriceHT(subtotalBeforeDiscount) });
-    totalsRows.push({ label: 'Remise', value: `− ${formatPriceHT(discount)}` });
+    totalsRows.push({ label: words.subtotal, value: formatPriceHT(subtotalBeforeDiscount) });
+    totalsRows.push({ label: words.discount, value: `− ${formatPriceHT(discount)}` });
   }
 
-  totalsRows.push({ label: 'Total HT', value: formatPriceHT(input.totals.subtotalHt) });
-  vat.forEach((row) => totalsRows.push({ label: `TVA ${row.rate}`, value: row.amount }));
+  totalsRows.push({ label: words.totalHtRow, value: formatPriceHT(input.totals.subtotalHt) });
+  vat.forEach((row) => totalsRows.push({ label: words.vatRow(row.rate), value: row.amount }));
 
   const meta: TemplateMetaEntry[] = [];
 
   if (issuedAt) {
-    meta.push({ label: "Date d'émission", value: issuedAt });
+    meta.push({ label: words.issuedAt, value: issuedAt });
   }
 
   if (secondaryDate) {
     meta.push({
-      label: isQuote ? 'Validité' : 'Échéance',
+      label: isQuote ? words.quoteValidity : words.dueDate,
       value: secondaryDate,
       strong: true,
     });
   }
 
   if (terms) {
-    meta.push({ label: 'Conditions', value: terms });
+    meta.push({ label: words.conditions, value: terms });
   }
 
   const summaryParts = [
@@ -388,17 +393,17 @@ export function buildTemplateContext(input: PdfDocumentInput): TemplateContext {
       document: documentLabel,
       documentUpper: documentLabel.toLocaleUpperCase('fr-FR'),
       number: 'N°',
-      issuedAt: "Date d'émission",
-      secondaryDate: isQuote ? 'Validité' : 'Échéance',
-      amountDue: isQuote ? 'Total du devis' : 'Net à payer',
-      designation: 'Désignation',
-      quantity: 'Qté',
-      unitPrice: 'P.U. HT',
-      vat: 'TVA',
-      totalHt: 'Total HT',
-      billedTo: isQuote ? 'Destinataire' : 'Facturé à',
-      issuer: 'Émetteur',
-      payment: isQuote ? 'Modalités' : 'Règlement',
+      issuedAt: words.issuedAt,
+      secondaryDate: isQuote ? words.quoteValidity : words.dueDate,
+      amountDue: isQuote ? words.quoteAmount : words.amountDue,
+      designation: words.designation,
+      quantity: words.quantity,
+      unitPrice: words.unitPrice,
+      vat: words.vat,
+      totalHt: words.totalHt,
+      billedTo: isQuote ? words.quoteBilledTo : words.billedTo,
+      issuer: words.issuer,
+      payment: isQuote ? 'Modalités' : words.payment,
       signature: 'Bon pour accord, date et signature',
     },
     number: input.number,

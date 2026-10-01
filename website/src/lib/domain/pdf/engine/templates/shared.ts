@@ -70,6 +70,18 @@ export const FONTS = {
   grotesk: `'Space Grotesk', ${SANS}`,
   sourceSerif: `'Source Serif 4', ${SERIF}`,
   baskerville: `'Libre Baskerville', ${SERIF}`,
+  playfair: `'Playfair Display', ${SERIF}`,
+  dmSerif: `'DM Serif Display', ${SERIF}`,
+  spaceMono: `'Space Mono', ${MONO}`,
+  courier: `'Courier Prime', 'Courier New', ${MONO}`,
+  oswald: `'Oswald', 'Arial Narrow', ${SANS}`,
+  caveat: `'Caveat', 'Bradley Hand', cursive`,
+  lora: `'Lora', ${SERIF}`,
+  fraunces: `'Fraunces', ${SERIF}`,
+  syne: `'Syne', ${SANS}`,
+  bebas: `'Bebas Neue', 'Arial Narrow', ${SANS}`,
+  cormorant: `'Cormorant Garamond', ${SERIF}`,
+  workSans: `'Work Sans', ${SANS}`,
 } as const;
 
 export type FontStack = (typeof FONTS)[keyof typeof FONTS];
