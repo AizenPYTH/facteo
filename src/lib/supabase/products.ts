@@ -77,7 +77,8 @@ export async function updateProduct(input: UpdateProductInput): Promise<ProductR
 export async function deleteProduct(userId: string, productId: string): Promise<void> {
   const { error } = await supabase
     .from('products')
-    .update({ deleted_at: new Date().toISOString() })
+    // Référence libérée : l'unicité en base compte aussi les lignes supprimées.
+    .update({ deleted_at: new Date().toISOString(), reference: null })
     .eq('id', productId)
     .eq('user_id', userId);
 
