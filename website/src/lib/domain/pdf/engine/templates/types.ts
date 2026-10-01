@@ -27,6 +27,8 @@ export type PdfTemplateDefinition = {
    * dans sa mise en page. Sinon, l'enveloppe commune les met en bandeau.
    */
   ownsLegalIds?: boolean;
+  /** Variante : modèle dont elle reprend la structure (et l'emplacement du cachet). */
+  baseId?: string;
 };
 
 export type TemplateCategory =
