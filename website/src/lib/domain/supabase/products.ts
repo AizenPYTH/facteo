@@ -506,6 +506,19 @@ export async function fetchProductsByReferences(
   const found: Product[] = [];
   const unique = [...new Set(references.map((reference) => reference.trim()).filter(Boolean))];
 
+  // Références encore tenues par des lignes supprimées : libérées avant l'import.
+  for (let start = 0; start < unique.length; start += BULK_CHUNK_SIZE) {
+    const { error } = await supabase
+      .from('products')
+      .update({ reference: null })
+      .eq('user_id', scope.userId)
+      .not('deleted_at', 'is', null)
+      .in('reference', unique.slice(start, start + BULK_CHUNK_SIZE));
+    if (error) {
+      logSupabaseError('releaseDeletedReferences', error);
+    }
+  }
+
   for (let start = 0; start < unique.length; start += BULK_CHUNK_SIZE) {
     const columns = hasExtendedProductsSchema === false ? LEGACY_PRODUCT_COLUMNS : PRODUCT_COLUMNS;
     const { data, error } = await supabase
@@ -579,7 +592,9 @@ export async function updateProduct(
 export async function deleteProduct(scope: DataScope, productId: string): Promise<void> {
   const { error } = await supabase
     .from('products')
-    .update({ deleted_at: new Date().toISOString(), is_active: false })
+    // La référence est libérée : l'unicité en base compte aussi les lignes
+    // supprimées, qui bloquaient la recréation d'un produit de même référence.
+    .update({ deleted_at: new Date().toISOString(), is_active: false, reference: null })
     .eq('id', productId)
     .eq('user_id', scope.userId);
 
