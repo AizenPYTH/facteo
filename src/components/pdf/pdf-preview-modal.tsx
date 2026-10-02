@@ -210,7 +210,20 @@ function ActionButton({
           type="hierarchical"
         />
       )}
-      <Text style={[styles.actionLabel, highlight && styles.actionLabelHighlight]}>{label}</Text>
+      {/*
+        Quatre boutons se partagent la largeur à parts égales. « Télécharger »,
+        le plus long, passait à la ligne et laissait son « r » seul en dessous.
+        Le libellé tient désormais sur une ligne et se réduit légèrement si la
+        place manque — écran étroit ou grande taille de texte système.
+      */}
+      <Text
+        adjustsFontSizeToFit
+        maxFontSizeMultiplier={1.3}
+        minimumFontScale={0.75}
+        numberOfLines={1}
+        style={[styles.actionLabel, highlight && styles.actionLabelHighlight]}>
+        {label}
+      </Text>
     </PressableScale>
   );
 }
@@ -290,7 +303,7 @@ function useStyles() {
       justifyContent: 'center',
       gap: spacing.xs,
       backgroundColor: colors.backgroundSecondary,
-      paddingHorizontal: spacing.sm,
+      paddingHorizontal: spacing.xs,
       paddingVertical: spacing.sm,
     },
     actionButtonHighlight: {
@@ -303,6 +316,7 @@ function useStyles() {
       ...textHierarchy.caption,
       color: colors.text,
       fontWeight: '500',
+      textAlign: 'center',
     },
     actionLabelHighlight: {
       color: '#FFFFFF',
