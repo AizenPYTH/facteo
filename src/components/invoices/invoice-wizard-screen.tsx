@@ -1,5 +1,5 @@
 import { router, type Href } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { View } from 'react-native';
 
 import { VoiceDictationCard } from '@/components/ai/voice-dictation-card';
@@ -16,7 +16,7 @@ import { WizardScreen } from '@/components/ui/wizard-screen';
 import { useAuth } from '@/hooks/use-auth';
 import { useCompanyProfile } from '@/hooks/use-company-profile';
 import { useTenant } from '@/hooks/use-tenant';
-import type { ProcessVoiceCommandResult } from '@/lib/ai/voice-transcription';
+import { processVoiceCommand, type ProcessVoiceCommandResult } from '@/lib/ai/voice-transcription';
 import { createClient, fetchClientsPage } from '@/lib/supabase/clients';
 import { fetchCatalogItems } from '@/lib/supabase/products';
 import { requireScope } from '@/lib/tenant/scope';
@@ -62,6 +62,8 @@ type InvoiceWizardScreenProps = {
   initialState?: InvoiceWizardState;
   variant?: 'mobile' | 'desktop';
   onStepChange?: (step: number) => void;
+  /** Texte dicté via Siri : la facture est remplie à l'ouverture. */
+  dictation?: string;
 };
 
 export function InvoiceWizardScreen({
@@ -71,6 +73,7 @@ export function InvoiceWizardScreen({
   initialState,
   variant = 'mobile',
   onStepChange,
+  dictation,
 }: InvoiceWizardScreenProps) {
   const { createInvoice, updateInvoice } = useInvoiceMutations();
   const { showError, showSuccess } = useToast();
@@ -252,6 +255,24 @@ export function InvoiceWizardScreen({
     }
     return `C’est rempli : ${summary.join(', ')}. Vérifiez puis validez.`;
   }
+
+  // Dictée Siri : traitée une seule fois, dès que le compte est prêt.
+  const dictationHandledRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!dictation || mode !== 'create' || !scope || !user?.id) return;
+    if (dictationHandledRef.current === dictation) return;
+    dictationHandledRef.current = dictation;
+    void (async () => {
+      try {
+        const result = await processVoiceCommand({ documentType: 'invoice', transcript: dictation });
+        showSuccess(await applyVoiceCommand(result));
+      } catch (error) {
+        showError(error instanceof Error ? error.message : 'Dictée impossible.');
+      }
+    })();
+    // applyVoiceCommand lit l'état courant via setState : pas besoin de le suivre.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dictation, mode, scope, user?.id]);
 
   function handleAddLine(line: QuoteLineValue) {
     setState((current) => ({
