@@ -17,6 +17,7 @@ import {
 
 import { MARKETING_SITE_URL } from '@/constants/marketing/site';
 import { isSupabaseConfigured, supabase } from '@/lib/supabase';
+import { presentNatively } from '@/lib/native/presentation';
 
 /** Au-delà de ce délai, on cesse d’attendre la restauration de session. */
 const SESSION_RESTORE_TIMEOUT_MS = 8000;
@@ -236,7 +237,11 @@ export function AuthProvider({ children }: PropsWithChildren) {
       return { error: null, session: null };
     }
 
-    const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
+    // Session web native : deux connexions enchaînées (annuler puis relancer)
+    // présentaient deux fois le navigateur intégré.
+    const result = await presentNatively(() =>
+      WebBrowser.openAuthSessionAsync(data.url, redirectTo),
+    );
     if (result.type !== 'success' || !('url' in result) || !result.url) {
       return { error: null, session: null };
     }
@@ -346,7 +351,11 @@ export function AuthProvider({ children }: PropsWithChildren) {
       return { error: null, session: null };
     }
 
-    const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
+    // Session web native : deux connexions enchaînées (annuler puis relancer)
+    // présentaient deux fois le navigateur intégré.
+    const result = await presentNatively(() =>
+      WebBrowser.openAuthSessionAsync(data.url, redirectTo),
+    );
     if (result.type !== 'success' || !('url' in result) || !result.url) {
       return { error: null, session: null };
     }
