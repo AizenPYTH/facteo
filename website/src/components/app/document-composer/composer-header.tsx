@@ -1,87 +1,127 @@
 'use client';
 
-import { ArrowLeft, Check, Loader2 } from 'lucide-react';
+import Link from 'next/link';
 
+import {
+  IQ_PRIMARY,
+  SaveIndicator,
+  type ComposerSaveTone,
+} from '@/components/app/document-composer/ui';
+import { formatCurrency } from '@/lib/domain/format/currency';
 import { cn } from '@/lib/utils';
 
-export type ComposerSaveState = 'draft' | 'saving' | 'saved';
-
-const SAVE_STATES: Record<ComposerSaveState, { label: string; className: string }> = {
-  draft: {
-    label: 'Brouillon non enregistré',
-    className: 'bg-app-border-soft text-app-muted',
-  },
-  saving: {
-    label: 'Enregistrement…',
-    className: 'bg-app-accent-tint text-app-accent-strong',
-  },
-  saved: {
-    label: 'Enregistré',
-    className: 'bg-app-success-tint text-app-success-text',
-  },
-};
-
-export function ComposerSaveIndicator({
-  className,
-  state,
-}: {
-  className?: string;
-  state: ComposerSaveState;
-}) {
-  const tone = SAVE_STATES[state];
-
+/** Logo INVEQ du handoff : quatre carrés indigo pivotés. */
+function InveqMark() {
   return (
-    <span
-      className={cn(
-        'flex items-center gap-1.5 rounded-app-chip px-2.5 py-[5px] text-[12px] font-semibold',
-        tone.className,
-        className,
-      )}>
-      {state === 'saving' ? (
-        <Loader2 className="animate-spin" size={13} strokeWidth={2} />
-      ) : state === 'saved' ? (
-        <Check size={13} strokeWidth={2.25} />
-      ) : (
-        <span className="h-[5px] w-[5px] rounded-full bg-app-faint" />
-      )}
-      {tone.label}
+    <span aria-hidden className="grid rotate-45 grid-cols-[repeat(2,7px)] gap-[2px]">
+      <span className="size-[7px] rounded-[2px] bg-iq-accent" />
+      <span className="size-[7px] rounded-[2px] bg-iq-accent opacity-50" />
+      <span className="size-[7px] rounded-[2px] bg-iq-accent opacity-50" />
+      <span className="size-[7px] rounded-[2px] bg-iq-accent" />
     </span>
   );
 }
 
+/**
+ * Barre supérieure collante (64 px) de l'éditeur sur ordinateur : logo, fil
+ * d'Ariane, état d'enregistrement, Total TTC toujours visible, Annuler et action
+ * principale.
+ */
+export function ComposerTopBar({
+  crumbLabel,
+  onCancel,
+  onCrumbClick,
+  onSubmit,
+  pending,
+  saveLabel,
+  saveTone,
+  submitLabel,
+  title,
+  total,
+}: {
+  crumbLabel: string;
+  onCancel: () => void;
+  onCrumbClick: () => void;
+  onSubmit: () => void;
+  pending?: boolean;
+  saveLabel: string;
+  saveTone: ComposerSaveTone;
+  submitLabel: string;
+  title: string;
+  total: number;
+}) {
+  return (
+    <header className="flex h-16 shrink-0 items-center gap-[18px] border-b border-iq-line bg-iq-surface px-5 min-[1200px]:px-9">
+      <Link
+        aria-label="INVEQ, tableau de bord"
+        className="hidden items-center gap-[11px] rounded-[6px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-iq-accent min-[1200px]:flex"
+        href="/app">
+        <InveqMark />
+        <span className="text-[16px] font-extrabold tracking-[-0.3px]">INVEQ</span>
+      </Link>
+      <span aria-hidden className="hidden h-[22px] w-px bg-iq-line min-[1200px]:block" />
+      <nav aria-label="Fil d’Ariane" className="flex min-w-0 items-center gap-2 text-[13.5px] text-iq-ink3">
+        <button
+          className="shrink-0 rounded-[4px] hover:text-iq-ink2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-iq-accent"
+          onClick={onCrumbClick}
+          type="button">
+          {crumbLabel}
+        </button>
+        <span aria-hidden>/</span>
+        <span aria-current="page" className="truncate font-semibold text-iq-ink">
+          {title}
+        </span>
+      </nav>
+      <div className="flex-1" />
+      <SaveIndicator className="hidden lg:flex" label={saveLabel} tone={saveTone} />
+      <div className="flex items-baseline gap-2 border-l border-iq-line pl-[18px]">
+        <span className="hidden text-[12px] text-iq-ink3 sm:inline">Total TTC</span>
+        <span className="whitespace-nowrap text-[17px] font-extrabold tracking-[-0.3px]">
+          {formatCurrency(total)}
+        </span>
+      </div>
+      <button
+        className="h-[38px] shrink-0 rounded-[10px] border border-iq-line bg-iq-surface px-4 text-[13.5px] font-semibold text-iq-ink2 transition-colors duration-150 hover:bg-iq-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-iq-accent"
+        onClick={onCancel}
+        type="button">
+        Annuler
+      </button>
+      <button className={IQ_PRIMARY} disabled={pending} onClick={onSubmit} type="button">
+        {submitLabel}
+      </button>
+    </header>
+  );
+}
+
+/** En-tête de l'assistant (écran étroit) : retour, titre, étape, progression. */
 export function ComposerHeader({
-  actions,
   children,
   meta,
   onBack,
   title,
 }: {
-  actions?: React.ReactNode;
   children?: React.ReactNode;
   meta?: string;
   onBack: () => void;
   title: string;
 }) {
   return (
-    <header className="shrink-0 border-b border-app-border bg-app-surface">
-      <div className="flex items-center justify-between gap-4 px-3.5 py-3 lg:px-5">
-        <div className="flex min-w-0 items-center gap-3">
-          <button
-            aria-label="Retour"
-            className="flex h-9 shrink-0 items-center gap-1.5 rounded-app-field border border-app-border bg-app-surface px-2.5 text-[12.5px] font-semibold text-app-text-3 transition-[background-color,border-color,color] duration-150 hover:bg-app-hover"
-            onClick={onBack}
-            type="button">
-            <ArrowLeft size={15} strokeWidth={1.9} />
-            <span className="hidden sm:inline">Retour</span>
-          </button>
-          <div className="min-w-0">
-            <h1 className="truncate text-[17px] font-semibold tracking-[-0.01em] text-app-text">
-              {title}
-            </h1>
-            {meta ? <p className="mt-px truncate text-[12px] text-app-muted-2">{meta}</p> : null}
-          </div>
+    <header className="shrink-0 border-b border-iq-line bg-iq-surface">
+      <div className="flex items-center gap-3 px-3.5 py-3">
+        <button
+          aria-label="Retour"
+          className="flex h-10 shrink-0 items-center gap-1.5 rounded-[10px] border border-iq-line bg-iq-surface px-2.5 text-[13px] font-semibold text-iq-ink2 transition-colors duration-150 hover:bg-iq-soft"
+          onClick={onBack}
+          type="button">
+          <svg aria-hidden fill="none" height="16" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.2" viewBox="0 0 24 24" width="16">
+            <path d="M15 6l-6 6 6 6" />
+          </svg>
+          <span className="hidden sm:inline">Retour</span>
+        </button>
+        <div className="min-w-0">
+          <h1 className={cn('truncate text-[17px] font-bold tracking-[-0.2px]')}>{title}</h1>
+          {meta ? <p className="mt-px truncate text-[12.5px] text-iq-ink3">{meta}</p> : null}
         </div>
-        {actions ? <div className="flex shrink-0 items-center gap-2">{actions}</div> : null}
       </div>
       {children}
     </header>

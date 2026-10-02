@@ -1,6 +1,7 @@
 'use client';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Plus_Jakarta_Sans } from 'next/font/google';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
   useCallback,
@@ -10,21 +11,30 @@ import {
   useState,
   useSyncExternalStore,
 } from 'react';
-import { Send } from 'lucide-react';
 
 import { CatalogPicker } from '@/components/app/catalog-picker';
-import { ComposerClientCard, composerClientLabel } from '@/components/app/document-composer/client-card';
-import { ComposerCard } from '@/components/app/document-composer/composer-card';
 import {
-  ComposerHeader,
-  ComposerSaveIndicator,
-  type ComposerSaveState,
-} from '@/components/app/document-composer/composer-header';
+  ComposerClientDatesPanel,
+  composerClientLabel,
+} from '@/components/app/document-composer/client-panel';
+import { ComposerHeader, ComposerTopBar } from '@/components/app/document-composer/composer-header';
 import { ComposerErrorBanner } from '@/components/app/document-composer/field-errors';
-import { ComposerLinesCard, type LineFieldName } from '@/components/app/document-composer/lines-card';
-import { ComposerTemplateBar } from '@/components/app/document-composer/template-bar';
-import { ComposerPresentationCard } from '@/components/app/document-composer/presentation-card';
-import { ComposerTermsCard } from '@/components/app/document-composer/terms-card';
+import {
+  ComposerLinesPanel,
+  type LineFieldName,
+} from '@/components/app/document-composer/lines-panel';
+import { ComposerOptionsPanel } from '@/components/app/document-composer/options-panel';
+import {
+  buildComposerPdfInput,
+  useComposerPreviewCompany,
+  useDebouncedValue,
+} from '@/components/app/document-composer/preview';
+import {
+  ComposerPreviewColumn,
+  rememberTemplate,
+} from '@/components/app/document-composer/preview-column';
+import { ComposerTemplateGallery } from '@/components/app/document-composer/template-gallery';
+import type { ComposerSaveTone } from '@/components/app/document-composer/ui';
 import {
   COMPOSER_WIZARD_STEPS,
   ComposerRecapCard,
@@ -39,7 +49,6 @@ import {
   type LineValue,
 } from '@/components/app/document-composer/validation';
 import { LoadingState } from '@/components/app/ui';
-import { PrimaryButton, SecondaryButton, TextArea } from '@/components/app/form-fields';
 import { useAuth } from '@/providers/auth-provider';
 import { useTenant } from '@/providers/company-provider';
 import { useImagePaste } from '@/hooks/use-image-paste';
@@ -57,7 +66,10 @@ import { enforcePlanLimit } from '@/lib/subscription/limit-guard';
 import { PlanLimitError } from '@/types/subscription';
 import { fetchProducts, fetchProductsByIds } from '@/lib/domain/supabase/products';
 import type { VoiceCommandResult } from '@/lib/domain/ai/voice-command';
-import { VoiceDictation } from '@/components/app/document-composer/voice-dictation';
+import {
+  VoiceDictation,
+  type VoiceDictationHandle,
+} from '@/components/app/document-composer/voice-dictation';
 import { createEmptyClientFormValues, type Client } from '@/types/client';
 import { clientsQueryKeys, invoicesQueryKeys, quotesQueryKeys } from '@/lib/domain/supabase/query-keys';
 import { analyzeProductImage, type ProductImageAnalysis } from '@/lib/domain/ai/product-image-analysis';
@@ -71,7 +83,12 @@ import {
 } from '@/lib/domain/format/date-input';
 import { getDefaultComposerTemplateId } from '@/lib/domain/pdf/composer-templates';
 import { requireScope } from '@/lib/domain/tenant/scope';
-import { createEmptyInvoiceLine } from '@inveq/types/invoice';
+import { cn } from '@/lib/utils';
+import {
+  createEmptyInvoiceLine,
+  INVOICE_STATUS_LABELS,
+  type InvoiceStatus,
+} from '@inveq/types/invoice';
 import { createEmptyQuoteLine, createLocalLineId } from '@inveq/types/quote';
 import type { Product } from '@/types/product';
 import {
@@ -81,6 +98,13 @@ import {
   type InvoicePdfOptions,
 } from '@/types/pdf-options';
 import { CLIENTS_PAGE_SIZE } from '@inveq/types/clients-list';
+
+/** Police de l'éditeur (handoff « Nouvelle facture ») : Plus Jakarta Sans. */
+const jakarta = Plus_Jakarta_Sans({
+  subsets: ['latin'],
+  variable: '--font-iq',
+  display: 'swap',
+});
 
 /** Sous ce palier le composer devient un assistant en 3 étapes (handoff §5). */
 const WIZARD_QUERY = '(max-width: 899px)';
@@ -293,6 +317,7 @@ type InvoiceEditState = {
   number: string;
   pdfOptions: InvoicePdfOptions;
   lines: LineValue[];
+  status: InvoiceStatus;
 };
 
 /** Modification d'une facture : charge la facture puis ouvre l'éditeur prérempli. */
@@ -322,6 +347,7 @@ export function InvoiceEditor({ invoiceId }: { invoiceId: string }) {
         number: invoice.number,
         pdfOptions,
         lines: invoice.lines.length > 0 ? invoice.lines : [createEmptyInvoiceLine()],
+        status: invoice.status,
       };
     },
     enabled: Boolean(scope?.companyId),
@@ -377,27 +403,33 @@ export function DocumentComposer({
   );
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [catalogOpen, setCatalogOpen] = useState(false);
-  /** Client choisi par la dictée, ajouté à la liste s'il n'est pas sur la première page. */
+  /**
+   * Client choisi par la dictée ou créé depuis l'éditeur, ajouté à la liste
+   * s'il n'est pas (encore) sur la première page.
+   */
   const [voiceClient, setVoiceClient] = useState<Client | null>(null);
   const [submitAttempted, setSubmitAttempted] = useState(false);
   const [isImportingAi, setIsImportingAi] = useState(false);
   const [importFeedback, setImportFeedback] = useState<string | null>(null);
   const [step, setStep] = useState(0);
-  const importInputRef = useRef<HTMLInputElement | null>(null);
+  const [galleryOpen, setGalleryOpen] = useState(false);
+  /** Nom du fichier en cours de lecture (bandeau « Lecture de … »). */
+  const [importLabel, setImportLabel] = useState<string | null>(null);
+  const spreadsheetInputRef = useRef<HTMLInputElement | null>(null);
+  const photoInputRef = useRef<HTMLInputElement | null>(null);
+  const voiceRef = useRef<VoiceDictationHandle>(null);
   const initializedFromProductsRef = useRef(false);
 
-  const clientRef = useRef<HTMLElement>(null);
-  const termsRef = useRef<HTMLElement>(null);
+  const clientRef = useRef<HTMLDivElement>(null);
+  const termsRef = useRef<HTMLDivElement>(null);
   const linesRef = useRef<HTMLElement>(null);
   const lineFieldRefs = useRef<
     Record<string, Partial<Record<LineFieldName, HTMLInputElement[]>>>
   >({});
 
-  useEffect(() => {
-    if (settings && !templateId) {
-      setTemplateId(getDefaultComposerTemplateId(kind, settings));
-    }
-  }, [settings, templateId, kind]);
+  /** Modèle choisi, sinon celui des paramètres une fois chargés. */
+  const effectiveTemplateId =
+    templateId || (settings ? getDefaultComposerTemplateId(kind, settings) : '');
 
   const clientsQuery = useQuery({
     queryKey: clientsQueryKeys.list(scope?.companyId ?? '', ''),
@@ -433,23 +465,38 @@ export function DocumentComposer({
   const totals = useMemo(() => {
     let subtotal = 0;
     let vat = 0;
+    let discount = 0;
     const perLine: Record<string, number> = {};
+    const perLineHt: Record<string, number> = {};
+    // Ventilation affichée sous les lignes : mêmes montants, regroupés par taux.
+    const byRate = new Map<number, { base: number; amount: number }>();
     for (const line of lines) {
       if (!line.description.trim()) {
         perLine[line.id] = 0;
+        perLineHt[line.id] = 0;
         continue;
       }
+      const vatRate = parseDecimal(line.vatRate);
       const result = calculateLineTotals(
         parseDecimal(line.quantity),
         parseDecimal(line.unitPrice),
-        parseDecimal(line.vatRate),
+        vatRate,
         parseDecimal(line.discountPercent),
       );
       perLine[line.id] = result.lineTotalTtc;
+      perLineHt[line.id] = result.lineTotalHt;
       subtotal += result.lineTotalHt;
       vat += result.lineVat;
+      discount += result.discountAmount;
+      const group = byRate.get(vatRate) ?? { base: 0, amount: 0 };
+      group.base += result.lineTotalHt;
+      group.amount += result.lineVat;
+      byRate.set(vatRate, group);
     }
-    return { subtotal, vat, total: subtotal + vat, perLine };
+    const vatGroups = [...byRate.entries()]
+      .sort(([a], [b]) => b - a)
+      .map(([rate, group]) => ({ rate, ...group }));
+    return { subtotal, vat, total: subtotal + vat, perLine, perLineHt, discount, vatGroups };
   }, [lines]);
 
   const registerLineField = useCallback(
@@ -535,7 +582,7 @@ export function DocumentComposer({
           lines: validLines,
           notes: notes.trim() || undefined,
           number: customNumber.trim() || null,
-          pdfOptions: { ...pdfOptions, templateId: templateId || null },
+          pdfOptions: { ...pdfOptions, templateId: effectiveTemplateId || null },
         });
       }
 
@@ -559,7 +606,7 @@ export function DocumentComposer({
           lines: validLines,
           notes: notes.trim() || undefined,
           number: customNumber.trim() || null,
-          pdfOptions: { ...pdfOptions, templateId: templateId || null },
+          pdfOptions: { ...pdfOptions, templateId: effectiveTemplateId || null },
         });
       }
 
@@ -575,7 +622,7 @@ export function DocumentComposer({
         notes: notes.trim() || undefined,
         paymentTermsDays: dueDays,
         number: customNumber.trim() || null,
-        pdfOptions: { ...pdfOptions, templateId: templateId || null },
+        pdfOptions: { ...pdfOptions, templateId: effectiveTemplateId || null },
       });
     },
     onSuccess: (doc) => {
@@ -668,6 +715,10 @@ export function DocumentComposer({
       return;
     }
 
+    const fileList = Array.from(files);
+    setImportLabel(
+      fileList.length === 1 ? fileList[0].name || 'capture collée' : `${fileList.length} fichiers`,
+    );
     setIsImportingAi(true);
     setImportFeedback(null);
     try {
@@ -745,7 +796,10 @@ export function DocumentComposer({
   }
 
   // Une capture copiée se colle directement sur l'éditeur, sans l'enregistrer d'abord.
-  useImagePaste((images) => void handleImportFiles(images), !isImportingAi && !catalogOpen);
+  useImagePaste(
+    (images) => void handleImportFiles(images),
+    !isImportingAi && !catalogOpen && !galleryOpen,
+  );
 
   function removeLine(id: string) {
     setLines((prev) => {
@@ -870,34 +924,48 @@ export function DocumentComposer({
     );
   }
 
-  if (authLoading || tenantLoading || settingsLoading) {
-    return <LoadingState message="Préparation de l’éditeur…" />;
+
+  function handleTemplateChange(id: string) {
+    setTemplateId(id);
   }
+
+  function applyGalleryTemplate(id: string) {
+    setTemplateId(id);
+    rememberTemplate(id);
+    setGalleryOpen(false);
+  }
+
+  // Ctrl D lance la dictée (pas en modification : la dictée n'y est pas proposée).
+  useEffect(() => {
+    if (edit) return;
+    function onKey(event: KeyboardEvent) {
+      if (
+        (event.ctrlKey || event.metaKey) &&
+        !event.altKey &&
+        !event.shiftKey &&
+        event.key.toLowerCase() === 'd'
+      ) {
+        event.preventDefault();
+        voiceRef.current?.start();
+      }
+    }
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [edit]);
+
+  const closeGallery = useCallback(() => setGalleryOpen(false), []);
+  const closeCatalog = useCallback(() => setCatalogOpen(false), []);
 
   const firstPageClients = clientsQuery.data?.clients ?? [];
   const clients =
     voiceClient && !firstPageClients.some((client) => client.id === voiceClient.id)
       ? [voiceClient, ...firstPageClients]
       : firstPageClients;
-  const title = edit ? 'Modifier la facture' : kind === 'invoice' ? 'Nouvelle facture' : 'Nouveau devis';
-  const submitLabel = edit
-    ? 'Enregistrer les modifications'
-    : kind === 'invoice'
-      ? 'Créer la facture'
-      : 'Créer le devis';
-  const pendingLabel = edit ? 'Enregistrement…' : 'Création…';
   const selectedClient = clients.find((client) => client.id === clientId) ?? null;
-  const issuedAtLabel = frenchLabelFromDateInput(issuedAt) ?? '';
   const dueDateInput =
     kind === 'invoice' && paymentTermsDays !== null
       ? addCalendarDaysDateInput(issuedAt, paymentTermsDays)
       : null;
-  const dueLabel =
-    kind === 'quote'
-      ? 'Non définie'
-      : alreadyPaid
-        ? 'Déjà payée'
-        : (frenchLabelFromDateInput(dueDateInput ?? '') ?? '');
 
   /** Reproduit le format de `reserve_next_*_number` sans requête supplémentaire. */
   const forecastNumber = settings
@@ -908,89 +976,179 @@ export function DocumentComposer({
         kind === 'invoice' ? settings.nextInvoiceNumber : settings.nextQuoteNumber,
       ).padStart(6, '0')}`
     : null;
+  const shownNumber = customNumber.trim() || forecastNumber || (kind === 'invoice' ? 'FAC' : 'DEV');
 
-  const saveState: ComposerSaveState = createMutation.isPending
-    ? 'saving'
-    : createMutation.isSuccess
-      ? 'saved'
-      : 'draft';
-
-  const bannerMessages = [fieldErrors.clientId, fieldErrors.issuedAt, fieldErrors.linesGlobal].filter(
-    (message): message is string => Boolean(message),
+  // Aperçu réel : le brouillon passe par le même moteur que le PDF final.
+  const companyQuery = useComposerPreviewCompany();
+  const previewCompany = companyQuery.data ?? null;
+  const previewDueAt =
+    kind === 'invoice'
+      ? dueDateInput
+      : addCalendarDaysDateInput(issuedAt, settings?.quoteValidityDays ?? 30);
+  const previewInput = useMemo(
+    () =>
+      previewCompany
+        ? buildComposerPdfInput(
+            {
+              kind,
+              number: shownNumber,
+              issuedAt,
+              dueAt: previewDueAt,
+              alreadyPaid: kind === 'invoice' && alreadyPaid,
+              notes,
+              lines,
+              totals,
+              client: selectedClient,
+              templateId: effectiveTemplateId,
+              pdfOptions: kind === 'invoice' ? pdfOptions : null,
+            },
+            previewCompany,
+            settings,
+          )
+        : null,
+    [
+      alreadyPaid,
+      effectiveTemplateId,
+      issuedAt,
+      kind,
+      lines,
+      notes,
+      pdfOptions,
+      previewCompany,
+      previewDueAt,
+      selectedClient,
+      settings,
+      shownNumber,
+      totals,
+    ],
   );
+  const thumbnailsInput = useDebouncedValue(previewInput, 400);
+
+  // Mode modification : « Modifications non enregistrées » dès qu'un champ change.
+  const snapshot = JSON.stringify([
+    clientId,
+    issuedAt,
+    paymentChoice,
+    notes,
+    templateId,
+    customNumber,
+    pdfOptions,
+    lines,
+  ]);
+  const [initialSnapshot] = useState(snapshot);
+  const dirty = snapshot !== initialSnapshot;
+
+  if (authLoading || tenantLoading || settingsLoading) {
+    return <LoadingState message="Préparation de l’éditeur…" />;
+  }
+
+  const documentLabel = kind === 'invoice' ? 'la facture' : 'le devis';
+  const title = edit ? 'Modifier la facture' : kind === 'invoice' ? 'Nouvelle facture' : 'Nouveau devis';
+  const submitLabel = edit
+    ? 'Enregistrer les modifications'
+    : kind === 'invoice'
+      ? 'Créer la facture'
+      : 'Créer le devis';
+  const pendingLabel = edit ? 'Enregistrement…' : 'Création…';
+  const pending = createMutation.isPending;
+  const issuedAtLabel = frenchLabelFromDateInput(issuedAt) ?? '';
+  const dueLabel =
+    kind === 'quote'
+      ? 'Non définie'
+      : alreadyPaid
+        ? 'Déjà payée'
+        : (frenchLabelFromDateInput(dueDateInput ?? '') ?? '');
+  const numberLine = edit
+    ? `${shownNumber} · modifiable tant que la facture n’est pas réglée`
+    : customNumber.trim()
+      ? `${shownNumber} · numéro personnalisé`
+      : `${shownNumber} · numéro attribué automatiquement`;
+
+  const saveTone: ComposerSaveTone = pending
+    ? 'saving'
+    : edit
+      ? dirty
+        ? 'dirty'
+        : 'saved'
+      : createMutation.isSuccess
+        ? 'saved'
+        : 'neutral';
+  const saveLabel = pending
+    ? 'Enregistrement…'
+    : edit
+      ? dirty
+        ? 'Modifications non enregistrées'
+        : 'Aucune modification'
+      : createMutation.isSuccess
+        ? 'Enregistré'
+        : 'Brouillon non enregistré';
+
+  // Bandeau : chaque point à corriger, y compris ligne par ligne.
+  const lineMessages = lines.flatMap((line, index) => {
+    const row = fieldErrors.lineErrors?.[line.id];
+    if (!row) return [];
+    return [
+      row.description ? `Ligne ${index + 1} : ${row.description.toLowerCase()}` : null,
+      row.quantity ? `Ligne ${index + 1} : ${row.quantity.toLowerCase()}` : null,
+      row.unitPrice ? `Ligne ${index + 1} : ${row.unitPrice.toLowerCase()}` : null,
+    ].filter((message): message is string => Boolean(message));
+  });
+  const bannerMessages = [
+    fieldErrors.clientId,
+    fieldErrors.issuedAt,
+    fieldErrors.linesGlobal,
+    ...lineMessages,
+  ].filter((message): message is string => Boolean(message));
+  const validationFailed = hasValidationErrors(validateDocumentDraft(clientId, lines, issuedAt));
+  const bannerTitle = validationFailed
+    ? `${bannerMessages.length} point${bannerMessages.length > 1 ? 's' : ''} à corriger avant ${
+        edit ? 'd’enregistrer' : `de créer ${documentLabel}`
+      }`
+    : `Impossible d’enregistrer ${documentLabel}`;
 
   const errorBanner =
     submitAttempted && bannerMessages.length > 0 ? (
-      <ComposerErrorBanner className="mb-3" messages={bannerMessages} />
+      <ComposerErrorBanner messages={bannerMessages} title={bannerTitle} />
     ) : null;
 
-  const voiceCard = edit ? null : <VoiceDictation kind={kind} onResult={applyVoiceCommand} />;
+  const voiceCard = edit ? null : (
+    <VoiceDictation handleRef={voiceRef} kind={kind} onResult={applyVoiceCommand} />
+  );
 
-  const clientCard = (
-    <ComposerClientCard
+  const clientDatesPanel = (
+    <ComposerClientDatesPanel
+      clientError={submitAttempted ? fieldErrors.clientId : undefined}
+      clientRef={clientRef}
       clients={clients}
-      containerRef={clientRef}
-      errorMessage={submitAttempted ? fieldErrors.clientId : undefined}
-      hasError={submitAttempted && Boolean(fieldErrors.clientId)}
+      issuedAt={issuedAt}
+      issuedAtError={submitAttempted ? fieldErrors.issuedAt : undefined}
+      kind={kind}
       loading={clientsQuery.isLoading}
-      onChange={handleClientChange}
+      onClientChange={handleClientChange}
+      onClientCreated={(client) => {
+        setVoiceClient(client);
+        handleClientChange(client.id);
+      }}
+      onIssuedAtChange={handleIssuedAtChange}
+      onPaymentTermsChange={handlePaymentTermsChange}
+      paymentTermsDays={paymentTermsDays}
+      termsRef={termsRef}
       value={clientId}
     />
   );
 
-  const termsCard = (
-    <ComposerTermsCard
-      containerRef={termsRef}
-      errorMessage={submitAttempted ? fieldErrors.issuedAt : undefined}
-      issuedAt={issuedAt}
-      kind={kind}
-      onIssuedAtChange={handleIssuedAtChange}
-      onPaymentTermsChange={handlePaymentTermsChange}
-      paymentTermsDays={paymentTermsDays}
-    />
-  );
-
-  const templateCard = (
-    <ComposerCard title="Modèle PDF">
-      <ComposerTemplateBar onChange={setTemplateId} value={templateId} />
-    </ComposerCard>
-  );
-
-  const presentationCard =
-    kind === 'invoice' ? (
-      <ComposerPresentationCard
-        company={activeCompany}
-        forecastNumber={forecastNumber}
-        number={customNumber}
-        onChange={setPdfOptions}
-        onNumberChange={setCustomNumber}
-        value={pdfOptions}
-      />
-    ) : null;
-
-  const notesCard = (
-    <ComposerCard title="Notes affichées sur le document">
-      <TextArea
-        className="min-h-[74px]"
-        onChange={(event) => setNotes(event.target.value)}
-        placeholder="Conditions, remarques…"
-        rows={3}
-        value={notes}
-      />
-    </ComposerCard>
-  );
-
-  const linesCard = (
-    <ComposerLinesCard
+  const linesPanel = (
+    <ComposerLinesPanel
       containerRef={linesRef}
       fieldErrors={fieldErrors}
       importFeedback={importFeedback}
+      importLabel={importLabel}
       isImporting={isImportingAi}
-      lineTotals={totals.perLine}
       lines={lines}
       onAddLine={addLine}
+      onImportPhoto={() => photoInputRef.current?.click()}
+      onImportSpreadsheet={() => spreadsheetInputRef.current?.click()}
       onOpenCatalog={() => setCatalogOpen(true)}
-      onOpenImport={() => importInputRef.current?.click()}
       onRemoveLine={removeLine}
       onUpdateLine={updateLine}
       registerLineField={registerLineField}
@@ -999,106 +1157,200 @@ export function DocumentComposer({
     />
   );
 
+  const notesField = (
+    <div>
+      <div className="mb-2 flex flex-wrap items-baseline gap-x-2.5">
+        <label className="text-[15px] font-bold" htmlFor="composer-notes">
+          Notes
+        </label>
+        <span className="text-[12.5px] text-iq-ink3">
+          Affichées en bas {kind === 'invoice' ? 'de la facture' : 'du devis'}
+        </span>
+      </div>
+      <textarea
+        className="block min-h-[84px] w-full resize-y rounded-[14px] border border-iq-line bg-iq-surface px-3.5 py-3 text-[16px] leading-[1.55] text-iq-ink outline-none transition-[border-color,box-shadow] duration-150 focus:border-iq-accent focus:shadow-[0_0_0_3px_var(--iq-accent-soft)] sm:text-[14px]"
+        id="composer-notes"
+        onChange={(event) => setNotes(event.target.value)}
+        placeholder="Conditions particulières, remerciements, références…"
+        rows={3}
+        value={notes}
+      />
+    </div>
+  );
+
+  const optionsPanel =
+    kind === 'invoice' ? (
+      <ComposerOptionsPanel
+        company={activeCompany}
+        forecastNumber={edit ? edit.number : forecastNumber}
+        number={customNumber}
+        onChange={setPdfOptions}
+        onNumberChange={setCustomNumber}
+        paid={alreadyPaid}
+        value={pdfOptions}
+      />
+    ) : null;
+
+  const previewColumn = (
+    <ComposerPreviewColumn
+      input={previewInput}
+      onOpenGallery={() => setGalleryOpen(true)}
+      onTemplateChange={handleTemplateChange}
+      templateId={effectiveTemplateId}
+      thumbnailsInput={thumbnailsInput}
+    />
+  );
+
+  const filledLineCount = lines.filter((line) => line.description.trim()).length;
+
   return (
-    <div className="flex h-full min-h-0 flex-col overflow-hidden bg-app-canvas">
+    <div
+      className={cn(
+        jakarta.variable,
+        'iq-composer flex h-full min-h-0 flex-col overflow-hidden bg-iq-bg text-iq-ink',
+        // Sur ordinateur, l'éditeur occupe tout l'écran (barre supérieure avec logo).
+        'min-[1200px]:fixed min-[1200px]:inset-0 min-[1200px]:z-40',
+      )}>
       <CatalogPicker
-        onClose={() => setCatalogOpen(false)}
+        kind={kind}
+        onClose={closeCatalog}
         onSelectMany={addFromCatalogMany}
         open={catalogOpen}
       />
 
+      {galleryOpen ? (
+        <ComposerTemplateGallery
+          input={thumbnailsInput ?? previewInput}
+          onApply={applyGalleryTemplate}
+          onClose={closeGallery}
+          value={effectiveTemplateId}
+        />
+      ) : null}
+
       <input
-        accept="image/*,.csv,.txt,.xlsx,.xls"
+        accept=".csv,.txt,.xlsx,.xls"
         className="hidden"
         multiple
         onChange={(event) => {
           void handleImportFiles(event.target.files);
           event.target.value = '';
         }}
-        ref={importInputRef}
+        ref={spreadsheetInputRef}
+        type="file"
+      />
+      <input
+        accept="image/*"
+        className="hidden"
+        multiple
+        onChange={(event) => {
+          void handleImportFiles(event.target.files);
+          event.target.value = '';
+        }}
+        ref={photoInputRef}
         type="file"
       />
 
-      <ComposerHeader
-        actions={
-          isWizard ? null : (
-            <>
-              <ComposerSaveIndicator className="hidden min-[1180px]:flex" state={saveState} />
-              <SecondaryButton onClick={handleCancel}>Annuler</SecondaryButton>
-              <PrimaryButton disabled={createMutation.isPending} onClick={handleSubmit}>
-                <Send size={15} strokeWidth={1.9} />
-                {createMutation.isPending ? pendingLabel : submitLabel}
-              </PrimaryButton>
-            </>
-          )
-        }
-        meta={
-          isWizard
-            ? `Étape ${step + 1} sur ${COMPOSER_WIZARD_STEPS.length} · ${COMPOSER_WIZARD_STEPS[step]}`
-            : (customNumber.trim() || forecastNumber || undefined)
-        }
-        onBack={isWizard && step > 0 ? () => setStep(step - 1) : handleCancel}
-        title={title}>
-        {isWizard ? <ComposerWizardProgress step={step} /> : null}
-      </ComposerHeader>
-
       {isWizard ? (
-        <ComposerWizardShell
-          onPrimary={step < COMPOSER_WIZARD_STEPS.length - 1 ? () => setStep(step + 1) : handleSubmit}
-          primaryDisabled={createMutation.isPending}
-          primaryLabel={
-            step < COMPOSER_WIZARD_STEPS.length - 1
-              ? 'Continuer'
-              : createMutation.isPending
-                ? pendingLabel
-                : submitLabel
-          }
-          total={totals.total}>
-          {errorBanner}
-          {step === 0 ? (
-            <>
-              {voiceCard}
-              {clientCard}
-              {termsCard}
-              {notesCard}
-            </>
-          ) : null}
-          {step === 1 ? linesCard : null}
-          {step === 2 ? (
-            <>
-              <ComposerRecapCard
-                clientName={selectedClient ? composerClientLabel(selectedClient) : null}
-                dueLabel={dueLabel}
-                issuedAtLabel={issuedAtLabel}
-                kind={kind}
-                lineCount={lines.filter((line) => line.description.trim()).length}
-                totals={totals}
-              />
-              {templateCard}
-              {presentationCard}
-            </>
-          ) : null}
-        </ComposerWizardShell>
-      ) : (
-        <div className="sb min-h-0 flex-1 overflow-auto px-4 pb-6 lg:px-5">
-          {/* Le retrait haut vit dans le contenu : sur le conteneur, il décalerait l’ancrage de l’en-tête collant des lignes. */}
-          <div className="pt-4">
+        <>
+          <ComposerHeader
+            meta={`Étape ${step + 1} sur ${COMPOSER_WIZARD_STEPS.length} · ${COMPOSER_WIZARD_STEPS[step]}`}
+            onBack={step > 0 ? () => setStep(step - 1) : handleCancel}
+            title={title}>
+            <ComposerWizardProgress step={step} />
+          </ComposerHeader>
+          <ComposerWizardShell
+            lineCount={filledLineCount}
+            onBack={step > 0 ? () => setStep(step - 1) : undefined}
+            onPrimary={
+              step < COMPOSER_WIZARD_STEPS.length - 1 ? () => setStep(step + 1) : handleSubmit
+            }
+            primaryDisabled={pending}
+            primaryLabel={
+              step < COMPOSER_WIZARD_STEPS.length - 1
+                ? 'Continuer'
+                : pending
+                  ? pendingLabel
+                  : submitLabel
+            }
+            total={totals.total}
+            vat={totals.vat}>
             {errorBanner}
-            <div className="grid grid-cols-1 items-start gap-3.5 min-[900px]:grid-cols-[280px_minmax(0,1fr)] xl:grid-cols-[300px_minmax(0,1fr)]">
-              <div className="flex min-w-0 flex-col gap-3">
+            {step === 0 ? (
+              <>
                 {voiceCard}
-                {clientCard}
-                {termsCard}
-                {notesCard}
-                {templateCard}
-                {presentationCard}
+                {clientDatesPanel}
+                {notesField}
+              </>
+            ) : null}
+            {step === 1 ? linesPanel : null}
+            {step === 2 ? (
+              <>
+                <ComposerRecapCard
+                  clientName={selectedClient ? composerClientLabel(selectedClient) : null}
+                  dueLabel={dueLabel}
+                  issuedAtLabel={issuedAtLabel}
+                  kind={kind}
+                  lineCount={filledLineCount}
+                  totals={totals}
+                />
+                {previewColumn}
+                {optionsPanel}
+              </>
+            ) : null}
+          </ComposerWizardShell>
+        </>
+      ) : (
+        <>
+          <ComposerTopBar
+            crumbLabel={kind === 'invoice' ? 'Factures' : 'Devis'}
+            onCancel={handleCancel}
+            onCrumbClick={handleCancel}
+            onSubmit={handleSubmit}
+            pending={pending}
+            saveLabel={saveLabel}
+            saveTone={saveTone}
+            submitLabel={pending ? pendingLabel : submitLabel}
+            title={title}
+            total={totals.total}
+          />
+          <div className="min-h-0 flex-1 overflow-y-auto">
+            <div className="mx-auto grid max-w-[1680px] grid-cols-1 items-start gap-7 px-5 pb-16 pt-6 min-[1200px]:grid-cols-[minmax(0,1fr)_400px] min-[1200px]:px-6 min-[1200px]:pt-8 min-[1440px]:grid-cols-[minmax(0,1fr)_460px] min-[1440px]:gap-9 min-[1440px]:px-9">
+              <div className="flex min-w-0 flex-col gap-5">
+                <div>
+                  <div className="flex flex-wrap items-center gap-3">
+                    <h1 className="text-[30px] font-extrabold leading-tight tracking-[-0.9px]">
+                      {title}
+                    </h1>
+                    {edit ? <StatusPill status={edit.status} /> : null}
+                  </div>
+                  <p className="mt-1.5 text-[13.5px] text-iq-ink3">{numberLine}</p>
+                </div>
+                {errorBanner}
+                {voiceCard}
+                {clientDatesPanel}
+                {linesPanel}
+                {notesField}
+                {optionsPanel}
               </div>
-
-              {linesCard}
+              <aside
+                aria-label="Aperçu du document"
+                className="w-full max-w-[460px] min-[1200px]:sticky min-[1200px]:top-8 min-[1200px]:max-w-none">
+                {previewColumn}
+              </aside>
             </div>
           </div>
-        </div>
+        </>
       )}
     </div>
+  );
+}
+
+/** Statut de la facture modifiée : « Envoyée », « En retard »… */
+function StatusPill({ status }: { status: InvoiceStatus }) {
+  return (
+    <span className="flex h-[26px] items-center gap-1.5 rounded-full bg-iq-accent-soft px-2.5 text-[12px] font-bold text-iq-accent-ink">
+      <span aria-hidden className="size-1.5 rounded-full bg-iq-accent" />
+      {INVOICE_STATUS_LABELS[status]}
+    </span>
   );
 }
