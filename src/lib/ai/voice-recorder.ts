@@ -1,17 +1,16 @@
 import { File } from 'expo-file-system';
 import {
-  AudioModule,
-  RecordingPresets,
   getRecordingPermissionsAsync,
   requestRecordingPermissionsAsync,
   setAudioModeAsync,
+  type AudioRecorder,
 } from 'expo-audio';
 import { Linking } from 'react-native';
 
 export type VoicePermissionState = 'granted' | 'denied' | 'blocked';
 
 export type VoiceRecordingSession = {
-  recorder: VoiceRecorder;
+  recorder: AudioRecorder;
   startedAt: number;
 };
 
@@ -46,16 +45,17 @@ export async function openSystemSettings(): Promise<void> {
   await Linking.openSettings();
 }
 
-export async function startVoiceRecording(): Promise<VoiceRecordingSession> {
+/**
+ * Démarre l'enregistrement sur un enregistreur créé par `useAudioRecorder`
+ * (le hook convertit les réglages au format attendu par le module natif).
+ */
+export async function startVoiceRecording(recorder: AudioRecorder): Promise<VoiceRecordingSession> {
   await setAudioModeAsync({
     allowsRecording: true,
     playsInSilentMode: true,
     shouldPlayInBackground: false,
   });
 
-  const recorder = new AudioModule.AudioRecorder(
-    RecordingPresets.HIGH_QUALITY,
-  ) as unknown as VoiceRecorder;
   await recorder.prepareToRecordAsync();
   recorder.record();
 
@@ -89,13 +89,6 @@ export async function stopVoiceRecording(
     audioBase64,
   };
 }
-
-type VoiceRecorder = {
-  prepareToRecordAsync: () => Promise<void>;
-  record: () => void;
-  stop: () => Promise<void>;
-  uri: string | null;
-};
 
 function resolveAudioMimeType(uri: string): string {
   const lowerUri = uri.toLowerCase();
