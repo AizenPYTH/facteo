@@ -1,5 +1,5 @@
 import { router, type Href } from 'expo-router';
-import { RecordingPresets, useAudioRecorder } from 'expo-audio';
+import { RecordingPresets, useAudioRecorder, type AudioRecorder } from 'expo-audio';
 import { SymbolView } from 'expo-symbols';
 import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, Text, View } from 'react-native';
@@ -30,6 +30,19 @@ type VoiceDictationCardProps = {
 };
 
 /**
+ * Crée l'enregistreur natif seulement pendant une dictée. Monté à l'ouverture
+ * de l'écran, il prenait le micro juste après Siri (ouverture par raccourci),
+ * au moment où iOS rend la session audio.
+ */
+function RecorderHost({ onReady }: { onReady: (recorder: AudioRecorder) => void }) {
+  const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
+  useEffect(() => {
+    onReady(recorder);
+  }, [onReady, recorder]);
+  return null;
+}
+
+/**
  * Dictée d'une facture : on parle, l'IA remplit le client, les lignes, la TVA
  * et le délai de paiement. Même fonctionnement que sur le site.
  */
@@ -38,7 +51,12 @@ export function VoiceDictationCard({ documentType, onResult }: VoiceDictationCar
   const colors = useColors();
   const { hasFeature } = useSubscription();
   const { showError, showSuccess } = useToast();
-  const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
+  const [armed, setArmed] = useState(false);
+  const recorderResolveRef = useRef<((recorder: AudioRecorder) => void) | null>(null);
+  const handleRecorderReady = useRef((recorder: AudioRecorder) => {
+    recorderResolveRef.current?.(recorder);
+    recorderResolveRef.current = null;
+  }).current;
   const [session, setSession] = useState<VoiceRecordingSession | null>(null);
   const [durationMs, setDurationMs] = useState(0);
   const [processing, setProcessing] = useState(false);
@@ -72,6 +90,10 @@ export function VoiceDictationCard({ documentType, onResult }: VoiceDictationCar
     }
 
     try {
+      const recorder = await new Promise<AudioRecorder>((resolve) => {
+        recorderResolveRef.current = resolve;
+        setArmed(true);
+      });
       const next = await startVoiceRecording(recorder);
       sessionRef.current = next;
       setSession(next);
@@ -85,6 +107,7 @@ export function VoiceDictationCard({ documentType, onResult }: VoiceDictationCar
         }
       }, 1000);
     } catch {
+      setArmed(false);
       showError('Impossible de démarrer l’enregistrement.');
     }
   }
@@ -98,7 +121,7 @@ export function VoiceDictationCard({ documentType, onResult }: VoiceDictationCar
     setProcessing(true);
 
     try {
-      const audio = await stopVoiceRecording(current);
+      const audio = await stopVoiceRecording(current).finally(() => setArmed(false));
       if (audio.durationMs < 1500) {
         throw new Error('Enregistrement trop court. Parlez quelques secondes.');
       }
@@ -117,6 +140,7 @@ export function VoiceDictationCard({ documentType, onResult }: VoiceDictationCar
 
   return (
     <>
+      {armed ? <RecorderHost onReady={handleRecorderReady} /> : null}
       <Pressable
         accessibilityLabel={documentType === 'invoice' ? 'Dicter la facture' : 'Dicter le devis'}
         accessibilityRole="button"
