@@ -45,7 +45,7 @@ import { useTenant } from '@/providers/company-provider';
 import { useImagePaste } from '@/hooks/use-image-paste';
 import { useToast } from '@/providers/toast-provider';
 import { useSettings } from '@/hooks/use-settings';
-import { fetchClientsPage } from '@/lib/domain/supabase/clients';
+import { createClient, fetchClientsPage } from '@/lib/domain/supabase/clients';
 import {
   createInvoice,
   fetchInvoiceById,
@@ -55,7 +55,10 @@ import {
 import { createQuote } from '@/lib/domain/supabase/quotes';
 import { enforcePlanLimit } from '@/lib/subscription/limit-guard';
 import { PlanLimitError } from '@/types/subscription';
-import { fetchProductsByIds } from '@/lib/domain/supabase/products';
+import { fetchProducts, fetchProductsByIds } from '@/lib/domain/supabase/products';
+import type { VoiceCommandResult } from '@/lib/domain/ai/voice-command';
+import { VoiceDictation } from '@/components/app/document-composer/voice-dictation';
+import { createEmptyClientFormValues, type Client } from '@/types/client';
 import { clientsQueryKeys, invoicesQueryKeys, quotesQueryKeys } from '@/lib/domain/supabase/query-keys';
 import { analyzeProductImage, type ProductImageAnalysis } from '@/lib/domain/ai/product-image-analysis';
 import { calculateLineTotals } from '@/lib/calculations/totals';
@@ -374,6 +377,8 @@ export function DocumentComposer({
   );
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [catalogOpen, setCatalogOpen] = useState(false);
+  /** Client choisi par la dictée, ajouté à la liste s'il n'est pas sur la première page. */
+  const [voiceClient, setVoiceClient] = useState<Client | null>(null);
   const [submitAttempted, setSubmitAttempted] = useState(false);
   const [isImportingAi, setIsImportingAi] = useState(false);
   const [importFeedback, setImportFeedback] = useState<string | null>(null);
@@ -752,6 +757,95 @@ export function DocumentComposer({
     });
   }
 
+  /**
+   * Résultat d'une dictée : client retrouvé (ou créé), lignes ajoutées avec le
+   * prix du catalogue quand la dictée n'en donne pas, délai de paiement.
+   */
+  async function applyVoiceCommand({ command }: VoiceCommandResult): Promise<string> {
+    const activeScope = requireScope(scope);
+    const summary: string[] = [];
+    const normalize = (value: string) =>
+      value
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9]+/g, ' ')
+        .trim();
+
+    const spokenClient = command.client.trim();
+    if (spokenClient) {
+      const wanted = normalize(spokenClient);
+      const { clients: found } = await fetchClientsPage(activeScope, {
+        page: 0,
+        pageSize: 20,
+        search: spokenClient,
+      });
+      const match =
+        found.find((client) => normalize(composerClientLabel(client)) === wanted) ??
+        found.find((client) => normalize(composerClientLabel(client)).includes(wanted)) ??
+        found[0];
+      if (match) {
+        setVoiceClient(match);
+        setClientId(match.id);
+        summary.push(`client ${composerClientLabel(match)}`);
+      } else {
+        const created = await createClient(activeScope, {
+          ...createEmptyClientFormValues(),
+          company: spokenClient,
+        });
+        void queryClient.invalidateQueries({ queryKey: clientsQueryKeys.all });
+        setVoiceClient(created);
+        setClientId(created.id);
+        summary.push(`client ${spokenClient} créé`);
+      }
+    }
+
+    if (command.items.length > 0) {
+      const [products, services] = await Promise.all([
+        fetchProducts(activeScope, 'product'),
+        fetchProducts(activeScope, 'service'),
+      ]);
+      const catalog = [...products, ...services].map((item) => ({ item, key: normalize(item.name) }));
+      const newLines = command.items.map((spoken) => {
+        const key = normalize(spoken.description);
+        const fromCatalog =
+          catalog.find((entry) => entry.key === key) ??
+          catalog.find((entry) => key.length > 3 && (entry.key.includes(key) || key.includes(entry.key)));
+        const line: LineValue = fromCatalog
+          ? lineFromCatalog(fromCatalog.item, kind)
+          : {
+              ...(kind === 'invoice' ? createEmptyInvoiceLine() : createEmptyQuoteLine()),
+              id: createLocalLineId(),
+              description: spoken.description,
+            };
+        return {
+          ...line,
+          productId: fromCatalog ? fromCatalog.item.id : null,
+          quantity: String(spoken.quantity > 0 ? spoken.quantity : 1),
+          unit: spoken.unit || line.unit,
+          unitPrice: spoken.price_ht > 0 ? String(spoken.price_ht) : line.unitPrice,
+          vatRate: command.vat !== null ? String(command.vat) : line.vatRate,
+          discountPercent: command.discount ? String(command.discount) : '0',
+        };
+      });
+      setLines((prev) => {
+        const next = prev.filter((line) => line.description.trim());
+        return [...next, ...newLines];
+      });
+      summary.push(`${newLines.length} ligne${newLines.length > 1 ? 's' : ''} ajoutée${newLines.length > 1 ? 's' : ''}`);
+    }
+
+    if (kind === 'invoice' && command.payment_terms !== null && command.payment_terms >= 0) {
+      setPaymentChoice(Math.round(command.payment_terms));
+      summary.push(`paiement à ${Math.round(command.payment_terms)} jours`);
+    }
+
+    if (summary.length === 0) {
+      throw new Error('Rien d’exploitable dans la dictée. Précisez le client et les lignes.');
+    }
+    return `C’est rempli : ${summary.join(', ')}. Vérifiez puis validez.`;
+  }
+
   function handleClientChange(id: string) {
     setClientId(id);
     if (submitAttempted) {
@@ -780,7 +874,11 @@ export function DocumentComposer({
     return <LoadingState message="Préparation de l’éditeur…" />;
   }
 
-  const clients = clientsQuery.data?.clients ?? [];
+  const firstPageClients = clientsQuery.data?.clients ?? [];
+  const clients =
+    voiceClient && !firstPageClients.some((client) => client.id === voiceClient.id)
+      ? [voiceClient, ...firstPageClients]
+      : firstPageClients;
   const title = edit ? 'Modifier la facture' : kind === 'invoice' ? 'Nouvelle facture' : 'Nouveau devis';
   const submitLabel = edit
     ? 'Enregistrer les modifications'
@@ -825,6 +923,8 @@ export function DocumentComposer({
     submitAttempted && bannerMessages.length > 0 ? (
       <ComposerErrorBanner className="mb-3" messages={bannerMessages} />
     ) : null;
+
+  const voiceCard = edit ? null : <VoiceDictation kind={kind} onResult={applyVoiceCommand} />;
 
   const clientCard = (
     <ComposerClientCard
@@ -957,6 +1057,7 @@ export function DocumentComposer({
           {errorBanner}
           {step === 0 ? (
             <>
+              {voiceCard}
               {clientCard}
               {termsCard}
               {notesCard}
@@ -985,6 +1086,7 @@ export function DocumentComposer({
             {errorBanner}
             <div className="grid grid-cols-1 items-start gap-3.5 min-[900px]:grid-cols-[280px_minmax(0,1fr)] xl:grid-cols-[300px_minmax(0,1fr)]">
               <div className="flex min-w-0 flex-col gap-3">
+                {voiceCard}
                 {clientCard}
                 {termsCard}
                 {notesCard}
