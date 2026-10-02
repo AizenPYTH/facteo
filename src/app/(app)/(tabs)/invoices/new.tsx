@@ -3,12 +3,11 @@ import { useLocalSearchParams } from 'expo-router';
 import { InvoiceWizardScreen } from '@/components/invoices/invoice-wizard-screen';
 
 /**
- * `inveq://invoices/new?dictation=…` (raccourci Siri) ouvre la création avec
- * la facture remplie à partir du texte dicté.
+ * `?voice=1` : ouverture par le raccourci Siri. Le texte dicté a été mis de
+ * côté par `+native-intent` et est appliqué une fois l'écran prêt.
  */
 export default function NewInvoiceScreen() {
-  const { dictation } = useLocalSearchParams<{ dictation?: string }>();
-  const text = Array.isArray(dictation) ? dictation[0] : dictation;
+  const { voice } = useLocalSearchParams<{ voice?: string }>();
 
-  return <InvoiceWizardScreen dictation={text?.trim() || undefined} mode="create" title="Nouvelle facture" />;
+  return <InvoiceWizardScreen fromSiri={voice === '1'} mode="create" title="Nouvelle facture" />;
 }

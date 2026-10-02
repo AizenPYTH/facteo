@@ -1,6 +1,6 @@
 import { router, type Href } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { View } from 'react-native';
+import { InteractionManager, View } from 'react-native';
 
 import { VoiceDictationCard } from '@/components/ai/voice-dictation-card';
 import { InvoicePresentationSection } from '@/components/invoices/invoice-presentation-section';
@@ -16,6 +16,7 @@ import { WizardScreen } from '@/components/ui/wizard-screen';
 import { useAuth } from '@/hooks/use-auth';
 import { useCompanyProfile } from '@/hooks/use-company-profile';
 import { useTenant } from '@/hooks/use-tenant';
+import { takePendingDictation } from '@/lib/ai/pending-dictation';
 import { processVoiceCommand, type ProcessVoiceCommandResult } from '@/lib/ai/voice-transcription';
 import { createClient, fetchClientsPage } from '@/lib/supabase/clients';
 import { fetchCatalogItems } from '@/lib/supabase/products';
@@ -62,8 +63,8 @@ type InvoiceWizardScreenProps = {
   initialState?: InvoiceWizardState;
   variant?: 'mobile' | 'desktop';
   onStepChange?: (step: number) => void;
-  /** Texte dicté via Siri : la facture est remplie à l'ouverture. */
-  dictation?: string;
+  /** Ouverture par le raccourci Siri : le texte mis de côté est appliqué. */
+  fromSiri?: boolean;
 };
 
 export function InvoiceWizardScreen({
@@ -73,7 +74,7 @@ export function InvoiceWizardScreen({
   initialState,
   variant = 'mobile',
   onStepChange,
-  dictation,
+  fromSiri = false,
 }: InvoiceWizardScreenProps) {
   const { createInvoice, updateInvoice } = useInvoiceMutations();
   const { showError, showSuccess } = useToast();
@@ -256,23 +257,35 @@ export function InvoiceWizardScreen({
     return `C’est rempli : ${summary.join(', ')}. Vérifiez puis validez.`;
   }
 
-  // Dictée Siri : traitée une seule fois, dès que le compte est prêt.
-  const dictationHandledRef = useRef<string | null>(null);
+  // Dictée Siri : appliquée une seule fois, une fois l'écran installé. On
+  // laisse à la fenêtre de Siri le temps de se refermer avant d'afficher quoi
+  // que ce soit : présenter pendant sa sortie fait tomber l'application.
+  const dictationHandledRef = useRef(false);
   useEffect(() => {
-    if (!dictation || mode !== 'create' || !scope || !user?.id) return;
-    if (dictationHandledRef.current === dictation) return;
-    dictationHandledRef.current = dictation;
-    void (async () => {
-      try {
-        const result = await processVoiceCommand({ documentType: 'invoice', transcript: dictation });
-        showSuccess(await applyVoiceCommand(result));
-      } catch (error) {
-        showError(error instanceof Error ? error.message : 'Dictée impossible.');
-      }
-    })();
+    if (!fromSiri || mode !== 'create' || !scope || !user?.id || dictationHandledRef.current) return;
+    dictationHandledRef.current = true;
+    let cancelled = false;
+    const task = InteractionManager.runAfterInteractions(() => {
+      setTimeout(() => {
+        const text = takePendingDictation();
+        if (cancelled || !text) return;
+        void (async () => {
+          try {
+            const result = await processVoiceCommand({ documentType: 'invoice', transcript: text });
+            if (!cancelled) showSuccess(await applyVoiceCommand(result));
+          } catch (error) {
+            if (!cancelled) showError(error instanceof Error ? error.message : 'Dictée impossible.');
+          }
+        })();
+      }, 800);
+    });
+    return () => {
+      cancelled = true;
+      task.cancel();
+    };
     // applyVoiceCommand lit l'état courant via setState : pas besoin de le suivre.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dictation, mode, scope, user?.id]);
+  }, [fromSiri, mode, scope, user?.id]);
 
   function handleAddLine(line: QuoteLineValue) {
     setState((current) => ({
