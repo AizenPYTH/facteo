@@ -1,9 +1,31 @@
 import { router, type Href } from 'expo-router';
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { InteractionManager, View } from 'react-native';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { InteractionManager, Platform, Text, View } from 'react-native';
+import {
+  KeyboardAwareScrollView,
+  KeyboardStickyView,
+  type KeyboardAwareScrollViewRef,
+} from 'react-native-keyboard-controller';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { VoiceDictationCard } from '@/components/ai/voice-dictation-card';
+import {
+  COMPACT_BOTTOM_BAR_HEIGHT,
+  ComposerBottomBar,
+  ComposerErrorBanner,
+  ComposerNavBar,
+} from '@/components/invoices/composer/composer-chrome';
+import { ComposerClientSection } from '@/components/invoices/composer/composer-client-section';
+import { ComposerDatesSection } from '@/components/invoices/composer/composer-dates-section';
+import { ComposerLinesStep } from '@/components/invoices/composer/composer-lines-step';
+import {
+  collectIssues,
+  formatShortFrenchDate,
+} from '@/components/invoices/composer/composer-model';
+import { ComposerPreviewSheet } from '@/components/invoices/composer/composer-preview-sheet';
+import { ComposerTemplateStep } from '@/components/invoices/composer/composer-template-step';
 import { InvoicePresentationSection } from '@/components/invoices/invoice-presentation-section';
+import { TemplateGalleryModal } from '@/components/pdf/template-gallery-modal';
 import { InvoiceScreenHeader } from '@/components/invoices/invoice-screen-header';
 import { DocumentFinalizeStep } from '@/components/quotes/document-finalize-step';
 import { QuoteAddLinesStep } from '@/components/quotes/quote-add-lines-step';
@@ -40,8 +62,24 @@ import {
   parseInvoiceInfoValues,
 } from '@/lib/invoices/validators';
 import { useToast } from '@/providers/toast-provider';
+import {
+  composerRadius,
+  tabularNums,
+  useComposerStyles,
+  type ComposerColors,
+} from '@/constants/theme/composer';
+import { triggerErrorHaptic } from '@/lib/haptics';
+import { buildInvoiceDraftPdfHtml } from '@/lib/pdf/document-pdf';
+import { resolvePdfTemplate } from '@/lib/pdf/engine/templates/registry';
+import { DEFAULT_PDF_TEMPLATE_ID } from '@/lib/pdf/engine/templates/types';
+import { buildTemplatePreviewHtml } from '@/lib/pdf/template-preview-html';
+import { fetchInvoicePdfOptions } from '@/lib/supabase/invoices';
 import { createEmptyClientFormValues, getClientDisplayName, type Client } from '@/types/client';
-import type { InvoiceLineValue } from '@/types/invoice';
+import {
+  INVOICE_STATUS_LABELS,
+  type InvoiceLineValue,
+  type InvoiceStatus,
+} from '@/types/invoice';
 import { createEmptyQuoteLine, formatDecimalForInput, type QuoteLineValue } from '@/types/quote';
 import {
   createDefaultInvoicePdfOptions,
@@ -65,6 +103,8 @@ type InvoiceWizardScreenProps = {
   onStepChange?: (step: number) => void;
   /** Ouverture par le raccourci Siri : le texte mis de côté est appliqué. */
   fromSiri?: boolean;
+  /** Modification : numéro et statut affichés en tête (iPhone). */
+  headerInfo?: { number: string; status?: InvoiceStatus | null };
 };
 
 export function InvoiceWizardScreen({
@@ -75,6 +115,7 @@ export function InvoiceWizardScreen({
   variant = 'mobile',
   onStepChange,
   fromSiri = false,
+  headerInfo,
 }: InvoiceWizardScreenProps) {
   const { createInvoice, updateInvoice } = useInvoiceMutations();
   const { showError, showSuccess } = useToast();
@@ -95,6 +136,14 @@ export function InvoiceWizardScreen({
   // Présentation (création uniquement) : numéro libre, titre, modèle, SIREN…
   const [customNumber, setCustomNumber] = useState('');
   const [pdfOptions, setPdfOptions] = useState<InvoicePdfOptions>(createDefaultInvoicePdfOptions);
+
+  // Assistant iPhone : erreurs affichées jusqu'à l'étape validée, feuilles.
+  const [errorScope, setErrorScope] = useState(0);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [galleryOpen, setGalleryOpen] = useState(false);
+  const [barHeight, setBarHeight] = useState(150);
+  const scrollRef = useRef<KeyboardAwareScrollViewRef>(null);
+  const composerStyles = useComposerStyles(wizardStyles);
 
   useEffect(() => {
     if (mode !== 'create') return;
@@ -540,6 +589,313 @@ export function InvoiceWizardScreen({
 
   const handlePrimary = step < TOTAL_STEPS ? handleNext : () => void handleSave();
 
+  /* ------------------------------------------------------------------------ */
+  /* iPhone : présentation « Nouvelle facture » (handoff iOS)                  */
+  /* ------------------------------------------------------------------------ */
+
+  const infoValid = isInvoiceInfoValid(state.info);
+  const issues = useMemo(
+    () => collectIssues({ clientId: state.clientId, lines: state.lines, infoValid }),
+    [infoValid, state.clientId, state.lines],
+  );
+  const visibleIssues = errorScope > 0 ? issues.filter((issue) => issue.step <= errorScope) : [];
+
+  const scrollToTop = useCallback(() => {
+    scrollRef.current?.scrollTo({ y: 0, animated: false });
+  }, []);
+
+  function goToStep(target: number) {
+    setStep(Math.min(TOTAL_STEPS, Math.max(1, target)));
+    scrollToTop();
+  }
+
+  function revealErrors(scope: number) {
+    void triggerErrorHaptic();
+    setErrorScope((current) => Math.max(current, scope));
+    scrollRef.current?.scrollTo({ y: 0, animated: true });
+  }
+
+  function handleComposerPrimary() {
+    // Modification : on enregistre depuis n'importe quel onglet.
+    if (mode === 'edit' || step >= TOTAL_STEPS) {
+      if (issues.length > 0 || !canSaveAll()) {
+        revealErrors(TOTAL_STEPS);
+        return;
+      }
+      void handleSave();
+      return;
+    }
+
+    if (!canGoNext()) {
+      revealErrors(step);
+      return;
+    }
+
+    goToStep(step + 1);
+  }
+
+  function canSaveAll(): boolean {
+    return (
+      Boolean(state.clientId) && areInvoiceLinesValid(state.lines) && isInvoiceInfoValid(state.info)
+    );
+  }
+
+  function handleIssuedAtChange(issuedAt: string) {
+    setState((current) => {
+      const info = { ...current.info, issuedAt };
+      const issuedIso = frenchDateInputToIso(issuedAt);
+      const days = current.info.paymentTermsDays.trim();
+      if (issuedIso) {
+        if (/^\d+$/.test(days) && Number(days) > 0) {
+          info.dueAt = addDaysFrenchDateInput(Number(days), new Date(issuedIso));
+        } else if (!days) {
+          info.dueAt = issuedAt;
+        }
+      }
+      return { ...current, info };
+    });
+  }
+
+  /** `null` : paiement à réception (échéance = émission). */
+  function handlePaymentDelayChange(days: number | null) {
+    setState((current) => {
+      const info = { ...current.info };
+      const issuedIso = frenchDateInputToIso(info.issuedAt);
+      if (days === null) {
+        info.paymentTermsDays = '';
+        info.dueAt = info.issuedAt;
+      } else {
+        info.paymentTermsDays = String(days);
+        info.dueAt = addDaysFrenchDateInput(days, issuedIso ? new Date(issuedIso) : undefined);
+      }
+      return { ...current, info };
+    });
+  }
+
+  function handlePaymentDelayInput(value: string) {
+    const days = Number(value);
+    if (/^\d+$/.test(value) && days > 0) {
+      handlePaymentDelayChange(days);
+      return;
+    }
+    setState((current) => ({ ...current, info: { ...current.info, paymentTermsDays: value } }));
+  }
+
+  const activeTemplate = resolvePdfTemplate(templateId);
+
+  const buildDraftHtml = useCallback(async () => {
+    const activeScope = requireScope(scope);
+    const options =
+      mode === 'edit' && invoiceId
+        ? await fetchInvoicePdfOptions(activeScope, invoiceId)
+        : { ...pdfOptions, templateId };
+    return buildInvoiceDraftPdfHtml(
+      activeScope,
+      {
+        number:
+          customNumber.trim() ||
+          (mode === 'edit' ? headerInfo?.number : forecastNumber) ||
+          'Brouillon',
+        issuedAt: frenchDateInputToIso(state.info.issuedAt),
+        dueAt: frenchDateInputToIso(state.info.dueAt),
+        notes: state.info.notes.trim() || null,
+        lines: state.lines,
+        totals,
+        clientId: state.clientId,
+        clientName: state.clientName,
+        pdfOptions: options,
+      },
+      user?.email ?? null,
+    );
+  }, [
+    customNumber,
+    forecastNumber,
+    headerInfo?.number,
+    invoiceId,
+    mode,
+    pdfOptions,
+    scope,
+    state,
+    templateId,
+    totals,
+    user?.email,
+  ]);
+
+  const buildGalleryHtml = useCallback(
+    (galleryTemplateId: string) =>
+      buildTemplatePreviewHtml(requireScope(scope), galleryTemplateId, 'invoice', user?.email ?? null),
+    [scope, user?.email],
+  );
+
+  function renderComposerStep() {
+    switch (step) {
+      case 1:
+        return (
+          <>
+            {mode === 'create' ? (
+              <VoiceDictationCard documentType="invoice" onResult={applyVoiceCommand} variant="hero" />
+            ) : null}
+            <ComposerClientSection
+              clientId={state.clientId}
+              clientName={state.clientName}
+              hasError={errorScope >= 1 && !state.clientId}
+              onSelectClient={handleSelectClient}
+            />
+            <ComposerDatesSection
+              dueAt={state.info.dueAt}
+              hasError={errorScope >= 1 && !infoValid}
+              issuedAt={state.info.issuedAt}
+              onDelayChange={handlePaymentDelayChange}
+              onDelayInput={handlePaymentDelayInput}
+              onDueAtChange={handleDueAtChange}
+              onIssuedAtChange={handleIssuedAtChange}
+              paymentTermsDays={state.info.paymentTermsDays}
+            />
+          </>
+        );
+      case 2:
+        return (
+          <ComposerLinesStep
+            lines={asQuoteLines(state.lines)}
+            onAddLine={handleAddLine}
+            onChangeLine={handleChangeLine}
+            onRemoveLine={handleRemoveLine}
+            showErrors={errorScope >= 2}
+          />
+        );
+      case 3:
+        return (
+          <ComposerTemplateStep
+            clientName={state.clientName}
+            company={companyProfile ?? null}
+            customNumber={customNumber}
+            dueAt={state.info.dueAt}
+            forecastNumber={forecastNumber}
+            lines={state.lines}
+            mode={mode}
+            notes={state.info.notes}
+            onCustomNumberChange={setCustomNumber}
+            onNotesChange={(notes) => handleInfoChange({ ...state.info, notes })}
+            onOpenGallery={() => setGalleryOpen(true)}
+            onOpenPreview={() => setPreviewOpen(true)}
+            onPdfOptionsChange={setPdfOptions}
+            paymentTermsDays={state.info.paymentTermsDays}
+            pdfOptions={{ ...pdfOptions, templateId }}
+            templateId={templateId}
+            totals={totals}
+          />
+        );
+      default:
+        return null;
+    }
+  }
+
+  if (!isDesktop) {
+    // « Continuer » (jamais « Suivant », lu comme « champ suivant ») ; la
+    // progression nomme l'étape. En modification, on enregistre de partout.
+    const composerPrimaryLabel =
+      mode === 'edit'
+        ? 'Enregistrer les modifications'
+        : step < TOTAL_STEPS
+          ? 'Continuer'
+          : 'Créer la facture';
+
+    return (
+      <FormNavigationProvider onSubmit={handleComposerPrimary} submitReturnKey="done">
+        <View style={composerStyles.root}>
+          <SafeAreaView edges={['top']} style={composerStyles.safeArea}>
+            <ComposerNavBar
+              mode={mode}
+              onCancel={() => router.back()}
+              onPreview={() => setPreviewOpen(true)}
+              onStepSelect={goToStep}
+              step={step}
+              title={title}
+            />
+            <KeyboardAwareScrollView
+              bottomOffset={COMPACT_BOTTOM_BAR_HEIGHT + 16}
+              contentContainerStyle={[composerStyles.scrollContent, { paddingBottom: barHeight + 28 }]}
+              keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
+              keyboardShouldPersistTaps="handled"
+              ref={scrollRef}
+              showsVerticalScrollIndicator={false}
+              style={composerStyles.scroll}>
+              {mode === 'edit' && headerInfo ? (
+                <View style={composerStyles.editHeader}>
+                  <View style={composerStyles.editHeaderText}>
+                    <Text maxFontSizeMultiplier={1.3} numberOfLines={1} style={composerStyles.editNumber}>
+                      {headerInfo.number}
+                    </Text>
+                    {formatShortFrenchDate(state.info.issuedAt) ? (
+                      <Text maxFontSizeMultiplier={1.3} style={composerStyles.editIssued}>
+                        Émise le {formatShortFrenchDate(state.info.issuedAt)}
+                      </Text>
+                    ) : null}
+                  </View>
+                  {headerInfo.status ? (
+                    <View style={composerStyles.statusPill}>
+                      <View style={composerStyles.statusDot} />
+                      <Text maxFontSizeMultiplier={1.3} style={composerStyles.statusLabel}>
+                        {INVOICE_STATUS_LABELS[headerInfo.status]}
+                      </Text>
+                    </View>
+                  ) : null}
+                </View>
+              ) : null}
+              <ComposerErrorBanner issues={visibleIssues} onGoToStep={goToStep} />
+              {renderComposerStep()}
+            </KeyboardAwareScrollView>
+          </SafeAreaView>
+
+          <View pointerEvents="box-none" style={composerStyles.barDock}>
+            <KeyboardStickyView offset={{ closed: 0, opened: 0 }}>
+              <ComposerBottomBar
+                canGoBack={mode === 'create' && step > 1}
+                lineCount={state.lines.length}
+                loading={isSaving}
+                onBack={() => goToStep(step - 1)}
+                onHeightChange={setBarHeight}
+                onPrimary={handleComposerPrimary}
+                primaryLabel={composerPrimaryLabel}
+                totalTtc={totals.totalTtc}
+                totalVat={totals.totalVat}
+              />
+            </KeyboardStickyView>
+          </View>
+
+          <ComposerPreviewSheet
+            buildHtml={buildDraftHtml}
+            onChangeTemplate={
+              mode === 'create'
+                ? () => {
+                    setPreviewOpen(false);
+                    // Laisser la feuille se refermer avant de présenter la galerie.
+                    setTimeout(() => setGalleryOpen(true), 400);
+                  }
+                : undefined
+            }
+            onClose={() => setPreviewOpen(false)}
+            templateName={activeTemplate.name}
+            visible={previewOpen}
+          />
+          {mode === 'create' && scope ? (
+            <TemplateGalleryModal
+              buildPreviewHtml={buildGalleryHtml}
+              cacheKey="settings-invoice"
+              onClose={() => setGalleryOpen(false)}
+              onSelect={(nextTemplateId) =>
+                setPdfOptions((current) => ({ ...current, templateId: nextTemplateId }))
+              }
+              selectedTemplateId={templateId ?? DEFAULT_PDF_TEMPLATE_ID}
+              title="Modèles de facture"
+              visible={galleryOpen}
+            />
+          ) : null}
+        </View>
+      </FormNavigationProvider>
+    );
+  }
+
   return (
     <WizardScreen
       bodyScroll={step === 3 ? 'aware' : 'none'}
@@ -582,4 +938,75 @@ function readErrorMessage(error: unknown): string {
   }
 
   return '';
+}
+
+function wizardStyles(colors: ComposerColors) {
+  return {
+    root: {
+      flex: 1,
+      backgroundColor: colors.bg,
+    },
+    safeArea: {
+      flex: 1,
+    },
+    scroll: {
+      flex: 1,
+    },
+    scrollContent: {
+      flexGrow: 1,
+      paddingHorizontal: 16,
+      paddingTop: 8,
+    },
+    barDock: {
+      position: 'absolute' as const,
+      left: 0,
+      right: 0,
+      bottom: 0,
+    },
+    editHeader: {
+      flexDirection: 'row' as const,
+      alignItems: 'center' as const,
+      justifyContent: 'space-between' as const,
+      gap: 12,
+      paddingHorizontal: 4,
+      paddingTop: 6,
+      paddingBottom: 16,
+    },
+    editHeaderText: {
+      flex: 1,
+      minWidth: 0,
+    },
+    editNumber: {
+      ...tabularNums,
+      fontSize: 24,
+      fontWeight: '800' as const,
+      letterSpacing: -0.6,
+      color: colors.ink,
+    },
+    editIssued: {
+      fontSize: 14,
+      color: colors.ink3,
+      marginTop: 2,
+    },
+    statusPill: {
+      flexDirection: 'row' as const,
+      alignItems: 'center' as const,
+      gap: 6,
+      height: 28,
+      paddingHorizontal: 11,
+      borderRadius: composerRadius.pill,
+      backgroundColor: colors.accentSoft,
+    },
+    statusDot: {
+      width: 6,
+      height: 6,
+      borderRadius: 3,
+      backgroundColor: colors.accent,
+    },
+    statusLabel: {
+      fontSize: 13,
+      fontWeight: '700' as const,
+      color: colors.accentInk,
+    },
+  };
 }

@@ -58,6 +58,7 @@ export default function EditInvoiceScreen() {
 
   return (
     <InvoiceWizardScreen
+      headerInfo={{ number: invoice.number, status: invoice.status }}
       initialState={initialState}
       invoiceId={invoiceId}
       mode="edit"

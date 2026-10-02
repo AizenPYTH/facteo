@@ -15,9 +15,11 @@ import {
   type PdfCompanyInfo,
   type PdfDocumentInput,
 } from '@/lib/pdf/engine';
+import type { PdfDocumentLine, PdfDocumentTotals } from '@/lib/pdf/engine/types';
 import { inlinePdfCompanyImages, inlinePdfClientSignature } from '@/lib/pdf/inline-images';
 import type { InvoiceDetail } from '@/types/invoice';
 import type { QuoteDetail } from '@/types/quote';
+import type { InvoicePdfOptions } from '@/types/pdf-options';
 import type { DataScope } from '@/types/tenant';
 import { DEFAULT_PDF_TEMPLATE_ID } from '@/lib/pdf/engine/templates/types';
 
@@ -185,4 +187,59 @@ export async function buildInvoicePdfHtml(
     clientSignature: await inlinePdfClientSignature(input.clientSignature),
   };
   return embedPdfFonts(renderDocumentPdfHtml(withImages));
+}
+
+/** Facture en cours de saisie, pas encore enregistrée. */
+export type InvoiceDraftPdfInput = {
+  number: string;
+  issuedAt: string | null;
+  dueAt: string | null;
+  notes?: string | null;
+  lines: PdfDocumentLine[];
+  totals: PdfDocumentTotals;
+  clientId: string | null;
+  clientName: string;
+  pdfOptions: InvoicePdfOptions;
+};
+
+/**
+ * Aperçu d'une facture avant son enregistrement : même moteur et mêmes
+ * options de présentation que le PDF final, à partir de l'état de l'assistant.
+ */
+export async function buildInvoiceDraftPdfHtml(
+  scope: DataScope,
+  draft: InvoiceDraftPdfInput,
+  authEmail?: string | null,
+): Promise<string> {
+  const [company, settings, client] = await Promise.all([
+    resolvePdfCompanyInfo(scope, authEmail),
+    fetchSettings(scope),
+    draft.clientId ? fetchClientById(scope, draft.clientId) : null,
+  ]);
+
+  const input: PdfDocumentInput = {
+    kind: 'invoice',
+    number: draft.number,
+    issuedAt: draft.issuedAt,
+    dueOrValidUntil: draft.dueAt,
+    notes: draft.notes ?? null,
+    lines: draft.lines,
+    totals: { ...draft.totals, amountDue: draft.totals.amountDue ?? draft.totals.totalTtc },
+    company: await inlinePdfCompanyImages(company),
+    client: client ?? fallbackClient(draft.clientName),
+    settings,
+    showPaymentQr: true,
+    status: 'draft',
+    clientSignature: null,
+    templateId:
+      draft.pdfOptions.templateId ?? settings?.invoiceTemplateId ?? DEFAULT_PDF_TEMPLATE_ID,
+    paidAt: null,
+    documentTitle: draft.pdfOptions.title,
+    issuerLegalIds: draft.pdfOptions.legalIds,
+    stampColor: draft.pdfOptions.stampColor,
+    stampPosition: draft.pdfOptions.stampPosition,
+    showIssuerEmail: draft.pdfOptions.showEmail,
+  };
+
+  return embedPdfFonts(renderDocumentPdfHtml(input));
 }
