@@ -1,6 +1,8 @@
 import { router, type Href } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { View } from 'react-native';
 
+import { VoiceDictationCard } from '@/components/ai/voice-dictation-card';
 import { InvoicePresentationSection } from '@/components/invoices/invoice-presentation-section';
 import { InvoiceScreenHeader } from '@/components/invoices/invoice-screen-header';
 import { DocumentFinalizeStep } from '@/components/quotes/document-finalize-step';
@@ -11,7 +13,13 @@ import { DocumentTotalsBar } from '@/components/documents/document-totals-bar';
 import { FormNavigationProvider } from '@/components/ui/form/form-navigation';
 import { WizardActionBar } from '@/components/ui/wizard-action-bar';
 import { WizardScreen } from '@/components/ui/wizard-screen';
+import { useAuth } from '@/hooks/use-auth';
 import { useCompanyProfile } from '@/hooks/use-company-profile';
+import { useTenant } from '@/hooks/use-tenant';
+import { processVoiceCommand, type ProcessVoiceCommandResult } from '@/lib/ai/voice-transcription';
+import { createClient, fetchClientsPage } from '@/lib/supabase/clients';
+import { fetchCatalogItems } from '@/lib/supabase/products';
+import { requireScope } from '@/lib/tenant/scope';
 import { useInvoiceMutations } from '@/hooks/use-invoice-mutations';
 import { useSettings } from '@/hooks/use-settings';
 import {
@@ -31,9 +39,9 @@ import {
   parseInvoiceInfoValues,
 } from '@/lib/invoices/validators';
 import { useToast } from '@/providers/toast-provider';
-import { getClientDisplayName, type Client } from '@/types/client';
+import { createEmptyClientFormValues, getClientDisplayName, type Client } from '@/types/client';
 import type { InvoiceLineValue } from '@/types/invoice';
-import { createEmptyQuoteLine, type QuoteLineValue } from '@/types/quote';
+import { createEmptyQuoteLine, formatDecimalForInput, type QuoteLineValue } from '@/types/quote';
 import {
   createDefaultInvoicePdfOptions,
   readRememberedLegalIds,
@@ -54,6 +62,8 @@ type InvoiceWizardScreenProps = {
   initialState?: InvoiceWizardState;
   variant?: 'mobile' | 'desktop';
   onStepChange?: (step: number) => void;
+  /** Texte dicté via Siri : la facture est remplie à l'ouverture. */
+  dictation?: string;
 };
 
 export function InvoiceWizardScreen({
@@ -63,11 +73,14 @@ export function InvoiceWizardScreen({
   initialState,
   variant = 'mobile',
   onStepChange,
+  dictation,
 }: InvoiceWizardScreenProps) {
   const { createInvoice, updateInvoice } = useInvoiceMutations();
   const { showError, showSuccess } = useToast();
   const { data: companyProfile } = useCompanyProfile();
   const { data: settings } = useSettings();
+  const { user } = useAuth();
+  const { scope } = useTenant();
 
   const [step, setStep] = useState(1);
 
@@ -142,6 +155,124 @@ export function InvoiceWizardScreen({
       clientName: getClientDisplayName(client),
     }));
   }
+
+  /**
+   * Résultat d'une dictée : client retrouvé (ou créé), lignes ajoutées avec le
+   * prix du catalogue quand la dictée n'en donne pas, délai de paiement.
+   */
+  async function applyVoiceCommand({ command }: ProcessVoiceCommandResult): Promise<string> {
+    const activeScope = requireScope(scope);
+    const summary: string[] = [];
+    const normalize = (value: string) =>
+      value
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9]+/g, ' ')
+        .trim();
+    let client: { id: string; name: string } | null = null;
+
+    const spokenClient = command.client.trim();
+    if (spokenClient) {
+      const wanted = normalize(spokenClient);
+      const { clients: found } = await fetchClientsPage(activeScope, { search: spokenClient, page: 0 });
+      const match =
+        found.find((entry) => normalize(getClientDisplayName(entry)) === wanted) ??
+        found.find((entry) => normalize(getClientDisplayName(entry)).includes(wanted)) ??
+        found[0];
+      if (match) {
+        client = { id: match.id, name: getClientDisplayName(match) };
+        summary.push(`client ${client.name}`);
+      } else {
+        const created = await createClient(activeScope, {
+          ...createEmptyClientFormValues(),
+          company: spokenClient,
+        });
+        client = { id: created.id, name: spokenClient };
+        summary.push(`client ${spokenClient} créé`);
+      }
+    }
+
+    let newLines: InvoiceLineValue[] = [];
+    if (command.items.length > 0 && user?.id) {
+      const [products, services] = await Promise.all([
+        fetchCatalogItems(user.id, 'product'),
+        fetchCatalogItems(user.id, 'service'),
+      ]);
+      const catalog = [...products, ...services].map((item) => ({ item, key: normalize(item.name) }));
+      newLines = command.items.map((spoken) => {
+        const key = normalize(spoken.description);
+        const fromCatalog = (
+          catalog.find((entry) => entry.key === key) ??
+          catalog.find((entry) => key.length > 3 && (entry.key.includes(key) || key.includes(entry.key)))
+        )?.item;
+        const vat = command.vat ?? fromCatalog?.vat_rate ?? 20;
+        const price = spoken.price_ht > 0 ? spoken.price_ht : (fromCatalog?.unit_price ?? 0);
+        return {
+          ...createEmptyQuoteLine(),
+          productId: fromCatalog?.id ?? null,
+          title: fromCatalog?.name ?? spoken.description,
+          description: fromCatalog?.description ?? '',
+          quantity: formatDecimalForInput(spoken.quantity > 0 ? spoken.quantity : 1),
+          unit: spoken.unit || fromCatalog?.unit || 'unité',
+          unitPrice: formatDecimalForInput(price),
+          vatRate: formatDecimalForInput(vat),
+          discountPercent: formatDecimalForInput(command.discount ?? 0),
+        };
+      });
+      summary.push(`${newLines.length} ligne${newLines.length > 1 ? 's' : ''}`);
+    }
+
+    const days =
+      command.payment_terms !== null && command.payment_terms >= 0
+        ? Math.round(command.payment_terms)
+        : null;
+    if (days !== null) {
+      summary.push(`paiement à ${days} jours`);
+    }
+
+    if (summary.length === 0) {
+      throw new Error('Rien d’exploitable dans la dictée. Précisez le client et les lignes.');
+    }
+
+    setState((current) => {
+      const info = { ...current.info };
+      if (days !== null) {
+        info.paymentTermsDays = String(days);
+        const issuedIso = frenchDateInputToIso(info.issuedAt);
+        info.dueAt = addDaysFrenchDateInput(days, issuedIso ? new Date(issuedIso) : undefined);
+      }
+      return {
+        ...current,
+        clientId: client?.id ?? current.clientId,
+        clientName: client?.name ?? current.clientName,
+        lines: [...current.lines.filter((line) => line.title.trim() || line.description.trim()), ...newLines],
+        info,
+      };
+    });
+    if (client && newLines.length > 0) {
+      setStep(2);
+    }
+    return `C’est rempli : ${summary.join(', ')}. Vérifiez puis validez.`;
+  }
+
+  // Dictée Siri : traitée une seule fois, dès que le compte est prêt.
+  const dictationHandledRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!dictation || mode !== 'create' || !scope || !user?.id) return;
+    if (dictationHandledRef.current === dictation) return;
+    dictationHandledRef.current = dictation;
+    void (async () => {
+      try {
+        const result = await processVoiceCommand({ documentType: 'invoice', transcript: dictation });
+        showSuccess(await applyVoiceCommand(result));
+      } catch (error) {
+        showError(error instanceof Error ? error.message : 'Dictée impossible.');
+      }
+    })();
+    // applyVoiceCommand lit l'état courant via setState : pas besoin de le suivre.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dictation, mode, scope, user?.id]);
 
   function handleAddLine(line: QuoteLineValue) {
     setState((current) => ({
@@ -310,7 +441,15 @@ export function InvoiceWizardScreen({
   function renderStep() {
     switch (step) {
       case 1:
-        return (
+        return mode === 'create' ? (
+          <View style={{ flex: 1 }}>
+            <VoiceDictationCard documentType="invoice" onResult={applyVoiceCommand} />
+            <QuoteClientStep
+              onSelectClient={handleSelectClient}
+              selectedClientId={state.clientId}
+            />
+          </View>
+        ) : (
           <QuoteClientStep
             onSelectClient={handleSelectClient}
             selectedClientId={state.clientId}

@@ -12,6 +12,8 @@ type ProcessVoiceBody = {
   documentType?: 'quote' | 'invoice';
   audioBase64?: string;
   mimeType?: string;
+  /** Texte déjà dicté (Siri, raccourci) : la transcription audio est sautée. */
+  transcript?: string;
 };
 
 const VOICE_COMMAND_SCHEMA = {
@@ -114,17 +116,21 @@ Deno.serve(async (request) => {
     const audioBase64 = body?.audioBase64?.trim() ?? '';
     const mimeType = body?.mimeType?.trim() || 'audio/mp4';
 
-    if (audioBase64.length < 100) {
+    const dictatedText = body?.transcript?.trim().slice(0, 4000) ?? '';
+
+    if (!dictatedText && audioBase64.length < 100) {
       return jsonResponse({ error: 'Audio invalide.' }, 400);
     }
 
-    const transcript = await requestOpenAiTranscription({
-      apiKey: openAiApiKey,
-      audioBase64,
-      mimeType,
-      model: Deno.env.get('OPENAI_TRANSCRIBE_MODEL')?.trim() || 'gpt-4o-mini-transcribe',
-      language: 'fr',
-    });
+    const transcript = dictatedText
+      ? dictatedText
+      : await requestOpenAiTranscription({
+          apiKey: openAiApiKey,
+          audioBase64,
+          mimeType,
+          model: Deno.env.get('OPENAI_TRANSCRIBE_MODEL')?.trim() || 'gpt-4o-mini-transcribe',
+          language: 'fr',
+        });
 
     const systemPrompt = [
       'Tu analyses une commande vocale artisan pour INVEQ.',

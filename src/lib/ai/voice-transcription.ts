@@ -1,11 +1,10 @@
 import { callAiEdgeFunction } from '@/lib/ai/edge-ai';
 import type { VoiceCommandResponse } from '@/types/voice-command';
 
-export type ProcessVoiceCommandInput = {
-  documentType: 'quote' | 'invoice';
-  audioBase64: string;
-  mimeType: string;
-};
+export type ProcessVoiceCommandInput =
+  | { documentType: 'quote' | 'invoice'; audioBase64: string; mimeType: string }
+  /** Texte déjà dicté (Siri, raccourci) : pas d'audio à transcrire. */
+  | { documentType: 'quote' | 'invoice'; transcript: string };
 
 export type ProcessVoiceCommandResult = {
   transcript: string;

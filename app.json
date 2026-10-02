@@ -67,7 +67,14 @@
       "expo-iap",
       "./plugins/with-defer-iap-init",
       "expo-apple-authentication",
-      "expo-web-browser"
+      "expo-web-browser",
+      [
+        "expo-audio",
+        {
+          "microphonePermission": "INVEQ utilise le micro pour dicter vos factures et devis.",
+          "enableBackgroundPlayback": false
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,
