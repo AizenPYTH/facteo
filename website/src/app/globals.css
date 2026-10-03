@@ -115,6 +115,137 @@
   --radius-app-control: 10px;
   --radius-app-field: 9px;
   --radius-app-icon: 8px;
+
+  /* Éditeur de facture / devis (handoff « Nouvelle facture ») : jetons portés
+     par `.iq-composer`, voir plus bas. */
+  --color-iq-bg: var(--iq-bg);
+  --color-iq-surface: var(--iq-surface);
+  --color-iq-soft: var(--iq-soft);
+  --color-iq-line: var(--iq-line);
+  --color-iq-line2: var(--iq-line2);
+  --color-iq-ink: var(--iq-ink);
+  --color-iq-ink2: var(--iq-ink2);
+  --color-iq-ink3: var(--iq-ink3);
+  --color-iq-accent: var(--iq-accent);
+  --color-iq-accent-soft: var(--iq-accent-soft);
+  --color-iq-accent-ink: var(--iq-accent-ink);
+  --color-iq-danger: var(--iq-danger);
+  --color-iq-danger-soft: var(--iq-danger-soft);
+  --color-iq-ok: var(--iq-ok);
+  --color-iq-ok-soft: var(--iq-ok-soft);
+  --color-iq-warn: var(--iq-warn);
+  --color-iq-scrim: var(--iq-scrim);
+}
+
+/* ==========================================================================
+   Éditeur de facture / devis — palette du handoff « Nouvelle facture ».
+   Portée limitée à `.iq-composer` (et à ses superpositions, rendues dedans).
+   Thème sombre : un ancêtre `.dark` / `[data-theme="dark"]`, ou
+   `data-theme="dark"` sur l'éditeur lui-même. La feuille d'aperçu reste blanche.
+   ========================================================================== */
+
+.iq-composer {
+  --iq-bg: #f7f6f3;
+  --iq-surface: #ffffff;
+  --iq-soft: #f3f2ee;
+  --iq-line: #e6e4de;
+  --iq-line2: #f0eee9;
+  --iq-ink: #1c1b22;
+  --iq-ink2: #55535d;
+  --iq-ink3: #76747e;
+  --iq-accent: #4f46e5;
+  --iq-accent-soft: #eeedfc;
+  --iq-accent-ink: #4338ca;
+  --iq-danger: #c93a32;
+  --iq-danger-soft: #fceeec;
+  --iq-ok: #1f8a5b;
+  --iq-ok-soft: #e7f5ee;
+  --iq-warn: #b7791f;
+  --iq-shadow: rgba(28, 24, 40, 0.12);
+  --iq-scrim: rgba(24, 22, 32, 0.32);
+  font-family: var(--font-iq), var(--font-inter), system-ui, sans-serif;
+  font-variant-numeric: tabular-nums;
+  -webkit-font-smoothing: antialiased;
+  /* Avances de glyphes fractionnaires : sans cela, Chromium sous Linux (rendu
+     « hinté ») arrondit chaque avance au pixel entier, et l'espace étroit de
+     Plus Jakarta Sans (0,17 em) tombe à 2 px en 13–14 px : les mots se collent. */
+  text-rendering: geometricPrecision;
+  color: var(--iq-ink);
+  color-scheme: light;
+}
+
+.dark .iq-composer,
+[data-theme='dark'] .iq-composer,
+.iq-composer[data-theme='dark'] {
+  --iq-bg: #111015;
+  --iq-surface: #18171d;
+  --iq-soft: #201f27;
+  --iq-line: #2c2b34;
+  --iq-line2: #23222a;
+  --iq-ink: #f1f0f4;
+  --iq-ink2: #bab8c3;
+  --iq-ink3: #8f8d99;
+  --iq-accent: #6d66f0;
+  --iq-accent-soft: rgba(109, 102, 240, 0.16);
+  --iq-accent-ink: #b8b3ff;
+  --iq-danger: #f0766c;
+  --iq-danger-soft: rgba(240, 118, 108, 0.12);
+  --iq-ok: #4cc38a;
+  --iq-ok-soft: rgba(76, 195, 138, 0.13);
+  --iq-warn: #e0a94a;
+  --iq-shadow: rgba(0, 0, 0, 0.55);
+  --iq-scrim: rgba(0, 0, 0, 0.55);
+  color-scheme: dark;
+}
+
+/* La feuille de style du navigateur remet `text-rendering: auto` sur les
+   contrôles de formulaire : on les réaligne sur l'éditeur (cellules, boutons). */
+.iq-composer :is(input, textarea, select, button) {
+  text-rendering: inherit;
+}
+
+.iq-composer input::placeholder,
+.iq-composer textarea::placeholder {
+  color: var(--iq-ink3);
+  opacity: 0.8;
+}
+
+.iq-shadow-pop {
+  box-shadow: 0 18px 48px -12px var(--iq-shadow);
+}
+
+.iq-shadow-primary {
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.18) inset,
+    0 6px 16px -6px rgba(79, 70, 229, 0.6);
+}
+
+@keyframes iq-wave {
+  0%,
+  100% {
+    transform: scaleY(0.25);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+}
+
+@keyframes iq-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(79, 70, 229, 0.45);
+  }
+  100% {
+    box-shadow: 0 0 0 16px rgba(79, 70, 229, 0);
+  }
+}
+
+@keyframes iq-bar {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(320%);
+  }
 }
 
 html {
