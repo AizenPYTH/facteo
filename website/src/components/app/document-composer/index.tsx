@@ -1238,6 +1238,7 @@ export function DocumentComposer({
         onChange={setPdfOptions}
         onNumberChange={setCustomNumber}
         paid={alreadyPaid}
+        previewInput={previewInput}
         value={pdfOptions}
       />
     ) : null;

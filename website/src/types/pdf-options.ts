@@ -57,6 +57,35 @@ export const STAMP_POSITION_LABELS: Record<StampPosition, string> = {
   none: 'Sans tampon',
 };
 
+/**
+ * Emplacement des SIREN / SIRET / TVA sur la facture : celui du modèle, en
+ * haut, en bas, ou un point choisi à la main (fractions de la page A4, coin
+ * supérieur gauche du bloc).
+ */
+export type LegalIdsPlacement = 'auto' | 'top' | 'bottom' | { x: number; y: number };
+
+export const LEGAL_IDS_PLACEMENT_LABELS = {
+  auto: 'Selon le modèle',
+  top: 'En haut',
+  bottom: 'En bas',
+  free: 'Où je veux',
+} as const;
+
+function clampUnit(value: number): number {
+  return Math.min(1, Math.max(0, Math.round(value * 10000) / 10000));
+}
+
+export function parseLegalIdsPlacement(value: unknown): LegalIdsPlacement {
+  if (value === 'top' || value === 'bottom') return value;
+  if (value && typeof value === 'object') {
+    const { x, y } = value as Record<string, unknown>;
+    if (typeof x === 'number' && typeof y === 'number' && Number.isFinite(x) && Number.isFinite(y)) {
+      return { x: clampUnit(x), y: clampUnit(y) };
+    }
+  }
+  return 'auto';
+}
+
 function groupDigits(digits: string, sizes: number[]): string {
   const parts: string[] = [];
   let cursor = 0;
@@ -248,6 +277,8 @@ export type InvoicePdfOptions = {
   templateId: string | null;
   /** E-mail de l'entreprise sur la facture. Masqué par défaut, anciennes factures comprises. */
   showEmail: boolean;
+  /** Emplacement des SIREN / SIRET / TVA. 'auto' : celui du modèle, comme avant. */
+  legalIdsPlacement: LegalIdsPlacement;
   /** Coordonnées bancaires de la facture. `null` : celles de l'entreprise, comme avant. */
   bank: InvoiceBankDetails | null;
   /** Mention de paiement imprimée en bas de la facture. `null` : aucune. */
@@ -262,6 +293,7 @@ export function createDefaultInvoicePdfOptions(): InvoicePdfOptions {
     stampPosition: 'auto',
     templateId: null,
     showEmail: false,
+    legalIdsPlacement: 'auto',
     bank: null,
     paymentMention: null,
   };
@@ -298,6 +330,7 @@ export function parseInvoicePdfOptions(value: unknown): InvoicePdfOptions {
       : null;
 
   const showEmail = source.show_email === true;
+  const legalIdsPlacement = parseLegalIdsPlacement(source.legal_ids_placement);
   const bank = parseInvoiceBankDetails(source.bank);
   const paymentMention = normalizePaymentMention(source.payment_mention);
 
@@ -308,6 +341,7 @@ export function parseInvoicePdfOptions(value: unknown): InvoicePdfOptions {
     stampPosition,
     templateId,
     showEmail,
+    legalIdsPlacement,
     bank,
     paymentMention,
   };
@@ -321,6 +355,7 @@ export function serializeInvoicePdfOptions(options: InvoicePdfOptions) {
     stamp_position: options.stampPosition,
     template_id: options.templateId,
     show_email: options.showEmail,
+    legal_ids_placement: parseLegalIdsPlacement(options.legalIdsPlacement),
     bank: options.bank
       ? {
           show: options.bank.show,

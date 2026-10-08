@@ -3,7 +3,7 @@ import { resolvePdfTemplate } from '@/lib/pdf/engine/templates/registry';
 import { escapeHtml, PAGE_HEIGHT, PAGE_WIDTH, u } from '@/lib/pdf/engine/templates/shared';
 import type { PdfDocumentInput } from '@/lib/pdf/engine/types';
 import type { PdfTemplateDefinition } from '@/lib/pdf/engine/templates/types';
-import { STAMP_COLOR_VALUES } from '@/types/pdf-options';
+import { STAMP_COLOR_VALUES, type LegalIdsPlacement } from '@/types/pdf-options';
 
 /**
  * Enveloppe A4 commune. Chaque modèle produit le contenu de la page ; c'est ici
@@ -47,12 +47,8 @@ const STAMP_GREEN = '#0B7A4B';
  * SIREN / SIRET / TVA choisis pour le document, en tête de page et identiques
  * pour les 20 modèles. Rien n'est rendu si aucun n'est choisi ou renseigné.
  */
-function legalIdsStrip(context: TemplateContext): string {
-  if (context.issuerLegalIds.length === 0) {
-    return '';
-  }
-
-  const items = context.issuerLegalIds
+function legalIdsItems(context: TemplateContext): string {
+  return context.issuerLegalIds
     .map(
       (entry) =>
         `<span style="white-space:nowrap"><span style="font-size:${u(8.5)}; letter-spacing:.08em; text-transform:uppercase; color:#8A8A99">${escapeHtml(
@@ -60,8 +56,32 @@ function legalIdsStrip(context: TemplateContext): string {
         )}</span>&nbsp;<span style="font-weight:600; color:#3A3A46">${escapeHtml(entry.value)}</span></span>`,
     )
     .join('');
+}
 
-  return `<div style="display:flex; flex-wrap:wrap; justify-content:center; gap:${u(4)} ${u(22)}; padding:${u(11)} ${u(48)} ${u(10)}; font-size:${u(9.5)}; line-height:1.3; border-bottom:1px solid rgba(20,20,26,.08)">${items}</div>`;
+function legalIdsStrip(context: TemplateContext, edge: 'top' | 'bottom' = 'top'): string {
+  if (context.issuerLegalIds.length === 0) {
+    return '';
+  }
+
+  const border = edge === 'top' ? 'border-bottom' : 'border-top';
+  return `<div style="display:flex; flex-wrap:wrap; justify-content:center; gap:${u(4)} ${u(22)}; padding:${u(11)} ${u(48)} ${u(10)}; font-size:${u(9.5)}; line-height:1.3; ${border}:1px solid rgba(20,20,26,.08)">${legalIdsItems(context)}</div>`;
+}
+
+/**
+ * Bloc des identifiants posé à la main : même rendu que le bandeau, sur une
+ * ligne, au point choisi de la première page.
+ */
+function legalIdsFreeBlockHtml(context: TemplateContext): string {
+  return `<div style="display:flex; flex-wrap:nowrap; gap:${u(18)}; font-size:${u(9.5)}; line-height:1.3; font-family:'Plus Jakarta Sans', Arial, sans-serif">${legalIdsItems(context)}</div>`;
+}
+
+function legalIdsFreeBlock(context: TemplateContext, point: { x: number; y: number }): string {
+  if (context.issuerLegalIds.length === 0) {
+    return '';
+  }
+  const left = Math.min(1, Math.max(0, point.x)) * PAGE_WIDTH;
+  const top = Math.min(1, Math.max(0, point.y)) * PAGE_HEIGHT;
+  return `<div style="position:absolute; inset:0; z-index:4; pointer-events:none"><div style="position:absolute; left:${u(left)}; top:${u(top)}">${legalIdsFreeBlockHtml(context)}</div></div>`;
 }
 
 /**
@@ -179,12 +199,29 @@ function withPageExtras(
   html: string,
   context: TemplateContext,
   template: PdfTemplateDefinition,
+  placement: LegalIdsPlacement,
 ): string {
   let result = html;
 
-  const strip = template.ownsLegalIds ? '' : legalIdsStrip(context);
-  if (strip) {
-    result = insertAfter(result, /<div class="dc-page"[^>]*>/, strip) ?? `${strip}${result}`;
+  if (typeof placement === 'object') {
+    const block = legalIdsFreeBlock(context, placement);
+    if (block) {
+      result = insertAfter(result, /<div class="dc-page"[^>]*>/, block) ?? `${block}${result}`;
+    }
+  } else if (placement === 'bottom') {
+    // Sous le contenu, juste au-dessus du pied de page du modèle.
+    const strip = legalIdsStrip(context, 'bottom');
+    if (strip) {
+      result =
+        insertAfter(result, /<div class="dc-spacer"[^>]*><\/div>/, strip) ??
+        insertAfter(result, /<div class="dc-page"[^>]*>/, strip) ??
+        `${strip}${result}`;
+    }
+  } else {
+    const strip = template.ownsLegalIds && placement === 'auto' ? '' : legalIdsStrip(context);
+    if (strip) {
+      result = insertAfter(result, /<div class="dc-page"[^>]*>/, strip) ?? `${strip}${result}`;
+    }
   }
 
   const stamp = paidStamp(context, template);
@@ -199,9 +236,23 @@ function withPageExtras(
   return result;
 }
 
+/**
+ * Bloc des identifiants seul, tel qu'il sera posé sur la page : sert à
+ * l'éditeur où l'on déplace ce bloc à la souris. Vide si rien n'est affiché.
+ */
+export function renderLegalIdsBlockHtml(input: PdfDocumentInput): string {
+  const template = resolvePdfTemplate(input.templateId);
+  const context = buildTemplateContext(input, template.vocabulary);
+  return context.issuerLegalIds.length > 0 ? legalIdsFreeBlockHtml(context) : '';
+}
+
 export function renderTemplatedDocumentPdfHtml(input: PdfDocumentInput): string {
   const template = resolvePdfTemplate(input.templateId);
   const context = buildTemplateContext(input, template.vocabulary);
+  const placement = input.legalIdsPlacement ?? 'auto';
+  // Emplacement choisi à la main : le modèle ne les place plus lui-même.
+  const templateContext =
+    placement === 'auto' ? context : { ...context, issuerLegalIds: [] };
 
   return `<!DOCTYPE html>
 <html lang="fr">
@@ -212,7 +263,7 @@ export function renderTemplatedDocumentPdfHtml(input: PdfDocumentInput): string 
   <style>${pageStyles()}</style>
 </head>
 <body style="background:${template.paper}">
-${withPageExtras(template.render(context), context, template)}
+${withPageExtras(template.render(templateContext), context, template, placement)}
 </body>
 </html>`;
 }
