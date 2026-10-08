@@ -24,6 +24,7 @@ import {
   type LineFieldName,
 } from '@/components/app/document-composer/lines-panel';
 import { ComposerOptionsPanel } from '@/components/app/document-composer/options-panel';
+import { ComposerPaymentPanel } from '@/components/app/document-composer/payment-panel';
 import {
   buildComposerPdfInput,
   useComposerPreviewCompany,
@@ -71,7 +72,12 @@ import {
   type VoiceDictationHandle,
 } from '@/components/app/document-composer/voice-dictation';
 import { createEmptyClientFormValues, type Client } from '@/types/client';
-import { clientsQueryKeys, invoicesQueryKeys, quotesQueryKeys } from '@/lib/domain/supabase/query-keys';
+import {
+  clientsQueryKeys,
+  companiesQueryKeys,
+  invoicesQueryKeys,
+  quotesQueryKeys,
+} from '@/lib/domain/supabase/query-keys';
 import { analyzeProductImage, type ProductImageAnalysis } from '@/lib/domain/ai/product-image-analysis';
 import { calculateLineTotals } from '@/lib/calculations/totals';
 import {
@@ -93,10 +99,15 @@ import { createEmptyQuoteLine, createLocalLineId } from '@inveq/types/quote';
 import type { Product } from '@/types/product';
 import {
   createDefaultInvoicePdfOptions,
+  normalizeBankValue,
   readRememberedLegalIds,
+  readRememberedPaymentMention,
   rememberLegalIds,
+  rememberPaymentMention,
   type InvoicePdfOptions,
 } from '@/types/pdf-options';
+import { isValidIban } from '@/lib/domain/payments/sepa-qr';
+import { updateCompanyBankDetails } from '@/lib/domain/supabase/companies';
 import { CLIENTS_PAGE_SIZE } from '@inveq/types/clients-list';
 
 /** Police de l'éditeur (handoff « Nouvelle facture ») : Plus Jakarta Sans. */
@@ -396,12 +407,18 @@ export function DocumentComposer({
       edit?.pdfOptions ?? {
         ...createDefaultInvoicePdfOptions(),
         legalIds: readRememberedLegalIds(),
+        paymentMention: readRememberedPaymentMention(),
       },
   );
   const [lines, setLines] = useState<LineValue[]>(
     () => edit?.lines ?? [kind === 'invoice' ? createEmptyInvoiceLine() : createEmptyQuoteLine()],
   );
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
+  /**
+   * Garder l'IBAN saisi pour les factures suivantes. Par défaut : oui si
+   * l'entreprise n'en a pas encore, non si la facture en change un existant.
+   */
+  const [saveBankChoice, setSaveBankChoice] = useState<boolean | null>(null);
   const [catalogOpen, setCatalogOpen] = useState(false);
   /**
    * Client choisi par la dictée ou créé depuis l'éditeur, ajouté à la liste
@@ -552,6 +569,7 @@ export function DocumentComposer({
   const selectedPayment = paymentChoice ?? settingsPaymentTerms;
   const alreadyPaid = selectedPayment === 'paid';
   const paymentTermsDays = alreadyPaid ? null : selectedPayment;
+  const saveBankAsDefault = saveBankChoice ?? !normalizeBankValue(activeCompany?.iban);
 
   const createMutation = useMutation({
     mutationFn: async () => {
@@ -626,7 +644,11 @@ export function DocumentComposer({
       });
     },
     onSuccess: (doc) => {
-      if (kind === 'invoice') rememberLegalIds(pdfOptions.legalIds);
+      if (kind === 'invoice') {
+        rememberLegalIds(pdfOptions.legalIds);
+        rememberPaymentMention(pdfOptions.paymentMention);
+        void saveBankDetailsAsDefault();
+      }
       void queryClient.invalidateQueries({
         queryKey: kind === 'quote' ? quotesQueryKeys.all : invoicesQueryKeys.all,
       });
@@ -653,6 +675,22 @@ export function DocumentComposer({
       showError(err.message);
     },
   });
+
+  /** Coordonnées de la facture gardées dans l'entreprise, si la case est cochée. */
+  async function saveBankDetailsAsDefault() {
+    const bank = pdfOptions.bank;
+    if (!activeCompany || !bank?.show || !saveBankAsDefault || !isValidIban(bank.iban)) return;
+    const unchanged =
+      normalizeBankValue(bank.iban) === normalizeBankValue(activeCompany.iban) &&
+      normalizeBankValue(bank.bic) === normalizeBankValue(activeCompany.bic);
+    if (unchanged) return;
+    try {
+      await updateCompanyBankDetails(activeCompany.id, bank);
+      void queryClient.invalidateQueries({ queryKey: companiesQueryKeys.all });
+    } catch {
+      showError('Facture enregistrée, mais l’IBAN n’a pas pu être gardé pour les prochaines factures.');
+    }
+  }
 
   function handleSubmit() {
     const errors = validateDocumentDraft(clientId, lines, issuedAt);
@@ -1178,6 +1216,19 @@ export function DocumentComposer({
     </div>
   );
 
+  const paymentPanel =
+    kind === 'invoice' ? (
+      <ComposerPaymentPanel
+        company={activeCompany}
+        onChange={setPdfOptions}
+        onSaveAsDefaultChange={setSaveBankChoice}
+        paid={alreadyPaid}
+        paymentDays={paymentTermsDays}
+        saveAsDefault={saveBankAsDefault}
+        value={pdfOptions}
+      />
+    ) : null;
+
   const optionsPanel =
     kind === 'invoice' ? (
       <ComposerOptionsPanel
@@ -1294,6 +1345,7 @@ export function DocumentComposer({
                   totals={totals}
                 />
                 {previewColumn}
+                {paymentPanel}
                 {optionsPanel}
               </>
             ) : null}
@@ -1330,6 +1382,7 @@ export function DocumentComposer({
                 {clientDatesPanel}
                 {linesPanel}
                 {notesField}
+                {paymentPanel}
                 {optionsPanel}
               </div>
               <aside

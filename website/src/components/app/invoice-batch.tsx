@@ -40,6 +40,7 @@ import { createLocalInvoiceLineId, type InvoiceLineValue } from '@inveq/types/in
 import {
   INVOICE_TITLE_SUGGESTIONS,
   readRememberedLegalIds,
+  readRememberedPaymentMention,
   type IssuerLegalId,
   type StampColor,
   type StampPosition,
@@ -238,6 +239,9 @@ export function InvoiceBatch() {
             stampPosition: draft.stampPosition,
             templateId: draft.templateId || null,
             showEmail: false,
+            // Coordonnées bancaires de l'entreprise et dernière mention choisie.
+            bank: null,
+            paymentMention: readRememberedPaymentMention(),
           },
         });
         created += 1;

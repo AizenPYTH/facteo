@@ -19,7 +19,7 @@ import { cn } from '@/lib/utils';
 import { useAuth } from '@/providers/auth-provider';
 import { useTenant } from '@/providers/company-provider';
 import type { Client } from '@/types/client';
-import type { InvoicePdfOptions } from '@/types/pdf-options';
+import { withInvoiceBankDetails, type InvoicePdfOptions } from '@/types/pdf-options';
 import type { Settings } from '@/types/settings';
 
 /** A4 à 96 DPI : la page rendue par le moteur PDF. */
@@ -145,6 +145,8 @@ export function buildComposerPdfInput(
     stampColor: draft.pdfOptions.stampColor,
     stampPosition: emptyUnpaid ? 'none' : draft.pdfOptions.stampPosition,
     showIssuerEmail: draft.pdfOptions.showEmail,
+    company: withInvoiceBankDetails(base.company, draft.pdfOptions.bank),
+    paymentMention: draft.pdfOptions.paymentMention,
   };
 }
 

@@ -115,6 +115,129 @@ export function rememberLegalIds(legalIds: IssuerLegalId[]): void {
   }
 }
 
+/** Coordonnées bancaires imprimées sur une facture. */
+export type InvoiceBankDetails = {
+  /** Afficher l'IBAN, le BIC et le QR code de virement. */
+  show: boolean;
+  iban: string;
+  bic: string;
+};
+
+/** IBAN ou BIC sans espaces ni tirets, en majuscules : la forme stockée. */
+export function normalizeBankValue(value: string | null | undefined): string {
+  return (value ?? '').replace(/[\s-]/g, '').toUpperCase();
+}
+
+/**
+ * Coordonnées réellement imprimées : celles de la facture si elle en porte,
+ * sinon celles de l'entreprise (comportement des factures déjà émises).
+ */
+export function resolveInvoiceBankDetails(
+  bank: InvoiceBankDetails | null,
+  company: { iban?: string | null; bic?: string | null } | null | undefined,
+): InvoiceBankDetails {
+  if (bank) return bank;
+  const iban = normalizeBankValue(company?.iban);
+  const bic = normalizeBankValue(company?.bic);
+  return { show: Boolean(iban), iban, bic };
+}
+
+/** Émetteur passé au moteur PDF, avec les coordonnées bancaires propres à la facture. */
+export function withInvoiceBankDetails<T extends { iban?: string; bic?: string }>(
+  company: T,
+  bank: InvoiceBankDetails | null,
+): T {
+  if (!bank) return company;
+  const iban = normalizeBankValue(bank.iban);
+  const bic = normalizeBankValue(bank.bic);
+  return {
+    ...company,
+    iban: bank.show && iban ? iban : undefined,
+    bic: bank.show && bic ? bic : undefined,
+  };
+}
+
+/** BIC : 8 ou 11 caractères (banque, pays, localité, agence facultative). */
+export function isValidBic(value: string): boolean {
+  return /^[A-Z]{4}[A-Z]{2}[A-Z0-9]{2}([A-Z0-9]{3})?$/.test(normalizeBankValue(value));
+}
+
+const NBSP = '\u00a0';
+
+export type PaymentMentionPresetId = 'short' | 'l441' | 'ecb' | 'eom45';
+
+/** Mentions de paiement prêtes à l'emploi, proposées sur chaque facture. */
+export const PAYMENT_MENTION_PRESETS: { id: PaymentMentionPresetId; label: string; text: string }[] = [
+  {
+    id: 'short',
+    label: '30 jours · version courte',
+    text: `Échéance${NBSP}: 30 jours date de facture. Pas d’escompte pour paiement anticipé. En cas de retard${NBSP}: pénalités au taux de 3 fois le taux d’intérêt légal et indemnité forfaitaire de recouvrement de 40${NBSP}€.`,
+  },
+  {
+    id: 'l441',
+    label: '30 jours · article L441-10',
+    text: `Paiement à 30 jours à compter de la date d’émission de la facture. Aucun escompte ne sera accordé pour paiement anticipé. Tout retard de paiement entraînera l’application de pénalités égales à trois fois le taux d’intérêt légal, ainsi qu’une indemnité forfaitaire de 40${NBSP}€ pour frais de recouvrement (art.${NBSP}L441-10 du Code de commerce).`,
+  },
+  {
+    id: 'ecb',
+    label: '30 jours · taux BCE + 10 points',
+    text: `La présente facture est payable dans un délai de 30 jours suivant sa date d’émission. Aucun escompte n’est consenti en cas de règlement anticipé. À défaut de paiement à l’échéance, des pénalités de retard calculées au taux de la Banque centrale européenne majoré de 10 points seront exigibles de plein droit, de même qu’une indemnité forfaitaire de 40${NBSP}€ au titre des frais de recouvrement.`,
+  },
+  {
+    id: 'eom45',
+    label: '45 jours fin de mois',
+    text: `Règlement à 45 jours fin de mois à compter de la date de facture. Conditions d’escompte${NBSP}: néant. Les sommes non réglées à l’échéance porteront intérêt de plein droit, sans mise en demeure préalable, au taux de trois fois le taux d’intérêt légal. Une indemnité de 40${NBSP}€ pour frais de recouvrement sera également due par le débiteur professionnel.`,
+  },
+];
+
+const DAYS_PATTERN = /(\d+)(\s*)jours/;
+
+/** Délai écrit dans une mention (« 30 jours » → 30). `null` : aucun. */
+export function paymentMentionDays(text: string | null | undefined): number | null {
+  const match = text?.match(DAYS_PATTERN);
+  return match ? Number(match[1]) : null;
+}
+
+/** Remplace le délai écrit dans la mention par celui de la facture. */
+export function withPaymentMentionDays(text: string, days: number): string {
+  return text.replace(DAYS_PATTERN, (_match, _days, space: string) => `${days}${space}jours`);
+}
+
+/**
+ * Mention prédéfinie correspondant au texte, délai mis à part : une mention
+ * adaptée à 15 jours reste reconnue. `null` : texte libre.
+ */
+export function matchPaymentMentionPreset(text: string | null | undefined): PaymentMentionPresetId | null {
+  if (!text) return null;
+  const key = (value: string) => value.replace(/\d+(\s*)jours/, 'N jours').replace(/\s+/g, ' ').trim();
+  return PAYMENT_MENTION_PRESETS.find((preset) => key(preset.text) === key(text))?.id ?? null;
+}
+
+function normalizePaymentMention(value: unknown): string | null {
+  return typeof value === 'string' && value.trim() ? value.trim().slice(0, 2000) : null;
+}
+
+const PAYMENT_MENTION_STORAGE_KEY = 'inveq:invoice-payment-mention';
+
+/** Dernière mention choisie sur ce navigateur, reprise à la facture suivante. */
+export function readRememberedPaymentMention(): string | null {
+  try {
+    if (typeof window === 'undefined') return null;
+    const raw = window.localStorage.getItem(PAYMENT_MENTION_STORAGE_KEY);
+    return raw ? normalizePaymentMention(JSON.parse(raw)) : null;
+  } catch {
+    return null;
+  }
+}
+
+export function rememberPaymentMention(mention: string | null): void {
+  try {
+    window.localStorage.setItem(PAYMENT_MENTION_STORAGE_KEY, JSON.stringify(mention ?? ''));
+  } catch {
+    // Stockage indisponible (navigation privée) : le choix ne sera simplement pas repris.
+  }
+}
+
 export type InvoicePdfOptions = {
   /** `null` : « Facture ». */
   title: string | null;
@@ -125,6 +248,10 @@ export type InvoicePdfOptions = {
   templateId: string | null;
   /** E-mail de l'entreprise sur la facture. Masqué par défaut, anciennes factures comprises. */
   showEmail: boolean;
+  /** Coordonnées bancaires de la facture. `null` : celles de l'entreprise, comme avant. */
+  bank: InvoiceBankDetails | null;
+  /** Mention de paiement imprimée en bas de la facture. `null` : aucune. */
+  paymentMention: string | null;
 };
 
 export function createDefaultInvoicePdfOptions(): InvoicePdfOptions {
@@ -135,7 +262,18 @@ export function createDefaultInvoicePdfOptions(): InvoicePdfOptions {
     stampPosition: 'auto',
     templateId: null,
     showEmail: false,
+    bank: null,
+    paymentMention: null,
   };
+}
+
+function parseInvoiceBankDetails(value: unknown): InvoiceBankDetails | null {
+  if (!value || typeof value !== 'object') return null;
+  const source = value as Record<string, unknown>;
+  if (typeof source.show !== 'boolean') return null;
+  const text = (entry: unknown, max: number) =>
+    typeof entry === 'string' ? normalizeBankValue(entry).slice(0, max) : '';
+  return { show: source.show, iban: text(source.iban, 34), bic: text(source.bic, 11) };
 }
 
 /** Lit la colonne jsonb sans lui faire confiance : toute valeur inattendue retombe sur le défaut. */
@@ -160,8 +298,19 @@ export function parseInvoicePdfOptions(value: unknown): InvoicePdfOptions {
       : null;
 
   const showEmail = source.show_email === true;
+  const bank = parseInvoiceBankDetails(source.bank);
+  const paymentMention = normalizePaymentMention(source.payment_mention);
 
-  return { title, legalIds, stampColor, stampPosition, templateId, showEmail };
+  return {
+    title,
+    legalIds,
+    stampColor,
+    stampPosition,
+    templateId,
+    showEmail,
+    bank,
+    paymentMention,
+  };
 }
 
 export function serializeInvoicePdfOptions(options: InvoicePdfOptions) {
@@ -172,5 +321,13 @@ export function serializeInvoicePdfOptions(options: InvoicePdfOptions) {
     stamp_position: options.stampPosition,
     template_id: options.templateId,
     show_email: options.showEmail,
+    bank: options.bank
+      ? {
+          show: options.bank.show,
+          iban: normalizeBankValue(options.bank.iban),
+          bic: normalizeBankValue(options.bank.bic),
+        }
+      : null,
+    payment_mention: normalizePaymentMention(options.paymentMention),
   };
 }
