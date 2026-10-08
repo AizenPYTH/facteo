@@ -142,7 +142,7 @@ export async function buildDraftPdfHtml(
     company: await inlinePdfCompanyImages(company),
     client: client ? mapClientToPdf(client) : emptyClient(),
     settings,
-    showPaymentQr: draft.kind === 'invoice',
+    showPaymentQr: false,
     clientSignature: null,
     templateId: draft.templateId,
   };

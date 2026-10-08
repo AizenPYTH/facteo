@@ -124,7 +124,7 @@ export function buildComposerPdfInput(
     company,
     client: toPdfClient(draft.client),
     settings: settings ?? null,
-    showPaymentQr: draft.kind === 'invoice' && !draft.alreadyPaid,
+    showPaymentQr: false,
     clientSignature: null,
     templateId: draft.templateId,
   };
