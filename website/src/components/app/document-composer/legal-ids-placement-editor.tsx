@@ -1,10 +1,17 @@
 'use client';
 
+import { useQuery } from '@tanstack/react-query';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { AppDialog } from '@/components/app/app-dialog';
 import { PdfSheet, useRenderedPdfHtml } from '@/components/app/document-composer/preview';
 import { renderLegalIdsBlockHtml, type PdfDocumentInput } from '@/lib/pdf/engine';
+import { cn } from '@/lib/utils';
+import {
+  LEGAL_IDS_PLACEMENT_LABELS,
+  type IssuerLegalId,
+  type LegalIdsPlacement,
+} from '@/types/pdf-options';
 
 /** A4 à 96 DPI, comme le moteur PDF. */
 const A4_WIDTH = 794;
@@ -138,9 +145,11 @@ function EditorBody({
   }
 
   return (
-    <>
+    <div className="iq-composer">
       <div className="bg-app-subtle px-4 py-5 sm:px-8">
-        {blockHtml ? null : (
+        {!input ? (
+          <p className="mb-4 text-center text-[13px] text-iq-ink3">Chargement de la facture…</p>
+        ) : blockHtml ? null : (
           <p className="mb-4 rounded-[10px] bg-iq-soft px-3.5 py-3 text-[13px] text-iq-ink2">
             Aucun identifiant à placer : cochez le SIREN, le SIRET ou la TVA (renseignés dans la page
             Entreprise).
@@ -199,6 +208,79 @@ function EditorBody({
           Enregistrer
         </button>
       </div>
-    </>
+    </div>
+  );
+}
+
+const CHIP =
+  'rounded-app-field border px-1.5 py-[6px] text-center text-[12.5px] font-semibold transition-[background-color,border-color,color] duration-150';
+const CHIP_ON = 'border-app-accent-border bg-app-accent-tint text-app-accent-strong';
+const CHIP_OFF = 'border-app-border text-app-muted hover:border-app-accent hover:text-app-text';
+
+/**
+ * Page de détail d'une facture : emplacement des identifiants, enregistré
+ * aussitôt. « Où je veux » ouvre la facture pour y faire glisser le bloc.
+ */
+export function LegalIdsPlacementPicker({
+  cacheKey,
+  legalIds,
+  loadInput,
+  onChange,
+  value,
+}: {
+  /** Identifie la facture : l'aperçu est rechargé pour chacune. */
+  cacheKey: string;
+  legalIds: IssuerLegalId[];
+  loadInput: () => Promise<PdfDocumentInput>;
+  onChange: (value: LegalIdsPlacement) => void;
+  value: LegalIdsPlacement;
+}) {
+  const [placing, setPlacing] = useState(false);
+  const mode = typeof value === 'object' ? 'free' : value;
+  const inputQuery = useQuery({
+    queryKey: ['legal-ids-placement-input', cacheKey],
+    queryFn: loadInput,
+    enabled: placing,
+    staleTime: 30_000,
+  });
+  // Cases cochées à l'instant, pas encore relues depuis la base.
+  const input = useMemo(
+    () => (inputQuery.data ? { ...inputQuery.data, issuerLegalIds: legalIds } : null),
+    [inputQuery.data, legalIds],
+  );
+
+  return (
+    <div>
+      <p className="mb-1.5 text-[12px] font-medium text-app-text-3">
+        Emplacement du SIREN, SIRET et TVA
+      </p>
+      <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-4" role="group">
+        {(['auto', 'top', 'bottom', 'free'] as const).map((entry) => (
+          <button
+            aria-pressed={mode === entry}
+            className={cn(CHIP, mode === entry ? CHIP_ON : CHIP_OFF)}
+            key={entry}
+            onClick={() => (entry === 'free' ? setPlacing(true) : onChange(entry))}
+            type="button">
+            {LEGAL_IDS_PLACEMENT_LABELS[entry]}
+          </button>
+        ))}
+      </div>
+      {mode === 'free' ? (
+        <button
+          className="mt-1.5 text-[12px] font-semibold text-app-accent hover:underline"
+          onClick={() => setPlacing(true)}
+          type="button">
+          Modifier l’endroit
+        </button>
+      ) : null}
+      <LegalIdsPlacementEditor
+        initial={typeof value === 'object' ? value : null}
+        input={input}
+        onClose={() => setPlacing(false)}
+        onSave={onChange}
+        open={placing}
+      />
+    </div>
   );
 }
