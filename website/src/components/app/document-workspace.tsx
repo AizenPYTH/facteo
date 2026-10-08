@@ -82,7 +82,12 @@ import { duplicateQuote, fetchQuoteById, updateQuoteStatus } from '@/lib/domain/
 import { getInvoiceErrorMessage } from '@/lib/invoices/errors';
 import { getQuoteErrorMessage } from '@/lib/quotes/errors';
 import { invoicesQueryKeys, quotesQueryKeys } from '@/lib/domain/supabase/query-keys';
-import { buildInvoicePdfHtml, buildQuotePdfHtml } from '@/lib/domain/pdf/document-pdf';
+import {
+  buildInvoicePdfHtml,
+  buildInvoicePdfInput,
+  buildQuotePdfHtml,
+} from '@/lib/domain/pdf/document-pdf';
+import type { PdfDocumentInput } from '@/lib/pdf/engine';
 import { htmlStringToPdfBlob } from '@/lib/domain/pdf/pdf-export';
 import { SendDocumentEmailError, sendDocumentEmail } from '@/lib/email/send-document';
 import {
@@ -93,12 +98,14 @@ import {
 } from '@/lib/domain/pdf/document-actions';
 import { getDefaultComposerTemplateId } from '@/lib/domain/pdf/composer-templates';
 import { LegalIdsPicker } from '@/components/app/document-composer/legal-ids-picker';
+import { LegalIdsPlacementPicker } from '@/components/app/document-composer/legal-ids-placement-editor';
 import { StampPicker } from '@/components/app/document-composer/stamp-picker';
 import {
   DEFAULT_ISSUER_LEGAL_IDS,
   type IssuerLegalId,
   type StampColor,
   type StampPosition,
+  type LegalIdsPlacement,
 } from '@/types/pdf-options';
 import { requireScope } from '@/lib/domain/tenant/scope';
 import { cn } from '@/lib/utils';
@@ -641,6 +648,9 @@ function DocumentDetailPanel({
   onShowEmailChange,
   legalIds,
   onLegalIdsChange,
+  legalIdsPlacement,
+  onLegalIdsPlacementChange,
+  loadPdfInput,
   company,
   stamp,
   onStampChange,
@@ -666,6 +676,10 @@ function DocumentDetailPanel({
   /** Factures uniquement : SIREN / SIRET / TVA en tête du PDF. */
   legalIds?: IssuerLegalId[];
   onLegalIdsChange?: (value: IssuerLegalId[]) => void;
+  /** Factures uniquement : emplacement de ces identifiants. */
+  legalIdsPlacement?: LegalIdsPlacement;
+  onLegalIdsPlacementChange?: (value: LegalIdsPlacement) => void;
+  loadPdfInput?: () => Promise<PdfDocumentInput>;
   company?: { id: string; siret: string | null; vatNumber: string | null } | null;
   /** Factures uniquement : tampon « Facture payée ». */
   stamp?: { color: StampColor; position: StampPosition };
@@ -772,6 +786,17 @@ function DocumentDetailPanel({
               En tête de la facture
             </p>
             <LegalIdsPicker company={company ?? null} onChange={onLegalIdsChange} value={legalIds} />
+            {legalIdsPlacement && onLegalIdsPlacementChange && loadPdfInput ? (
+              <div className="mt-3">
+                <LegalIdsPlacementPicker
+                  cacheKey={document.id}
+                  legalIds={legalIds}
+                  loadInput={loadPdfInput}
+                  onChange={onLegalIdsPlacementChange}
+                  value={legalIdsPlacement}
+                />
+              </div>
+            ) : null}
           </div>
         ) : null}
         {stamp && onStampChange ? (
@@ -809,6 +834,7 @@ export function InvoicesWorkspace() {
   const [previewTemplateId, setPreviewTemplateId] = useState('');
   const [showEmail, setShowEmail] = useState(false);
   const [legalIds, setLegalIds] = useState<IssuerLegalId[]>(DEFAULT_ISSUER_LEGAL_IDS);
+  const [legalIdsPlacement, setLegalIdsPlacement] = useState<LegalIdsPlacement>('auto');
   const [stamp, setStamp] = useState<{ color: StampColor; position: StampPosition }>({
     color: 'auto',
     position: 'auto',
@@ -869,6 +895,7 @@ export function InvoicesWorkspace() {
         setPreviewTemplateId(options.templateId ?? getDefaultComposerTemplateId('invoice', settings));
         setShowEmail(options.showEmail);
         setLegalIds(options.legalIds);
+        setLegalIdsPlacement(options.legalIdsPlacement);
         setStamp({ color: options.stampColor, position: options.stampPosition });
       }
     });
@@ -888,6 +915,13 @@ export function InvoicesWorkspace() {
     setLegalIds(value);
     if (!detail || !scope) return;
     await updateInvoicePdfOptions(requireScope(scope), detail.id, { legalIds: value });
+    void queryClient.invalidateQueries({ queryKey: ['pdf-preview'] });
+  }
+
+  async function changeLegalIdsPlacement(value: LegalIdsPlacement) {
+    setLegalIdsPlacement(value);
+    if (!detail || !scope) return;
+    await updateInvoicePdfOptions(requireScope(scope), detail.id, { legalIdsPlacement: value });
     void queryClient.invalidateQueries({ queryKey: ['pdf-preview'] });
   }
 
@@ -1272,6 +1306,14 @@ export function InvoicesWorkspace() {
                 company={activeCompany}
                 legalIds={legalIds}
                 onLegalIdsChange={(value) => void changeLegalIds(value)}
+                legalIdsPlacement={legalIdsPlacement}
+                onLegalIdsPlacementChange={(value) => void changeLegalIdsPlacement(value)}
+                loadPdfInput={() =>
+                  buildInvoicePdfInput(requireScope(scope), detail, user?.email).then((input) => ({
+                    ...input,
+                    templateId: previewTemplateId || input.templateId,
+                  }))
+                }
                 onStampChange={(value) => void changeStamp(value)}
                 stamp={stamp}
                 onOpenPreview={() => setQuickPreviewId(detail.id)}
