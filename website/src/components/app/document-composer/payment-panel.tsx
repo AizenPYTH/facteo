@@ -131,7 +131,7 @@ export function ComposerPaymentPanel({
           <span>
             <span className="block text-[14px] font-semibold">Afficher l’IBAN et le BIC</span>
             <span className="block text-[12.5px] text-iq-ink3">
-              Avec le QR code de virement, pour être payé plus vite.
+              Imprimés en bas de la facture, pour être payé par virement.
             </span>
           </span>
         </button>

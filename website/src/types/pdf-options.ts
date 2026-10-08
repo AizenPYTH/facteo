@@ -117,7 +117,7 @@ export function rememberLegalIds(legalIds: IssuerLegalId[]): void {
 
 /** Coordonnées bancaires imprimées sur une facture. */
 export type InvoiceBankDetails = {
-  /** Afficher l'IBAN, le BIC et le QR code de virement. */
+  /** Afficher l'IBAN et le BIC. */
   show: boolean;
   iban: string;
   bic: string;

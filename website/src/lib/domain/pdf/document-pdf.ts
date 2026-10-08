@@ -141,7 +141,7 @@ export async function buildInvoicePdfInput(
     settings,
     // Facture déjà soldée (vente encaissée avant émission) : pas de QR de
     // virement, il ferait payer une seconde fois.
-    showPaymentQr: invoice.amountDue > 0,
+    showPaymentQr: false,
     clientSignature: documentSignature
       ? { url: documentSignature.signatureUrl, signedAt: documentSignature.signedAt }
       : null,
