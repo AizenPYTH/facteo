@@ -249,11 +249,18 @@ export function PdfSheet({
   if (html !== lastHtml) {
     setLastHtml(html);
     const back = front === 0 ? 1 : 0;
-    setSlots((prev) => {
-      const next: [string | null, string | null] = [prev[0], prev[1]];
-      next[back] = withPreviewTextStyle(html);
-      return next;
-    });
+    const nextHtml = withPreviewTextStyle(html);
+    if (nextHtml && slots[back] === nextHtml) {
+      // Retour au rendu d'avant (ex. En bas → En haut → En bas) : le cadre
+      // caché l'affiche déjà et ne se rechargerait pas. On le montre aussitôt.
+      setFront(back);
+    } else {
+      setSlots((prev) => {
+        const next: [string | null, string | null] = [prev[0], prev[1]];
+        next[back] = nextHtml;
+        return next;
+      });
+    }
   }
 
   const scale = width > 0 ? width / A4_WIDTH : 0;
