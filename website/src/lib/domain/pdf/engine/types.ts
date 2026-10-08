@@ -96,4 +96,6 @@ export type PdfDocumentInput = {
   stampPosition?: StampPosition | null;
   /** Afficher l'e-mail de l'entreprise. Absent : affiché sur un devis, masqué sur une facture. */
   showIssuerEmail?: boolean;
+  /** Mention de paiement choisie sur la facture, imprimée en tête des mentions du bas de page. */
+  paymentMention?: string | null;
 };

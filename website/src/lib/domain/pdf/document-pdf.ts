@@ -20,6 +20,7 @@ import type { InvoiceDetail } from '@/types/invoice';
 import type { QuoteDetail } from '@/types/quote';
 import type { DataScope } from '@/types/tenant';
 import { DEFAULT_PDF_TEMPLATE_ID } from '@/lib/pdf/engine/templates/types';
+import { withInvoiceBankDetails } from '@/types/pdf-options';
 
 export async function resolvePdfCompanyInfo(
   scope: DataScope,
@@ -135,7 +136,7 @@ export async function buildInvoicePdfInput(
       totalTtc: invoice.totalTtc,
       amountDue: invoice.amountDue,
     },
-    company,
+    company: withInvoiceBankDetails(company, pdfOptions.bank),
     client: client ?? fallbackClient(invoice.clientName),
     settings,
     // Facture déjà soldée (vente encaissée avant émission) : pas de QR de
@@ -152,6 +153,7 @@ export async function buildInvoicePdfInput(
     stampColor: pdfOptions.stampColor,
     stampPosition: pdfOptions.stampPosition,
     showIssuerEmail: pdfOptions.showEmail,
+    paymentMention: pdfOptions.paymentMention,
   };
 }
 

@@ -270,6 +270,29 @@ async function saveCompanySiren(companyId: string, siren: string): Promise<void>
   }
 }
 
+/**
+ * Coordonnées bancaires par défaut de l'entreprise, reprises sur les factures.
+ * Proposé depuis l'éditeur de facture, sans repasser par la page Entreprise.
+ */
+export async function updateCompanyBankDetails(
+  companyId: string,
+  bank: { iban: string; bic: string },
+): Promise<void> {
+  const { error } = await supabase
+    .from('companies')
+    .update({
+      iban: toNullableString(bank.iban.replace(/[\s-]/g, '').toUpperCase()),
+      bic: toNullableString(bank.bic.replace(/[\s-]/g, '').toUpperCase()),
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', companyId);
+
+  if (error) {
+    logSupabaseError('updateCompanyBankDetails', error);
+    throw error;
+  }
+}
+
 export async function updateCompanyName(companyId: string, name: string): Promise<TenantCompany> {
   const trimmedName = name.trim();
 
