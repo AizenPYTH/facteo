@@ -150,6 +150,7 @@ export async function buildInvoicePdfInput(
     paidAt: invoice.status === 'paid' ? (invoice.paidAt ?? invoice.updatedAt) : null,
     documentTitle: pdfOptions.title,
     issuerLegalIds: pdfOptions.legalIds,
+    legalIdsPlacement: pdfOptions.legalIdsPlacement,
     stampColor: pdfOptions.stampColor,
     stampPosition: pdfOptions.stampPosition,
     showIssuerEmail: pdfOptions.showEmail,

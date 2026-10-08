@@ -239,6 +239,7 @@ export function InvoiceBatch() {
             stampPosition: draft.stampPosition,
             templateId: draft.templateId || null,
             showEmail: false,
+            legalIdsPlacement: 'auto',
             // Coordonnées bancaires de l'entreprise et dernière mention choisie.
             bank: null,
             paymentMention: readRememberedPaymentMention(),

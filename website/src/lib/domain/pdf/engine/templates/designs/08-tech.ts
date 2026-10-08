@@ -16,9 +16,9 @@ const INK = '#0F1A1C';
 const MUTED = '#6B7B7E';
 const LABEL = '#8FA1A3';
 
-/** Le modèle affiche les informations en clé=valeur, façon fichier de configuration. */
+/** Le modèle affiche les informations en « clé : valeur », façon fichier de configuration. */
 function pair(key: string, value: string): string {
-  return `${escapeHtml(key)}=${escapeHtml(value)}`;
+  return `${escapeHtml(key)}\u00a0: ${escapeHtml(value)}`;
 }
 
 function slug(value: string): string {
@@ -69,7 +69,7 @@ function render(context: TemplateContext): string {
     18,
   )}; margin-top:${u(24)}; display:flex; justify-content:space-between; align-items:center; gap:${u(20)}">
     <div style="font-size:${u(10)}; color:${MUTED}; line-height:1.8">
-      bill_to = ${escapeHtml([client.name, client.contactName].filter(Boolean).join(' / '))}<br/>
+      bill_to\u00a0: ${escapeHtml([client.name, client.contactName].filter(Boolean).join(' / '))}<br/>
       ${addressLines([
         client.addressLines.join(' — '),
         client.vatNumber ? `TVA ${client.vatNumber}` : '',

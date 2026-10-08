@@ -142,6 +142,7 @@ export function buildComposerPdfInput(
     paidAt: draft.alreadyPaid ? issuedAtIso : null,
     documentTitle: draft.pdfOptions.title,
     issuerLegalIds: draft.pdfOptions.legalIds,
+    legalIdsPlacement: draft.pdfOptions.legalIdsPlacement,
     stampColor: draft.pdfOptions.stampColor,
     stampPosition: emptyUnpaid ? 'none' : draft.pdfOptions.stampPosition,
     showIssuerEmail: draft.pdfOptions.showEmail,

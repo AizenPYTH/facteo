@@ -3,7 +3,9 @@
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 
+import { LegalIdsPlacementEditor } from '@/components/app/document-composer/legal-ids-placement-editor';
 import { CheckMark, IQ_FIELD, Segmented } from '@/components/app/document-composer/ui';
+import type { PdfDocumentInput } from '@/lib/pdf/engine';
 import { fetchCompanySiren } from '@/lib/domain/supabase/companies';
 import { cn } from '@/lib/utils';
 import {
@@ -11,6 +13,7 @@ import {
   formatIssuerLegalIds,
   INVOICE_TITLE_SUGGESTIONS,
   ISSUER_LEGAL_IDS,
+  LEGAL_IDS_PLACEMENT_LABELS,
   STAMP_COLOR_VALUES,
   STAMP_COLORS,
   STAMP_POSITION_LABELS,
@@ -62,6 +65,7 @@ export function ComposerOptionsPanel({
   onChange,
   onNumberChange,
   paid,
+  previewInput,
   value,
 }: {
   company: { id: string; email?: string | null; siret: string | null; vatNumber: string | null } | null;
@@ -71,9 +75,14 @@ export function ComposerOptionsPanel({
   onNumberChange: (value: string) => void;
   /** Délai « Déjà payée » : débloque le tampon. */
   paid: boolean;
+  /** Document en cours, ouvert en grand pour placer les identifiants à la main. */
+  previewInput: PdfDocumentInput | null;
   value: InvoicePdfOptions;
 }) {
   const [open, setOpen] = useState(false);
+  const [placing, setPlacing] = useState(false);
+  const placement = value.legalIdsPlacement;
+  const placementMode = typeof placement === 'object' ? 'free' : placement;
   const [customMode, setCustomMode] = useState(() => Boolean(number.trim()));
   const sirenQuery = useQuery({
     queryKey: ['company-siren', company?.id],
@@ -240,6 +249,44 @@ export function ComposerOptionsPanel({
             <p className="mt-2 text-[12.5px] text-iq-ink3">
               Votre choix est repris pour la facture suivante.
             </p>
+
+            <p className="mb-2 mt-4 text-[13px] font-semibold text-iq-ink2">
+              Emplacement du SIREN, SIRET et TVA
+            </p>
+            <Segmented
+              ariaLabel="Emplacement du SIREN, du SIRET et de la TVA"
+              itemClassName="h-[30px] text-[12.5px]"
+              onChange={(mode) => {
+                if (mode === 'free') {
+                  setPlacing(true);
+                } else {
+                  onChange({ ...value, legalIdsPlacement: mode });
+                }
+              }}
+              options={(['auto', 'top', 'bottom', 'free'] as const).map((mode) => ({
+                value: mode,
+                label: LEGAL_IDS_PLACEMENT_LABELS[mode],
+              }))}
+              value={placementMode}
+            />
+            {placementMode === 'free' ? (
+              <p className="mt-2 text-[12.5px] text-iq-ink3">
+                Placé à la main sur la facture.{' '}
+                <button
+                  className="font-semibold text-iq-accent hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-iq-accent"
+                  onClick={() => setPlacing(true)}
+                  type="button">
+                  Modifier l’endroit
+                </button>
+              </p>
+            ) : null}
+            <LegalIdsPlacementEditor
+              initial={typeof placement === 'object' ? placement : null}
+              input={previewInput}
+              onClose={() => setPlacing(false)}
+              onSave={(point) => onChange({ ...value, legalIdsPlacement: point })}
+              open={placing}
+            />
           </div>
 
           <div>
