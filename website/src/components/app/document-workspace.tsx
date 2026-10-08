@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   useMutation,
   useQueryClient,
@@ -105,6 +105,7 @@ import {
   type IssuerLegalId,
   type StampColor,
   type StampPosition,
+  type InvoicePdfOptions,
   type LegalIdsPlacement,
 } from '@/types/pdf-options';
 import { requireScope } from '@/lib/domain/tenant/scope';
@@ -904,35 +905,42 @@ export function InvoicesWorkspace() {
     };
   }, [detail?.id, settings, scope]);
 
+  // Un enregistrement à la fois, dans l'ordre des clics : sinon deux clics
+  // rapides pouvaient s'écrire à l'envers et garder l'avant-dernier choix.
+  const pdfOptionsSaveChain = useRef<Promise<void>>(Promise.resolve());
+
+  function savePdfOptions(patch: Partial<InvoicePdfOptions>): Promise<void> {
+    if (!detail || !scope) return Promise.resolve();
+    const activeScope = requireScope(scope);
+    const invoiceId = detail.id;
+    const run = pdfOptionsSaveChain.current
+      .catch(() => undefined)
+      .then(() => updateInvoicePdfOptions(activeScope, invoiceId, patch))
+      .then(() => {
+        void queryClient.invalidateQueries({ queryKey: ['pdf-preview'] });
+      });
+    pdfOptionsSaveChain.current = run;
+    return run;
+  }
+
   async function changeShowEmail(value: boolean) {
     setShowEmail(value);
-    if (!detail || !scope) return;
-    await updateInvoicePdfOptions(requireScope(scope), detail.id, { showEmail: value });
-    void queryClient.invalidateQueries({ queryKey: ['pdf-preview'] });
+    await savePdfOptions({ showEmail: value });
   }
 
   async function changeLegalIds(value: IssuerLegalId[]) {
     setLegalIds(value);
-    if (!detail || !scope) return;
-    await updateInvoicePdfOptions(requireScope(scope), detail.id, { legalIds: value });
-    void queryClient.invalidateQueries({ queryKey: ['pdf-preview'] });
+    await savePdfOptions({ legalIds: value });
   }
 
   async function changeLegalIdsPlacement(value: LegalIdsPlacement) {
     setLegalIdsPlacement(value);
-    if (!detail || !scope) return;
-    await updateInvoicePdfOptions(requireScope(scope), detail.id, { legalIdsPlacement: value });
-    void queryClient.invalidateQueries({ queryKey: ['pdf-preview'] });
+    await savePdfOptions({ legalIdsPlacement: value });
   }
 
   async function changeStamp(value: { color: StampColor; position: StampPosition }) {
     setStamp(value);
-    if (!detail || !scope) return;
-    await updateInvoicePdfOptions(requireScope(scope), detail.id, {
-      stampColor: value.color,
-      stampPosition: value.position,
-    });
-    void queryClient.invalidateQueries({ queryKey: ['pdf-preview'] });
+    await savePdfOptions({ stampColor: value.color, stampPosition: value.position });
   }
 
   function changeInvoiceTemplate(templateId: string) {
