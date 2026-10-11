@@ -651,6 +651,7 @@ export default function InvoiceDetailScreen() {
             <InvoicePresentationSection
               company={companyProfile ?? null}
               onChange={(next) => void savePdfOptions(next)}
+              paid={invoice.status === 'paid'}
               showTemplate={false}
               value={pdfOptions}
             />

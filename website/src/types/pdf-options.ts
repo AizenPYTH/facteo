@@ -86,6 +86,83 @@ export function parseLegalIdsPlacement(value: unknown): LegalIdsPlacement {
   return 'auto';
 }
 
+function normalizeCountry(country: string | null | undefined): string {
+  return (country ?? '')
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/[’']/g, ' ')
+    .toLowerCase()
+    .trim();
+}
+
+/** France métropolitaine et outre-mer (pays vide : France, comme avant). */
+const FRENCH_COUNTRIES = [
+  '',
+  'france',
+  'fr',
+  'republique francaise',
+  'guadeloupe',
+  'martinique',
+  'guyane',
+  'guyane francaise',
+  'la reunion',
+  'reunion',
+  'mayotte',
+];
+
+export function isFrenchCountry(country: string | null | undefined): boolean {
+  return FRENCH_COUNTRIES.includes(normalizeCountry(country));
+}
+
+/** Numéro d'immatriculation des entreprises hors de France, selon le pays. */
+const NATIONAL_ID_LABELS: [string[], string][] = [
+  [['portugal', 'pt'], 'NIPC'],
+  [['belgique', 'belgium', 'belgie', 'be'], 'N° d’entreprise'],
+  [['luxembourg', 'lu'], 'RCS'],
+  [['espagne', 'spain', 'espana', 'es'], 'NIF'],
+  [['italie', 'italy', 'italia', 'it'], 'Codice fiscale'],
+  [['allemagne', 'germany', 'deutschland', 'de'], 'Handelsregister'],
+  [['pays-bas', 'pays bas', 'netherlands', 'nederland', 'nl'], 'KvK'],
+  [['suisse', 'switzerland', 'schweiz', 'svizzera', 'ch'], 'IDE'],
+  [['royaume-uni', 'royaume uni', 'united kingdom', 'uk', 'gb', 'angleterre'], 'Company No.'],
+  [['maroc', 'morocco', 'ma'], 'ICE'],
+  [['algerie', 'algeria', 'dz'], 'NIF'],
+  [['tunisie', 'tunisia', 'tn'], 'Matricule fiscal'],
+  [['senegal', 'sn'], 'NINEA'],
+  [['cote d ivoire', 'ci'], 'RCCM'],
+];
+
+/** « Portugal » → « NIPC ». Pays inconnu : « N° d'immatriculation ». */
+export function nationalIdLabel(country: string | null | undefined): string {
+  const key = normalizeCountry(country);
+  return NATIONAL_ID_LABELS.find(([names]) => names.includes(key))?.[1] ?? 'N° d’immatriculation';
+}
+
+/**
+ * Libellé d'un identifiant de l'émetteur : SIREN / SIRET en France, numéro
+ * national ailleurs (NIPC au Portugal…), « N° TVA » partout.
+ */
+export function issuerLegalIdLabel(id: IssuerLegalId, country?: string | null): string {
+  if (id === 'siret' && !isFrenchCountry(country)) return nationalIdLabel(country);
+  return ISSUER_LEGAL_ID_LABELS[id];
+}
+
+/**
+ * Numéro national d'une entreprise hors de France : celui saisi, sinon tiré
+ * du n° de TVA quand il le contient (Portugal : PT + NIPC).
+ */
+export function nationalIdValue(
+  country: string | null | undefined,
+  registration: string | null | undefined,
+  vatNumber: string | null | undefined,
+): string | null {
+  const typed = registration?.trim();
+  if (typed) return typed;
+  const vat = vatNumber?.replace(/\s/g, '').toUpperCase() ?? '';
+  if (normalizeCountry(country) === 'portugal' && /^PT\d{9}$/.test(vat)) return vat.slice(2);
+  return null;
+}
+
 function groupDigits(digits: string, sizes: number[]): string {
   const parts: string[] = [];
   let cursor = 0;
@@ -105,10 +182,20 @@ export function formatIssuerLegalIds(
   siretInput: string | null | undefined,
   vatInput: string | null | undefined,
   sirenInput?: string | null,
+  country?: string | null,
 ): Record<IssuerLegalId, string | null> {
   const siretRaw = siretInput?.trim() ?? '';
   const siret = siretRaw.replace(/\D/g, '');
   const vat = vatInput?.replace(/\s/g, '').toUpperCase() ?? '';
+
+  // Hors de France : pas de SIREN ; le numéro national prend la place du SIRET.
+  if (!isFrenchCountry(country)) {
+    return {
+      siren: null,
+      siret: nationalIdValue(country, siretRaw || sirenInput, vat),
+      vat: vat || null,
+    };
+  }
   // SIREN saisi dans la page Entreprise en priorité, sinon tiré du SIRET.
   const siren = sirenInput?.replace(/\D/g, '') || siret.slice(0, 9);
 

@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+import { isFrenchCountry } from '@/types/pdf-options';
+
 const optionalText = z.string().trim();
 
 function normalizeDigits(value: string): string {
@@ -13,13 +15,10 @@ const companyFields = {
   postalCode: optionalText.max(40),
   city: optionalText,
   country: optionalText,
-  siren: optionalText
-    .refine((value) => !value || /^\d{9}$/.test(normalizeDigits(value)), 'Le SIREN doit contenir 9 chiffres')
-    .optional(),
-  siret: optionalText.refine(
-    (value) => !value || /^\d{14}$/.test(normalizeDigits(value)),
-    'Le SIRET doit contenir 14 chiffres',
-  ),
+  // Vérifiés selon le pays (voir `checkRegistration`) : SIREN / SIRET en
+  // France, numéro national libre ailleurs (NIPC au Portugal…).
+  siren: optionalText.optional(),
+  siret: optionalText,
   vatNumber: optionalText.refine(
     (value) => !value || /^[A-Z]{2}[A-Z0-9]{2,13}$/i.test(normalizeDigits(value)),
     'Numéro de TVA invalide',
@@ -37,6 +36,26 @@ const companyFields = {
     .min(1, 'Sélectionnez au moins un moyen de paiement.'),
 };
 
+function checkRegistration(
+  values: { country: string; siren?: string; siret: string },
+  ctx: z.RefinementCtx,
+) {
+  const siren = normalizeDigits(values.siren ?? '');
+  const siret = normalizeDigits(values.siret);
+  if (!isFrenchCountry(values.country)) {
+    if (siret && !/^[A-Z0-9.\-/]{4,30}$/i.test(siret)) {
+      ctx.addIssue({ code: 'custom', path: ['siret'], message: 'Numéro invalide' });
+    }
+    return;
+  }
+  if (siren && !/^\d{9}$/.test(siren)) {
+    ctx.addIssue({ code: 'custom', path: ['siren'], message: 'Le SIREN doit contenir 9 chiffres' });
+  }
+  if (siret && !/^\d{14}$/.test(siret)) {
+    ctx.addIssue({ code: 'custom', path: ['siret'], message: 'Le SIRET doit contenir 14 chiffres' });
+  }
+}
+
 /** Profil complet : prénom et nom facultatifs, e-mail obligatoire. */
 export const companyProfileSchema = z.object({
   ...companyFields,
@@ -47,7 +66,7 @@ export const companyProfileSchema = z.object({
     .trim()
     .min(1, 'Champ obligatoire.')
     .email('Adresse e-mail invalide.'),
-});
+}).superRefine(checkRegistration);
 
 /**
  * Page Entreprise : prénom, nom et e-mail n'y sont pas affichés. Les exiger
@@ -61,6 +80,6 @@ export const companyOnlySchema = z.object({
     (value) => !value || z.string().email().safeParse(value).success,
     'Adresse e-mail invalide.',
   ),
-});
+}).superRefine(checkRegistration);
 
 export type CompanyProfileSchemaValues = z.infer<typeof companyProfileSchema>;

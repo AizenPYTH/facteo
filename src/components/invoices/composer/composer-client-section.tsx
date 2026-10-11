@@ -1,6 +1,7 @@
 import { router, type Href } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, Text, TextInput, View } from 'react-native';
+import { isFrenchCountry, nationalIdLabel, nationalIdValue } from '@/types/pdf-options';
 
 import {
   ComposerIcon,
@@ -47,8 +48,20 @@ function addressLines(client: Client): string | null {
 }
 
 function idLine(client: Client): string | null {
-  const siren = client.siren?.trim() || client.siret?.trim().slice(0, 9);
-  const parts = [client.city?.trim(), siren ? `SIREN ${siren}` : null].filter(Boolean);
+  let registration: string | null = null;
+  if (isFrenchCountry(client.country)) {
+    const siren = client.siren?.trim() || client.siret?.trim().slice(0, 9);
+    registration = siren ? `SIREN ${siren}` : null;
+  } else {
+    // Hors de France : numéro national (NIPC au Portugal…), sinon n° de TVA.
+    const national = nationalIdValue(client.country, client.siret || client.siren, client.vatNumber);
+    registration = national
+      ? `${nationalIdLabel(client.country)} ${national}`
+      : client.vatNumber?.trim()
+        ? `TVA ${client.vatNumber.trim()}`
+        : null;
+  }
+  const parts = [client.city?.trim(), registration].filter(Boolean);
   return parts.length > 0 ? parts.join(' · ') : null;
 }
 

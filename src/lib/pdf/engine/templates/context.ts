@@ -11,7 +11,7 @@ import type { PdfClientInfo, PdfCompanyInfo, PdfDocumentInput } from '@/lib/pdf/
 import {
   DEFAULT_ISSUER_LEGAL_IDS,
   formatIssuerLegalIds,
-  ISSUER_LEGAL_ID_LABELS,
+  issuerLegalIdLabel,
   type StampColor,
   type StampPosition,
 } from '@/types/pdf-options';
@@ -170,10 +170,13 @@ function buildIssuerLegalIds(input: PdfDocumentInput): TemplateMetaEntry[] {
     input.company.siret,
     input.company.vatNumber,
     input.company.siren,
+    input.company.country,
   );
 
   return selected
-    .map((id) => (values[id] ? { label: ISSUER_LEGAL_ID_LABELS[id], value: values[id] } : null))
+    .map((id) =>
+      values[id] ? { label: issuerLegalIdLabel(id, input.company.country), value: values[id] } : null,
+    )
     .filter((entry): entry is TemplateMetaEntry => entry !== null);
 }
 

@@ -18,7 +18,7 @@ import { useComposerColors, useComposerStyles, type ComposerColors } from '@/con
 import { triggerSelectionHaptic } from '@/lib/haptics';
 import {
   formatIssuerLegalIds,
-  ISSUER_LEGAL_ID_LABELS,
+  issuerLegalIdLabel,
   ISSUER_LEGAL_IDS,
   LEGAL_IDS_PLACEMENT_LABELS,
   type IssuerLegalId,
@@ -41,11 +41,21 @@ export type LegalIdEntry = { label: string; value: string };
 /** Identifiants réellement imprimés : cochés et renseignés dans l'entreprise. */
 export function legalIdEntries(
   legalIds: IssuerLegalId[],
-  company: { siret?: string | null; vatNumber?: string | null; siren?: string | null } | null,
+  company: {
+    siret?: string | null;
+    vatNumber?: string | null;
+    siren?: string | null;
+    country?: string | null;
+  } | null,
 ): LegalIdEntry[] {
-  const values = formatIssuerLegalIds(company?.siret, company?.vatNumber, company?.siren);
+  const values = formatIssuerLegalIds(
+    company?.siret,
+    company?.vatNumber,
+    company?.siren,
+    company?.country,
+  );
   return ISSUER_LEGAL_IDS.filter((id) => legalIds.includes(id) && values[id]).map((id) => ({
-    label: ISSUER_LEGAL_ID_LABELS[id],
+    label: issuerLegalIdLabel(id, company?.country),
     value: values[id] as string,
   }));
 }

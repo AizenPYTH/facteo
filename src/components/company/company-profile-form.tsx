@@ -15,6 +15,7 @@ import type { CompanyLookupResult } from '@/lib/company-search/types';
 import { OwnCompanyLookup } from './own-company-lookup';
 import { spacing } from '@/constants/theme/spacing';
 import type { CompanyProfileFormValues } from '@/types/company-profile';
+import { isFrenchCountry, nationalIdLabel } from '@/types/pdf-options';
 
 import { BankDetailsSection } from './bank-details-section';
 import { CompanyAssetsSection } from './company-assets-section';
@@ -34,6 +35,9 @@ type CompanyProfileFormProps = {
 
 export function CompanyProfileForm({ control, errors, assets, setValue }: CompanyProfileFormProps) {
   const paymentMethods = useWatch({ control, name: 'paymentMethods' });
+  const country = useWatch({ control, name: 'country' }) ?? '';
+  // Hors de France : pas de SIREN, et le SIRET devient le numéro du pays (NIPC…).
+  const french = isFrenchCountry(country);
   const showBankDetails = paymentMethods?.includes('bank_transfer') ?? false;
   const [registrationNumber, setRegistrationNumber] = useState('');
 
@@ -256,36 +260,46 @@ export function CompanyProfileForm({ control, errors, assets, setValue }: Compan
             />
           </FormField>
           <FormDivider />
-          <FormField>
-            <Controller
-              control={control}
-              name="siren"
-              render={({ field: { onChange, onBlur, value } }) => (
-                <TextField
-                  error={errors.siren?.message}
-                  keyboardType="number-pad"
-                  label="SIREN"
-                  onBlur={onBlur}
-                  onChangeText={onChange}
-                  placeholder="123 456 789"
-                  value={value ?? ''}
+          {french ? (
+            <>
+              <FormField>
+                <Controller
+                  control={control}
+                  name="siren"
+                  render={({ field: { onChange, onBlur, value } }) => (
+                    <TextField
+                      error={errors.siren?.message}
+                      keyboardType="number-pad"
+                      label="SIREN"
+                      onBlur={onBlur}
+                      onChangeText={onChange}
+                      placeholder="123 456 789"
+                      value={value ?? ''}
+                    />
+                  )}
                 />
-              )}
-            />
-          </FormField>
-          <FormDivider />
+              </FormField>
+              <FormDivider />
+            </>
+          ) : null}
           <FormField>
             <Controller
               control={control}
               name="siret"
               render={({ field: { onChange, onBlur, value } }) => (
                 <TextField
+                  autoCapitalize={french ? 'none' : 'characters'}
                   error={errors.siret?.message}
-                  keyboardType="number-pad"
-                  label="SIRET"
+                  hint={
+                    french
+                      ? undefined
+                      : `Affiché sur vos factures sous « ${nationalIdLabel(country)} ».`
+                  }
+                  keyboardType={french ? 'number-pad' : 'default'}
+                  label={french ? 'SIRET' : nationalIdLabel(country)}
                   onBlur={onBlur}
                   onChangeText={onChange}
-                  placeholder="123 456 789 00012"
+                  placeholder={french ? '123 456 789 00012' : '501 964 843'}
                   value={value}
                 />
               )}
