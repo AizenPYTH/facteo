@@ -36,6 +36,12 @@
       "env": {
         "APP_VARIANT": "production",
         "EXPO_PUBLIC_APP_ENV": "production"
+      },
+      "ios": {
+        "image": "default"
+      },
+      "android": {
+        "image": "default"
       }
     }
   },
