@@ -1,4 +1,11 @@
 export function formatFrenchPhoneInput(value: string): string {
+  const trimmed = value.trimStart();
+  // Numéro étranger (+32…, 0032…) : gardé tel quel, chiffres et espaces seulement.
+  if (trimmed.startsWith('+') || trimmed.startsWith('00')) {
+    const international = trimmed.replace(/^00/, '+');
+    return `+${international.slice(1).replace(/[^\d ]/g, '').replace(/\s+/g, ' ').slice(0, 20)}`;
+  }
+
   const digits = value.replace(/\D/g, '').slice(0, 10);
   const parts: string[] = [];
 
@@ -24,6 +31,12 @@ export function isValidFrenchPhone(value: string): boolean {
 
   if (normalized.startsWith('+33')) {
     return /^\+33[1-9]\d{8}$/.test(normalized);
+  }
+
+  // Numéro étranger au format international (+32, +44, 0032…).
+  const international = normalized.replace(/^00/, '+').replace(/[.\-()]/g, '');
+  if (international.startsWith('+')) {
+    return /^\+[1-9]\d{6,14}$/.test(international);
   }
 
   return /^0[1-9]\d{8}$/.test(normalized);

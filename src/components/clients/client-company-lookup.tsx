@@ -1,5 +1,5 @@
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   type Control,
   Controller,
@@ -8,7 +8,9 @@ import {
   useWatch,
 } from 'react-hook-form';
 
+import { InternationalCompanyLookup } from '@/components/clients/international-company-lookup';
 import { FormDivider, FormField, FormSection } from '@/components/company/form-section';
+import { FilterChip } from '@/components/ui/filter-chip';
 import { PremiumUpgradeBanner } from '@/components/subscription/premium-upgrade-banner';
 import { TextField } from '@/components/ui/text-field';
 import { useColors, useThemedStyles } from '@/hooks/use-colors';
@@ -40,7 +42,12 @@ export function ClientCompanyLookup({ control, errors, setValue }: ClientCompany
   const sirenSearchEnabled = hasFeature('siren_search');
   const siren = useWatch({ control, name: 'siren' }) ?? '';
   const siret = useWatch({ control, name: 'siret' }) ?? '';
+  const country = useWatch({ control, name: 'country' }) ?? '';
   const lastAppliedRef = useRef<string | null>(null);
+  // Un client déjà enregistré hors de France s'ouvre sur la recherche internationale.
+  const [scope, setScope] = useState<'france' | 'abroad'>(() =>
+    country.trim() && country.trim().toLowerCase() !== 'france' ? 'abroad' : 'france',
+  );
 
   const {
     data,
@@ -51,7 +58,7 @@ export function ClientCompanyLookup({ control, errors, setValue }: ClientCompany
     error,
     isSuccess,
     debouncedRegistrationNumber,
-  } = useCompanyRegistrationLookup(siren, siret, sirenSearchEnabled);
+  } = useCompanyRegistrationLookup(siren, siret, sirenSearchEnabled && scope === 'france');
 
   const isLoading = sirenSearchEnabled && (isFetching || isTyping);
   const isConfigured = isCompanySearchConfigured();
@@ -128,6 +135,23 @@ export function ClientCompanyLookup({ control, errors, setValue }: ClientCompany
         />
       ) : null}
 
+      <View accessibilityRole="tablist" style={styles.scopeRow}>
+        <FilterChip
+          label="France · SIREN / SIRET"
+          onPress={() => setScope('france')}
+          selected={scope === 'france'}
+        />
+        <FilterChip
+          label="Étranger"
+          onPress={() => setScope('abroad')}
+          selected={scope === 'abroad'}
+        />
+      </View>
+
+      {scope === 'abroad' ? (
+        <InternationalCompanyLookup enabled={sirenSearchEnabled} setValue={setValue} />
+      ) : (
+      <>
       <FormField>
         <Controller
           control={control}
@@ -193,12 +217,21 @@ export function ClientCompanyLookup({ control, errors, setValue }: ClientCompany
           ? 'Saisissez un SIREN (9 chiffres) ou un SIRET (14 chiffres) pour remplir automatiquement les informations de l\'entreprise.'
           : 'La saisie manuelle reste possible. La recherche automatique est incluse dans INVEQ Premium.'}
       </Text>
+      </>
+      )}
     </FormSection>
   );
 }
 
 function useStyles() {
   return useThemedStyles((colors) => ({
+    scopeRow: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: spacing.sm,
+      paddingHorizontal: spacing.md,
+      paddingTop: spacing.md,
+    },
     fieldRow: {
       flexDirection: 'row',
       alignItems: 'flex-start',
