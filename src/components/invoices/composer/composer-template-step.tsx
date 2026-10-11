@@ -39,7 +39,9 @@ import {
   DEFAULT_INVOICE_TITLE,
   formatIssuerLegalIds,
   INVOICE_TITLE_SUGGESTIONS,
-  ISSUER_LEGAL_ID_LABELS,
+  clientNationalId,
+  isFrenchCountry,
+  issuerLegalIdLabel,
   ISSUER_LEGAL_IDS,
   STAMP_COLOR_LABELS,
   STAMP_COLOR_VALUES,
@@ -74,11 +76,23 @@ type ComposerTemplateStepProps = {
     siret?: string | null;
     vatNumber?: string | null;
     siren?: string | null;
+    country?: string | null;
     iban?: string | null;
     bic?: string | null;
   } | null;
   /** La facture sans les SIREN / SIRET / TVA, pour les placer à la main. */
   buildPlacementBackgroundHtml: () => Promise<string>;
+  /** Client choisi : hors de France, son numéro national (NIPC…) se règle ici. */
+  client?: {
+    country?: string | null;
+    siret?: string | null;
+    siren?: string | null;
+    vatNumber?: string | null;
+  } | null;
+  /** La facture sans le numéro du client, pour le placer à la main. */
+  buildClientPlacementBackgroundHtml?: () => Promise<string>;
+  /** Facture déjà payée : le tampon se règle. Avec un délai de paiement, il n'existe pas. */
+  paid?: boolean;
   /** Garder l'IBAN saisi sur la facture pour les factures suivantes. */
   saveBankAsDefault: boolean;
   onSaveBankAsDefaultChange: (value: boolean) => void;
@@ -109,6 +123,9 @@ export function ComposerTemplateStep({
   saveBankAsDefault,
   onSaveBankAsDefaultChange,
   buildPlacementBackgroundHtml,
+  client = null,
+  buildClientPlacementBackgroundHtml,
+  paid = false,
   notes,
   onNotesChange,
   clientName,
@@ -228,7 +245,10 @@ export function ComposerTemplateStep({
         <>
           <SectionHeader title="Présentation" />
           <PresentationOptions
+            buildClientPlacementBackgroundHtml={buildClientPlacementBackgroundHtml}
             buildPlacementBackgroundHtml={buildPlacementBackgroundHtml}
+            client={client}
+            paid={paid}
             company={company}
             customNumber={customNumber}
             forecastNumber={forecastNumber}
@@ -394,10 +414,27 @@ function PresentationOptions({
   onCustomNumberChange,
   forecastNumber,
   buildPlacementBackgroundHtml,
+  buildClientPlacementBackgroundHtml,
+  client,
+  paid,
 }: {
+  buildClientPlacementBackgroundHtml?: () => Promise<string>;
+  client: {
+    country?: string | null;
+    siret?: string | null;
+    siren?: string | null;
+    vatNumber?: string | null;
+  } | null;
+  /** Facture déjà payée : seul cas où le tampon « Facture payée » se règle. */
+  paid: boolean;
   value: InvoicePdfOptions;
   onChange: (value: InvoicePdfOptions) => void;
-  company: { siret?: string | null; vatNumber?: string | null; siren?: string | null } | null;
+  company: {
+    siret?: string | null;
+    vatNumber?: string | null;
+    siren?: string | null;
+    country?: string | null;
+  } | null;
   buildPlacementBackgroundHtml: () => Promise<string>;
   customNumber: string;
   onCustomNumberChange: (value: string) => void;
@@ -411,17 +448,33 @@ function PresentationOptions({
   );
   const numberField = useFieldNavigation({ enabled: open && numberMode === 'custom' });
   const titleField = useFieldNavigation({ enabled: open });
-  const legalValues = formatIssuerLegalIds(company?.siret, company?.vatNumber);
+  const legalValues = formatIssuerLegalIds(
+    company?.siret,
+    company?.vatNumber,
+    company?.siren,
+    company?.country,
+  );
+  // Hors de France, pas de SIREN : seul le numéro national (NIPC…) est proposé.
+  const legalIdChoices = ISSUER_LEGAL_IDS.filter(
+    (id) => id !== 'siren' || isFrenchCountry(company?.country),
+  );
+  // Client hors de France : son numéro (NIPC…), à afficher ou non, et où.
+  const clientId = clientNationalId(client);
   const activeTitle = value.title?.trim() || DEFAULT_INVOICE_TITLE;
   const shownIds = value.legalIds.length + (value.showEmail ? 1 : 0);
 
   const summary = [
     customNumber.trim() ? `N° ${customNumber.trim()}` : 'Numéro auto',
     `${shownIds} identifiant${shownIds > 1 ? 's' : ''}`,
-    value.stampPosition === 'none'
-      ? 'Sans tampon'
-      : `Tampon ${STAMP_POSITION_LABELS[value.stampPosition].toLowerCase()}`,
-  ].join(' · ');
+    // Le tampon « Facture payée » ne concerne qu'une facture déjà payée.
+    paid
+      ? value.stampPosition === 'none'
+        ? 'Sans tampon'
+        : `Tampon ${STAMP_POSITION_LABELS[value.stampPosition].toLowerCase()}`
+      : null,
+  ]
+    .filter(Boolean)
+    .join(' · ');
 
   function toggleLegalId(id: IssuerLegalId) {
     const legalIds = value.legalIds.includes(id)
@@ -541,14 +594,14 @@ function PresentationOptions({
           </View>
 
           <Text maxFontSizeMultiplier={1.4} style={[styles.optionCaption, styles.idsCaption]}>
-            Identifiants affichés
+            Vos identifiants (votre entreprise)
           </Text>
-          {ISSUER_LEGAL_IDS.map((id) => {
+          {legalIdChoices.map((id) => {
             const shown = legalValues[id];
             return (
               <SwitchRow
                 key={id}
-                label={ISSUER_LEGAL_ID_LABELS[id]}
+                label={issuerLegalIdLabel(id, company?.country)}
                 missing={!shown}
                 onValueChange={() => toggleLegalId(id)}
                 subtitle={shown ?? 'Non renseigné (page Entreprise)'}
@@ -570,6 +623,32 @@ function PresentationOptions({
             value={value.legalIdsPlacement}
           />
 
+          {clientId ? (
+            <>
+              <Text maxFontSizeMultiplier={1.4} style={[styles.optionCaption, styles.idsCaption]}>
+                Numéro du client
+              </Text>
+              <SwitchRow
+                label={`${clientId.label} du client`}
+                onValueChange={(showClientId) => onChange({ ...value, showClientId })}
+                subtitle={clientId.value}
+                value={value.showClientId}
+              />
+              {value.showClientId && buildClientPlacementBackgroundHtml ? (
+                <LegalIdsPlacementControl
+                  buildBackgroundHtml={buildClientPlacementBackgroundHtml}
+                  caption={`Emplacement du ${clientId.label}`}
+                  entries={[clientId]}
+                  onChange={(clientIdPlacement) => onChange({ ...value, clientIdPlacement })}
+                  separated={false}
+                  sheetTitle={`Placer le ${clientId.label} du client`}
+                  value={value.clientIdPlacement}
+                />
+              ) : null}
+            </>
+          ) : null}
+
+          {paid ? (
           <View style={styles.stampBlock}>
             <Text maxFontSizeMultiplier={1.4} style={styles.optionCaption}>
               Tampon « Facture payée »
@@ -623,6 +702,7 @@ function PresentationOptions({
               Le tampon apparaît dès que la facture est payée.
             </Text>
           </View>
+          ) : null}
         </>
       ) : null}
     </GroupCard>

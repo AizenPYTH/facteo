@@ -1,4 +1,5 @@
 import { StyleSheet, Text, View, type ViewStyle } from 'react-native';
+import { isFrenchCountry, nationalIdLabel, nationalIdValue } from '@/types/pdf-options';
 
 import { useColors, useThemedStyles } from '@/hooks/use-colors';
 import { radius } from '@/constants/theme/radius';
@@ -62,8 +63,17 @@ export function ClientDetailView({ client, style }: ClientDetailViewProps) {
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Facturation</Text>
         <View style={styles.card}>
-          <ClientField label="SIREN" value={client.siren} />
-          <ClientField label="SIRET" value={client.siret} />
+          {isFrenchCountry(client.country) ? (
+            <>
+              <ClientField label="SIREN" value={client.siren} />
+              <ClientField label="SIRET" value={client.siret} />
+            </>
+          ) : (
+            <ClientField
+              label={nationalIdLabel(client.country)}
+              value={nationalIdValue(client.country, client.siret || client.siren, client.vatNumber)}
+            />
+          )}
           <ClientField label="Numéro de TVA" value={client.vatNumber} />
         </View>
       </View>

@@ -45,7 +45,11 @@ export type PdfClientInfo = Pick<
   | 'city'
   | 'country'
   | 'vatNumber'
->;
+> & {
+  /** Hors de France : numéro national du client (NIPC au Portugal…). */
+  siret?: string | null;
+  siren?: string | null;
+};
 
 export type PdfDocumentLine = {
   /** Nom court de la prestation. Peut être vide (anciennes lignes : description seule). */
@@ -98,6 +102,10 @@ export type PdfDocumentInput = {
   issuerLegalIds?: IssuerLegalId[] | null;
   /** Emplacement de ces identifiants. Absent ou 'auto' : celui du modèle. */
   legalIdsPlacement?: LegalIdsPlacement | null;
+  /** Client hors de France : imprimer son numéro national (NIPC…). Absent : oui. */
+  showClientId?: boolean | null;
+  /** Emplacement de ce numéro. Absent ou 'auto' : sous l'adresse du client. */
+  clientIdPlacement?: LegalIdsPlacement | null;
   /** Cachet « Facture payée ». Absent : couleur et emplacement du modèle. */
   stampColor?: StampColor | null;
   stampPosition?: StampPosition | null;

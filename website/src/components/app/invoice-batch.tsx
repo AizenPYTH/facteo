@@ -240,6 +240,8 @@ export function InvoiceBatch() {
             templateId: draft.templateId || null,
             showEmail: false,
             legalIdsPlacement: 'auto',
+            showClientId: true,
+            clientIdPlacement: 'auto',
             // Coordonnées bancaires de l'entreprise et dernière mention choisie.
             bank: null,
             paymentMention: readRememberedPaymentMention(),

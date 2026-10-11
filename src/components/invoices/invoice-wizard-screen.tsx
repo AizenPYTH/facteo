@@ -38,6 +38,7 @@ import { FormNavigationProvider } from '@/components/ui/form/form-navigation';
 import { WizardActionBar } from '@/components/ui/wizard-action-bar';
 import { WizardScreen } from '@/components/ui/wizard-screen';
 import { useAuth } from '@/hooks/use-auth';
+import { useClient } from '@/hooks/use-clients';
 import { useCompanyProfile } from '@/hooks/use-company-profile';
 import { useTenant } from '@/hooks/use-tenant';
 import { takePendingDictation } from '@/lib/ai/pending-dictation';
@@ -148,6 +149,8 @@ export function InvoiceWizardScreen({
   const [state, setState] = useState<InvoiceWizardState>(
     initialState ?? createEmptyInvoiceWizardState(),
   );
+  // Client choisi (pays, numéro national) : réglage de son NIPC… sur la facture.
+  const { data: selectedClient } = useClient(state.clientId ?? '');
 
   // Présentation (création uniquement) : numéro libre, titre, modèle, SIREN…
   const [customNumber, setCustomNumber] = useState('');
@@ -780,6 +783,12 @@ export function InvoiceWizardScreen({
     [buildDraftHtml],
   );
 
+  // Fond de l'éditeur pour le numéro du client : la facture sans ce numéro.
+  const buildClientPlacementBackgroundHtml = useCallback(
+    () => buildDraftHtml({ showClientId: false }),
+    [buildDraftHtml],
+  );
+
   const buildGalleryHtml = useCallback(
     (galleryTemplateId: string) =>
       buildTemplatePreviewHtml(requireScope(scope), galleryTemplateId, 'invoice', user?.email ?? null),
@@ -825,7 +834,9 @@ export function InvoiceWizardScreen({
       case 3:
         return (
           <ComposerTemplateStep
+            buildClientPlacementBackgroundHtml={buildClientPlacementBackgroundHtml}
             buildPlacementBackgroundHtml={buildPlacementBackgroundHtml}
+            client={selectedClient ?? null}
             clientName={state.clientName}
             company={companyProfile ?? null}
             customNumber={customNumber}

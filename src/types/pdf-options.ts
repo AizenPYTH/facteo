@@ -88,6 +88,149 @@ export function parseLegalIdsPlacement(value: unknown): LegalIdsPlacement {
   return 'auto';
 }
 
+function normalizeCountry(country: string | null | undefined): string {
+  return (country ?? '')
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/[’']/g, ' ')
+    .toLowerCase()
+    .trim();
+}
+
+/** France métropolitaine et outre-mer (pays vide : France, comme avant). */
+const FRENCH_COUNTRIES = [
+  '',
+  'france',
+  'fr',
+  'republique francaise',
+  'guadeloupe',
+  'martinique',
+  'guyane',
+  'guyane francaise',
+  'la reunion',
+  'reunion',
+  'mayotte',
+];
+
+export function isFrenchCountry(country: string | null | undefined): boolean {
+  return FRENCH_COUNTRIES.includes(normalizeCountry(country));
+}
+
+/**
+ * Numéro qui identifie une entreprise dans son pays, et comment le retrouver
+ * dans son n° de TVA quand il en fait partie (Portugal : PT + NIPC…).
+ */
+type NationalIdRule = {
+  names: string[];
+  label: string;
+  fromVat?: (vat: string) => string | null;
+};
+
+function vatDigits(prefix: string, pattern: RegExp, format?: (digits: string) => string) {
+  return (vat: string) => {
+    if (!vat.startsWith(prefix)) return null;
+    const rest = vat.slice(prefix.length);
+    if (!pattern.test(rest)) return null;
+    return format ? format(rest) : rest;
+  };
+}
+
+const NATIONAL_ID_RULES: NationalIdRule[] = [
+  { names: ['portugal', 'pt'], label: 'NIPC', fromVat: vatDigits('PT', /^\d{9}$/) },
+  {
+    names: ['belgique', 'belgium', 'belgie', 'be'],
+    label: 'N° d’entreprise',
+    fromVat: vatDigits('BE', /^[01]\d{9}$/, (d) => `${d.slice(0, 4)}.${d.slice(4, 7)}.${d.slice(7)}`),
+  },
+  { names: ['espagne', 'spain', 'espana', 'es'], label: 'NIF', fromVat: vatDigits('ES', /^[A-Z0-9]\d{7}[A-Z0-9]$/) },
+  { names: ['italie', 'italy', 'italia', 'it'], label: 'Partita IVA', fromVat: vatDigits('IT', /^\d{11}$/) },
+  { names: ['pologne', 'poland', 'polska', 'pl'], label: 'NIP', fromVat: vatDigits('PL', /^\d{10}$/) },
+  { names: ['tchequie', 'republique tcheque', 'czechia', 'czech republic', 'cz'], label: 'IČO', fromVat: vatDigits('CZ', /^\d{8}$/) },
+  { names: ['hongrie', 'hungary', 'magyarorszag', 'hu'], label: 'Adószám', fromVat: vatDigits('HU', /^\d{8}$/) },
+  { names: ['roumanie', 'romania', 'ro'], label: 'CUI', fromVat: vatDigits('RO', /^\d{2,10}$/) },
+  { names: ['bulgarie', 'bulgaria', 'bg'], label: 'EIK', fromVat: vatDigits('BG', /^\d{9,10}$/) },
+  { names: ['croatie', 'croatia', 'hrvatska', 'hr'], label: 'OIB', fromVat: vatDigits('HR', /^\d{11}$/) },
+  { names: ['slovenie', 'slovenia', 'slovenija', 'si'], label: 'Davčna št.', fromVat: vatDigits('SI', /^\d{8}$/) },
+  { names: ['danemark', 'denmark', 'danmark', 'dk'], label: 'CVR', fromVat: vatDigits('DK', /^\d{8}$/) },
+  {
+    names: ['finlande', 'finland', 'suomi', 'fi'],
+    label: 'Y-tunnus',
+    fromVat: vatDigits('FI', /^\d{8}$/, (d) => `${d.slice(0, 7)}-${d.slice(7)}`),
+  },
+  {
+    names: ['suede', 'sweden', 'sverige', 'se'],
+    label: 'Org.nr',
+    fromVat: vatDigits('SE', /^\d{10}01$/, (d) => `${d.slice(0, 6)}-${d.slice(6, 10)}`),
+  },
+  { names: ['lettonie', 'latvia', 'latvija', 'lv'], label: 'Reģ. Nr.', fromVat: vatDigits('LV', /^\d{11}$/) },
+  { names: ['grece', 'greece', 'ellada', 'gr', 'el'], label: 'AFM', fromVat: vatDigits('EL', /^\d{9}$/) },
+  { names: ['chypre', 'cyprus', 'cy'], label: 'TIC', fromVat: vatDigits('CY', /^\d{8}[A-Z]$/) },
+  { names: ['luxembourg', 'lu'], label: 'RCS' },
+  { names: ['allemagne', 'germany', 'deutschland', 'de'], label: 'Handelsregister' },
+  { names: ['autriche', 'austria', 'osterreich', 'at'], label: 'Firmenbuch' },
+  { names: ['pays-bas', 'pays bas', 'netherlands', 'nederland', 'nl'], label: 'KvK' },
+  { names: ['irlande', 'ireland', 'ie'], label: 'CRO' },
+  { names: ['estonie', 'estonia', 'eesti', 'ee'], label: 'Registrikood' },
+  { names: ['lituanie', 'lithuania', 'lietuva', 'lt'], label: 'Įmonės kodas' },
+  { names: ['slovaquie', 'slovakia', 'slovensko', 'sk'], label: 'IČO' },
+  { names: ['malte', 'malta', 'mt'], label: 'Company No.' },
+  { names: ['suisse', 'switzerland', 'schweiz', 'svizzera', 'ch'], label: 'IDE' },
+  { names: ['royaume-uni', 'royaume uni', 'united kingdom', 'uk', 'gb', 'angleterre', 'irlande du nord'], label: 'Company No.' },
+  { names: ['maroc', 'morocco', 'ma'], label: 'ICE' },
+  { names: ['algerie', 'algeria', 'dz'], label: 'NIF' },
+  { names: ['tunisie', 'tunisia', 'tn'], label: 'Matricule fiscal' },
+  { names: ['senegal', 'sn'], label: 'NINEA' },
+  { names: ['cote d ivoire', 'ci'], label: 'RCCM' },
+];
+
+function nationalIdRule(country: string | null | undefined): NationalIdRule | undefined {
+  const key = normalizeCountry(country);
+  return NATIONAL_ID_RULES.find((rule) => rule.names.includes(key));
+}
+
+/** « Portugal » → « NIPC ». Pays inconnu : « N° d'immatriculation ». */
+export function nationalIdLabel(country: string | null | undefined): string {
+  return nationalIdRule(country)?.label ?? 'N° d’immatriculation';
+}
+
+/**
+ * Libellé d'un identifiant de l'émetteur : SIREN / SIRET en France, numéro
+ * national ailleurs (NIPC au Portugal…), « N° TVA » partout.
+ */
+export function issuerLegalIdLabel(id: IssuerLegalId, country?: string | null): string {
+  if (id === 'siret' && !isFrenchCountry(country)) return nationalIdLabel(country);
+  return ISSUER_LEGAL_ID_LABELS[id];
+}
+
+/**
+ * Numéro national d'une entreprise hors de France : celui saisi, sinon tiré
+ * du n° de TVA quand il le contient (Portugal : PT + NIPC).
+ */
+export function nationalIdValue(
+  country: string | null | undefined,
+  registration: string | null | undefined,
+  vatNumber: string | null | undefined,
+): string | null {
+  const typed = registration?.trim();
+  if (typed) return typed;
+  const vat = vatNumber?.replace(/[\s.\-]/g, '').toUpperCase().replace(/^GR/, 'EL') ?? '';
+  return (vat && nationalIdRule(country)?.fromVat?.(vat)) || null;
+}
+
+/** Numéro national d'un client hors de France, prêt à imprimer. `null` : client français ou inconnu. */
+export function clientNationalId(
+  client: {
+    country?: string | null;
+    siret?: string | null;
+    siren?: string | null;
+    vatNumber?: string | null;
+  } | null | undefined,
+): { label: string; value: string } | null {
+  if (!client || isFrenchCountry(client.country)) return null;
+  const value = nationalIdValue(client.country, client.siret || client.siren, client.vatNumber);
+  return value ? { label: nationalIdLabel(client.country), value } : null;
+}
+
 function groupDigits(digits: string, sizes: number[]): string {
   const parts: string[] = [];
   let cursor = 0;
@@ -107,10 +250,20 @@ export function formatIssuerLegalIds(
   siretInput: string | null | undefined,
   vatInput: string | null | undefined,
   sirenInput?: string | null,
+  country?: string | null,
 ): Record<IssuerLegalId, string | null> {
   const siretRaw = siretInput?.trim() ?? '';
   const siret = siretRaw.replace(/\D/g, '');
   const vat = vatInput?.replace(/\s/g, '').toUpperCase() ?? '';
+
+  // Hors de France : pas de SIREN ; le numéro national prend la place du SIRET.
+  if (!isFrenchCountry(country)) {
+    return {
+      siren: null,
+      siret: nationalIdValue(country, siretRaw || sirenInput, vat),
+      vat: vat || null,
+    };
+  }
   // SIREN saisi dans la page Entreprise en priorité, sinon tiré du SIRET.
   const siren = sirenInput?.replace(/\D/g, '') || siret.slice(0, 9);
 
@@ -279,6 +432,10 @@ export type InvoicePdfOptions = {
   showEmail: boolean;
   /** Emplacement des SIREN / SIRET / TVA. 'auto' : celui du modèle, comme avant. */
   legalIdsPlacement: LegalIdsPlacement;
+  /** Client hors de France : imprimer son numéro national (NIPC…). Affiché par défaut. */
+  showClientId: boolean;
+  /** Emplacement de ce numéro. 'auto' : sous l'adresse du client. */
+  clientIdPlacement: LegalIdsPlacement;
   /** Coordonnées bancaires de la facture. `null` : celles de l'entreprise, comme avant. */
   bank: InvoiceBankDetails | null;
   /** Mention de paiement imprimée en bas de la facture. `null` : aucune. */
@@ -294,6 +451,8 @@ export function createDefaultInvoicePdfOptions(): InvoicePdfOptions {
     templateId: null,
     showEmail: false,
     legalIdsPlacement: 'auto',
+    showClientId: true,
+    clientIdPlacement: 'auto',
     bank: null,
     paymentMention: null,
   };
@@ -333,6 +492,8 @@ export function parseInvoicePdfOptions(value: unknown): InvoicePdfOptions {
   const bank = parseInvoiceBankDetails(source.bank);
   const paymentMention = normalizePaymentMention(source.payment_mention);
   const legalIdsPlacement = parseLegalIdsPlacement(source.legal_ids_placement);
+  const showClientId = source.show_client_id !== false;
+  const clientIdPlacement = parseLegalIdsPlacement(source.client_id_placement);
 
   return {
     title,
@@ -344,6 +505,8 @@ export function parseInvoicePdfOptions(value: unknown): InvoicePdfOptions {
     bank,
     paymentMention,
     legalIdsPlacement,
+    showClientId,
+    clientIdPlacement,
   };
 }
 
@@ -356,6 +519,8 @@ export function serializeInvoicePdfOptions(options: InvoicePdfOptions) {
     template_id: options.templateId,
     show_email: options.showEmail,
     legal_ids_placement: parseLegalIdsPlacement(options.legalIdsPlacement),
+    show_client_id: options.showClientId,
+    client_id_placement: parseLegalIdsPlacement(options.clientIdPlacement),
     bank: options.bank
       ? {
           show: options.bank.show,

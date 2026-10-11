@@ -15,7 +15,8 @@ import {
   DEFAULT_INVOICE_TITLE,
   formatIssuerLegalIds,
   INVOICE_TITLE_SUGGESTIONS,
-  ISSUER_LEGAL_ID_LABELS,
+  isFrenchCountry,
+  issuerLegalIdLabel,
   ISSUER_LEGAL_IDS,
   STAMP_COLOR_LABELS,
   STAMP_COLORS,
@@ -29,13 +30,20 @@ type InvoicePresentationSectionProps = {
   value: InvoicePdfOptions;
   onChange: (value: InvoicePdfOptions) => void;
   /** SIRET et TVA de l'entreprise, montrés à côté des cases. */
-  company: { siret?: string | null; vatNumber?: string | null } | null;
+  company: {
+    siret?: string | null;
+    vatNumber?: string | null;
+    siren?: string | null;
+    country?: string | null;
+  } | null;
   /** Création uniquement : numéro libre (vide = automatique). */
   number?: string;
   onNumberChange?: (value: string) => void;
   forecastNumber?: string | null;
   /** Le modèle se change ailleurs (galerie) sur une facture existante. */
   showTemplate?: boolean;
+  /** Facture payée : seul cas où le tampon « Facture payée » se règle. */
+  paid?: boolean;
 };
 
 /** Modèles rangés par catégorie, groupes vides omis. */
@@ -59,10 +67,19 @@ export function InvoicePresentationSection({
   onNumberChange,
   forecastNumber,
   showTemplate = true,
+  paid = false,
 }: InvoicePresentationSectionProps) {
   const styles = useStyles();
   const colors = useColors();
-  const legalValues = formatIssuerLegalIds(company?.siret, company?.vatNumber);
+  const legalValues = formatIssuerLegalIds(
+    company?.siret,
+    company?.vatNumber,
+    company?.siren,
+    company?.country,
+  );
+  const legalIdChoices = ISSUER_LEGAL_IDS.filter(
+    (id) => id !== 'siren' || isFrenchCountry(company?.country),
+  );
   const activeTitle = value.title?.trim() || DEFAULT_INVOICE_TITLE;
 
   function toggleLegalId(id: IssuerLegalId) {
@@ -130,21 +147,21 @@ export function InvoicePresentationSection({
       ) : null}
 
       <View style={styles.group}>
-        <Text style={styles.label}>En tête de la facture</Text>
-        {ISSUER_LEGAL_IDS.map((id) => {
+        <Text style={styles.label}>Vos identifiants (votre entreprise)</Text>
+        {legalIdChoices.map((id) => {
           const shown = legalValues[id];
           const checked = value.legalIds.includes(id);
 
           return (
             <View key={id} style={styles.switchRow}>
               <View style={styles.switchText}>
-                <Text style={styles.switchTitle}>{ISSUER_LEGAL_ID_LABELS[id]}</Text>
+                <Text style={styles.switchTitle}>{issuerLegalIdLabel(id, company?.country)}</Text>
                 <Text style={[styles.switchValue, !shown && styles.missing]}>
                   {shown ?? 'Non renseigné (page Entreprise)'}
                 </Text>
               </View>
               <Switch
-                accessibilityLabel={`Afficher ${ISSUER_LEGAL_ID_LABELS[id]}`}
+                accessibilityLabel={`Afficher ${issuerLegalIdLabel(id, company?.country)}`}
                 onValueChange={() => toggleLegalId(id)}
                 trackColor={{ true: colors.primary }}
                 value={checked}
@@ -163,6 +180,7 @@ export function InvoicePresentationSection({
         />
       </View>
 
+      {paid ? (
       <View style={styles.group}>
         <Text style={styles.label}>Tampon « Facture payée » : couleur</Text>
         <ChipRow>
@@ -188,6 +206,7 @@ export function InvoicePresentationSection({
         </ChipRow>
         <Text style={styles.hint}>Le tampon apparaît dès que la facture est payée.</Text>
       </View>
+      ) : null}
     </View>
   );
 }
