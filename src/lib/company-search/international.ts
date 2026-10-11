@@ -107,13 +107,39 @@ export type InternationalCompanyResult = {
   source: 'vies' | 'gleif';
 };
 
-/** « be 0403.170.701 » → { country: 'BE', number: '0403170701' }. `null` : pas un n° de TVA UE. */
+/**
+ * NIPC portugais (numéro d'identification fiscale d'une entreprise) : 9
+ * chiffres, le dernier de contrôle (modulo 11). C'est aussi son n° de TVA,
+ * précédé de « PT ».
+ */
+export function isValidNipc(value: string): boolean {
+  const digits = value.replace(/\D/g, '');
+  if (!/^[1-9]\d{8}$/.test(digits)) return false;
+  const sum = digits
+    .slice(0, 8)
+    .split('')
+    .reduce((total, digit, index) => total + Number(digit) * (9 - index), 0);
+  const rest = sum % 11;
+  const check = rest < 2 ? 0 : 11 - rest;
+  return check === Number(digits[8]);
+}
+
+/**
+ * « be 0403.170.701 » → { country: 'BE', number: '0403170701' }. Un NIPC
+ * portugais seul (« 500 100 144 », « NIPC 500100144 ») vaut « PT500100144 ».
+ * `null` : pas un n° de TVA UE.
+ */
 export function parseEuVatNumber(input: string): { country: string; number: string } | null {
-  const compact = input.replace(/[\s.\-_/]/g, '').toUpperCase();
+  const compact = input.replace(/[\s.\-_/]/g, '').toUpperCase().replace(/^(NIPC|NIF)/, '');
+  if (/^\d{9}$/.test(compact) && isValidNipc(compact)) {
+    return { country: 'PT', number: compact };
+  }
   const match = compact.match(/^([A-Z]{2})([A-Z0-9]{2,13})$/);
   if (!match || !/\d/.test(match[2])) return null;
   const country = match[1] === 'GR' ? 'EL' : match[1];
   if (!EU_VAT_COUNTRIES[country]) return null;
+  // Portugal : le n° de TVA est le NIPC, dont le dernier chiffre se vérifie.
+  if (country === 'PT' && !isValidNipc(match[2])) return null;
   return { country, number: match[2] };
 }
 
@@ -185,7 +211,8 @@ export async function lookupEuVatNumber(
     // MS_UNAVAILABLE, TIMEOUT, MS_MAX_CONCURRENT_REQ… : le registre du pays ne répond pas.
     throw new CompanySearchError(userError === 'INVALID_INPUT' ? 'INVALID_REGISTRATION_NUMBER' : 'API_UNAVAILABLE');
   }
-  if (body.isValid !== true) throw new CompanySearchError('COMPANY_NOT_FOUND');
+  // GET /ms/… renvoie `isValid`, POST /check-vat-number renvoie `valid`.
+  if (body.isValid !== true && body.valid !== true) throw new CompanySearchError('COMPANY_NOT_FOUND');
 
   const address = splitViesAddress(typeof body.address === 'string' ? body.address : '');
   // L'Irlande du Nord (XI) dépend du Royaume-Uni pour l'adresse postale.
@@ -227,6 +254,15 @@ function mapGleifRecord(record: unknown): InternationalCompanyResult | null {
     vatNumber: null,
     source: 'gleif',
   };
+}
+
+/**
+ * Saisie qui ressemble à un numéro (TVA, NIPC) sans en être un valide :
+ * on le signale au lieu de lancer une recherche par nom vouée à l'échec.
+ */
+export function looksLikeTaxNumber(input: string): boolean {
+  const compact = input.replace(/[\s.\-_/]/g, '').toUpperCase().replace(/^(NIPC|NIF)/, '');
+  return /^([A-Z]{2})?\d[A-Z0-9]{6,13}$/.test(compact) && /\d{6}/.test(compact);
 }
 
 /** Entreprises du monde entier par leur nom (GLEIF), les actives d'abord. */

@@ -12,6 +12,11 @@ import {
   formatShortFrenchDate,
   groupVatByRate,
 } from '@/components/invoices/composer/composer-model';
+import { ComposerPaymentSection } from '@/components/invoices/composer/composer-payment-section';
+import {
+  LegalIdsPlacementControl,
+  legalIdEntries,
+} from '@/components/invoices/legal-ids-placement';
 import { useFieldNavigation } from '@/components/ui/form/form-navigation';
 import {
   composerRadius,
@@ -65,7 +70,18 @@ type ComposerTemplateStepProps = {
   customNumber: string;
   onCustomNumberChange: (value: string) => void;
   forecastNumber: string | null;
-  company: { siret?: string | null; vatNumber?: string | null } | null;
+  company: {
+    siret?: string | null;
+    vatNumber?: string | null;
+    siren?: string | null;
+    iban?: string | null;
+    bic?: string | null;
+  } | null;
+  /** La facture sans les SIREN / SIRET / TVA, pour les placer à la main. */
+  buildPlacementBackgroundHtml: () => Promise<string>;
+  /** Garder l'IBAN saisi sur la facture pour les factures suivantes. */
+  saveBankAsDefault: boolean;
+  onSaveBankAsDefaultChange: (value: boolean) => void;
   notes: string;
   onNotesChange: (value: string) => void;
   clientName: string;
@@ -90,6 +106,9 @@ export function ComposerTemplateStep({
   onCustomNumberChange,
   forecastNumber,
   company,
+  saveBankAsDefault,
+  onSaveBankAsDefaultChange,
+  buildPlacementBackgroundHtml,
   notes,
   onNotesChange,
   clientName,
@@ -128,6 +147,13 @@ export function ComposerTemplateStep({
         ? `À réception · ${dueDate}`
         : 'À réception'
       : (dueDate ?? (dueAt || '—'));
+  // Délai comparé à celui écrit dans la mention : vide = à réception (0 jour).
+  const paymentDays =
+    paymentTermsDays.trim() === ''
+      ? 0
+      : /^\d+$/.test(paymentTermsDays.trim())
+        ? Number(paymentTermsDays.trim())
+        : null;
 
   return (
     <>
@@ -188,9 +214,21 @@ export function ComposerTemplateStep({
       />
 
       {isCreate ? (
+        <ComposerPaymentSection
+          company={company}
+          onChange={onPdfOptionsChange}
+          onSaveAsDefaultChange={onSaveBankAsDefaultChange}
+          paymentDays={paymentDays}
+          saveAsDefault={saveBankAsDefault}
+          value={pdfOptions}
+        />
+      ) : null}
+
+      {isCreate ? (
         <>
           <SectionHeader title="Présentation" />
           <PresentationOptions
+            buildPlacementBackgroundHtml={buildPlacementBackgroundHtml}
             company={company}
             customNumber={customNumber}
             forecastNumber={forecastNumber}
@@ -355,10 +393,12 @@ function PresentationOptions({
   customNumber,
   onCustomNumberChange,
   forecastNumber,
+  buildPlacementBackgroundHtml,
 }: {
   value: InvoicePdfOptions;
   onChange: (value: InvoicePdfOptions) => void;
-  company: { siret?: string | null; vatNumber?: string | null } | null;
+  company: { siret?: string | null; vatNumber?: string | null; siren?: string | null } | null;
+  buildPlacementBackgroundHtml: () => Promise<string>;
   customNumber: string;
   onCustomNumberChange: (value: string) => void;
   forecastNumber: string | null;
@@ -521,6 +561,13 @@ function PresentationOptions({
             onValueChange={(showEmail) => onChange({ ...value, showEmail })}
             subtitle="Afficher mon e-mail sur la facture"
             value={value.showEmail}
+          />
+
+          <LegalIdsPlacementControl
+            buildBackgroundHtml={buildPlacementBackgroundHtml}
+            entries={legalIdEntries(value.legalIds, company)}
+            onChange={(legalIdsPlacement) => onChange({ ...value, legalIdsPlacement })}
+            value={value.legalIdsPlacement}
           />
 
           <View style={styles.stampBlock}>

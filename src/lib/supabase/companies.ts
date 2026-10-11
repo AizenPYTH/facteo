@@ -208,6 +208,26 @@ export async function updateCompanyProfile(
   return mapCompanyRow(data as CompanyRow, 'owner');
 }
 
+/** IBAN et BIC repris par défaut sur les factures suivantes. */
+export async function updateCompanyBankDetails(
+  companyId: string,
+  bank: { iban: string; bic: string },
+): Promise<void> {
+  const { error } = await supabase
+    .from('companies')
+    .update({
+      iban: toNullableString(bank.iban.replace(/[\s-]/g, '').toUpperCase()),
+      bic: toNullableString(bank.bic.replace(/[\s-]/g, '').toUpperCase()),
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', companyId);
+
+  if (error) {
+    logSupabaseError('updateCompanyBankDetails', error);
+    throw error;
+  }
+}
+
 /**
  * `companies.siren` vient d'une migration qui n'est peut-être pas appliquée
  * partout : lecture et écriture passent par des requêtes à part, qui ne
