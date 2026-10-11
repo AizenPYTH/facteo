@@ -51,7 +51,7 @@ function buildSampleDocumentInput(
       country: 'France',
       vatNumber: null,
     },
-    showPaymentQr: kind === 'invoice',
+    showPaymentQr: false,
     clientSignature: null,
     templateId,
   };
