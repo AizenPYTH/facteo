@@ -1,3 +1,4 @@
+import { useQueryClient } from '@tanstack/react-query';
 import { router, type Href } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { InteractionManager, Platform, Text, View } from 'react-native';
@@ -22,6 +23,7 @@ import {
   collectIssues,
   formatShortFrenchDate,
 } from '@/components/invoices/composer/composer-model';
+import { ComposerPaymentSection } from '@/components/invoices/composer/composer-payment-section';
 import { ComposerPreviewSheet } from '@/components/invoices/composer/composer-preview-sheet';
 import { ComposerTemplateStep } from '@/components/invoices/composer/composer-template-step';
 import { InvoicePresentationSection } from '@/components/invoices/invoice-presentation-section';
@@ -41,6 +43,9 @@ import { useTenant } from '@/hooks/use-tenant';
 import { takePendingDictation } from '@/lib/ai/pending-dictation';
 import { processVoiceCommand, type ProcessVoiceCommandResult } from '@/lib/ai/voice-transcription';
 import { createClient, fetchClientsPage } from '@/lib/supabase/clients';
+import { updateCompanyBankDetails } from '@/lib/supabase/companies';
+import { profilesQueryKeys } from '@/lib/supabase/query-keys';
+import { isValidIban } from '@/lib/payments/sepa-qr';
 import { fetchCatalogItems } from '@/lib/supabase/products';
 import { requireScope } from '@/lib/tenant/scope';
 import { useInvoiceMutations } from '@/hooks/use-invoice-mutations';
@@ -83,12 +88,22 @@ import {
 import { createEmptyQuoteLine, formatDecimalForInput, type QuoteLineValue } from '@/types/quote';
 import {
   createDefaultInvoicePdfOptions,
+  normalizeBankValue,
   readRememberedLegalIds,
+  readRememberedPaymentMention,
   rememberLegalIds,
+  rememberPaymentMention,
   type InvoicePdfOptions,
 } from '@/types/pdf-options';
 
 const TOTAL_STEPS = 3;
+
+/** Délai saisi → jours (vide : à réception, 0). `null` : saisie en cours. */
+function paymentDaysFromTerms(value: string): number | null {
+  const trimmed = value.trim();
+  if (!trimmed) return 0;
+  return /^\d+$/.test(trimmed) ? Number(trimmed) : null;
+}
 
 function asQuoteLines(lines: InvoiceLineValue[]): QuoteLineValue[] {
   return lines;
@@ -123,6 +138,7 @@ export function InvoiceWizardScreen({
   const { data: settings } = useSettings();
   const { user } = useAuth();
   const { scope } = useTenant();
+  const queryClient = useQueryClient();
 
   const [step, setStep] = useState(1);
 
@@ -136,6 +152,12 @@ export function InvoiceWizardScreen({
   // Présentation (création uniquement) : numéro libre, titre, modèle, SIREN…
   const [customNumber, setCustomNumber] = useState('');
   const [pdfOptions, setPdfOptions] = useState<InvoicePdfOptions>(createDefaultInvoicePdfOptions);
+  /**
+   * Garder l'IBAN saisi pour les factures suivantes. Par défaut : oui si
+   * l'entreprise n'en a pas encore, non si la facture en change un existant.
+   */
+  const [saveBankChoice, setSaveBankChoice] = useState<boolean | null>(null);
+  const saveBankAsDefault = saveBankChoice ?? !normalizeBankValue(companyProfile?.iban);
 
   // Assistant iPhone : erreurs affichées jusqu'à l'étape validée, feuilles.
   const [errorScope, setErrorScope] = useState(0);
@@ -148,9 +170,11 @@ export function InvoiceWizardScreen({
   useEffect(() => {
     if (mode !== 'create') return;
     let cancelled = false;
-    void readRememberedLegalIds().then((legalIds) => {
-      if (!cancelled) setPdfOptions((current) => ({ ...current, legalIds }));
-    });
+    void Promise.all([readRememberedLegalIds(), readRememberedPaymentMention()]).then(
+      ([legalIds, paymentMention]) => {
+        if (!cancelled) setPdfOptions((current) => ({ ...current, legalIds, paymentMention }));
+      },
+    );
     return () => {
       cancelled = true;
     };
@@ -482,6 +506,8 @@ export function InvoiceWizardScreen({
           pdfOptions: { ...pdfOptions, templateId },
         });
         void rememberLegalIds(pdfOptions.legalIds);
+        void rememberPaymentMention(pdfOptions.paymentMention);
+        void saveBankDetailsAsDefault();
         showSuccess('Facture créée.');
         router.replace('/invoices' as Href);
         return;
@@ -497,6 +523,22 @@ export function InvoiceWizardScreen({
       router.replace(`/invoices/${invoiceId}` as Href);
     } catch (error) {
       showError(getInvoiceErrorMessage(readErrorMessage(error)));
+    }
+  }
+
+  /** Coordonnées de la facture gardées dans l'entreprise, si l'interrupteur est activé. */
+  async function saveBankDetailsAsDefault() {
+    const bank = pdfOptions.bank;
+    if (!scope?.companyId || !bank?.show || !saveBankAsDefault || !isValidIban(bank.iban)) return;
+    const unchanged =
+      normalizeBankValue(bank.iban) === normalizeBankValue(companyProfile?.iban) &&
+      normalizeBankValue(bank.bic) === normalizeBankValue(companyProfile?.bic);
+    if (unchanged) return;
+    try {
+      await updateCompanyBankDetails(scope.companyId, bank);
+      void queryClient.invalidateQueries({ queryKey: profilesQueryKeys.all });
+    } catch {
+      showError('Facture créée, mais l’IBAN n’a pas pu être gardé pour les prochaines factures.');
     }
   }
 
@@ -547,14 +589,24 @@ export function InvoiceWizardScreen({
             totals={totals}
             footer={
               mode === 'create' ? (
-                <InvoicePresentationSection
-                  company={companyProfile ?? null}
-                  forecastNumber={forecastNumber}
-                  number={customNumber}
-                  onChange={setPdfOptions}
-                  onNumberChange={setCustomNumber}
-                  value={{ ...pdfOptions, templateId }}
-                />
+                <>
+                  <ComposerPaymentSection
+                    company={companyProfile ?? null}
+                    onChange={setPdfOptions}
+                    onSaveAsDefaultChange={setSaveBankChoice}
+                    paymentDays={paymentDaysFromTerms(state.info.paymentTermsDays)}
+                    saveAsDefault={saveBankAsDefault}
+                    value={{ ...pdfOptions, templateId }}
+                  />
+                  <InvoicePresentationSection
+                    company={companyProfile ?? null}
+                    forecastNumber={forecastNumber}
+                    number={customNumber}
+                    onChange={setPdfOptions}
+                    onNumberChange={setCustomNumber}
+                    value={{ ...pdfOptions, templateId }}
+                  />
+                </>
               ) : null
             }
           />
@@ -683,12 +735,13 @@ export function InvoiceWizardScreen({
 
   const activeTemplate = resolvePdfTemplate(templateId);
 
-  const buildDraftHtml = useCallback(async () => {
+  const buildDraftHtml = useCallback(async (overrides?: Partial<InvoicePdfOptions>) => {
     const activeScope = requireScope(scope);
-    const options =
+    const saved =
       mode === 'edit' && invoiceId
         ? await fetchInvoicePdfOptions(activeScope, invoiceId)
         : { ...pdfOptions, templateId };
+    const options = { ...saved, ...overrides };
     return buildInvoiceDraftPdfHtml(
       activeScope,
       {
@@ -720,6 +773,12 @@ export function InvoiceWizardScreen({
     totals,
     user?.email,
   ]);
+
+  // Fond de l'éditeur « Où je veux » : la facture sans ses identifiants.
+  const buildPlacementBackgroundHtml = useCallback(
+    () => buildDraftHtml({ legalIds: [], legalIdsPlacement: 'auto' }),
+    [buildDraftHtml],
+  );
 
   const buildGalleryHtml = useCallback(
     (galleryTemplateId: string) =>
@@ -766,6 +825,7 @@ export function InvoiceWizardScreen({
       case 3:
         return (
           <ComposerTemplateStep
+            buildPlacementBackgroundHtml={buildPlacementBackgroundHtml}
             clientName={state.clientName}
             company={companyProfile ?? null}
             customNumber={customNumber}
@@ -779,7 +839,9 @@ export function InvoiceWizardScreen({
             onOpenGallery={() => setGalleryOpen(true)}
             onOpenPreview={() => setPreviewOpen(true)}
             onPdfOptionsChange={setPdfOptions}
+            onSaveBankAsDefaultChange={setSaveBankChoice}
             paymentTermsDays={state.info.paymentTermsDays}
+            saveBankAsDefault={saveBankAsDefault}
             pdfOptions={{ ...pdfOptions, templateId }}
             templateId={templateId}
             totals={totals}

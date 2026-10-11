@@ -271,14 +271,18 @@ function computeDiscount(input: PdfDocumentInput): number {
 
 function buildLegalMentions(input: PdfDocumentInput): string[] {
   // Uniquement le texte que l'utilisateur a lui-même configuré : aucune mention
-  // réglementaire n'est inventée à sa place.
+  // réglementaire n'est inventée à sa place. La mention de paiement choisie sur
+  // la facture passe en premier, puis le pied de page des réglages.
   const footer =
     input.kind === 'quote' ? input.settings?.quoteFooter : input.settings?.invoiceFooter;
+  const mention = input.kind === 'invoice' ? clean(input.paymentMention) : null;
 
-  return (footer ?? '')
+  const footerLines = (footer ?? '')
     .split(/\r?\n/)
     .map((line) => line.trim())
-    .filter(Boolean);
+    .filter((line) => line && line !== mention);
+
+  return mention ? [mention, ...footerLines] : footerLines;
 }
 
 function buildQrSvg(input: PdfDocumentInput, amountDue: number): string | null {

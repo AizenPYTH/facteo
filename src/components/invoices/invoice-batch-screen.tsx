@@ -36,6 +36,7 @@ import { createLocalInvoiceLineId, type InvoiceLineValue } from '@/types/invoice
 import {
   createDefaultInvoicePdfOptions,
   readRememberedLegalIds,
+  readRememberedPaymentMention,
   type InvoicePdfOptions,
 } from '@/types/pdf-options';
 
@@ -114,7 +115,12 @@ export function InvoiceBatchScreen() {
   });
   const clients = clientsQuery.data?.clients ?? [];
 
-  function toDraft(invoice: AnalyzedInvoice, index: number, legalIds: InvoicePdfOptions['legalIds']): Draft {
+  function toDraft(
+    invoice: AnalyzedInvoice,
+    index: number,
+    legalIds: InvoicePdfOptions['legalIds'],
+    paymentMention: string | null,
+  ): Draft {
     return {
       key: `${Date.now()}-${index}`,
       detectedClient: invoice.client_name,
@@ -126,6 +132,7 @@ export function InvoiceBatchScreen() {
       pdfOptions: {
         ...createDefaultInvoicePdfOptions(),
         legalIds,
+        paymentMention,
         templateId: settings?.invoiceTemplateId ?? null,
       },
       lines: invoice.lines.map((line) => ({
@@ -161,14 +168,15 @@ export function InvoiceBatchScreen() {
       if (!asset?.base64) return;
 
       setAnalyzing(true);
-      const [invoices, legalIds] = await Promise.all([
+      const [invoices, legalIds, paymentMention] = await Promise.all([
         analyzeInvoicesImage({ imageBase64: asset.base64, mimeType: asset.mimeType ?? 'image/jpeg' }),
         readRememberedLegalIds(),
+        readRememberedPaymentMention(),
       ]);
       if (invoices.length === 0) {
         throw new Error('Aucune facture reconnue sur cette image.');
       }
-      setDrafts((current) => [...current, ...invoices.map((entry, i) => toDraft(entry, i, legalIds))]);
+      setDrafts((current) => [...current, ...invoices.map((entry, i) => toDraft(entry, i, legalIds, paymentMention))]);
       showSuccess(
         `${invoices.length} facture${invoices.length > 1 ? 's' : ''} détectée${invoices.length > 1 ? 's' : ''}. Vérifiez puis enregistrez.`,
       );

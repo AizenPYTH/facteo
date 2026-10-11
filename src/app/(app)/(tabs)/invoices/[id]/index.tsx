@@ -20,6 +20,12 @@ import { PdfPreviewModal } from '@/components/pdf/pdf-preview-modal';
 import { TemplateGalleryModal } from '@/components/pdf/template-gallery-modal';
 import { DocumentClientSignatureBlock } from '@/components/signatures/document-client-signature-block';
 import { InvoicePresentationSection } from '@/components/invoices/invoice-presentation-section';
+import { ComposerPaymentSection } from '@/components/invoices/composer/composer-payment-section';
+import { GroupCard } from '@/components/composer/primitives';
+import {
+  LegalIdsPlacementControl,
+  legalIdEntries,
+} from '@/components/invoices/legal-ids-placement';
 import { CollapsibleSection } from '@/components/ui/collapsible-section';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { PressableScale } from '@/components/ui/pressable-scale';
@@ -41,7 +47,10 @@ import { useBreakpoint } from '@/hooks/use-breakpoint';
 import { useInvoice } from '@/hooks/use-invoices';
 import { useInvoiceMutations } from '@/hooks/use-invoice-mutations';
 import { getInvoiceErrorMessage } from '@/lib/invoices/errors';
-import { buildInvoicePdfHtml } from '@/lib/pdf/document-pdf';
+import {
+  buildInvoicePdfHtml,
+  buildInvoicePlacementBackgroundHtml,
+} from '@/lib/pdf/document-pdf';
 import { sendElectronicInvoice } from '@/lib/superpdp/api';
 import { formatElectronicInvoiceStatus } from '@/lib/superpdp/status';
 import { useAuth } from '@/hooks/use-auth';
@@ -58,6 +67,15 @@ import {
   type InvoiceStatus,
 } from '@/types/invoice';
 import { useToast } from '@/providers/toast-provider';
+
+/** Délai de paiement en jours entre émission et échéance (0 : à réception). */
+function daysBetween(issuedAt: string | null, dueAt: string | null): number | null {
+  if (!issuedAt || !dueAt) return null;
+  const issued = Date.parse(issuedAt.slice(0, 10));
+  const due = Date.parse(dueAt.slice(0, 10));
+  if (Number.isNaN(issued) || Number.isNaN(due) || due < issued) return null;
+  return Math.round((due - issued) / 86_400_000);
+}
 
 export default function InvoiceDetailScreen() {
   const styles = useStyles();
@@ -157,20 +175,65 @@ export default function InvoiceDetailScreen() {
     }
   }, [documentActions, pdfOptions]);
 
-  async function savePdfOptions(patch: Partial<InvoicePdfOptions>) {
-    if (!scope || !invoiceId) return;
+  // Enregistrements un à la fois, dans l'ordre : deux réglages rapprochés ne
+  // peuvent pas s'écrire à l'envers.
+  const pdfSaveChainRef = useRef<Promise<void>>(Promise.resolve());
+  const pendingPatchRef = useRef<Partial<InvoicePdfOptions> | null>(null);
+  const pendingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  function applyPdfOptionsLocally(patch: Partial<InvoicePdfOptions>) {
     queryClient.setQueryData<InvoicePdfOptions>(['invoice-pdf-options', invoiceId], (current) =>
       current ? { ...current, ...patch } : current,
     );
     // Invalide l'aperçu et le PDF en cours : la prochaine action le régénère.
     documentActions.applyTemplate(patch.templateId ?? documentActions.templateId);
-    try {
-      await updateInvoicePdfOptions(requireScope(scope), invoiceId, patch);
-    } catch {
-      showError('Modification non enregistrée. Réessayez.');
-      void pdfOptionsQuery.refetch();
-    }
   }
+
+  function writePdfOptions(patch: Partial<InvoicePdfOptions>) {
+    if (!scope || !invoiceId) return;
+    const activeScope = requireScope(scope);
+    const id = invoiceId;
+    pdfSaveChainRef.current = pdfSaveChainRef.current
+      .catch(() => undefined)
+      .then(() => updateInvoicePdfOptions(activeScope, id, patch))
+      .catch(() => {
+        showError('Modification non enregistrée. Réessayez.');
+        void pdfOptionsQuery.refetch();
+      });
+  }
+
+  async function savePdfOptions(patch: Partial<InvoicePdfOptions>) {
+    applyPdfOptionsLocally(patch);
+    writePdfOptions(patch);
+  }
+
+  /** Saisie (IBAN, mention) : affichée aussitôt, enregistrée après une pause de frappe. */
+  function savePdfOptionsSoon(patch: Partial<InvoicePdfOptions>) {
+    applyPdfOptionsLocally(patch);
+    pendingPatchRef.current = { ...pendingPatchRef.current, ...patch };
+    if (pendingTimerRef.current) clearTimeout(pendingTimerRef.current);
+    pendingTimerRef.current = setTimeout(flushPendingPdfOptions, 700);
+  }
+
+  function flushPendingPdfOptions() {
+    pendingTimerRef.current = null;
+    const pending = pendingPatchRef.current;
+    pendingPatchRef.current = null;
+    if (pending) writePdfOptions(pending);
+  }
+
+  // En quittant la fiche, la dernière saisie part tout de suite.
+  const flushRef = useRef(flushPendingPdfOptions);
+  useEffect(() => {
+    flushRef.current = flushPendingPdfOptions;
+  });
+  useEffect(
+    () => () => {
+      if (pendingTimerRef.current) clearTimeout(pendingTimerRef.current);
+      flushRef.current();
+    },
+    [],
+  );
 
   async function handleDelete() {
     if (!scope || !invoiceId) return;
@@ -589,6 +652,31 @@ export default function InvoiceDetailScreen() {
               company={companyProfile ?? null}
               onChange={(next) => void savePdfOptions(next)}
               showTemplate={false}
+              value={pdfOptions}
+            />
+            <GroupCard>
+              <LegalIdsPlacementControl
+                buildBackgroundHtml={() =>
+                  buildInvoicePlacementBackgroundHtml(requireScope(scope), invoice, user?.email ?? null)
+                }
+                entries={legalIdEntries(pdfOptions.legalIds, companyProfile ?? null)}
+                onChange={(legalIdsPlacement) => void savePdfOptions({ legalIdsPlacement })}
+                value={pdfOptions.legalIdsPlacement}
+              />
+            </GroupCard>
+          </CollapsibleSection>
+        ) : null}
+
+        {pdfOptions ? (
+          <CollapsibleSection title="Paiement et mentions">
+            <ComposerPaymentSection
+              company={companyProfile ?? null}
+              first
+              onChange={(next) =>
+                savePdfOptionsSoon({ bank: next.bank, paymentMention: next.paymentMention })
+              }
+              paid={invoice.amountDue <= 0.005}
+              paymentDays={daysBetween(invoice.issuedAt, invoice.dueAt)}
               value={pdfOptions}
             />
           </CollapsibleSection>

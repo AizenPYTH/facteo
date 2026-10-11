@@ -19,7 +19,7 @@ import type { PdfDocumentLine, PdfDocumentTotals } from '@/lib/pdf/engine/types'
 import { inlinePdfCompanyImages, inlinePdfClientSignature } from '@/lib/pdf/inline-images';
 import type { InvoiceDetail } from '@/types/invoice';
 import type { QuoteDetail } from '@/types/quote';
-import type { InvoicePdfOptions } from '@/types/pdf-options';
+import { withInvoiceBankDetails, type InvoicePdfOptions } from '@/types/pdf-options';
 import type { DataScope } from '@/types/tenant';
 import { DEFAULT_PDF_TEMPLATE_ID } from '@/lib/pdf/engine/templates/types';
 
@@ -138,7 +138,7 @@ export async function buildInvoicePdfInput(
       totalTtc: invoice.totalTtc,
       amountDue: invoice.amountDue,
     },
-    company,
+    company: withInvoiceBankDetails(company, pdfOptions.bank),
     client: client ?? fallbackClient(invoice.clientName),
     settings,
     showPaymentQr: false,
@@ -155,6 +155,7 @@ export async function buildInvoicePdfInput(
     stampColor: pdfOptions.stampColor,
     stampPosition: pdfOptions.stampPosition,
     showIssuerEmail: pdfOptions.showEmail,
+    paymentMention: pdfOptions.paymentMention,
   };
 }
 
@@ -188,6 +189,27 @@ export async function buildInvoicePdfHtml(
     clientSignature: await inlinePdfClientSignature(input.clientSignature),
   };
   return embedPdfFonts(renderDocumentPdfHtml(withImages));
+}
+
+/**
+ * Fond de l'éditeur « Où je veux » : la facture enregistrée, sans les SIREN /
+ * SIRET / TVA (dessinés par-dessus pour être déplacés).
+ */
+export async function buildInvoicePlacementBackgroundHtml(
+  scope: DataScope,
+  invoice: InvoiceDetail,
+  authEmail?: string | null,
+): Promise<string> {
+  const input = await buildInvoicePdfInput(scope, invoice, authEmail);
+  return embedPdfFonts(
+    renderDocumentPdfHtml({
+      ...input,
+      company: await inlinePdfCompanyImages(input.company),
+      clientSignature: await inlinePdfClientSignature(input.clientSignature),
+      issuerLegalIds: [],
+      legalIdsPlacement: 'auto',
+    }),
+  );
 }
 
 /** Facture en cours de saisie, pas encore enregistrée. */
@@ -226,7 +248,10 @@ export async function buildInvoiceDraftPdfHtml(
     notes: draft.notes ?? null,
     lines: draft.lines,
     totals: { ...draft.totals, amountDue: draft.totals.amountDue ?? draft.totals.totalTtc },
-    company: await inlinePdfCompanyImages(company),
+    company: withInvoiceBankDetails(
+      await inlinePdfCompanyImages(company),
+      draft.pdfOptions.bank,
+    ),
     client: client ?? fallbackClient(draft.clientName),
     settings,
     showPaymentQr: false,
@@ -241,6 +266,7 @@ export async function buildInvoiceDraftPdfHtml(
     stampColor: draft.pdfOptions.stampColor,
     stampPosition: draft.pdfOptions.stampPosition,
     showIssuerEmail: draft.pdfOptions.showEmail,
+    paymentMention: draft.pdfOptions.paymentMention,
   };
 
   return embedPdfFonts(renderDocumentPdfHtml(input));
