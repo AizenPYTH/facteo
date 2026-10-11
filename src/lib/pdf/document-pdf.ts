@@ -141,7 +141,7 @@ export async function buildInvoicePdfInput(
     company,
     client: client ?? fallbackClient(invoice.clientName),
     settings,
-    showPaymentQr: true,
+    showPaymentQr: false,
     status: invoice.status,
     clientSignature: documentSignature
       ? { url: documentSignature.signatureUrl, signedAt: documentSignature.signedAt }
@@ -229,7 +229,7 @@ export async function buildInvoiceDraftPdfHtml(
     company: await inlinePdfCompanyImages(company),
     client: client ?? fallbackClient(draft.clientName),
     settings,
-    showPaymentQr: true,
+    showPaymentQr: false,
     status: 'draft',
     clientSignature: null,
     templateId:
