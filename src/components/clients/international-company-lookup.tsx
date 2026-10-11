@@ -10,8 +10,9 @@ import { radius } from '@/constants/theme/radius';
 import { spacing } from '@/constants/theme/spacing';
 import { typography } from '@/constants/theme/typography';
 import { useColors, useThemedStyles } from '@/hooks/use-colors';
-import { getCompanySearchErrorMessage } from '@/lib/company-search';
+import { CompanySearchError, getCompanySearchErrorMessage } from '@/lib/company-search';
 import {
+  looksLikeTaxNumber,
   lookupEuVatNumber,
   parseEuVatNumber,
   searchCompaniesByName,
@@ -43,9 +44,16 @@ export function InternationalCompanyLookup({
 
   const search = useMutation<SearchOutcome, unknown, string>({
     mutationFn: async (text) => {
+      // Numéro mal saisi : signalé sans consommer de recherche.
+      if (!parseEuVatNumber(text) && looksLikeTaxNumber(text)) {
+        throw new CompanySearchError('INVALID_REGISTRATION_NUMBER');
+      }
       await consumeSirenSearch();
       if (parseEuVatNumber(text)) {
         return { kind: 'vat', result: await lookupEuVatNumber(text) };
+      }
+      if (looksLikeTaxNumber(text)) {
+        throw new CompanySearchError('INVALID_REGISTRATION_NUMBER');
       }
       return { kind: 'name', results: await searchCompaniesByName(text) };
     },
@@ -108,9 +116,19 @@ export function InternationalCompanyLookup({
 
       {errorMessage ? (
         <Text accessibilityLiveRegion="polite" style={[styles.status, styles.statusError]}>
-          {search.error && (search.error as { code?: string }).code === 'COMPANY_NOT_FOUND'
-            ? 'Numéro de TVA inconnu ou inactif dans l’Union européenne.'
-            : errorMessage}
+          {(() => {
+            const code = (search.error as { code?: string } | null)?.code;
+            if (code === 'COMPANY_NOT_FOUND') {
+              return 'Numéro de TVA inconnu ou inactif dans l’Union européenne.';
+            }
+            if (code === 'INVALID_REGISTRATION_NUMBER') {
+              return 'Numéro invalide : vérifiez le code pays et les chiffres (ex. BE0417497106, NIPC 501964843).';
+            }
+            if (code === 'API_UNAVAILABLE') {
+              return 'Le registre de ce pays ne répond pas pour le moment. Réessayez dans quelques minutes.';
+            }
+            return errorMessage;
+          })()}
         </Text>
       ) : null}
       {applied !== null && !search.isPending ? (
