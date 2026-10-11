@@ -228,6 +228,8 @@ export type InvoiceDraftPdfInput = {
   clientId: string | null;
   clientName: string;
   pdfOptions: InvoicePdfOptions;
+  /** Facture déjà réglée : soldée, avec le tampon « Facture payée ». */
+  paid?: boolean;
 };
 
 /**
@@ -252,7 +254,10 @@ export async function buildInvoiceDraftPdfHtml(
     dueOrValidUntil: draft.dueAt,
     notes: draft.notes ?? null,
     lines: draft.lines,
-    totals: { ...draft.totals, amountDue: draft.totals.amountDue ?? draft.totals.totalTtc },
+    totals: {
+      ...draft.totals,
+      amountDue: draft.paid ? 0 : (draft.totals.amountDue ?? draft.totals.totalTtc),
+    },
     company: withInvoiceBankDetails(
       await inlinePdfCompanyImages(company),
       draft.pdfOptions.bank,
@@ -260,11 +265,11 @@ export async function buildInvoiceDraftPdfHtml(
     client: client ?? fallbackClient(draft.clientName),
     settings,
     showPaymentQr: false,
-    status: 'draft',
+    status: draft.paid ? 'paid' : 'draft',
     clientSignature: null,
     templateId:
       draft.pdfOptions.templateId ?? settings?.invoiceTemplateId ?? DEFAULT_PDF_TEMPLATE_ID,
-    paidAt: null,
+    paidAt: draft.paid ? draft.issuedAt : null,
     documentTitle: draft.pdfOptions.title,
     issuerLegalIds: draft.pdfOptions.legalIds,
     legalIdsPlacement: draft.pdfOptions.legalIdsPlacement,

@@ -185,6 +185,13 @@ export function ComposerBottomBar({
   const paddingBottom = keyboardVisible ? 8 : Math.max(insets.bottom, 12);
   const lineLabel = `${lineCount} ligne${lineCount > 1 ? 's' : ''}`;
 
+  // Clavier ouvert : la barre s'efface. Collée au clavier, elle laissait un
+  // vide (occupé par le « Done » d'iOS) et son grand bouton faisait passer à
+  // l'étape suivante en pleine saisie des lignes. Elle revient à la fermeture.
+  if (keyboardVisible) {
+    return null;
+  }
+
   return (
     <View
       onLayout={(event) => {

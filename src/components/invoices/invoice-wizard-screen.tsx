@@ -1,7 +1,7 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { router, type Href } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { InteractionManager, Platform, Text, View } from 'react-native';
+import { InteractionManager, Keyboard, Platform, Text, View } from 'react-native';
 import {
   KeyboardAwareScrollView,
   KeyboardStickyView,
@@ -154,6 +154,8 @@ export function InvoiceWizardScreen({
 
   // Présentation (création uniquement) : numéro libre, titre, modèle, SIREN…
   const [customNumber, setCustomNumber] = useState('');
+  // « Payée » (création) : facture réglée, sans échéance ; seul cas avec tampon.
+  const [alreadyPaid, setAlreadyPaid] = useState(false);
   const [pdfOptions, setPdfOptions] = useState<InvoicePdfOptions>(createDefaultInvoicePdfOptions);
   /**
    * Garder l'IBAN saisi pour les factures suivantes. Par défaut : oui si
@@ -505,6 +507,7 @@ export function InvoiceWizardScreen({
       if (mode === 'create') {
         await createInvoice.mutateAsync({
           ...input,
+          ...(alreadyPaid ? { alreadyPaid: true, dueAt: null } : {}),
           number: customNumber.trim() || null,
           pdfOptions: { ...pdfOptions, templateId },
         });
@@ -760,10 +763,12 @@ export function InvoiceWizardScreen({
         clientId: state.clientId,
         clientName: state.clientName,
         pdfOptions: options,
+        paid: mode === 'create' && alreadyPaid,
       },
       user?.email ?? null,
     );
   }, [
+    alreadyPaid,
     customNumber,
     forecastNumber,
     headerInfo?.number,
@@ -817,6 +822,8 @@ export function InvoiceWizardScreen({
               onDelayInput={handlePaymentDelayInput}
               onDueAtChange={handleDueAtChange}
               onIssuedAtChange={handleIssuedAtChange}
+              onPaidChange={mode === 'create' ? setAlreadyPaid : undefined}
+              paid={mode === 'create' && alreadyPaid}
               paymentTermsDays={state.info.paymentTermsDays}
             />
           </>
@@ -837,6 +844,7 @@ export function InvoiceWizardScreen({
             buildClientPlacementBackgroundHtml={buildClientPlacementBackgroundHtml}
             buildPlacementBackgroundHtml={buildPlacementBackgroundHtml}
             client={selectedClient ?? null}
+            paid={mode === 'create' && alreadyPaid}
             clientName={state.clientName}
             company={companyProfile ?? null}
             customNumber={customNumber}
@@ -864,17 +872,21 @@ export function InvoiceWizardScreen({
   }
 
   if (!isDesktop) {
-    // « Continuer » (jamais « Suivant », lu comme « champ suivant ») ; la
-    // progression nomme l'étape. En modification, on enregistre de partout.
+    // Le bouton nomme sa destination (jamais « Suivant », lu comme « champ
+    // suivant ») : on ne quitte pas les lignes en croyant valider un produit.
+    // En modification, on enregistre de partout.
     const composerPrimaryLabel =
       mode === 'edit'
         ? 'Enregistrer les modifications'
-        : step < TOTAL_STEPS
-          ? 'Continuer'
-          : 'Créer la facture';
+        : step === 1
+          ? 'Passer aux lignes'
+          : step === 2
+            ? 'Passer au récapitulatif'
+            : 'Créer la facture';
 
+    // Dernier champ validé : le clavier se ferme, sans changer d'étape.
     return (
-      <FormNavigationProvider onSubmit={handleComposerPrimary} submitReturnKey="done">
+      <FormNavigationProvider onSubmit={Keyboard.dismiss} submitReturnKey="done">
         <View style={composerStyles.root}>
           <SafeAreaView edges={['top']} style={composerStyles.safeArea}>
             <ComposerNavBar

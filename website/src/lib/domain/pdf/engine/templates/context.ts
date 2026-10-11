@@ -12,6 +12,7 @@ import {
   DEFAULT_ISSUER_LEGAL_IDS,
   formatIssuerLegalIds,
   clientNationalId,
+  issuerLegalIdsForClient,
   issuerLegalIdLabel,
   type StampColor,
   type StampPosition,
@@ -168,7 +169,11 @@ function clean(value: string | null | undefined): string | null {
 }
 
 function buildIssuerLegalIds(input: PdfDocumentInput): TemplateMetaEntry[] {
-  const selected = input.issuerLegalIds ?? DEFAULT_ISSUER_LEGAL_IDS;
+  // Client hors de France : ni SIREN ni SIRET de l'émetteur, seulement sa TVA.
+  const selected = issuerLegalIdsForClient(
+    input.issuerLegalIds ?? DEFAULT_ISSUER_LEGAL_IDS,
+    input.client?.country,
+  );
   const values = formatIssuerLegalIds(
     input.company.siret,
     input.company.vatNumber,

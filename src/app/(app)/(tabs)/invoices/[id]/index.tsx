@@ -36,7 +36,11 @@ import {
   updateInvoicePdfOptions,
 } from '@/lib/supabase/invoices';
 import { invoicesQueryKeys } from '@/lib/supabase/query-keys';
-import { clientNationalId, type InvoicePdfOptions } from '@/types/pdf-options';
+import {
+  clientNationalId,
+  issuerLegalIdsForClient,
+  type InvoicePdfOptions,
+} from '@/types/pdf-options';
 import { useClient } from '@/hooks/use-clients';
 import { useDocumentActions } from '@/hooks/use-document-actions';
 import { useElectronicInvoicing } from '@/hooks/use-electronic-invoicing';
@@ -655,6 +659,7 @@ export default function InvoiceDetailScreen() {
             <InvoicePresentationSection
               company={companyProfile ?? null}
               onChange={(next) => void savePdfOptions(next)}
+              clientCountry={invoiceClient?.country}
               paid={invoice.status === 'paid'}
               showTemplate={false}
               value={pdfOptions}
@@ -664,7 +669,10 @@ export default function InvoiceDetailScreen() {
                 buildBackgroundHtml={() =>
                   buildInvoicePlacementBackgroundHtml(requireScope(scope), invoice, user?.email ?? null)
                 }
-                entries={legalIdEntries(pdfOptions.legalIds, companyProfile ?? null)}
+                entries={legalIdEntries(
+                  issuerLegalIdsForClient(pdfOptions.legalIds, invoiceClient?.country),
+                  companyProfile ?? null,
+                )}
                 onChange={(legalIdsPlacement) => void savePdfOptions({ legalIdsPlacement })}
                 value={pdfOptions.legalIdsPlacement}
               />
