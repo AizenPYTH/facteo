@@ -107,9 +107,33 @@ export type InternationalCompanyResult = {
   source: 'vies' | 'gleif';
 };
 
-/** « be 0403.170.701 » → { country: 'BE', number: '0403170701' }. `null` : pas un n° de TVA UE. */
+/**
+ * NIPC portugais (numéro d'identification fiscale d'une entreprise) : 9
+ * chiffres, le dernier de contrôle (modulo 11). C'est aussi son n° de TVA,
+ * précédé de « PT ».
+ */
+export function isValidNipc(value: string): boolean {
+  const digits = value.replace(/\D/g, '');
+  if (!/^[1-9]\d{8}$/.test(digits)) return false;
+  const sum = digits
+    .slice(0, 8)
+    .split('')
+    .reduce((total, digit, index) => total + Number(digit) * (9 - index), 0);
+  const rest = sum % 11;
+  const check = rest < 2 ? 0 : 11 - rest;
+  return check === Number(digits[8]);
+}
+
+/**
+ * « be 0403.170.701 » → { country: 'BE', number: '0403170701' }. Un NIPC
+ * portugais seul (« 500 100 144 », « NIPC 500100144 ») vaut « PT500100144 ».
+ * `null` : pas un n° de TVA UE.
+ */
 export function parseEuVatNumber(input: string): { country: string; number: string } | null {
-  const compact = input.replace(/[\s.\-_/]/g, '').toUpperCase();
+  const compact = input.replace(/[\s.\-_/]/g, '').toUpperCase().replace(/^(NIPC|NIF)/, '');
+  if (/^\d{9}$/.test(compact) && isValidNipc(compact)) {
+    return { country: 'PT', number: compact };
+  }
   const match = compact.match(/^([A-Z]{2})([A-Z0-9]{2,13})$/);
   if (!match || !/\d/.test(match[2])) return null;
   const country = match[1] === 'GR' ? 'EL' : match[1];

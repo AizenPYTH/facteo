@@ -3,6 +3,7 @@
 import { Suspense } from 'react';
 
 import { AppBottomNav, AppSidebar } from '@/components/app/app-shell';
+import { NewVersionBanner } from '@/components/app/new-version-banner';
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   return (
@@ -14,6 +15,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <Suspense fallback={null}>
         <AppBottomNav />
       </Suspense>
+      <NewVersionBanner />
     </div>
   );
 }

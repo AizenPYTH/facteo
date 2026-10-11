@@ -89,10 +89,10 @@ export function InternationalCompanyLookup({
           autoCapitalize="none"
           autoCorrect={false}
           editable={enabled}
-          label="N° de TVA ou nom de l’entreprise"
+          label="N° de TVA, NIPC ou nom de l’entreprise"
           onChangeText={setQuery}
           onSubmitEditing={submit}
-          placeholder="BE0417497106 ou Siemens"
+          placeholder="BE0417497106, NIPC ou Siemens"
           returnKeyType="search"
           value={query}
         />
@@ -148,7 +148,8 @@ export function InternationalCompanyLookup({
 
       <Text style={styles.hint}>
         Union européenne : saisissez le n° de TVA intracommunautaire, avec le code pays (ex.
-        BE0417497106). Autres pays : saisissez le nom de l’entreprise.
+        BE0417497106). Portugal : le NIPC seul suffit (ex. 500100144). Autres pays : saisissez le
+        nom de l’entreprise.
       </Text>
       </View>
     </View>
