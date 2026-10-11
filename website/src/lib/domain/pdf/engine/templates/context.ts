@@ -11,7 +11,10 @@ import type { PdfClientInfo, PdfCompanyInfo, PdfDocumentInput } from '@/lib/pdf/
 import {
   DEFAULT_ISSUER_LEGAL_IDS,
   formatIssuerLegalIds,
+  isFrenchCountry,
   issuerLegalIdLabel,
+  nationalIdLabel,
+  nationalIdValue,
   type StampColor,
   type StampPosition,
 } from '@/types/pdf-options';
@@ -203,6 +206,16 @@ function buildIssuer(company: PdfCompanyInfo, showEmail: boolean): TemplateParty
   };
 }
 
+/**
+ * Client hors de France : son numéro national (« NIPC 513963448 ») sous son
+ * adresse, dans tous les modèles. Rien pour un client français.
+ */
+function clientNationalIdLine(client: PdfClientInfo): string | null {
+  if (isFrenchCountry(client.country)) return null;
+  const value = nationalIdValue(client.country, client.siret || client.siren, client.vatNumber);
+  return value ? `${nationalIdLabel(client.country)} ${value}` : null;
+}
+
 function buildClient(client: PdfClientInfo): TemplateParty {
   const person = clean([client.firstName, client.lastName].filter(Boolean).join(' '));
   const company = clean(client.company);
@@ -217,6 +230,7 @@ function buildClient(client: PdfClientInfo): TemplateParty {
       clean(client.address),
       clean([client.postalCode, client.city].filter(Boolean).join(' ')),
       clean(client.country),
+      clientNationalIdLine(client),
     ].filter((line): line is string => Boolean(line)),
     siret: null,
     vatNumber: clean(client.vatNumber),

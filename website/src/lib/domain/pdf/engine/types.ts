@@ -45,7 +45,11 @@ export type PdfClientInfo = Pick<
   | 'city'
   | 'country'
   | 'vatNumber'
->;
+> & {
+  /** Hors de France : numéro national du client (NIPC au Portugal…). */
+  siret?: string | null;
+  siren?: string | null;
+};
 
 export type PdfDocumentLine = {
   /** Nom court de la prestation. Peut être vide (anciennes lignes : description seule). */

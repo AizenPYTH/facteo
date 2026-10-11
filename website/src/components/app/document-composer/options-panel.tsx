@@ -224,7 +224,7 @@ export function ComposerOptionsPanel({
           </div>
 
           <div>
-            <p className="mb-2.5 text-[13.5px] font-bold">Identifiants affichés</p>
+            <p className="mb-2.5 text-[13.5px] font-bold">Vos identifiants (votre entreprise)</p>
             <div className="grid grid-cols-2 gap-2">
               {IDENTIFIERS.map((identifier) => {
                 const checked = isChecked(identifier.key);

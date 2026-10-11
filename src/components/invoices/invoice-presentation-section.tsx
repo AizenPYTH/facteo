@@ -147,7 +147,7 @@ export function InvoicePresentationSection({
       ) : null}
 
       <View style={styles.group}>
-        <Text style={styles.label}>En tête de la facture</Text>
+        <Text style={styles.label}>Vos identifiants (votre entreprise)</Text>
         {legalIdChoices.map((id) => {
           const shown = legalValues[id];
           const checked = value.legalIds.includes(id);

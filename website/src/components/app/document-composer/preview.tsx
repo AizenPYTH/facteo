@@ -85,6 +85,8 @@ function toPdfClient(client: Client | null): PdfClientInfo {
     city: client.city,
     country: client.country,
     vatNumber: client.vatNumber,
+    siret: client.siret,
+    siren: client.siren,
   };
 }
 

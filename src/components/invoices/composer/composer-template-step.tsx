@@ -569,7 +569,7 @@ function PresentationOptions({
           </View>
 
           <Text maxFontSizeMultiplier={1.4} style={[styles.optionCaption, styles.idsCaption]}>
-            Identifiants affichés
+            Vos identifiants (votre entreprise)
           </Text>
           {legalIdChoices.map((id) => {
             const shown = legalValues[id];
