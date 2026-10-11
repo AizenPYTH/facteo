@@ -38,10 +38,10 @@
         "EXPO_PUBLIC_APP_ENV": "production"
       },
       "ios": {
-        "image": "default"
+        "image": "sdk-57"
       },
       "android": {
-        "image": "default"
+        "image": "sdk-57"
       }
     }
   },
