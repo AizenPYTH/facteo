@@ -11,10 +11,8 @@ import type { PdfClientInfo, PdfCompanyInfo, PdfDocumentInput } from '@/lib/pdf/
 import {
   DEFAULT_ISSUER_LEGAL_IDS,
   formatIssuerLegalIds,
-  isFrenchCountry,
+  clientNationalId,
   issuerLegalIdLabel,
-  nationalIdLabel,
-  nationalIdValue,
   type StampColor,
   type StampPosition,
 } from '@/types/pdf-options';
@@ -123,6 +121,8 @@ export type TemplateContext = {
    * affichent plus eux-mêmes : `issuer.siret` et `issuer.vatNumber` valent `null`.
    */
   issuerLegalIds: TemplateMetaEntry[];
+  /** Numéro du client placé hors de son bloc (en haut, en bas, à la main). */
+  movableClientId: TemplateMetaEntry | null;
   /** Facture payée : cachet au nom de l'entreprise émettrice. */
   paidStamp: {
     companyName: string;
@@ -206,17 +206,7 @@ function buildIssuer(company: PdfCompanyInfo, showEmail: boolean): TemplateParty
   };
 }
 
-/**
- * Client hors de France : son numéro national (« NIPC 513963448 ») sous son
- * adresse, dans tous les modèles. Rien pour un client français.
- */
-function clientNationalIdLine(client: PdfClientInfo): string | null {
-  if (isFrenchCountry(client.country)) return null;
-  const value = nationalIdValue(client.country, client.siret || client.siren, client.vatNumber);
-  return value ? `${nationalIdLabel(client.country)} ${value}` : null;
-}
-
-function buildClient(client: PdfClientInfo): TemplateParty {
+function buildClient(client: PdfClientInfo, nationalIdLine: string | null): TemplateParty {
   const person = clean([client.firstName, client.lastName].filter(Boolean).join(' '));
   const company = clean(client.company);
   const name = company ?? person ?? 'Client';
@@ -230,7 +220,7 @@ function buildClient(client: PdfClientInfo): TemplateParty {
       clean(client.address),
       clean([client.postalCode, client.city].filter(Boolean).join(' ')),
       clean(client.country),
-      clientNationalIdLine(client),
+      nationalIdLine,
     ].filter((line): line is string => Boolean(line)),
     siret: null,
     vatNumber: clean(client.vatNumber),
@@ -348,7 +338,14 @@ export function buildTemplateContext(
   const paymentTermsDays = input.settings?.paymentTermsDays ?? null;
 
   const issuer = buildIssuer(input.company, input.showIssuerEmail ?? isQuote);
-  const client = buildClient(input.client);
+  // Numéro national d'un client hors de France (NIPC…) : sous son adresse, ou
+  // à l'emplacement choisi (en haut, en bas, à la main).
+  const clientId = input.showClientId === false ? null : clientNationalId(input.client);
+  const clientIdPlacement = input.clientIdPlacement ?? 'auto';
+  const client = buildClient(
+    input.client,
+    clientId && clientIdPlacement === 'auto' ? `${clientId.label} ${clientId.value}` : null,
+  );
   const vat = buildVatRows(input);
 
   const iban = clean(input.company.iban);
@@ -468,6 +465,7 @@ export function buildTemplateContext(
     showApprovalBlock: isQuote && !input.clientSignature,
     status: input.status ? (STATUS_PILLS[input.status] ?? null) : null,
     issuerLegalIds: buildIssuerLegalIds(input),
+    movableClientId: clientId && clientIdPlacement !== 'auto' ? clientId : null,
     // « Sans tampon » : la facture reste payée, seul le cachet disparaît.
     paidStamp: paid && input.stampPosition !== 'none'
       ? {

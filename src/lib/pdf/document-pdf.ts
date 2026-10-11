@@ -152,6 +152,8 @@ export async function buildInvoicePdfInput(
     documentTitle: pdfOptions.title,
     issuerLegalIds: pdfOptions.legalIds,
     legalIdsPlacement: pdfOptions.legalIdsPlacement,
+    showClientId: pdfOptions.showClientId,
+    clientIdPlacement: pdfOptions.clientIdPlacement,
     stampColor: pdfOptions.stampColor,
     stampPosition: pdfOptions.stampPosition,
     showIssuerEmail: pdfOptions.showEmail,
@@ -199,6 +201,8 @@ export async function buildInvoicePlacementBackgroundHtml(
   scope: DataScope,
   invoice: InvoiceDetail,
   authEmail?: string | null,
+  /** Bloc retiré du fond, celui qu'on déplace : identifiants de l'émetteur ou numéro du client. */
+  moving: 'issuer' | 'client' = 'issuer',
 ): Promise<string> {
   const input = await buildInvoicePdfInput(scope, invoice, authEmail);
   return embedPdfFonts(
@@ -206,8 +210,9 @@ export async function buildInvoicePlacementBackgroundHtml(
       ...input,
       company: await inlinePdfCompanyImages(input.company),
       clientSignature: await inlinePdfClientSignature(input.clientSignature),
-      issuerLegalIds: [],
-      legalIdsPlacement: 'auto',
+      ...(moving === 'issuer'
+        ? { issuerLegalIds: [], legalIdsPlacement: 'auto' as const }
+        : { showClientId: false }),
     }),
   );
 }
@@ -263,6 +268,8 @@ export async function buildInvoiceDraftPdfHtml(
     documentTitle: draft.pdfOptions.title,
     issuerLegalIds: draft.pdfOptions.legalIds,
     legalIdsPlacement: draft.pdfOptions.legalIdsPlacement,
+    showClientId: draft.pdfOptions.showClientId,
+    clientIdPlacement: draft.pdfOptions.clientIdPlacement,
     stampColor: draft.pdfOptions.stampColor,
     stampPosition: draft.pdfOptions.stampPosition,
     showIssuerEmail: draft.pdfOptions.showEmail,

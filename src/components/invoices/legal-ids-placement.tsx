@@ -81,9 +81,16 @@ export function LegalIdsPlacementControl({
   onChange,
   entries,
   buildBackgroundHtml,
+  caption = 'Emplacement du SIREN, SIRET et TVA',
+  sheetTitle = 'Placer le SIREN, le SIRET et la TVA',
+  separated = true,
 }: {
   value: LegalIdsPlacement;
   onChange: (value: LegalIdsPlacement) => void;
+  caption?: string;
+  sheetTitle?: string;
+  /** Trait au-dessus (dans une carte, après d'autres réglages). */
+  separated?: boolean;
   /** Identifiants réellement imprimés (cochés et renseignés). */
   entries: LegalIdEntry[];
   /** La facture sans ces identifiants, en HTML. */
@@ -94,9 +101,9 @@ export function LegalIdsPlacementControl({
   const mode: PlacementMode = typeof value === 'object' ? 'free' : value;
 
   return (
-    <View style={styles.control}>
+    <View style={[styles.control, separated && styles.controlSeparated]}>
       <Text maxFontSizeMultiplier={1.4} style={styles.caption}>
-        Emplacement du SIREN, SIRET et TVA
+        {caption}
       </Text>
       <SegmentedControl<PlacementMode>
         columns={2}
@@ -125,6 +132,7 @@ export function LegalIdsPlacementControl({
         entries={entries}
         initial={typeof value === 'object' ? value : null}
         onClose={() => setEditing(false)}
+        title={sheetTitle}
         onSave={(point) => {
           onChange(point);
           setEditing(false);
@@ -137,6 +145,7 @@ export function LegalIdsPlacementControl({
 
 function LegalIdsPlacementSheet({
   visible,
+  title,
   initial,
   entries,
   buildBackgroundHtml,
@@ -144,6 +153,7 @@ function LegalIdsPlacementSheet({
   onSave,
 }: {
   visible: boolean;
+  title: string;
   initial: Point | null;
   entries: LegalIdEntry[];
   buildBackgroundHtml: () => Promise<string>;
@@ -151,7 +161,7 @@ function LegalIdsPlacementSheet({
   onSave: (point: Point) => void;
 }) {
   return (
-    <ComposerSheet onClose={onClose} title="Placer le SIREN, le SIRET et la TVA" visible={visible}>
+    <ComposerSheet onClose={onClose} title={title} visible={visible}>
       {visible ? (
         <PlacementEditor
           buildBackgroundHtml={buildBackgroundHtml}
@@ -330,6 +340,8 @@ function placementStyles(colors: ComposerColors) {
       paddingTop: 12,
       paddingBottom: 14,
       gap: 8,
+    },
+    controlSeparated: {
       borderTopWidth: 1,
       borderTopColor: colors.line2,
     },

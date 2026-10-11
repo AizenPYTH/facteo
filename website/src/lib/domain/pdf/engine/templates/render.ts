@@ -43,12 +43,14 @@ function pageStyles(): string {
 
 const STAMP_GREEN = '#0B7A4B';
 
+type IdEntry = { label: string; value: string };
+
 /**
- * SIREN / SIRET / TVA choisis pour le document, en tête de page et identiques
- * pour les 20 modèles. Rien n'est rendu si aucun n'est choisi ou renseigné.
+ * SIREN / SIRET / TVA de l'émetteur, ou numéro du client hors de France :
+ * mêmes libellés discrets et valeurs en gras, quel que soit le modèle.
  */
-function legalIdsItems(context: TemplateContext): string {
-  return context.issuerLegalIds
+function idItems(entries: IdEntry[]): string {
+  return entries
     .map(
       (entry) =>
         `<span style="white-space:nowrap"><span style="font-size:${u(8.5)}; letter-spacing:.08em; text-transform:uppercase; color:#8A8A99">${escapeHtml(
@@ -58,30 +60,49 @@ function legalIdsItems(context: TemplateContext): string {
     .join('');
 }
 
-function legalIdsStrip(context: TemplateContext, edge: 'top' | 'bottom' = 'top'): string {
-  if (context.issuerLegalIds.length === 0) {
+function idStrip(entries: IdEntry[], edge: 'top' | 'bottom' = 'top'): string {
+  if (entries.length === 0) {
     return '';
   }
 
   const border = edge === 'top' ? 'border-bottom' : 'border-top';
-  return `<div style="display:flex; flex-wrap:wrap; justify-content:center; gap:${u(4)} ${u(22)}; padding:${u(11)} ${u(48)} ${u(10)}; font-size:${u(9.5)}; line-height:1.3; ${border}:1px solid rgba(20,20,26,.08)">${legalIdsItems(context)}</div>`;
+  return `<div style="display:flex; flex-wrap:wrap; justify-content:center; gap:${u(4)} ${u(22)}; padding:${u(11)} ${u(48)} ${u(10)}; font-size:${u(9.5)}; line-height:1.3; ${border}:1px solid rgba(20,20,26,.08)">${idItems(entries)}</div>`;
 }
 
 /**
- * Bloc des identifiants posé à la main : même rendu que le bandeau, sur une
- * ligne, au point choisi de la première page.
+ * Bloc posé à la main : même rendu que le bandeau, sur une ligne, au point
+ * choisi de la première page.
  */
-function legalIdsFreeBlockHtml(context: TemplateContext): string {
-  return `<div style="display:flex; flex-wrap:nowrap; gap:${u(18)}; font-size:${u(9.5)}; line-height:1.3; font-family:'Plus Jakarta Sans', Arial, sans-serif">${legalIdsItems(context)}</div>`;
+function idFreeBlockHtml(entries: IdEntry[]): string {
+  return `<div style="display:flex; flex-wrap:nowrap; gap:${u(18)}; font-size:${u(9.5)}; line-height:1.3; font-family:'Plus Jakarta Sans', Arial, sans-serif">${idItems(entries)}</div>`;
 }
 
-function legalIdsFreeBlock(context: TemplateContext, point: { x: number; y: number }): string {
-  if (context.issuerLegalIds.length === 0) {
+function idFreeBlock(entries: IdEntry[], point: { x: number; y: number }): string {
+  if (entries.length === 0) {
     return '';
   }
   const left = Math.min(1, Math.max(0, point.x)) * PAGE_WIDTH;
   const top = Math.min(1, Math.max(0, point.y)) * PAGE_HEIGHT;
-  return `<div style="position:absolute; inset:0; z-index:4; pointer-events:none"><div style="position:absolute; left:${u(left)}; top:${u(top)}">${legalIdsFreeBlockHtml(context)}</div></div>`;
+  return `<div style="position:absolute; inset:0; z-index:4; pointer-events:none"><div style="position:absolute; left:${u(left)}; top:${u(top)}">${idFreeBlockHtml(entries)}</div></div>`;
+}
+
+/** Pose un bloc d'identifiants : en haut, en bas (au-dessus du pied) ou au point choisi. */
+function placeIds(html: string, entries: IdEntry[], placement: LegalIdsPlacement): string {
+  if (entries.length === 0) return html;
+  if (typeof placement === 'object') {
+    const block = idFreeBlock(entries, placement);
+    return insertAfter(html, /<div class="dc-page"[^>]*>/, block) ?? `${block}${html}`;
+  }
+  if (placement === 'bottom') {
+    const strip = idStrip(entries, 'bottom');
+    return (
+      insertAfter(html, /<div class="dc-spacer"[^>]*><\/div>/, strip) ??
+      insertAfter(html, /<div class="dc-page"[^>]*>/, strip) ??
+      `${strip}${html}`
+    );
+  }
+  const strip = idStrip(entries);
+  return insertAfter(html, /<div class="dc-page"[^>]*>/, strip) ?? `${strip}${html}`;
 }
 
 /**
@@ -200,28 +221,22 @@ function withPageExtras(
   context: TemplateContext,
   template: PdfTemplateDefinition,
   placement: LegalIdsPlacement,
+  clientIdPlacement: LegalIdsPlacement,
 ): string {
   let result = html;
 
-  if (typeof placement === 'object') {
-    const block = legalIdsFreeBlock(context, placement);
-    if (block) {
-      result = insertAfter(result, /<div class="dc-page"[^>]*>/, block) ?? `${block}${result}`;
-    }
-  } else if (placement === 'bottom') {
-    // Sous le contenu, juste au-dessus du pied de page du modèle.
-    const strip = legalIdsStrip(context, 'bottom');
-    if (strip) {
-      result =
-        insertAfter(result, /<div class="dc-spacer"[^>]*><\/div>/, strip) ??
-        insertAfter(result, /<div class="dc-page"[^>]*>/, strip) ??
-        `${strip}${result}`;
+  // SIREN / SIRET / TVA : là où le modèle les met, sauf emplacement choisi.
+  if (placement === 'auto') {
+    if (!template.ownsLegalIds) {
+      result = placeIds(result, context.issuerLegalIds, 'top');
     }
   } else {
-    const strip = template.ownsLegalIds && placement === 'auto' ? '' : legalIdsStrip(context);
-    if (strip) {
-      result = insertAfter(result, /<div class="dc-page"[^>]*>/, strip) ?? `${strip}${result}`;
-    }
+    result = placeIds(result, context.issuerLegalIds, placement);
+  }
+
+  // Numéro du client déplacé hors de son bloc.
+  if (context.movableClientId) {
+    result = placeIds(result, [context.movableClientId], clientIdPlacement);
   }
 
   const stamp = paidStamp(context, template);
@@ -243,7 +258,17 @@ function withPageExtras(
 export function renderLegalIdsBlockHtml(input: PdfDocumentInput): string {
   const template = resolvePdfTemplate(input.templateId);
   const context = buildTemplateContext(input, template.vocabulary);
-  return context.issuerLegalIds.length > 0 ? legalIdsFreeBlockHtml(context) : '';
+  return context.issuerLegalIds.length > 0 ? idFreeBlockHtml(context.issuerLegalIds) : '';
+}
+
+/** Numéro du client seul (« NIPC 513963448 »), pour l'éditeur « Où je veux ». */
+export function renderClientIdBlockHtml(input: PdfDocumentInput): string {
+  const template = resolvePdfTemplate(input.templateId);
+  const context = buildTemplateContext(
+    { ...input, showClientId: true, clientIdPlacement: { x: 0, y: 0 } },
+    template.vocabulary,
+  );
+  return context.movableClientId ? idFreeBlockHtml([context.movableClientId]) : '';
 }
 
 export function renderTemplatedDocumentPdfHtml(input: PdfDocumentInput): string {
@@ -263,7 +288,7 @@ export function renderTemplatedDocumentPdfHtml(input: PdfDocumentInput): string 
   <style>${pageStyles()}</style>
 </head>
 <body style="background:${template.paper}">
-${withPageExtras(template.render(templateContext), context, template, placement)}
+${withPageExtras(template.render(templateContext), context, template, placement, input.clientIdPlacement ?? 'auto')}
 </body>
 </html>`;
 }

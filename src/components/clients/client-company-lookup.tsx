@@ -24,6 +24,7 @@ import {
   normalizeRegistrationDigits,
 } from '@/lib/company-search';
 import type { ClientFormValues } from '@/types/client';
+import { nationalIdLabel, nationalIdValue } from '@/types/pdf-options';
 
 type ClientCompanyLookupProps = {
   control: Control<ClientFormValues>;
@@ -43,6 +44,7 @@ export function ClientCompanyLookup({ control, errors, setValue }: ClientCompany
   const siren = useWatch({ control, name: 'siren' }) ?? '';
   const siret = useWatch({ control, name: 'siret' }) ?? '';
   const country = useWatch({ control, name: 'country' }) ?? '';
+  const vatNumber = useWatch({ control, name: 'vatNumber' }) ?? '';
   const lastAppliedRef = useRef<string | null>(null);
   // Un client déjà enregistré hors de France s'ouvre sur la recherche internationale.
   const [scope, setScope] = useState<'france' | 'abroad'>(() =>
@@ -149,7 +151,32 @@ export function ClientCompanyLookup({ control, errors, setValue }: ClientCompany
       </View>
 
       {scope === 'abroad' ? (
-        <InternationalCompanyLookup enabled={sirenSearchEnabled} setValue={setValue} />
+        <>
+          <InternationalCompanyLookup enabled={sirenSearchEnabled} setValue={setValue} />
+          <FormDivider />
+          <FormField>
+            <Controller
+              control={control}
+              name="siret"
+              render={({ field: { onChange, onBlur, value } }) => (
+                <TextField
+                  autoCapitalize="characters"
+                  error={errors.siret?.message}
+                  hint={
+                    nationalIdValue(country, '', vatNumber)
+                      ? `Facultatif : repris du n° de TVA (${nationalIdValue(country, '', vatNumber)}).`
+                      : 'Facultatif : numéro qui identifie l’entreprise dans son pays.'
+                  }
+                  label={nationalIdLabel(country)}
+                  onBlur={onBlur}
+                  onChangeText={onChange}
+                  placeholder={nationalIdValue(country, '', vatNumber) ?? ''}
+                  value={value}
+                />
+              )}
+            />
+          </FormField>
+        </>
       ) : (
       <>
       <FormField>

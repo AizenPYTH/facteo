@@ -4,7 +4,7 @@ import * as Linking from 'expo-linking';
 import { SymbolView } from 'expo-symbols';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ScrollView, Text, View } from 'react-native';
+import { ScrollView, Switch, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { DocumentActionsSheet } from '@/components/documents/document-actions-sheet';
@@ -36,7 +36,8 @@ import {
   updateInvoicePdfOptions,
 } from '@/lib/supabase/invoices';
 import { invoicesQueryKeys } from '@/lib/supabase/query-keys';
-import type { InvoicePdfOptions } from '@/types/pdf-options';
+import { clientNationalId, type InvoicePdfOptions } from '@/types/pdf-options';
+import { useClient } from '@/hooks/use-clients';
 import { useDocumentActions } from '@/hooks/use-document-actions';
 import { useElectronicInvoicing } from '@/hooks/use-electronic-invoicing';
 import { useThemedStyles, useColors } from '@/hooks/use-colors';
@@ -116,6 +117,9 @@ export default function InvoiceDetailScreen() {
     enabled: Boolean(scope && invoiceId),
   });
   const pdfOptions = pdfOptionsQuery.data ?? null;
+  // Client hors de France : son numéro national (NIPC…) se règle sur la fiche.
+  const { data: invoiceClient } = useClient(invoice?.clientId ?? '');
+  const invoiceClientId = clientNationalId(invoiceClient);
 
   const { data: sentDocuments = [], isLoading: sentDocumentsLoading } = useSentDocuments(
     'invoice',
@@ -665,6 +669,38 @@ export default function InvoiceDetailScreen() {
                 value={pdfOptions.legalIdsPlacement}
               />
             </GroupCard>
+            {invoiceClientId ? (
+              <GroupCard>
+                <View style={styles.clientIdRow}>
+                  <View style={styles.clientIdText}>
+                    <Text style={styles.clientIdTitle}>{`${invoiceClientId.label} du client`}</Text>
+                    <Text style={styles.clientIdValue}>{invoiceClientId.value}</Text>
+                  </View>
+                  <Switch
+                    accessibilityLabel={`Afficher le ${invoiceClientId.label} du client`}
+                    onValueChange={(showClientId) => void savePdfOptions({ showClientId })}
+                    value={pdfOptions.showClientId}
+                  />
+                </View>
+                {pdfOptions.showClientId ? (
+                  <LegalIdsPlacementControl
+                    buildBackgroundHtml={() =>
+                      buildInvoicePlacementBackgroundHtml(
+                        requireScope(scope),
+                        invoice,
+                        user?.email ?? null,
+                        'client',
+                      )
+                    }
+                    caption={`Emplacement du ${invoiceClientId.label}`}
+                    entries={[invoiceClientId]}
+                    onChange={(clientIdPlacement) => void savePdfOptions({ clientIdPlacement })}
+                    sheetTitle={`Placer le ${invoiceClientId.label} du client`}
+                    value={pdfOptions.clientIdPlacement}
+                  />
+                ) : null}
+              </GroupCard>
+            ) : null}
           </CollapsibleSection>
         ) : null}
 
@@ -764,6 +800,28 @@ function readErrorMessage(error: unknown): string {
 
 function useStyles() {
   return useThemedStyles((colors) => ({
+    clientIdRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: spacing.md,
+      minHeight: 56,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+    },
+    clientIdText: {
+      flex: 1,
+      minWidth: 0,
+    },
+    clientIdTitle: {
+      ...typography.subheadlineMedium,
+      color: colors.text,
+    },
+    clientIdValue: {
+      ...typography.footnote,
+      color: colors.textSecondary,
+      marginTop: 2,
+    },
     safeArea: {
       flex: 1,
       backgroundColor: colors.backgroundGrouped,

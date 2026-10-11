@@ -151,6 +151,8 @@ export async function buildInvoicePdfInput(
     documentTitle: pdfOptions.title,
     issuerLegalIds: pdfOptions.legalIds,
     legalIdsPlacement: pdfOptions.legalIdsPlacement,
+    showClientId: pdfOptions.showClientId,
+    clientIdPlacement: pdfOptions.clientIdPlacement,
     stampColor: pdfOptions.stampColor,
     stampPosition: pdfOptions.stampPosition,
     showIssuerEmail: pdfOptions.showEmail,
