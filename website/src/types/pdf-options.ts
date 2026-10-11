@@ -215,6 +215,18 @@ export function nationalIdValue(
   return (vat && nationalIdRule(country)?.fromVat?.(vat)) || null;
 }
 
+/**
+ * Facture pour un client hors de France : le SIREN et le SIRET de l'émetteur
+ * ne sont ni proposés ni imprimés ; seul le n° de TVA reste (avec le numéro
+ * national du client).
+ */
+export function issuerLegalIdsForClient(
+  selected: IssuerLegalId[],
+  clientCountry: string | null | undefined,
+): IssuerLegalId[] {
+  return isFrenchCountry(clientCountry) ? selected : selected.filter((id) => id === 'vat');
+}
+
 /** Numéro national d'un client hors de France, prêt à imprimer. `null` : client français ou inconnu. */
 export function clientNationalId(
   client: {

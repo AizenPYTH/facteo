@@ -17,6 +17,7 @@ import {
   INVOICE_TITLE_SUGGESTIONS,
   isFrenchCountry,
   issuerLegalIdLabel,
+  issuerLegalIdsForClient,
   ISSUER_LEGAL_IDS,
   STAMP_COLOR_LABELS,
   STAMP_COLORS,
@@ -44,6 +45,8 @@ type InvoicePresentationSectionProps = {
   showTemplate?: boolean;
   /** Facture payée : seul cas où le tampon « Facture payée » se règle. */
   paid?: boolean;
+  /** Pays du client : hors de France, pas de SIREN / SIRET de l'émetteur. */
+  clientCountry?: string | null;
 };
 
 /** Modèles rangés par catégorie, groupes vides omis. */
@@ -68,6 +71,7 @@ export function InvoicePresentationSection({
   forecastNumber,
   showTemplate = true,
   paid = false,
+  clientCountry,
 }: InvoicePresentationSectionProps) {
   const styles = useStyles();
   const colors = useColors();
@@ -77,8 +81,9 @@ export function InvoicePresentationSection({
     company?.siren,
     company?.country,
   );
-  const legalIdChoices = ISSUER_LEGAL_IDS.filter(
-    (id) => id !== 'siren' || isFrenchCountry(company?.country),
+  const legalIdChoices = issuerLegalIdsForClient(
+    ISSUER_LEGAL_IDS.filter((id) => id !== 'siren' || isFrenchCountry(company?.country)),
+    clientCountry,
   );
   const activeTitle = value.title?.trim() || DEFAULT_INVOICE_TITLE;
 

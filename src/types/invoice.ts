@@ -126,6 +126,8 @@ export type CreateInvoiceInput = {
   number?: string | null;
   /** Titre et identifiants affichés sur le PDF. Absent : présentation par défaut. */
   pdfOptions?: InvoicePdfOptions;
+  /** Création : facture déjà réglée (payée le jour d'émission, sans échéance). */
+  alreadyPaid?: boolean;
 };
 
 export type UpdateInvoiceInput = CreateInvoiceInput;

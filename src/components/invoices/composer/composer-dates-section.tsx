@@ -24,6 +24,10 @@ type ComposerDatesSectionProps = {
   onDelayInput: (value: string) => void;
   onDueAtChange: (value: string) => void;
   hasError: boolean;
+  /** « Payée » : facture déjà réglée, sans échéance ; le tampon se règle alors. */
+  paid: boolean;
+  /** Absent (modification) : pas de choix « Payée ». */
+  onPaidChange?: (paid: boolean) => void;
 };
 
 /**
@@ -39,6 +43,8 @@ export function ComposerDatesSection({
   onDelayInput,
   onDueAtChange,
   hasError,
+  paid,
+  onPaidChange,
 }: ComposerDatesSectionProps) {
   const styles = useComposerStyles(datesStyles);
   const colors = useComposerColors();
@@ -73,13 +79,25 @@ export function ComposerDatesSection({
             horizontal
             keyboardShouldPersistTaps="handled"
             showsHorizontalScrollIndicator={false}>
+            {onPaidChange ? (
+              <Pill
+                accessibilityLabel="Facture déjà payée"
+                label="Payée"
+                onPress={() => {
+                  setCustomOpen(false);
+                  onPaidChange(true);
+                }}
+                selected={paid}
+              />
+            ) : null}
             <Pill
               label="À réception"
               onPress={() => {
                 setCustomOpen(false);
+                onPaidChange?.(false);
                 onDelayChange(null);
               }}
-              selected={!customOpen && days === ''}
+              selected={!paid && !customOpen && days === ''}
             />
             {DELAY_PRESETS.map((preset) => (
               <Pill
@@ -88,19 +106,23 @@ export function ComposerDatesSection({
                 label={`${preset} j`}
                 onPress={() => {
                   setCustomOpen(false);
+                  onPaidChange?.(false);
                   onDelayChange(preset);
                 }}
-                selected={!customOpen && numericDays === preset}
+                selected={!paid && !customOpen && numericDays === preset}
               />
             ))}
             <Pill
               accessibilityLabel="Autre délai"
               label={customOpen && numericDays ? `${numericDays} j` : 'Autre'}
-              onPress={() => setCustomOpen(true)}
-              selected={customOpen || (days !== '' && !isPreset)}
+              onPress={() => {
+                onPaidChange?.(false);
+                setCustomOpen(true);
+              }}
+              selected={!paid && (customOpen || (days !== '' && !isPreset))}
             />
           </ScrollView>
-          {customOpen ? (
+          {customOpen && !paid ? (
             <View style={styles.customRow}>
               <Text maxFontSizeMultiplier={1.4} style={styles.customLabel}>
                 Délai en jours
@@ -125,18 +147,26 @@ export function ComposerDatesSection({
           ) : null}
         </View>
 
-        <View style={styles.rowSeparated}>
-          <Text maxFontSizeMultiplier={1.4} style={styles.rowLabelMuted}>
-            Échéance
-          </Text>
-          <DateChip
-            accessibilityLabel="Date d’échéance"
-            emphasized
-            onChange={onDueAtChange}
-            placeholder="Aucune"
-            value={dueAt}
-          />
-        </View>
+        {paid ? (
+          <View style={styles.rowSeparated}>
+            <Text maxFontSizeMultiplier={1.4} style={styles.rowLabelMuted}>
+              Payée le jour de l’émission
+            </Text>
+          </View>
+        ) : (
+          <View style={styles.rowSeparated}>
+            <Text maxFontSizeMultiplier={1.4} style={styles.rowLabelMuted}>
+              Échéance
+            </Text>
+            <DateChip
+              accessibilityLabel="Date d’échéance"
+              emphasized
+              onChange={onDueAtChange}
+              placeholder="Aucune"
+              value={dueAt}
+            />
+          </View>
+        )}
       </GroupCard>
     </>
   );

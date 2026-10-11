@@ -41,6 +41,7 @@ import {
   INVOICE_TITLE_SUGGESTIONS,
   clientNationalId,
   isFrenchCountry,
+  issuerLegalIdsForClient,
   issuerLegalIdLabel,
   ISSUER_LEGAL_IDS,
   STAMP_COLOR_LABELS,
@@ -235,6 +236,7 @@ export function ComposerTemplateStep({
           company={company}
           onChange={onPdfOptionsChange}
           onSaveAsDefaultChange={onSaveBankAsDefaultChange}
+          paid={paid}
           paymentDays={paymentDays}
           saveAsDefault={saveBankAsDefault}
           value={pdfOptions}
@@ -262,7 +264,7 @@ export function ComposerTemplateStep({
       <SectionHeader title="Récapitulatif" />
       <GroupCard style={styles.recap}>
         <RecapRow label="Client" strong value={clientName || '—'} />
-        <RecapRow label="Échéance" separated strong value={dueLabel} />
+        <RecapRow label="Échéance" separated strong value={paid ? 'Payée' : dueLabel} />
         <RecapRow label="Total HT" separated value={formatPriceHT(totals.subtotalHt)} />
         {totals.totalDiscount > 0 ? (
           <RecapRow compact label="dont remises" tone={colors.ok} value={`− ${formatPriceHT(totals.totalDiscount)}`} />
@@ -455,8 +457,10 @@ function PresentationOptions({
     company?.country,
   );
   // Hors de France, pas de SIREN : seul le numéro national (NIPC…) est proposé.
-  const legalIdChoices = ISSUER_LEGAL_IDS.filter(
-    (id) => id !== 'siren' || isFrenchCountry(company?.country),
+  // Client hors de France : pas de SIREN / SIRET de l'émetteur, seulement sa TVA.
+  const legalIdChoices = issuerLegalIdsForClient(
+    ISSUER_LEGAL_IDS.filter((id) => id !== 'siren' || isFrenchCountry(company?.country)),
+    client?.country,
   );
   // Client hors de France : son numéro (NIPC…), à afficher ou non, et où.
   const clientId = clientNationalId(client);
@@ -593,6 +597,29 @@ function PresentationOptions({
             </ScrollView>
           </View>
 
+          {clientId ? (
+            <>
+              <Text maxFontSizeMultiplier={1.4} style={[styles.optionCaption, styles.idsCaption]}>
+                Numéro du client
+              </Text>
+              <SwitchRow
+                label={`${clientId.label} du client`}
+                onValueChange={(showClientId) => onChange({ ...value, showClientId })}
+                subtitle={clientId.value}
+                value={value.showClientId}
+              />
+              {value.showClientId && buildClientPlacementBackgroundHtml ? (
+                <LegalIdsPlacementControl
+                  buildBackgroundHtml={buildClientPlacementBackgroundHtml}
+                  caption={`Emplacement du ${clientId.label}`}
+                  entries={[clientId]}
+                  onChange={(clientIdPlacement) => onChange({ ...value, clientIdPlacement })}
+                  separated={false}
+                  sheetTitle={`Placer le ${clientId.label} du client`}
+                  value={value.clientIdPlacement}
+                />
+              ) : null}
+
           <Text maxFontSizeMultiplier={1.4} style={[styles.optionCaption, styles.idsCaption]}>
             Vos identifiants (votre entreprise)
           </Text>
@@ -618,33 +645,11 @@ function PresentationOptions({
 
           <LegalIdsPlacementControl
             buildBackgroundHtml={buildPlacementBackgroundHtml}
-            entries={legalIdEntries(value.legalIds, company)}
+            entries={legalIdEntries(issuerLegalIdsForClient(value.legalIds, client?.country), company)}
             onChange={(legalIdsPlacement) => onChange({ ...value, legalIdsPlacement })}
             value={value.legalIdsPlacement}
           />
 
-          {clientId ? (
-            <>
-              <Text maxFontSizeMultiplier={1.4} style={[styles.optionCaption, styles.idsCaption]}>
-                Numéro du client
-              </Text>
-              <SwitchRow
-                label={`${clientId.label} du client`}
-                onValueChange={(showClientId) => onChange({ ...value, showClientId })}
-                subtitle={clientId.value}
-                value={value.showClientId}
-              />
-              {value.showClientId && buildClientPlacementBackgroundHtml ? (
-                <LegalIdsPlacementControl
-                  buildBackgroundHtml={buildClientPlacementBackgroundHtml}
-                  caption={`Emplacement du ${clientId.label}`}
-                  entries={[clientId]}
-                  onChange={(clientIdPlacement) => onChange({ ...value, clientIdPlacement })}
-                  separated={false}
-                  sheetTitle={`Placer le ${clientId.label} du client`}
-                  value={value.clientIdPlacement}
-                />
-              ) : null}
             </>
           ) : null}
 

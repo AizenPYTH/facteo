@@ -342,8 +342,9 @@ export async function createInvoice(scope: DataScope, input: CreateInvoiceInput)
   }
 
   const settings = await fetchSettings(scope);
-  const defaultDueAt =
-    input.dueAt ?? computeDueDate(input.paymentTermsDays ?? settings?.paymentTermsDays ?? 30);
+  const defaultDueAt = input.alreadyPaid
+    ? null
+    : (input.dueAt ?? computeDueDate(input.paymentTermsDays ?? settings?.paymentTermsDays ?? 30));
   const customNumber = input.number?.trim() || null;
 
   // Un numéro saisi à la main peut occuper le prochain numéro automatique :
@@ -378,6 +379,20 @@ export async function createInvoice(scope: DataScope, input: CreateInvoiceInput)
 
   try {
     await insertInvoiceItems(invoiceRow.id, lines);
+    // Facture déjà réglée : le paiement complet est enregistré avec elle.
+    if (input.alreadyPaid && invoice.total_ttc > 0 && invoice.paid_at) {
+      const { error: paymentError } = await supabase.from('invoice_payments').insert({
+        invoice_id: invoiceRow.id,
+        user_id: scope.userId,
+        amount: invoice.total_ttc,
+        paid_at: invoice.paid_at,
+      });
+
+      if (paymentError) {
+        logSupabaseError('createInvoice.payment', paymentError);
+        throw paymentError;
+      }
+    }
   } catch (error) {
     await supabase
       .from('invoices')
