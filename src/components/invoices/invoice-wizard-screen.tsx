@@ -43,6 +43,7 @@ import { useCompanyProfile } from '@/hooks/use-company-profile';
 import { useTenant } from '@/hooks/use-tenant';
 import { takePendingDictation } from '@/lib/ai/pending-dictation';
 import { processVoiceCommand, type ProcessVoiceCommandResult } from '@/lib/ai/voice-transcription';
+import { newVoiceAttemptId, trackProductEvent } from '@/lib/analytics/product-events';
 import { createClient, fetchClientsPage } from '@/lib/supabase/clients';
 import { updateCompanyBankDetails } from '@/lib/supabase/companies';
 import { profilesQueryKeys } from '@/lib/supabase/query-keys';
@@ -146,6 +147,8 @@ export function InvoiceWizardScreen({
   useEffect(() => {
     onStepChange?.(step);
   }, [onStepChange, step]);
+  /** Dernière dictée appliquée : la facture enregistrée est alors « vocale » (vérifié en base). */
+  const [voiceAttemptId, setVoiceAttemptId] = useState<string | null>(null);
   const [state, setState] = useState<InvoiceWizardState>(
     initialState ?? createEmptyInvoiceWizardState(),
   );
@@ -239,8 +242,9 @@ export function InvoiceWizardScreen({
    * Résultat d'une dictée : client retrouvé (ou créé), lignes ajoutées avec le
    * prix du catalogue quand la dictée n'en donne pas, délai de paiement.
    */
-  async function applyVoiceCommand({ command }: ProcessVoiceCommandResult): Promise<string> {
+  async function applyVoiceCommand({ command, attemptId }: ProcessVoiceCommandResult): Promise<string> {
     const activeScope = requireScope(scope);
+    if (attemptId && mode === 'create') setVoiceAttemptId(attemptId);
     const summary: string[] = [];
     const normalize = (value: string) =>
       value
@@ -348,10 +352,13 @@ export function InvoiceWizardScreen({
         const text = takePendingDictation();
         if (cancelled || !text) return;
         void (async () => {
+          const attemptId = newVoiceAttemptId();
+          void trackProductEvent('voice_invoice_started', { attemptId });
           try {
-            const result = await processVoiceCommand({ documentType: 'invoice', transcript: text });
+            const result = await processVoiceCommand({ documentType: 'invoice', transcript: text, attemptId });
             if (!cancelled) showSuccess(await applyVoiceCommand(result));
           } catch (error) {
+            void trackProductEvent('voice_invoice_failed', { attemptId, errorCode: 'request_failed' });
             if (!cancelled) showError(error instanceof Error ? error.message : 'Dictée impossible.');
           }
         })();
@@ -507,6 +514,7 @@ export function InvoiceWizardScreen({
       if (mode === 'create') {
         await createInvoice.mutateAsync({
           ...input,
+          creation: voiceAttemptId ? { method: 'voice', attemptId: voiceAttemptId } : { method: 'manual' },
           ...(alreadyPaid ? { alreadyPaid: true, dueAt: null } : {}),
           number: customNumber.trim() || null,
           pdfOptions: { ...pdfOptions, templateId },

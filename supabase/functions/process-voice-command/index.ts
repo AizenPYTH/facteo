@@ -2,6 +2,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
 
 import { requestOpenAiJsonSchema, requestOpenAiTranscription } from '../_shared/openai.ts';
 import { assertUserHasFeature } from '../_shared/entitlements.ts';
+import { createVoiceTracker } from '../_shared/product-events.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -14,6 +15,9 @@ type ProcessVoiceBody = {
   mimeType?: string;
   /** Texte déjà dicté (Siri, raccourci) : la transcription audio est sautée. */
   transcript?: string;
+  /** Tentative de création vocale (suivi d'utilisation, sans contenu). */
+  attemptId?: string;
+  platform?: string;
 };
 
 const VOICE_COMMAND_SCHEMA = {
@@ -64,6 +68,9 @@ Deno.serve(async (request) => {
     return new Response('ok', { headers: corsHeaders });
   }
 
+  let track = createVoiceTracker(null);
+  let stage: 'setup' | 'transcription' | 'analysis' = 'setup';
+
   try {
     if (request.method !== 'POST') {
       return jsonResponse({ error: 'Method not allowed.' }, 405);
@@ -75,10 +82,6 @@ Deno.serve(async (request) => {
 
     if (!supabaseUrl || !supabaseAnonKey) {
       return jsonResponse({ error: 'Configuration serveur incomplète.' }, 500);
-    }
-
-    if (!openAiApiKey) {
-      return jsonResponse({ error: "L'assistant IA n'est pas encore configuré." }, 503);
     }
 
     const authHeader = request.headers.get('Authorization');
@@ -99,9 +102,27 @@ Deno.serve(async (request) => {
       return jsonResponse({ error: 'Non autorisé.' }, 401);
     }
 
+    const body = (await request.json().catch(() => null)) as ProcessVoiceBody | null;
+    const documentType = body?.documentType === 'invoice' ? 'invoice' : 'quote';
+    // Suivi des seules factures : identifiants, plateforme et résultat,
+    // jamais l'audio, la transcription ni le brouillon.
+    track = createVoiceTracker({
+      supabaseUrl,
+      userId: user.id,
+      attemptId: documentType === 'invoice' ? body?.attemptId : undefined,
+      platform: body?.platform,
+      clientInfo: request.headers.get('x-client-info'),
+    });
+
+    if (!openAiApiKey) {
+      await track.failed('ai_not_configured');
+      return jsonResponse({ error: "L'assistant IA n'est pas encore configuré." }, 503);
+    }
+
     try {
       await assertUserHasFeature(userClient, user.id, 'ai_assistant');
     } catch (entitlementError) {
+      await track.failed('plan_required');
       const message =
         entitlementError instanceof Error && entitlementError.message.startsWith('FONCTIONNALITE_REQUISE')
           ? 'L’assistant IA est réservé à l’offre Max.'
@@ -111,17 +132,17 @@ Deno.serve(async (request) => {
       return jsonResponse({ error: message }, 403);
     }
 
-    const body = (await request.json().catch(() => null)) as ProcessVoiceBody | null;
-    const documentType = body?.documentType === 'invoice' ? 'invoice' : 'quote';
     const audioBase64 = body?.audioBase64?.trim() ?? '';
     const mimeType = body?.mimeType?.trim() || 'audio/mp4';
 
     const dictatedText = body?.transcript?.trim().slice(0, 4000) ?? '';
 
     if (!dictatedText && audioBase64.length < 100) {
+      await track.failed('invalid_audio');
       return jsonResponse({ error: 'Audio invalide.' }, 400);
     }
 
+    stage = 'transcription';
     const transcript = dictatedText
       ? dictatedText
       : await requestOpenAiTranscription({
@@ -131,6 +152,10 @@ Deno.serve(async (request) => {
           model: Deno.env.get('OPENAI_TRANSCRIBE_MODEL')?.trim() || 'gpt-4o-mini-transcribe',
           language: 'fr',
         });
+    if (!dictatedText) {
+      await track.transcribed();
+    }
+    stage = 'analysis';
 
     const systemPrompt = [
       'Tu analyses une commande vocale artisan pour INVEQ.',
@@ -157,17 +182,26 @@ Deno.serve(async (request) => {
       userPrompt,
     });
 
-    const command = JSON.parse(parsedJson) as Record<string, unknown>;
+    const command = normalizeVoiceCommand(JSON.parse(parsedJson) as Record<string, unknown>, documentType);
 
-    return jsonResponse(
-      {
-        transcript,
-        command: normalizeVoiceCommand(command, documentType),
-      },
-      200,
-    );
+    if (Array.isArray(command.items) && command.items.length > 0) {
+      await track.draftGenerated();
+    } else {
+      await track.failed('no_items');
+    }
+
+    return jsonResponse({ transcript, command }, 200);
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Erreur inattendue.';
+    await track.failed(
+      message === 'OPENAI_TIMEOUT'
+        ? 'openai_timeout'
+        : stage === 'transcription'
+          ? 'transcription_failed'
+          : stage === 'analysis'
+            ? 'analysis_failed'
+            : 'server_error',
+    );
     const status = message === 'OPENAI_TIMEOUT'
       ? 504
       :

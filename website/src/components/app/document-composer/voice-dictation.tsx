@@ -6,6 +6,7 @@ import { useEffect, useImperativeHandle, useRef, useState } from 'react';
 import { Kbd } from '@/components/app/document-composer/ui';
 import { useSubscription } from '@/hooks/use-subscription';
 import { processVoiceCommand, type VoiceCommandResult } from '@/lib/domain/ai/voice-command';
+import { newVoiceAttemptId, trackProductEvent } from '@/lib/domain/analytics/product-events';
 import { cn } from '@/lib/utils';
 
 type Phase = 'idle' | 'recording' | 'processing';
@@ -86,6 +87,8 @@ export function VoiceDictation({
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   /** « Annuler » pendant l'écoute : l'enregistrement est jeté, pas analysé. */
   const discardRef = useRef(false);
+  /** Tentative en cours (suivi des dictées de facture, sans contenu). */
+  const attemptRef = useRef<string | null>(null);
 
   useEffect(
     () => () => {
@@ -98,22 +101,34 @@ export function VoiceDictation({
   const locked = !hasFeature('ai_assistant');
   const label = kind === 'invoice' ? 'Dicter la facture' : 'Dicter le devis';
 
+  function trackFailure(errorCode: string) {
+    const attemptId = attemptRef.current;
+    attemptRef.current = null;
+    if (attemptId) void trackProductEvent('voice_invoice_failed', { attemptId, errorCode });
+  }
+
   async function finish(blob: Blob) {
     if (blob.size < 2000) {
       setPhase('idle');
       setError('Enregistrement trop court. Maintenez la dictée quelques secondes.');
+      trackFailure('recording_too_short');
       return;
     }
     setPhase('processing');
+    const attemptId = attemptRef.current ?? undefined;
     try {
       const result = await processVoiceCommand({
         documentType: kind,
         audioBase64: await blobToBase64(blob),
         mimeType: blob.type.split(';')[0] || 'audio/webm',
+        attemptId,
       });
+      attemptRef.current = null;
       setMessage(await onResult(result));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Dictée impossible.');
+      // Le serveur a déjà noté son propre échec : celui-ci est ignoré (dédoublonné).
+      trackFailure('request_failed');
     } finally {
       setPhase('idle');
     }
@@ -123,8 +138,16 @@ export function VoiceDictation({
     if (locked || phase !== 'idle') return;
     setError(null);
     setMessage(null);
+    // Seules les dictées de facture sont suivies.
+    if (kind === 'invoice') {
+      attemptRef.current = newVoiceAttemptId();
+      void trackProductEvent('voice_invoice_started', { attemptId: attemptRef.current });
+    } else {
+      attemptRef.current = null;
+    }
     if (typeof navigator === 'undefined' || !navigator.mediaDevices?.getUserMedia) {
       setError('Ce navigateur ne permet pas d’utiliser le micro.');
+      trackFailure('microphone_unsupported');
       return;
     }
 
@@ -133,6 +156,7 @@ export function VoiceDictation({
       stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     } catch {
       setError('Micro refusé. Autorisez le micro pour ce site dans le navigateur, puis réessayez.');
+      trackFailure('microphone_denied');
       return;
     }
 
@@ -148,6 +172,7 @@ export function VoiceDictation({
       if (discardRef.current) {
         discardRef.current = false;
         setPhase('idle');
+        trackFailure('cancelled');
         return;
       }
       void finish(new Blob(chunks, { type: recorder.mimeType || mimeType || 'audio/webm' }));

@@ -1,5 +1,6 @@
 import type { LucideIcon } from 'lucide-react';
 import {
+  Activity,
   Building2,
   CreditCard,
   FileText,
@@ -69,6 +70,14 @@ export const APP_NAV_FOOTER: AppNavItem[] = [
     matchPrefixes: ['/app/settings'],
   },
 ];
+
+/** Réservé aux administrateurs de la plateforme (vérifié aussi côté serveur et en base). */
+export const APP_NAV_ADMIN: AppNavItem = {
+  href: '/app/admin/activite',
+  label: 'Activité utilisateurs',
+  icon: Activity,
+  matchPrefixes: ['/app/admin'],
+};
 
 export function isAppNavActive(pathname: string, item: AppNavItem): boolean {
   if (item.href === '/app') {

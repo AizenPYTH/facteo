@@ -67,6 +67,7 @@ import { enforcePlanLimit } from '@/lib/subscription/limit-guard';
 import { PlanLimitError } from '@/types/subscription';
 import { fetchProducts, fetchProductsByIds } from '@/lib/domain/supabase/products';
 import type { VoiceCommandResult } from '@/lib/domain/ai/voice-command';
+import type { InvoiceCreationSource } from '@/lib/domain/analytics/product-events';
 import {
   VoiceDictation,
   type VoiceDictationHandle,
@@ -435,6 +436,8 @@ export function DocumentComposer({
   const spreadsheetInputRef = useRef<HTMLInputElement | null>(null);
   const photoInputRef = useRef<HTMLInputElement | null>(null);
   const voiceRef = useRef<VoiceDictationHandle>(null);
+  /** Dernière dictée appliquée : la facture enregistrée est alors « vocale » (vérifié en base). */
+  const [voiceAttemptId, setVoiceAttemptId] = useState<string | null>(null);
   const initializedFromProductsRef = useRef(false);
 
   const clientRef = useRef<HTMLDivElement>(null);
@@ -615,8 +618,13 @@ export function DocumentComposer({
         });
       }
 
+      const creation: InvoiceCreationSource = voiceAttemptId
+        ? { method: 'voice', attemptId: voiceAttemptId }
+        : { method: 'manual' };
+
       if (alreadyPaid) {
         return createInvoice(activeScope, {
+          creation,
           alreadyPaid: true,
           clientId,
           dueAt: null,
@@ -633,6 +641,7 @@ export function DocumentComposer({
       const dueAtIso = dueDate ? frenchDateInputToIso(dueDate) : null;
 
       return createInvoice(activeScope, {
+        creation,
         clientId,
         dueAt: dueAtIso,
         issuedAt: issuedAtIso,
@@ -853,8 +862,9 @@ export function DocumentComposer({
    * Résultat d'une dictée : client retrouvé (ou créé), lignes ajoutées avec le
    * prix du catalogue quand la dictée n'en donne pas, délai de paiement.
    */
-  async function applyVoiceCommand({ command }: VoiceCommandResult): Promise<string> {
+  async function applyVoiceCommand({ command, attemptId }: VoiceCommandResult): Promise<string> {
     const activeScope = requireScope(scope);
+    if (attemptId && !edit) setVoiceAttemptId(attemptId);
     const summary: string[] = [];
     const normalize = (value: string) =>
       value

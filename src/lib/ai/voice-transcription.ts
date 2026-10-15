@@ -1,14 +1,22 @@
+import { Platform } from 'react-native';
+
 import { callAiEdgeFunction } from '@/lib/ai/edge-ai';
 import type { VoiceCommandResponse } from '@/types/voice-command';
 
-export type ProcessVoiceCommandInput =
+export type ProcessVoiceCommandInput = (
   | { documentType: 'quote' | 'invoice'; audioBase64: string; mimeType: string }
   /** Texte déjà dicté (Siri, raccourci) : pas d'audio à transcrire. */
-  | { documentType: 'quote' | 'invoice'; transcript: string };
+  | { documentType: 'quote' | 'invoice'; transcript: string }
+) & {
+  /** Tentative de dictée (suivi d'utilisation, sans contenu). */
+  attemptId?: string;
+};
 
 export type ProcessVoiceCommandResult = {
   transcript: string;
   command: VoiceCommandResponse;
+  /** Reprise à l'enregistrement : la facture n'est « vocale » que si le serveur l'a confirmé. */
+  attemptId?: string;
 };
 
 export async function processVoiceCommand(
@@ -16,11 +24,12 @@ export async function processVoiceCommand(
 ): Promise<ProcessVoiceCommandResult> {
   const payload = await callAiEdgeFunction<ProcessVoiceCommandResult>(
     'process-voice-command',
-    input,
+    { ...input, platform: Platform.OS },
     'Assistant vocal indisponible. Réessayez dans quelques instants.',
   );
 
   return {
+    attemptId: input.attemptId,
     transcript: typeof payload.transcript === 'string' ? payload.transcript.trim() : '',
     command: {
       document_type: payload.command?.document_type === 'invoice' ? 'invoice' : 'quote',

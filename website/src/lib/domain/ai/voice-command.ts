@@ -23,6 +23,8 @@ export type VoiceCommand = {
 export type VoiceCommandResult = {
   transcript: string;
   command: VoiceCommand;
+  /** Tentative de dictée (suivi d'utilisation), reprise à l'enregistrement de la facture. */
+  attemptId?: string;
 };
 
 /**
@@ -33,9 +35,10 @@ export async function processVoiceCommand(input: {
   documentType: 'quote' | 'invoice';
   audioBase64: string;
   mimeType: string;
+  attemptId?: string;
 }): Promise<VoiceCommandResult> {
   const { data, error } = await supabase.functions.invoke<VoiceCommandResult>('process-voice-command', {
-    body: input,
+    body: { ...input, platform: 'web' },
   });
 
   if (error) {
@@ -50,5 +53,5 @@ export async function processVoiceCommand(input: {
     throw new Error('Aucune commande vocale reconnue.');
   }
 
-  return data;
+  return { ...data, attemptId: input.attemptId };
 }
