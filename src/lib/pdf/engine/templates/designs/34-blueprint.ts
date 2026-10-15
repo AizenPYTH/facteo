@@ -1,5 +1,5 @@
 import type { TemplateContext } from '@/lib/pdf/engine/templates/context';
-import { FONTS, escapeHtml, qrSlot, u } from '@/lib/pdf/engine/templates/shared';
+import { FONTS, escapeHtml, qrSlot, u, logoBox } from '@/lib/pdf/engine/templates/shared';
 import type { PdfTemplateDefinition } from '@/lib/pdf/engine/templates/types';
 import { joinLines, legalIdsText, paymentLines, quantityText, totalsList } from '@/lib/pdf/engine/templates/designs/kit';
 
@@ -119,7 +119,7 @@ function render(context: TemplateContext): string {
     <table style="width:${u(330)}; border-collapse:collapse; border:${u(1.5)} solid ${WHITE}">
       <tr>
         <td colspan="2" style="border:${u(1)} solid ${RULE}; padding:${u(6)} ${u(8)}">
-          ${context.logoUrl ? `<div style="display:inline-block; background:${WHITE}; padding:${u(3)} ${u(6)}; margin-bottom:${u(4)}"><img src="${escapeHtml(context.logoUrl)}" alt="" style="display:block; max-height:${u(28)}; max-width:${u(150)}" /></div>` : ''}
+          ${context.logoUrl ? `<div style="display:inline-block; background:${WHITE}; padding:${u(3)} ${u(6)}; margin-bottom:${u(4)}"><img src="${escapeHtml(context.logoUrl)}" alt="" style="display:block; ${logoBox(context.logoRatio, 28, 150)}" /></div>` : ''}
           ${condensed(escapeHtml(issuer.name), 13, 'font-weight:600; display:block')}
         </td>
       </tr>

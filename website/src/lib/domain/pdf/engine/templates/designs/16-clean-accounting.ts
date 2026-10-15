@@ -84,7 +84,7 @@ function render(context: TemplateContext): string {
   )} ${u(46)} ${u(36)}; font-variant-numeric:tabular-nums">
   <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:${u(20)}">
     <div style="min-width:0">
-      ${logoBanner(context.logoUrl, { maxHeight: 30, marginBottom: 8 })}
+      ${logoBanner(context.logoUrl, { ratio: context.logoRatio, maxHeight: 30, marginBottom: 8 })}
       <div style="font-size:${u(15)}; font-weight:600">${escapeHtml(issuer.name)}</div>
       <div style="font-size:${u(10)}; line-height:1.7; color:${MUTED}; margin-top:${u(
         5,

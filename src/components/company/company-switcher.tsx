@@ -1,4 +1,5 @@
 import { Image } from 'expo-image';
+import { CompanyAssetImage } from '@/components/company/company-asset-image';
 import { SymbolView } from 'expo-symbols';
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
@@ -38,10 +39,10 @@ export function CompanySwitcher({
         style={styles.trigger}>
         <View style={styles.avatar}>
           {activeCompany?.logoUrl ? (
-            <Image
-              contentFit="cover"
-              source={{ uri: activeCompany.logoUrl }}
+            <CompanyAssetImage
+              contentFit="contain"
               style={styles.avatarImage}
+              uri={activeCompany.logoUrl}
             />
           ) : (
             <AppText variant="caption">

@@ -442,6 +442,8 @@ export type InvoicePdfOptions = {
   templateId: string | null;
   /** E-mail de l'entreprise sur la facture. Masqué par défaut, anciennes factures comprises. */
   showEmail: boolean;
+  /** Logo de l'entreprise sur le document (s'il existe). */
+  showLogo: boolean;
   /** Emplacement des SIREN / SIRET / TVA. 'auto' : celui du modèle, comme avant. */
   legalIdsPlacement: LegalIdsPlacement;
   /** Client hors de France : imprimer son numéro national (NIPC…). Affiché par défaut. */
@@ -462,6 +464,7 @@ export function createDefaultInvoicePdfOptions(): InvoicePdfOptions {
     stampPosition: 'auto',
     templateId: null,
     showEmail: false,
+    showLogo: true,
     legalIdsPlacement: 'auto',
     showClientId: true,
     clientIdPlacement: 'auto',
@@ -501,6 +504,7 @@ export function parseInvoicePdfOptions(value: unknown): InvoicePdfOptions {
       : null;
 
   const showEmail = source.show_email === true;
+  const showLogo = source.show_logo !== false;
   const bank = parseInvoiceBankDetails(source.bank);
   const paymentMention = normalizePaymentMention(source.payment_mention);
   const legalIdsPlacement = parseLegalIdsPlacement(source.legal_ids_placement);
@@ -514,6 +518,7 @@ export function parseInvoicePdfOptions(value: unknown): InvoicePdfOptions {
     stampPosition,
     templateId,
     showEmail,
+    showLogo,
     bank,
     paymentMention,
     legalIdsPlacement,
@@ -530,6 +535,7 @@ export function serializeInvoicePdfOptions(options: InvoicePdfOptions) {
     stamp_position: options.stampPosition,
     template_id: options.templateId,
     show_email: options.showEmail,
+    show_logo: options.showLogo,
     legal_ids_placement: parseLegalIdsPlacement(options.legalIdsPlacement),
     show_client_id: options.showClientId,
     client_id_placement: parseLegalIdsPlacement(options.clientIdPlacement),

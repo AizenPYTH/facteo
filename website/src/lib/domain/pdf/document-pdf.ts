@@ -156,6 +156,7 @@ export async function buildInvoicePdfInput(
     stampColor: pdfOptions.stampColor,
     stampPosition: pdfOptions.stampPosition,
     showIssuerEmail: pdfOptions.showEmail,
+    showLogo: pdfOptions.showLogo,
     paymentMention: pdfOptions.paymentMention,
   };
 }

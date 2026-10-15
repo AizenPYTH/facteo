@@ -1,5 +1,5 @@
 import type { TemplateContext } from '@/lib/pdf/engine/templates/context';
-import { FONTS, escapeHtml, qrSlot, u } from '@/lib/pdf/engine/templates/shared';
+import { FONTS, escapeHtml, qrSlot, u, logoBox } from '@/lib/pdf/engine/templates/shared';
 import type { PdfTemplateDefinition } from '@/lib/pdf/engine/templates/types';
 import { joinLines, legalIdsText, paymentLines, quantityText, totalsList } from '@/lib/pdf/engine/templates/designs/kit';
 
@@ -17,7 +17,7 @@ function render(context: TemplateContext): string {
   return `<div class="dc-page" style="font-family:${FONTS.workSans}; color:${INK}; background:#fff; padding:${u(52)} ${u(56)}">
   <div style="display:flex; justify-content:space-between; align-items:center">
     <div style="font-size:${u(26)}; font-weight:700">${escapeHtml(labels.document)}</div>
-    ${context.logoUrl ? `<img src="${escapeHtml(context.logoUrl)}" alt="" style="max-height:${u(36)}; max-width:${u(170)}" />` : `<div style="font-size:${u(15)}; font-weight:700">${escapeHtml(issuer.name)}</div>`}
+    ${context.logoUrl ? `<img src="${escapeHtml(context.logoUrl)}" alt="" style="${logoBox(context.logoRatio, 36, 170)}" />` : `<div style="font-size:${u(15)}; font-weight:700">${escapeHtml(issuer.name)}</div>`}
   </div>
 
   <table style="margin-top:${u(18)}; font-size:${u(11.5)}; border-collapse:collapse">

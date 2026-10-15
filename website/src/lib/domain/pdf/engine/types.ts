@@ -28,6 +28,8 @@ export type PdfCompanyInfo = Pick<
   bic?: string;
   paymentMethods?: PaymentMethodId[];
   logoUrl?: string | null;
+  /** Largeur / hauteur du logo (mesurée à l'embarquement) : dimensionne le logo selon sa forme. */
+  logoRatio?: number | null;
   signatureUrl?: string | null;
   /** SIREN saisi à part. Absent : 9 premiers chiffres du SIRET. */
   siren?: string | null;
@@ -111,6 +113,8 @@ export type PdfDocumentInput = {
   stampPosition?: StampPosition | null;
   /** Afficher l'e-mail de l'entreprise. Absent : affiché sur un devis, masqué sur une facture. */
   showIssuerEmail?: boolean;
+  /** Afficher le logo de l'entreprise. Absent : oui, s'il existe. */
+  showLogo?: boolean | null;
   /** Mention de paiement choisie sur la facture, imprimée en tête des mentions du bas de page. */
   paymentMention?: string | null;
 };

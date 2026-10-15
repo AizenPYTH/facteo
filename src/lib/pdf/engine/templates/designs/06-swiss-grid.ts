@@ -53,7 +53,7 @@ function render(context: TemplateContext): string {
   return `<div class="dc-page" style="font-family:${FONTS.archivo}; color:${INK}; background:#fff; padding:${u(
     52,
   )} ${u(52)} ${u(40)}">
-  ${logoBanner(context.logoUrl, { maxHeight: 36, marginBottom: 14 })}
+  ${logoBanner(context.logoUrl, { ratio: context.logoRatio, maxHeight: 36, marginBottom: 14 })}
   <div style="display:flex; gap:${u(20)}; border-top:${u(3)} solid ${INK}; padding-top:${u(14)}">
     ${gridColumn(labels.issuer, [
       issuer.name,

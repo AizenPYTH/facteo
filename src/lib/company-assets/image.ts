@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as ImageManipulator from 'expo-image-manipulator';
+import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 import * as ImagePicker from 'expo-image-picker';
 
 import type { CompanyAssetKind } from '@/lib/supabase/storage';
@@ -7,22 +7,10 @@ import { presentNatively } from '@/lib/native/presentation';
 
 const CACHE_PREFIX = '@inveq/company-asset/';
 
-const ASSET_CONFIG: Record<
-  CompanyAssetKind,
-  { maxWidth: number; maxHeight: number; compress: number; label: string }
-> = {
-  logo: {
-    maxWidth: 1200,
-    maxHeight: 600,
-    compress: 0.82,
-    label: 'logo',
-  },
-  signature: {
-    maxWidth: 800,
-    maxHeight: 300,
-    compress: 0.85,
-    label: 'signature',
-  },
+/** Plus grand côté conservé : au-delà, l'image est réduite sans changer sa forme. */
+const ASSET_CONFIG: Record<CompanyAssetKind, { maxSide: number; compress: number }> = {
+  logo: { maxSide: 1200, compress: 0.9 },
+  signature: { maxSide: 900, compress: 0.9 },
 };
 
 export async function pickCompanyAsset(kind: CompanyAssetKind): Promise<{
@@ -37,11 +25,12 @@ export async function pickCompanyAsset(kind: CompanyAssetKind): Promise<{
 
   // La photothèque est une vue native : choisir un logo puis enchaîner sur la
   // signature présentait deux contrôleurs qui se chevauchaient.
+  // Pas de recadrage imposé : sur iOS il est toujours carré et coupait les
+  // logos larges ; l'image garde sa forme, ses marges sont gérées au rendu.
   const result = await presentNatively(() =>
     ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
-      allowsEditing: true,
-      aspect: kind === 'logo' ? [3, 1] : [4, 1],
+      allowsEditing: false,
       quality: 1,
     }),
   );
@@ -52,19 +41,25 @@ export async function pickCompanyAsset(kind: CompanyAssetKind): Promise<{
 
   const asset = result.assets[0];
   const config = ASSET_CONFIG[kind];
+  // PNG conservé (transparence du logo) ; le reste en JPEG.
+  const keepPng = (asset.mimeType ?? asset.uri).toLowerCase().includes('png');
 
-  const manipulated = await ImageManipulator.manipulateAsync(
-    asset.uri,
-    [{ resize: { width: config.maxWidth, height: config.maxHeight } }],
-    {
-      compress: config.compress,
-      format: ImageManipulator.SaveFormat.JPEG,
-    },
-  );
+  const image = await ImageManipulator.manipulate(asset.uri).renderAsync();
+  const longest = Math.max(image.width, image.height);
+  const source =
+    longest > config.maxSide
+      ? await ImageManipulator.manipulate(asset.uri)
+          .resize(image.width >= image.height ? { width: config.maxSide } : { height: config.maxSide })
+          .renderAsync()
+      : image;
+  const saved = await source.saveAsync({
+    compress: config.compress,
+    format: keepPng ? SaveFormat.PNG : SaveFormat.JPEG,
+  });
 
   return {
-    uri: manipulated.uri,
-    mimeType: 'image/jpeg',
+    uri: saved.uri,
+    mimeType: keepPng ? 'image/png' : 'image/jpeg',
   };
 }
 

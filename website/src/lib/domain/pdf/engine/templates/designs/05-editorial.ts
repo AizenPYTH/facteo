@@ -41,7 +41,7 @@ function render(context: TemplateContext): string {
     2,
   )} solid ${INK}; padding-bottom:${u(18)}">
     <div>
-      ${logoBanner(context.logoUrl, { maxHeight: 32, marginBottom: 8 })}
+      ${logoBanner(context.logoUrl, { ratio: context.logoRatio, maxHeight: 32, marginBottom: 8 })}
       <div style="font-size:${u(15)}; font-weight:600; letter-spacing:${u(0.4)}">${escapeHtml(
         issuer.name,
       )}</div>

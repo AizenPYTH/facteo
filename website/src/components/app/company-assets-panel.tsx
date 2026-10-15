@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useState } from 'react';
 
 import { Panel } from '@/components/app/ui';
+import { useCompanyAssetSrc } from '@/hooks/use-company-asset-src';
 import { useSubscription } from '@/hooks/use-subscription';
 import { uploadCompanyImageFile } from '@/lib/domain/supabase/companies';
 import { useToast } from '@/providers/toast-provider';
@@ -50,6 +51,7 @@ export function CompanyAssetsPanel({
         busy={busy === 'logo'}
         description="Personnalise vos devis et factures. Disponible à partir de Basique."
         href="/app/settings/subscription"
+        hint="PNG, JPG, WebP ou SVG, toutes tailles : marges rognées et taille ajustée automatiquement sur chaque modèle."
         imageUrl={logoUrl}
         label="Logo"
         locked={logoLocked}
@@ -59,6 +61,7 @@ export function CompanyAssetsPanel({
         busy={busy === 'signature'}
         description="Signature de l’entreprise sur vos documents. Disponible à partir de Basique."
         href="/app/settings/subscription"
+        hint="PNG, JPG ou WebP — max. 2 Mo"
         imageUrl={signatureUrl}
         label="Signature entreprise"
         locked={signatureLocked}
@@ -71,6 +74,7 @@ export function CompanyAssetsPanel({
 function AssetCard({
   label,
   description,
+  hint,
   imageUrl,
   locked,
   busy,
@@ -79,12 +83,15 @@ function AssetCard({
 }: {
   label: string;
   description: string;
+  hint: string;
   imageUrl: string | null;
   locked: boolean;
   busy: boolean;
   href: string;
   onFile: (file: File | undefined) => void;
 }) {
+  const src = useCompanyAssetSrc(imageUrl);
+  const isLogo = label === 'Logo';
   return (
     <Panel title={label}>
       {locked ? (
@@ -96,10 +103,13 @@ function AssetCard({
         </p>
       ) : (
         <label className="flex cursor-pointer items-center gap-4 rounded-[12px] border border-dashed border-app-border bg-app-canvas px-4 py-4">
-          <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-app-surface ring-1 ring-app-border">
-            {imageUrl ? (
+          <div
+            className={`flex h-14 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-app-surface p-1.5 ring-1 ring-app-border ${isLogo ? 'w-28' : 'w-14'}`}>
+            {src ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img alt={label} className="h-full w-full object-contain" src={imageUrl} />
+              <img alt={label} className="h-full w-full object-contain" src={src} />
+            ) : imageUrl ? (
+              <span className="text-[11px] text-app-muted">…</span>
             ) : (
               <span className="text-[11px] text-app-muted">Aucun</span>
             )}
@@ -108,10 +118,10 @@ function AssetCard({
             <p className="text-[13px] font-semibold text-app-text">
               {busy ? 'Envoi…' : imageUrl ? 'Remplacer' : 'Ajouter'}
             </p>
-            <p className="mt-0.5 text-[12px] text-app-muted">PNG, JPG ou WebP — max. 2 Mo</p>
+            <p className="mt-0.5 text-[12px] text-app-muted">{hint}</p>
           </div>
           <input
-            accept="image/png,image/jpeg,image/webp"
+            accept={isLogo ? 'image/png,image/jpeg,image/webp,image/svg+xml,image/gif' : 'image/png,image/jpeg,image/webp'}
             className="sr-only"
             disabled={busy}
             onChange={(event) => onFile(event.target.files?.[0])}

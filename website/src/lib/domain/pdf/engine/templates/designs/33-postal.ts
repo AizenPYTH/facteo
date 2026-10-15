@@ -1,5 +1,5 @@
 import type { TemplateContext } from '@/lib/pdf/engine/templates/context';
-import { FONTS, escapeHtml, qrSlot, u } from '@/lib/pdf/engine/templates/shared';
+import { FONTS, escapeHtml, qrSlot, u, logoBox } from '@/lib/pdf/engine/templates/shared';
 import type { PdfTemplateDefinition } from '@/lib/pdf/engine/templates/types';
 import { joinLines, legalIdsText, paymentLines, quantityText, totalsList } from '@/lib/pdf/engine/templates/designs/kit';
 
@@ -22,7 +22,7 @@ function render(context: TemplateContext): string {
   return `<div class="dc-page" style="font-family:${FONTS.lora}; color:${INK}; border:${u(14)} solid transparent; background:linear-gradient(${PAPER}, ${PAPER}) padding-box, ${airmail} border-box; padding:${u(30)} ${u(38)} ${u(22)}">
   <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:${u(20)}">
     <div style="max-width:${u(300)}; font-size:${u(10.5)}; line-height:1.55">
-      ${context.logoUrl ? `<img src="${escapeHtml(context.logoUrl)}" alt="" style="display:block; max-height:${u(40)}; max-width:${u(170)}; margin-bottom:${u(6)}" />` : ''}
+      ${context.logoUrl ? `<img src="${escapeHtml(context.logoUrl)}" alt="" style="display:block; ${logoBox(context.logoRatio, 40, 170)}; margin-bottom:${u(6)}" />` : ''}
       <div style="font-size:${u(8.5)}; letter-spacing:${u(2)}; text-transform:uppercase; color:${MUTED}">${escapeHtml(labels.issuer)}</div>
       <div style="font-size:${u(15)}; font-weight:700; font-style:italic">${escapeHtml(issuer.name)}</div>
       <div>${joinLines([...issuer.addressLines, issuer.phone, issuer.email])}</div>

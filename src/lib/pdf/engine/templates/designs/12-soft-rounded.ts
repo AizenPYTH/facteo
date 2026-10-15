@@ -42,7 +42,7 @@ function render(context: TemplateContext): string {
   ${panel(
     `<div style="display:flex; justify-content:space-between; align-items:center; gap:${u(20)}">
        <div style="display:flex; align-items:center; gap:${u(12)}">
-         ${logoMark(context.logoUrl, issuer.initials, {
+         ${logoMark(context.logoUrl, issuer.initials, { ratio: context.logoRatio,
            size: 38,
            radius: 12,
            background: INK,

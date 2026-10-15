@@ -1,5 +1,5 @@
 import type { TemplateContext } from '@/lib/pdf/engine/templates/context';
-import { FONTS, escapeHtml, qrSlot, u } from '@/lib/pdf/engine/templates/shared';
+import { FONTS, escapeHtml, qrSlot, u, logoBox } from '@/lib/pdf/engine/templates/shared';
 import type { PdfTemplateDefinition } from '@/lib/pdf/engine/templates/types';
 import {
   joinLines,
@@ -21,7 +21,7 @@ function render(context: TemplateContext): string {
   return `<div class="dc-page" style="font-family:${FONTS.lora}; color:${INK}; background:#FFFDF9; padding:${u(56)} ${u(70)} ${u(48)}">
   <div style="display:flex; justify-content:space-between; align-items:flex-start">
     <div style="font-size:${u(11)}; line-height:1.65">
-      ${context.logoUrl ? `<img src="${escapeHtml(context.logoUrl)}" alt="" style="max-height:${u(46)}; max-width:${u(200)}; margin-bottom:${u(10)}; display:block" />` : ''}
+      ${context.logoUrl ? `<img src="${escapeHtml(context.logoUrl)}" alt="" style="${logoBox(context.logoRatio, 46, 200)}; margin-bottom:${u(10)}; display:block" />` : ''}
       <div style="font-size:${u(14)}; font-weight:700">${escapeHtml(issuer.name)}</div>
       ${joinLines([...issuer.addressLines, issuer.phone, issuer.email])}
     </div>

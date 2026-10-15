@@ -1,5 +1,5 @@
 import type { TemplateContext } from '@/lib/pdf/engine/templates/context';
-import { FONTS, escapeHtml, qrSlot, u } from '@/lib/pdf/engine/templates/shared';
+import { FONTS, escapeHtml, qrSlot, u, logoBox } from '@/lib/pdf/engine/templates/shared';
 import type { PdfTemplateDefinition } from '@/lib/pdf/engine/templates/types';
 import { joinLines, legalIdsText, paymentLines, quantityText, totalsList } from '@/lib/pdf/engine/templates/designs/kit';
 
@@ -25,7 +25,7 @@ function render(context: TemplateContext): string {
 
   return `<div class="dc-page" style="flex-direction:row; font-family:${FONTS.jakarta}; color:${INK}; background:linear-gradient(90deg, ${NAVY} 0 ${u(SIDE)}, #FFFFFF ${u(SIDE)} 100%)">
   <div style="width:${u(SIDE)}; flex-shrink:0; background:${NAVY}; color:#fff; padding:${u(44)} ${u(28)} ${u(32)}; display:flex; flex-direction:column; font-size:${u(10.5)}; line-height:1.6">
-    ${context.logoUrl ? `<div style="background:#fff; border-radius:${u(6)}; padding:${u(10)}; margin-bottom:${u(18)}; display:inline-block; align-self:flex-start"><img src="${escapeHtml(context.logoUrl)}" alt="" style="display:block; max-height:${u(44)}; max-width:${u(170)}" /></div>` : ''}
+    ${context.logoUrl ? `<div style="background:#fff; border-radius:${u(6)}; padding:${u(10)}; margin-bottom:${u(18)}; display:inline-block; align-self:flex-start"><img src="${escapeHtml(context.logoUrl)}" alt="" style="display:block; ${logoBox(context.logoRatio, 44, 170)}" /></div>` : ''}
     <div style="padding-bottom:${u(16)}">
       ${sideTitle(labels.issuer)}
       <div style="font-family:${FONTS.dmSerif}; font-size:${u(20)}; line-height:1.15; margin-bottom:${u(6)}">${escapeHtml(issuer.name)}</div>

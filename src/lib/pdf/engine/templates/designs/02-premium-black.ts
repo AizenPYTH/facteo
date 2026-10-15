@@ -32,7 +32,7 @@ function render(context: TemplateContext): string {
   <div style="background:${BLACK}; color:#fff; padding:${u(34)} ${u(56)} ${u(32)}">
     <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:${u(24)}">
       <div>
-        ${logoBanner(context.logoUrl, { maxHeight: 34, marginBottom: 10 })}
+        ${logoBanner(context.logoUrl, { ratio: context.logoRatio, maxHeight: 34, marginBottom: 10 })}
         <div style="font-size:${u(20)}; font-weight:800; letter-spacing:${u(
           3,
         )}; text-transform:uppercase">${escapeHtml(issuer.name)}</div>

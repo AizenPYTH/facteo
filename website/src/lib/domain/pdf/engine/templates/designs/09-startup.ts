@@ -30,7 +30,7 @@ function render(context: TemplateContext): string {
   <div style="display:flex; gap:${u(20)}; align-items:stretch">
     <div style="flex:1; min-width:0">
       <div style="display:flex; align-items:center; gap:${u(11)}">
-        ${logoMark(context.logoUrl, issuer.initials, {
+        ${logoMark(context.logoUrl, issuer.initials, { ratio: context.logoRatio,
           size: 34,
           radius: 10,
           background: GREEN,

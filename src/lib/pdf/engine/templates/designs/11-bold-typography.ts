@@ -40,7 +40,7 @@ function render(context: TemplateContext): string {
     10.5,
   )}; line-height:1.7; color:${MUTED}">
     <div>
-      ${context.logoUrl ? `<div style="margin-bottom:${u(10)}">${logoMark(context.logoUrl, '', { size: 24, maxWidth: 170 })}</div>` : ''}
+      ${context.logoUrl ? `<div style="margin-bottom:${u(10)}">${logoMark(context.logoUrl, '', { ratio: context.logoRatio, size: 24, maxWidth: 170 })}</div>` : ''}
       <span style="color:${INK}; font-weight:600">${escapeHtml(issuer.name)}</span><br/>
       ${addressLines([
         issuer.addressLines.join(', '),

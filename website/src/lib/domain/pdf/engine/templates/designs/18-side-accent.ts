@@ -46,7 +46,7 @@ function render(context: TemplateContext): string {
         }
       </div>
       <div style="text-align:right; flex-shrink:0">
-        ${logoBanner(context.logoUrl, { maxHeight: 32, marginBottom: 8, align: 'right' })}
+        ${logoBanner(context.logoUrl, { ratio: context.logoRatio, maxHeight: 32, marginBottom: 8, align: 'right' })}
         <div style="font-size:${u(15)}; font-weight:800">${escapeHtml(issuer.name)}</div>
         <div style="font-size:${u(10.5)}; line-height:1.7; color:${MUTED}; margin-top:${u(
           4,

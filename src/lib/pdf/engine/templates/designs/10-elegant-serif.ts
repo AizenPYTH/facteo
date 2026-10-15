@@ -33,7 +33,7 @@ function render(context: TemplateContext): string {
     60,
   )} ${u(64)} ${u(46)}">
   <div style="text-align:center; border-bottom:1px solid ${INK}; padding-bottom:${u(22)}">
-    ${context.logoUrl ? `<div style="display:flex; justify-content:center; margin-bottom:${u(12)}">${logoMark(context.logoUrl, '', { size: 26, maxWidth: 190 })}</div>` : ''}
+    ${context.logoUrl ? `<div style="display:flex; justify-content:center; margin-bottom:${u(12)}">${logoMark(context.logoUrl, '', { ratio: context.logoRatio, size: 26, maxWidth: 190 })}</div>` : ''}
     <div style="font-size:${u(26)}; letter-spacing:${u(0.5)}">${escapeHtml(issuer.name)}</div>
     <div style="font-family:${FONTS.plexSans}; font-size:${u(10)}; color:#7A7A86; margin-top:${u(
       7,

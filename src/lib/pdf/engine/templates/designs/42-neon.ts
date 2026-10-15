@@ -1,5 +1,5 @@
 import type { TemplateContext } from '@/lib/pdf/engine/templates/context';
-import { FONTS, escapeHtml, qrSlot, u } from '@/lib/pdf/engine/templates/shared';
+import { FONTS, escapeHtml, qrSlot, u, logoBox } from '@/lib/pdf/engine/templates/shared';
 import type { PdfTemplateDefinition } from '@/lib/pdf/engine/templates/types';
 import { joinLines, legalIdsText, paymentLines, quantityText, totalsList } from '@/lib/pdf/engine/templates/designs/kit';
 
@@ -32,7 +32,7 @@ function render(context: TemplateContext): string {
 
   <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:${u(24)}; padding:${u(36)} ${u(46)} 0">
     <div style="min-width:0">
-      ${context.logoUrl ? `<div style="display:inline-block; background:#fff; border-radius:${u(8)}; padding:${u(8)}; margin-bottom:${u(14)}; box-shadow:${glow(CYAN, 8)}"><img src="${escapeHtml(context.logoUrl)}" alt="" style="display:block; max-height:${u(36)}; max-width:${u(160)}" /></div>` : ''}
+      ${context.logoUrl ? `<div style="display:inline-block; background:#fff; border-radius:${u(8)}; padding:${u(8)}; margin-bottom:${u(14)}; box-shadow:${glow(CYAN, 8)}"><img src="${escapeHtml(context.logoUrl)}" alt="" style="display:block; ${logoBox(context.logoRatio, 36, 160)}" /></div>` : ''}
       <div style="font-size:${u(58)}; font-weight:800; line-height:0.95; letter-spacing:${u(-1.5)}; color:${MAGENTA}; text-shadow:0 0 ${u(14)} ${MAGENTA}">${escapeHtml(labels.document)}</div>
       <div style="width:${u(220)}; height:${u(4)}; border-radius:${u(4)}; background:${GRADIENT}; margin-top:${u(10)}; box-shadow:0 0 ${u(10)} ${CYAN}"></div>
       <div style="${mono}; font-size:${u(16)}; color:${CYAN}; margin-top:${u(12)}; text-shadow:0 0 ${u(8)} ${CYAN}">${escapeHtml(labels.number)} ${escapeHtml(context.number)}</div>

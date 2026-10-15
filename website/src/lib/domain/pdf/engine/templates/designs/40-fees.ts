@@ -1,5 +1,5 @@
 import type { TemplateContext } from '@/lib/pdf/engine/templates/context';
-import { FONTS, escapeHtml, qrSlot, u } from '@/lib/pdf/engine/templates/shared';
+import { FONTS, escapeHtml, qrSlot, u, logoBox } from '@/lib/pdf/engine/templates/shared';
 import type { PdfTemplateDefinition } from '@/lib/pdf/engine/templates/types';
 import { joinLines, legalIdsText, paymentLines, quantityText, totalsList } from '@/lib/pdf/engine/templates/designs/kit';
 
@@ -31,7 +31,7 @@ function render(context: TemplateContext): string {
       <div style="font-size:${u(9.5)}; font-style:italic; color:${MUTED}; line-height:1.7; margin-top:${u(6)}">${joinLines([...issuer.addressLines, issuer.phone, issuer.email], ' · ')}</div>
       ${legal ? `<div style="font-size:${u(8.5)}; color:${MUTED}; margin-top:${u(2)}">${escapeHtml(legal)}</div>` : ''}
     </div>
-    ${context.logoUrl ? `<img src="${escapeHtml(context.logoUrl)}" alt="" style="display:block; max-height:${u(54)}; max-width:${u(150)}; flex-shrink:0" />` : ''}
+    ${context.logoUrl ? `<img src="${escapeHtml(context.logoUrl)}" alt="" style="display:block; ${logoBox(context.logoRatio, 54, 150)}; flex-shrink:0" />` : ''}
   </div>
   <div style="border-top:${u(0.75)} solid ${INK}; margin-top:${u(18)}"></div>
 

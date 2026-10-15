@@ -91,6 +91,30 @@ export type FontStack = (typeof FONTS)[keyof typeof FONTS];
 /* -------------------------------------------------------------------------- */
 
 /**
+ * Dimensions d'un logo selon sa forme, dans la place prévue par le modèle
+ * (`maxHeight` × `maxWidth`, en px de maquette).
+ *
+ * Un logo très large (8:1) remplirait la largeur en ne faisant que quelques
+ * pixels de haut, un logo carré resterait minuscule : on vise une surface
+ * visuelle constante. Large → un peu moins haut ; carré ou vertical → un peu
+ * plus haut ; jamais au-delà de la largeur disponible. Sans ratio connu, on
+ * garde le comportement historique (max-height / max-width).
+ */
+export function logoBox(ratio: number | null | undefined, maxHeight: number, maxWidth: number): string {
+  if (!ratio || !Number.isFinite(ratio) || ratio <= 0) {
+    return `max-height:${u(maxHeight)}; max-width:${u(maxWidth)}; height:auto; width:auto; object-fit:contain`;
+  }
+  const factor = Math.min(1.5, Math.max(0.78, Math.sqrt(2.5 / ratio)));
+  let height = maxHeight * factor;
+  let width = height * ratio;
+  if (width > maxWidth) {
+    width = maxWidth;
+    height = width / ratio;
+  }
+  return `width:${u(Math.round(width * 10) / 10)}; height:${u(Math.round(height * 10) / 10)}; object-fit:contain`;
+}
+
+/**
  * Bloc identité de l'émetteur.
  *
  * Trois cas prévus par le handoff : logo horizontal, pastille carrée,
@@ -109,9 +133,12 @@ export function logoMark(
     fontSize?: number;
     fontWeight?: number;
     maxWidth?: number;
+    /** Largeur / hauteur du logo (`context.logoRatio`). */
+    ratio?: number | null;
   } = {},
 ): string {
   const {
+    ratio = null,
     size = 30,
     radius = 0,
     border,
@@ -123,9 +150,7 @@ export function logoMark(
   } = options;
 
   if (logoUrl) {
-    return `<img src="${escapeHtml(logoUrl)}" alt="" style="display:block; height:auto; width:auto; max-height:${u(
-      size + 10,
-    )}; max-width:${u(maxWidth)}; object-fit:contain" />`;
+    return `<img src="${escapeHtml(logoUrl)}" alt="" style="display:block; ${logoBox(ratio, size + 10, maxWidth)}" />`;
   }
 
   if (!initials) {
@@ -149,17 +174,22 @@ export function logoMark(
  */
 export function logoBanner(
   logoUrl: string | null,
-  options: { maxHeight?: number; maxWidth?: number; marginBottom?: number; align?: string } = {},
+  options: {
+    maxHeight?: number;
+    maxWidth?: number;
+    marginBottom?: number;
+    align?: string;
+    /** Largeur / hauteur du logo (`context.logoRatio`). */
+    ratio?: number | null;
+  } = {},
 ): string {
   if (!logoUrl) {
     return '';
   }
 
-  const { maxHeight = 40, maxWidth = 240, marginBottom = 10, align } = options;
+  const { maxHeight = 40, maxWidth = 240, marginBottom = 10, align, ratio = null } = options;
 
-  return `<img src="${escapeHtml(logoUrl)}" alt="" style="display:block; height:auto; width:auto; max-height:${u(
-    maxHeight,
-  )}; max-width:${u(maxWidth)}; object-fit:contain; margin-bottom:${u(marginBottom)}; ${
+  return `<img src="${escapeHtml(logoUrl)}" alt="" style="display:block; ${logoBox(ratio, maxHeight, maxWidth)}; margin-bottom:${u(marginBottom)}; ${
     align === 'right' ? 'margin-left:auto;' : align === 'center' ? 'margin-left:auto; margin-right:auto;' : ''
   }" />`;
 }
