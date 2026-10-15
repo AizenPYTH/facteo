@@ -1,5 +1,6 @@
 'use client';
 
+import { OwnCompanyLookup } from '@/components/app/own-company-lookup';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { ArrowLeft, ArrowRight, Building2, Check, ImagePlus, Loader2 } from 'lucide-react';
 import Link from 'next/link';
@@ -51,6 +52,8 @@ export function OnboardingWizard() {
   const reduceMotion = useReducedMotion();
   const [step, setStep] = useState(1);
   const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [registrationNumber, setRegistrationNumber] = useState('');
+  const [registrationFound, setRegistrationFound] = useState<string | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   // Logo déjà enregistré : bucket privé, affiché par une URL signée.
   const logoPreviewSrc = useCompanyAssetSrc(logoPreview);
@@ -65,6 +68,7 @@ export function OnboardingWizard() {
     register,
     trigger,
     getValues,
+    setValue,
     reset,
     formState: { errors },
   } = useForm<OnboardingFormValues>({
@@ -269,6 +273,33 @@ export function OnboardingWizard() {
               transition={{ duration: reduceMotion ? 0 : 0.22 }}>
               {step === 1 ? (
                 <div className="space-y-5">
+                  <div className="rounded-xl border border-indigo-100 bg-indigo-50/50 p-4">
+                    <label className="mb-1.5 block text-sm font-medium text-slate-700" htmlFor="registrationNumber">
+                      SIREN ou SIRET <span className="font-normal text-slate-500">— tout se remplit seul</span>
+                    </label>
+                    <OwnCompanyLookup
+                      id="registrationNumber"
+                      onChange={setRegistrationNumber}
+                      onFound={(result) => {
+                        // Nom, adresse, SIRET et TVA remplis d'un coup ; tout reste modifiable.
+                        const options = { shouldDirty: true, shouldValidate: true } as const;
+                        if (result.companyName) setValue('companyName', result.companyName, options);
+                        if (result.address) setValue('address', result.address, options);
+                        if (result.postalCode) setValue('postalCode', result.postalCode, options);
+                        if (result.city) setValue('city', result.city, options);
+                        setValue('country', result.country || 'France', options);
+                        if (result.siret || result.siren) setValue('siret', result.siret || result.siren, options);
+                        if (result.vatNumber) setValue('vatNumber', result.vatNumber, options);
+                        setRegistrationFound(result.companyName || result.siren || '');
+                      }}
+                      value={registrationNumber}
+                    />
+                    <p className="mt-1.5 text-xs text-slate-500">
+                      {registrationFound !== null
+                        ? 'Adresse, SIRET et n° de TVA sont déjà remplis aux étapes suivantes. Vérifiez et continuez.'
+                        : 'Facultatif : vous pouvez aussi tout saisir à la main.'}
+                    </p>
+                  </div>
                   <Field
                     error={errors.companyName?.message}
                     id="companyName"
