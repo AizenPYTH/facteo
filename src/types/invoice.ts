@@ -114,6 +114,17 @@ export type InvoiceDetail = Invoice & {
   amountDue: number;
 };
 
+/**
+ * Comment une facture a été créée, pour le suivi d'utilisation (la conversion
+ * d'un devis est connue en base). « voice » n'est compté que si le serveur a
+ * bien généré le brouillon de cette tentative.
+ */
+export type InvoiceCreationSource =
+  | { method: 'manual' }
+  | { method: 'duplicate' }
+  | { method: 'ai_import' }
+  | { method: 'voice'; attemptId: string };
+
 export type CreateInvoiceInput = {
   clientId: string;
   quoteId?: string | null;
@@ -128,6 +139,8 @@ export type CreateInvoiceInput = {
   pdfOptions?: InvoicePdfOptions;
   /** Création : facture déjà réglée (payée le jour d'émission, sans échéance). */
   alreadyPaid?: boolean;
+  /** Suivi d'utilisation, à la création uniquement. */
+  creation?: InvoiceCreationSource;
 };
 
 export type UpdateInvoiceInput = CreateInvoiceInput;

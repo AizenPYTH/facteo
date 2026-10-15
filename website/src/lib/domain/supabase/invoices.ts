@@ -1,3 +1,4 @@
+import { trackInvoiceCreation } from '@/lib/domain/analytics/product-events';
 import { mapQuoteLinesToInvoiceLines } from '@/lib/documents/line-mappers';
 import {
   mapCreateInvoiceInputToInsert,
@@ -405,6 +406,11 @@ export async function createInvoice(scope: DataScope, input: CreateInvoiceInput)
     await saveInvoicePdfOptions(scope, invoiceRow.id, input.pdfOptions);
   }
 
+  if (input.creation) {
+    // Sans attente : le suivi ne retarde ni ne bloque jamais la création.
+    void trackInvoiceCreation(invoiceRow.id, input.creation);
+  }
+
   const { data: fullInvoice, error: fetchError } = await supabase
     .from('invoices')
     .select(INVOICE_LIST_COLUMNS)
@@ -544,6 +550,7 @@ export async function duplicateInvoice(scope: DataScope, invoiceId: string): Pro
   const pdfOptions = await fetchInvoicePdfOptions(scope, invoiceId);
 
   return createInvoice(scope, {
+    creation: { method: 'duplicate' },
     pdfOptions,
     clientId: source.clientId,
     lines: source.lines.map((line) => ({

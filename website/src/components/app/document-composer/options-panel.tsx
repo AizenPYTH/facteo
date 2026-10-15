@@ -60,6 +60,7 @@ export function optionsSummary(value: InvoicePdfOptions, customNumber: string, p
  */
 export function ComposerOptionsPanel({
   company,
+  defaultTitle,
   forecastNumber,
   number,
   onChange,
@@ -69,6 +70,8 @@ export function ComposerOptionsPanel({
   value,
 }: {
   company: { id: string; email?: string | null; siret: string | null; vatNumber: string | null } | null;
+  /** Titre par défaut de l'entreprise (Paramètres › Numérotation). Absent : « Facture ». */
+  defaultTitle?: string | null;
   forecastNumber: string | null;
   number: string;
   onChange: (value: InvoicePdfOptions) => void;
@@ -91,7 +94,11 @@ export function ComposerOptionsPanel({
   });
   const legalValues = formatIssuerLegalIds(company?.siret, company?.vatNumber, sirenQuery.data);
   const title = value.title ?? '';
-  const activeTitle = title.trim() || DEFAULT_INVOICE_TITLE;
+  const baseTitle = defaultTitle?.trim() || DEFAULT_INVOICE_TITLE;
+  const activeTitle = title.trim() || baseTitle;
+  const suggestions = INVOICE_TITLE_SUGGESTIONS.includes(baseTitle)
+    ? INVOICE_TITLE_SUGGESTIONS
+    : [baseTitle, ...INVOICE_TITLE_SUGGESTIONS];
 
   function isChecked(key: IdentifierKey): boolean {
     return key === 'email' ? value.showEmail : value.legalIds.includes(key);
@@ -193,11 +200,11 @@ export function ComposerOptionsPanel({
               id="composer-document-title"
               maxLength={60}
               onChange={(event) => onChange({ ...value, title: event.target.value })}
-              placeholder={DEFAULT_INVOICE_TITLE}
+              placeholder={baseTitle}
               value={title}
             />
             <div className="mt-2 flex flex-wrap gap-1.5">
-              {INVOICE_TITLE_SUGGESTIONS.map((suggestion) => {
+              {suggestions.map((suggestion) => {
                 const active = activeTitle === suggestion;
                 return (
                   <button
@@ -212,7 +219,7 @@ export function ComposerOptionsPanel({
                     onClick={() =>
                       onChange({
                         ...value,
-                        title: suggestion === DEFAULT_INVOICE_TITLE ? null : suggestion,
+                        title: suggestion === baseTitle ? null : suggestion,
                       })
                     }
                     type="button">

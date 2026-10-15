@@ -226,6 +226,7 @@ export function InvoiceBatch() {
         if (!issuedAtIso) throw new Error('Date d’émission invalide.');
 
         await createInvoice(activeScope, {
+          creation: { method: 'ai_import' },
           clientId,
           lines,
           issuedAt: issuedAtIso,

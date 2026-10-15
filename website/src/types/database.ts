@@ -259,6 +259,10 @@ export type SettingsRow = {
   invoice_footer: string | null;
   quote_template_id: string | null;
   invoice_template_id: string | null;
+  number_include_year: boolean;
+  number_separator: string;
+  number_digits: number;
+  invoice_title: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -277,6 +281,10 @@ export type SettingsUpdate = {
   invoice_footer?: string | null;
   quote_template_id?: string | null;
   invoice_template_id?: string | null;
+  number_include_year?: boolean;
+  number_separator?: string;
+  number_digits?: number;
+  invoice_title?: string | null;
   company_id?: string | null;
   updated_at?: string;
 };
@@ -887,6 +895,87 @@ export type Database = {
       create_company_for_user: {
         Args: { p_name: string };
         Returns: string;
+      };
+      ensure_company_settings: {
+        Args: { p_company_id: string };
+        Returns: string;
+      };
+      track_product_event: {
+        Args: {
+          p_event: string;
+          p_platform?: string | null;
+          p_attempt_id?: string | null;
+          p_invoice_id?: string | null;
+          p_method?: string | null;
+          p_error_code?: string | null;
+        };
+        Returns: boolean;
+      };
+      is_platform_admin: {
+        Args: Record<PropertyKey, never>;
+        Returns: boolean;
+      };
+      admin_activity_overview: {
+        Args: Record<PropertyKey, never>;
+        Returns: unknown;
+      };
+      admin_invoice_history: {
+        Args: {
+          p_limit?: number;
+          p_offset?: number;
+          p_from?: string | null;
+          p_to?: string | null;
+          p_platform?: string | null;
+          p_method?: string | null;
+          p_user_id?: string | null;
+        };
+        Returns: {
+          created_at: string;
+          invoice_id: string;
+          invoice_number: string;
+          user_id: string;
+          user_email: string | null;
+          platform: string;
+          creation_method: string;
+          deleted: boolean;
+          total_count: number;
+        }[];
+      };
+      admin_user_activity: {
+        Args: { p_from?: string | null; p_to?: string | null };
+        Returns: {
+          user_id: string;
+          user_email: string | null;
+          signed_up_at: string;
+          last_activity_at: string | null;
+          invoices_total: number;
+          invoices_in_period: number;
+          last_invoice_at: string | null;
+          voice_saved: number;
+          voice_failed: number;
+          last_voice_at: string | null;
+          platforms: string[];
+        }[];
+      };
+      admin_user_events: {
+        Args: {
+          p_user_id: string;
+          p_from?: string | null;
+          p_to?: string | null;
+          p_event?: string | null;
+          p_limit?: number;
+        };
+        Returns: {
+          occurred_at: string;
+          event_name: string;
+          platform: string;
+          attempt_id: string | null;
+          invoice_id: string | null;
+          invoice_number: string | null;
+          outcome: string | null;
+          creation_method: string | null;
+          error_code: string | null;
+        }[];
       };
     };
     Enums: Record<string, never>;

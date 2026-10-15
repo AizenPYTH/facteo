@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { useQueryClient, type QueryKey } from '@tanstack/react-query';
+import { useQuery, useQueryClient, type QueryKey } from '@tanstack/react-query';
 import type { LucideIcon } from 'lucide-react';
 import { FileText, LayoutDashboard, LogOut, Plus, Receipt, Search, UserPlus, Users } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
@@ -11,10 +11,11 @@ import { useCommandPalette } from '@/components/app/command-palette';
 import { CompanySwitcher } from '@/components/app/company-switcher';
 import { PrimaryButton } from '@/components/app/form-fields';
 import { BrandMark, BrandWordmark } from '@/components/brand/brand-logo';
-import { APP_NAV_FOOTER, APP_NAV_SECTIONS, isAppNavActive } from '@/lib/app-nav';
+import { APP_NAV_ADMIN, APP_NAV_FOOTER, APP_NAV_SECTIONS, isAppNavActive } from '@/lib/app-nav';
 import { extractAuthIdentity } from '@/lib/domain/auth/identity';
 import type { DashboardData } from '@/lib/domain/supabase/dashboard';
 import { dashboardQueryKeys, subscriptionQueryKeys } from '@/lib/domain/supabase/query-keys';
+import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/providers/auth-provider';
 import { useTenant } from '@/providers/company-provider';
 import type { SubscriptionSnapshot } from '@/types/subscription';
@@ -59,6 +60,17 @@ export function AppSidebar() {
   const subscriptionKey = useMemo(() => subscriptionQueryKeys.snapshot(userId), [userId]);
   const dashboard = useCachedQueryData<DashboardData>(dashboardKey);
   const subscription = useCachedQueryData<SubscriptionSnapshot>(subscriptionKey);
+  // Le lien n'est qu'un raccourci : la page et les données sont protégées côté serveur et en base.
+  const { data: isPlatformAdmin = false } = useQuery({
+    queryKey: ['platform-admin', userId],
+    enabled: Boolean(user),
+    staleTime: 10 * 60 * 1000,
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('is_platform_admin');
+      return !error && data === true;
+    },
+  });
+  const footerItems = isPlatformAdmin ? [APP_NAV_ADMIN, ...APP_NAV_FOOTER] : APP_NAV_FOOTER;
 
   const identity = user ? extractAuthIdentity(user) : null;
   const displayName =
@@ -169,7 +181,7 @@ export function AppSidebar() {
 
       <div className="border-t border-app-border-soft px-3 py-2.5">
         <ul className="space-y-0.5">
-          {APP_NAV_FOOTER.map((item) => {
+          {footerItems.map((item) => {
             const active = isAppNavActive(pathname, item);
             const Icon = item.icon;
             return (

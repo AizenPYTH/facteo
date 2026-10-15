@@ -870,6 +870,17 @@ export type Database = {
         Args: { p_name: string };
         Returns: string;
       };
+      track_product_event: {
+        Args: {
+          p_event: string;
+          p_platform?: string | null;
+          p_attempt_id?: string | null;
+          p_invoice_id?: string | null;
+          p_method?: string | null;
+          p_error_code?: string | null;
+        };
+        Returns: boolean;
+      };
     };
     Enums: Record<string, never>;
     CompositeTypes: Record<string, never>;

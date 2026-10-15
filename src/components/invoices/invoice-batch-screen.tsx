@@ -229,6 +229,7 @@ export function InvoiceBatchScreen() {
         if (!issuedAtIso) throw new Error('Date d’émission invalide (JJ/MM/AAAA).');
 
         const invoice = await createInvoice(activeScope, {
+          creation: { method: 'ai_import' },
           clientId,
           lines,
           issuedAt: issuedAtIso,

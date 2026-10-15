@@ -23,6 +23,7 @@ import {
   type VoiceRecordingSession,
 } from '@/lib/ai/voice-recorder';
 import { processVoiceCommand, type ProcessVoiceCommandResult } from '@/lib/ai/voice-transcription';
+import { newVoiceAttemptId, trackProductEvent } from '@/lib/analytics/product-events';
 import { useToast } from '@/providers/toast-provider';
 
 /** Durée maximale d'une dictée : au-delà, l'enregistrement s'arrête seul. */
@@ -77,6 +78,8 @@ export function VoiceDictationCard({
   const [processing, setProcessing] = useState(false);
   const sessionRef = useRef<VoiceRecordingSession | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  /** Tentative en cours (suivi des dictées de facture, sans contenu). */
+  const attemptRef = useRef<string | null>(null);
 
   useEffect(
     () => () => {
@@ -85,14 +88,29 @@ export function VoiceDictationCard({
     [],
   );
 
+  function trackFailure(errorCode: string) {
+    const attemptId = attemptRef.current;
+    attemptRef.current = null;
+    if (attemptId) void trackProductEvent('voice_invoice_failed', { attemptId, errorCode });
+  }
+
   async function start() {
     if (!hasFeature('ai_assistant')) {
       router.push('/settings/premium' as Href);
       return;
     }
 
+    // Seules les dictées de facture sont suivies.
+    if (documentType === 'invoice') {
+      attemptRef.current = newVoiceAttemptId();
+      void trackProductEvent('voice_invoice_started', { attemptId: attemptRef.current });
+    } else {
+      attemptRef.current = null;
+    }
+
     const permission = await requestMicrophonePermission();
     if (permission !== 'granted') {
+      trackFailure('microphone_denied');
       showError(
         permission === 'blocked'
           ? 'Micro bloqué : autorisez-le pour INVEQ dans les réglages du téléphone.'
@@ -124,6 +142,7 @@ export function VoiceDictationCard({
     } catch {
       setArmed(false);
       showError('Impossible de démarrer l’enregistrement.');
+      trackFailure('recording_start_failed');
     }
   }
 
@@ -135,19 +154,26 @@ export function VoiceDictationCard({
     setSession(null);
     setProcessing(true);
 
+    let failure = 'recording_failed';
     try {
       const audio = await stopVoiceRecording(current).finally(() => setArmed(false));
       if (audio.durationMs < 1500) {
+        failure = 'recording_too_short';
         throw new Error('Enregistrement trop court. Parlez quelques secondes.');
       }
+      failure = 'request_failed';
       const result = await processVoiceCommand({
         documentType,
         audioBase64: audio.audioBase64,
         mimeType: audio.mimeType,
+        attemptId: attemptRef.current ?? undefined,
       });
+      attemptRef.current = null;
       showSuccess(await onResult(result));
     } catch (error) {
       showError(error instanceof Error ? error.message : 'Dictée impossible.');
+      // Un échec déjà noté par le serveur pour cette tentative est ignoré (dédoublonné).
+      trackFailure(failure);
     } finally {
       setProcessing(false);
     }
@@ -160,6 +186,7 @@ export function VoiceDictationCard({
     sessionRef.current = null;
     if (timerRef.current) clearInterval(timerRef.current);
     setSession(null);
+    trackFailure('cancelled');
     try {
       await stopVoiceRecording(current);
     } catch {
