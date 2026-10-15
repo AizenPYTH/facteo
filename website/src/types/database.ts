@@ -259,6 +259,10 @@ export type SettingsRow = {
   invoice_footer: string | null;
   quote_template_id: string | null;
   invoice_template_id: string | null;
+  number_include_year: boolean;
+  number_separator: string;
+  number_digits: number;
+  invoice_title: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -277,6 +281,10 @@ export type SettingsUpdate = {
   invoice_footer?: string | null;
   quote_template_id?: string | null;
   invoice_template_id?: string | null;
+  number_include_year?: boolean;
+  number_separator?: string;
+  number_digits?: number;
+  invoice_title?: string | null;
   company_id?: string | null;
   updated_at?: string;
 };
@@ -886,6 +894,10 @@ export type Database = {
       };
       create_company_for_user: {
         Args: { p_name: string };
+        Returns: string;
+      };
+      ensure_company_settings: {
+        Args: { p_company_id: string };
         Returns: string;
       };
       track_product_event: {

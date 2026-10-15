@@ -77,6 +77,7 @@ import {
   clientsQueryKeys,
   companiesQueryKeys,
   invoicesQueryKeys,
+  productsQueryKeys,
   quotesQueryKeys,
 } from '@/lib/domain/supabase/query-keys';
 import { analyzeProductImage, type ProductImageAnalysis } from '@/lib/domain/ai/product-image-analysis';
@@ -89,6 +90,8 @@ import {
   todayDateInput,
 } from '@/lib/domain/format/date-input';
 import { getDefaultComposerTemplateId } from '@/lib/domain/pdf/composer-templates';
+import { addDocumentLinesToCatalog } from '@/lib/domain/catalog/auto-add';
+import { formatDocumentNumber } from '@/types/settings';
 import { requireScope } from '@/lib/domain/tenant/scope';
 import { cn } from '@/lib/utils';
 import {
@@ -392,7 +395,7 @@ export function DocumentComposer({
   const { scope, activeCompany, loading: tenantLoading } = useTenant();
   const { settings, loading: settingsLoading } = useSettings();
   const queryClient = useQueryClient();
-  const { showError } = useToast();
+  const { showError, showSuccess } = useToast();
   const isWizard = useWizardLayout();
 
   const [clientId, setClientId] = useState(edit?.clientId ?? preselectedClient);
@@ -450,6 +453,15 @@ export function DocumentComposer({
   /** Modèle choisi, sinon celui des paramètres une fois chargés. */
   const effectiveTemplateId =
     templateId || (settings ? getDefaultComposerTemplateId(kind, settings) : '');
+  /** Titre par défaut de l'entreprise (« Note d'honoraires »…) pour une nouvelle facture. */
+  const defaultInvoiceTitle = edit ? null : (settings?.invoiceTitle ?? null);
+  const resolvedPdfOptions = useMemo<InvoicePdfOptions>(
+    () =>
+      defaultInvoiceTitle
+        ? { ...pdfOptions, title: pdfOptions.title?.trim() || defaultInvoiceTitle }
+        : pdfOptions,
+    [defaultInvoiceTitle, pdfOptions],
+  );
 
   const clientsQuery = useQuery({
     queryKey: clientsQueryKeys.list(scope?.companyId ?? '', ''),
@@ -603,7 +615,7 @@ export function DocumentComposer({
           lines: validLines,
           notes: notes.trim() || undefined,
           number: customNumber.trim() || null,
-          pdfOptions: { ...pdfOptions, templateId: effectiveTemplateId || null },
+          pdfOptions: { ...resolvedPdfOptions, templateId: effectiveTemplateId || null },
         });
       }
 
@@ -632,7 +644,7 @@ export function DocumentComposer({
           lines: validLines,
           notes: notes.trim() || undefined,
           number: customNumber.trim() || null,
-          pdfOptions: { ...pdfOptions, templateId: effectiveTemplateId || null },
+          pdfOptions: { ...resolvedPdfOptions, templateId: effectiveTemplateId || null },
         });
       }
 
@@ -649,10 +661,20 @@ export function DocumentComposer({
         notes: notes.trim() || undefined,
         paymentTermsDays: dueDays,
         number: customNumber.trim() || null,
-        pdfOptions: { ...pdfOptions, templateId: effectiveTemplateId || null },
+        pdfOptions: { ...resolvedPdfOptions, templateId: effectiveTemplateId || null },
       });
     },
     onSuccess: (doc) => {
+      // Articles saisis à la main : ajoutés au catalogue pour les prochaines fois.
+      if (!edit && scope) {
+        void addDocumentLinesToCatalog(scope, lines).then((added) => {
+          if (added === 0) return;
+          void queryClient.invalidateQueries({ queryKey: productsQueryKeys.all });
+          showSuccess(
+            added > 1 ? `${added} nouveaux articles ajoutés au catalogue.` : 'Nouvel article ajouté au catalogue.',
+          );
+        });
+      }
       if (kind === 'invoice') {
         rememberLegalIds(pdfOptions.legalIds);
         rememberPaymentMention(pdfOptions.paymentMention);
@@ -1017,12 +1039,11 @@ export function DocumentComposer({
 
   /** Reproduit le format de `reserve_next_*_number` sans requête supplémentaire. */
   const forecastNumber = settings
-    ? `${
-        (kind === 'invoice' ? settings.invoicePrefix : settings.quotePrefix)?.trim() ||
-        (kind === 'invoice' ? 'FAC' : 'DEV')
-      }-${new Date().getUTCFullYear()}-${String(
+    ? formatDocumentNumber(
+        kind === 'invoice' ? settings.invoicePrefix : settings.quotePrefix,
         kind === 'invoice' ? settings.nextInvoiceNumber : settings.nextQuoteNumber,
-      ).padStart(6, '0')}`
+        settings.numberFormat,
+      )
     : null;
   const shownNumber = customNumber.trim() || forecastNumber || (kind === 'invoice' ? 'FAC' : 'DEV');
 
@@ -1048,7 +1069,7 @@ export function DocumentComposer({
               totals,
               client: selectedClient,
               templateId: effectiveTemplateId,
-              pdfOptions: kind === 'invoice' ? pdfOptions : null,
+              pdfOptions: kind === 'invoice' ? resolvedPdfOptions : null,
             },
             previewCompany,
             settings,
@@ -1061,7 +1082,7 @@ export function DocumentComposer({
       kind,
       lines,
       notes,
-      pdfOptions,
+      resolvedPdfOptions,
       previewCompany,
       previewDueAt,
       selectedClient,
@@ -1243,6 +1264,7 @@ export function DocumentComposer({
     kind === 'invoice' ? (
       <ComposerOptionsPanel
         company={activeCompany}
+        defaultTitle={defaultInvoiceTitle}
         forecastNumber={edit ? edit.number : forecastNumber}
         number={customNumber}
         onChange={setPdfOptions}

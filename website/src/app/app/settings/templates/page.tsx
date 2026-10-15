@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 
 import { FormActions, PrimaryButton } from '@/components/app/form-fields';
 import { Badge, LoadingState, Panel } from '@/components/app/ui';
@@ -20,34 +20,54 @@ import { cn } from '@/lib/utils';
 export default function TemplatesSettingsPage() {
   const { scope } = useTenant();
   const { formValues, loading } = useSettings();
+
+  if (loading) {
+    return <LoadingState message="Chargement des modèles…" />;
+  }
+
+  // Chaque entreprise a ses modèles : changer d'entreprise repart de ses propres choix.
+  return (
+    <TemplatesSettings
+      initialInvoiceTemplateId={formValues.invoiceTemplateId}
+      initialQuoteTemplateId={formValues.quoteTemplateId}
+      key={`${scope?.companyId ?? 'none'}-${formValues.quoteTemplateId}-${formValues.invoiceTemplateId}`}
+    />
+  );
+}
+
+function TemplatesSettings({
+  initialInvoiceTemplateId,
+  initialQuoteTemplateId,
+}: {
+  initialInvoiceTemplateId: string;
+  initialQuoteTemplateId: string;
+}) {
+  const { scope, activeCompany } = useTenant();
   const { hasFeature } = useSubscription();
   const { showSuccess, showError } = useToast();
   const templatesLocked = !hasFeature('pdf_templates');
   const queryClient = useQueryClient();
-  const [quoteTemplateId, setQuoteTemplateId] = useState(formValues.quoteTemplateId);
-  const [invoiceTemplateId, setInvoiceTemplateId] = useState(formValues.invoiceTemplateId);
-
-  useEffect(() => {
-    setQuoteTemplateId(formValues.quoteTemplateId);
-    setInvoiceTemplateId(formValues.invoiceTemplateId);
-  }, [formValues.quoteTemplateId, formValues.invoiceTemplateId]);
+  const [quoteTemplateId, setQuoteTemplateId] = useState(initialQuoteTemplateId);
+  const [invoiceTemplateId, setInvoiceTemplateId] = useState(initialInvoiceTemplateId);
 
   const mutation = useMutation({
     mutationFn: () =>
       updateDocumentTemplates(requireScope(scope), { quoteTemplateId, invoiceTemplateId }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: settingsQueryKeys.all });
-      showSuccess('Modèles PDF enregistrés.');
+      showSuccess(`Modèles PDF de ${activeCompany?.name?.trim() || 'l’entreprise'} enregistrés.`);
     },
     onError: (error) => showError(toUserFacingError(error.message)),
   });
 
-  if (loading) {
-    return <LoadingState message="Chargement des modèles…" />;
-  }
-
   return (
     <div className="mx-auto max-w-[720px] space-y-4 p-5 sm:p-6">
+      <p className="text-[13px] leading-relaxed text-app-muted">
+        Modèles par défaut de{' '}
+        <span className="font-semibold text-app-text">{activeCompany?.name?.trim() || 'cette entreprise'}</span>.
+        Chaque entreprise de votre compte a les siens ; ils restent modifiables à tout moment, et sur
+        chaque facture.
+      </p>
       {templatesLocked ? (
         <Panel title="Offre requise">
           <p className="text-[13px] text-app-text-2">
