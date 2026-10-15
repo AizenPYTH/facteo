@@ -262,6 +262,7 @@ export type SettingsRow = {
   invoice_footer: string | null;
   quote_template_id: string | null;
   invoice_template_id: string | null;
+  show_logo?: boolean;
   created_at: string;
   updated_at: string;
 };
@@ -280,6 +281,7 @@ export type SettingsUpdate = {
   invoice_footer?: string | null;
   quote_template_id?: string | null;
   invoice_template_id?: string | null;
+  show_logo?: boolean;
   company_id?: string | null;
   updated_at?: string;
 };

@@ -6,7 +6,7 @@ import type { Settings, SettingsFormValues } from '@/types/settings';
 import type { SettingsRow, SettingsUpdate } from '@/types/database';
 
 export const SETTINGS_COLUMNS =
-  'id, user_id, company_id, currency, default_vat_rate, quote_prefix, invoice_prefix, quote_validity_days, next_quote_number, next_invoice_number, locale, payment_terms_days, quote_footer, invoice_footer, quote_template_id, invoice_template_id, created_at, updated_at' as const;
+  'id, user_id, company_id, currency, default_vat_rate, quote_prefix, invoice_prefix, quote_validity_days, next_quote_number, next_invoice_number, locale, payment_terms_days, quote_footer, invoice_footer, quote_template_id, invoice_template_id, show_logo, created_at, updated_at' as const;
 
 export function mapSettingsRow(row: SettingsRow & {
   company_id?: string | null;
@@ -30,6 +30,7 @@ export function mapSettingsRow(row: SettingsRow & {
     invoiceFooter: row.invoice_footer,
     quoteTemplateId: row.quote_template_id ?? DEFAULT_PDF_TEMPLATE_ID,
     invoiceTemplateId: row.invoice_template_id ?? DEFAULT_PDF_TEMPLATE_ID,
+    showLogo: row.show_logo === true,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -170,4 +171,17 @@ export async function updateDocumentTemplates(
   }
 
   return mapSettingsRow(data as SettingsRow);
+}
+
+/** Afficher ou masquer le logo sur les documents de l'entreprise. */
+export async function updateShowLogo(scope: DataScope, showLogo: boolean): Promise<void> {
+  const { error } = await supabase
+    .from('settings')
+    .update({ show_logo: showLogo, updated_at: new Date().toISOString() })
+    .eq('company_id', scope.companyId);
+
+  if (error) {
+    logSupabaseError('updateShowLogo', error);
+    throw error;
+  }
 }

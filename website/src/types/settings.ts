@@ -48,6 +48,8 @@ export type Settings = {
   invoiceFooter: string | null;
   quoteTemplateId: string;
   invoiceTemplateId: string;
+  /** Logo de l'entreprise sur ses documents : seulement si activé (Paramètres › Entreprise). */
+  showLogo: boolean;
   numberFormat: NumberFormat;
   /** Titre par défaut des factures de l'entreprise (null : « Facture »). */
   invoiceTitle: string | null;

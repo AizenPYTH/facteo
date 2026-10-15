@@ -1,10 +1,16 @@
 'use client';
 
 import Link from 'next/link';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 
 import { Panel } from '@/components/app/ui';
 import { useCompanyAssetSrc } from '@/hooks/use-company-asset-src';
+import { useSettings } from '@/hooks/use-settings';
+import { settingsQueryKeys } from '@/lib/domain/supabase/query-keys';
+import { updateShowLogo } from '@/lib/domain/supabase/settings';
+import { requireScope } from '@/lib/domain/tenant/scope';
+import { useTenant } from '@/providers/company-provider';
 import { useSubscription } from '@/hooks/use-subscription';
 import { uploadCompanyImageFile } from '@/lib/domain/supabase/companies';
 import { useToast } from '@/providers/toast-provider';
@@ -27,6 +33,18 @@ export function CompanyAssetsPanel({
   const { showError, showSuccess } = useToast();
   const [busy, setBusy] = useState<'logo' | 'signature' | null>(null);
   const logoLocked = !hasFeature('custom_logo');
+  const { scope } = useTenant();
+  const { settings } = useSettings();
+  const queryClient = useQueryClient();
+  const showLogo = settings?.showLogo === true;
+  const toggleLogo = useMutation({
+    mutationFn: (value: boolean) => updateShowLogo(requireScope(scope), value),
+    onSuccess: (_, value) => {
+      void queryClient.invalidateQueries({ queryKey: settingsQueryKeys.all });
+      showSuccess(value ? 'Le logo apparaîtra sur vos factures et devis.' : 'Logo masqué sur vos documents.');
+    },
+    onError: (error) => showError(toUserFacingError(error.message)),
+  });
   const signatureLocked = !hasFeature('company_signature');
 
   async function onFile(kind: 'logo' | 'signature', file: File | undefined) {
@@ -57,6 +75,27 @@ export function CompanyAssetsPanel({
         locked={logoLocked}
         onFile={(file) => void onFile('logo', file)}
       />
+      {!logoLocked ? (
+        <label className="-mt-2 flex cursor-pointer items-start gap-3 rounded-[12px] border border-app-border bg-app-surface px-4 py-3">
+          <input
+            checked={showLogo}
+            className="mt-0.5 h-4 w-4 shrink-0 [accent-color:var(--app-accent)]"
+            disabled={toggleLogo.isPending || !settings}
+            onChange={(event) => toggleLogo.mutate(event.target.checked)}
+            type="checkbox"
+          />
+          <span className="min-w-0">
+            <span className="block text-[13px] font-semibold text-app-text">
+              Afficher le logo sur mes factures et devis
+            </span>
+            <span className="mt-0.5 block text-[12px] text-app-muted">
+              {logoUrl
+                ? 'Désactivé : vos documents restent sans logo. Réglage propre à cette entreprise.'
+                : 'Ajoutez d’abord un logo ci-dessus.'}
+            </span>
+          </span>
+        </label>
+      ) : null}
       <AssetCard
         busy={busy === 'signature'}
         description="Signature de l’entreprise sur vos documents. Disponible à partir de Basique."

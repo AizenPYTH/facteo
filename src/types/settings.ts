@@ -16,6 +16,8 @@ export type Settings = {
   invoiceFooter: string | null;
   quoteTemplateId: string;
   invoiceTemplateId: string;
+  /** Logo de l'entreprise sur ses documents : seulement si activé (Paramètres › Entreprise). */
+  showLogo: boolean;
   createdAt: string;
   updatedAt: string;
 };

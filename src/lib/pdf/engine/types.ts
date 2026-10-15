@@ -113,7 +113,7 @@ export type PdfDocumentInput = {
   stampPosition?: StampPosition | null;
   /** Afficher l'e-mail de l'entreprise. Absent : affiché sur un devis, masqué sur une facture. */
   showIssuerEmail?: boolean;
-  /** Afficher le logo de l'entreprise. Absent : oui, s'il existe. */
+  /** Masquer le logo sur ce document. Le logo n'apparaît que si `settings.showLogo` est activé. */
   showLogo?: boolean | null;
   /** Mention de paiement choisie sur la facture, imprimée en tête des mentions du bas de page. */
   paymentMention?: string | null;

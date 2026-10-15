@@ -259,6 +259,7 @@ export type SettingsRow = {
   invoice_footer: string | null;
   quote_template_id: string | null;
   invoice_template_id: string | null;
+  show_logo?: boolean;
   number_include_year: boolean;
   number_separator: string;
   number_digits: number;
@@ -281,6 +282,7 @@ export type SettingsUpdate = {
   invoice_footer?: string | null;
   quote_template_id?: string | null;
   invoice_template_id?: string | null;
+  show_logo?: boolean;
   number_include_year?: boolean;
   number_separator?: string;
   number_digits?: number;
