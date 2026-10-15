@@ -436,7 +436,9 @@ export function buildTemplateContext(
     secondaryDate,
     issuer,
     client,
-    logoUrl: input.showLogo === false ? null : (input.company.logoUrl ?? null),
+    // Logo seulement si l'entreprise l'a activé dans ses paramètres (et pas masqué sur ce document).
+    logoUrl:
+      input.settings?.showLogo === true && input.showLogo !== false ? (input.company.logoUrl ?? null) : null,
     logoRatio:
       typeof input.company.logoRatio === 'number' && Number.isFinite(input.company.logoRatio) && input.company.logoRatio > 0
         ? input.company.logoRatio

@@ -60,6 +60,7 @@ export function optionsSummary(value: InvoicePdfOptions, customNumber: string, p
  * ligne. Numéro, titre, identifiants affichés et tampon « Facture payée ».
  */
 export function ComposerOptionsPanel({
+  logoEnabled = false,
   company,
   defaultTitle,
   forecastNumber,
@@ -70,6 +71,8 @@ export function ComposerOptionsPanel({
   previewInput,
   value,
 }: {
+  /** Logo activé dans Paramètres › Entreprise : sinon la case « Logo » n'est pas proposée. */
+  logoEnabled?: boolean;
   company: {
     id: string;
     email?: string | null;
@@ -244,9 +247,9 @@ export function ComposerOptionsPanel({
           </div>
 
           <div>
-            <p className="mb-2.5 text-[13.5px] font-bold">Vos identifiants et votre logo</p>
+            <p className="mb-2.5 text-[13.5px] font-bold">Vos identifiants</p>
             <div className="grid grid-cols-2 gap-2">
-              {IDENTIFIERS.map((identifier) => {
+              {IDENTIFIERS.filter((identifier) => identifier.key !== 'logo' || (logoEnabled && company?.logoUrl)).map((identifier) => {
                 const checked = isChecked(identifier.key);
                 const hint = identifierHint(identifier.key);
                 return (

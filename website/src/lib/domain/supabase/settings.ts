@@ -10,7 +10,7 @@ const LEGACY_SETTINGS_COLUMNS =
   'id, user_id, company_id, currency, default_vat_rate, quote_prefix, invoice_prefix, quote_validity_days, next_quote_number, next_invoice_number, locale, payment_terms_days, quote_footer, invoice_footer, quote_template_id, invoice_template_id, created_at, updated_at' as const;
 
 export const SETTINGS_COLUMNS =
-  `${LEGACY_SETTINGS_COLUMNS}, number_include_year, number_separator, number_digits, invoice_title` as const;
+  `${LEGACY_SETTINGS_COLUMNS}, number_include_year, number_separator, number_digits, invoice_title, show_logo` as const;
 
 /** Colonnes ajoutées par la migration « réglages par entreprise » : absentes tant qu'elle n'est pas appliquée. */
 const NEW_SETTINGS_FIELDS = [
@@ -18,6 +18,7 @@ const NEW_SETTINGS_FIELDS = [
   'number_separator',
   'number_digits',
   'invoice_title',
+  'show_logo',
 ] as const;
 
 function isMissingColumn(error: { code?: string } | null): boolean {
@@ -59,6 +60,7 @@ export function mapSettingsRow(row: Partial<SettingsRow> & Omit<SettingsRow, (ty
       digits: row.number_digits ?? DEFAULT_NUMBER_FORMAT.digits,
     },
     invoiceTitle: row.invoice_title?.trim() || null,
+    showLogo: row.show_logo === true,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -219,6 +221,14 @@ export async function updateDocumentTemplates(
   return updateCompanySettings(scope.companyId, {
     quote_template_id: templates.quoteTemplateId,
     invoice_template_id: templates.invoiceTemplateId,
+    updated_at: new Date().toISOString(),
+  });
+}
+
+/** Afficher ou masquer le logo sur les documents de l'entreprise active. */
+export async function updateShowLogo(scope: DataScope, showLogo: boolean): Promise<Settings> {
+  return updateCompanySettings(scope.companyId, {
+    show_logo: showLogo,
     updated_at: new Date().toISOString(),
   });
 }

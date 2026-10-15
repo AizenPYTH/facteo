@@ -1265,6 +1265,7 @@ export function DocumentComposer({
       <ComposerOptionsPanel
         company={activeCompany}
         defaultTitle={defaultInvoiceTitle}
+        logoEnabled={settings?.showLogo === true}
         forecastNumber={edit ? edit.number : forecastNumber}
         number={customNumber}
         onChange={setPdfOptions}
