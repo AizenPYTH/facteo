@@ -317,10 +317,18 @@ export async function updateCompanyName(companyId: string, name: string): Promis
 }
 
 export async function deleteCompany(companyId: string): Promise<void> {
-  const { error } = await supabase.from('companies').delete().eq('id', companyId);
+  // Fonction en base : supprime l'entreprise et toutes ses données dans le bon
+  // ordre (propriétaire uniquement, jamais la dernière entreprise du compte).
+  const { error } = await supabase.rpc('delete_company', { p_company_id: companyId });
 
   if (error) {
     logSupabaseError('deleteCompany', error);
+    if (error.message.includes('COMPANY_DELETE_LAST')) {
+      throw new Error('Impossible de supprimer votre seule entreprise.');
+    }
+    if (error.message.includes('COMPANY_DELETE_FORBIDDEN')) {
+      throw new Error('Seul le propriétaire peut supprimer cette entreprise.');
+    }
     throw error;
   }
 }

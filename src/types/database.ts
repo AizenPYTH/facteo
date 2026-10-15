@@ -870,6 +870,10 @@ export type Database = {
         Args: { p_name: string };
         Returns: string;
       };
+      delete_company: {
+        Args: { p_company_id: string };
+        Returns: undefined;
+      };
       track_product_event: {
         Args: {
           p_event: string;
