@@ -44,7 +44,7 @@ function render(context: TemplateContext): string {
           slug(issuer.name),
         )}</div>
       </div>
-      ${logoBanner(context.logoUrl, { maxHeight: 30, marginBottom: 10 })}
+      ${logoBanner(context.logoUrl, { ratio: context.logoRatio, maxHeight: 30, marginBottom: 10 })}
       <div style="font-size:${u(10)}; line-height:1.8; color:${MUTED}; margin-top:${u(12)}">
         ${addressLines([
           // Le slug de l'en-tête est décoratif : la raison sociale exacte doit figurer.

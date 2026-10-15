@@ -53,7 +53,7 @@ function render(context: TemplateContext): string {
     24,
   )}">
     <div style="display:flex; gap:${u(14)}; align-items:center">
-      ${logoMark(context.logoUrl, issuer.initials, {
+      ${logoMark(context.logoUrl, issuer.initials, { ratio: context.logoRatio,
         size: 44,
         background: NAVY,
         color: '#fff',

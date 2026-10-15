@@ -1,4 +1,5 @@
 import { router, type Href } from 'expo-router';
+import { CompanyAssetImage } from '@/components/company/company-asset-image';
 import type { ReactNode } from 'react';
 import { useMemo, useState } from 'react';
 import {
@@ -264,7 +265,7 @@ function CompanyListCard({
       style={[styles.card, selected && styles.cardSelected]}>
       <View style={styles.row}>
         {company.logoUrl ? (
-          <Image source={{ uri: company.logoUrl }} style={styles.logo} />
+          <CompanyAssetImage contentFit="contain" style={styles.logo} uri={company.logoUrl} />
         ) : (
           <View style={styles.logoPlaceholder}>
             <Text style={styles.logoInitial}>{company.name.charAt(0).toUpperCase()}</Text>

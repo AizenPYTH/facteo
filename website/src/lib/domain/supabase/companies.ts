@@ -1,5 +1,6 @@
 import type { CompanyLookupResult } from '@/lib/company-search/types';
 import { supabase } from '@/lib/supabase';
+import { prepareLogoFile } from '@/lib/domain/company-assets/logo-image';
 import { logSupabaseError } from '@/lib/supabase/errors';
 import { assertCurrentUserFeature } from '@/lib/domain/subscription/enforce';
 import { COMPANY_ASSETS_BUCKET, getPublicStorageUrl } from '@/lib/domain/supabase/storage';
@@ -327,8 +328,10 @@ export async function deleteCompany(companyId: string): Promise<void> {
 export async function uploadCompanyImageFile(
   companyId: string,
   kind: 'logo' | 'signature',
-  file: File,
+  original: File,
 ): Promise<string> {
+  // Logo : marges rognées, réduit à 1200 px, converti en PNG/JPEG (accepté par le stockage).
+  const file = kind === 'logo' ? await prepareLogoFile(original) : original;
   const mimeType = file.type || 'image/png';
   const extension = mimeType.includes('png')
     ? 'png'

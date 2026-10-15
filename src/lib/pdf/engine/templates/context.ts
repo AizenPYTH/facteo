@@ -84,6 +84,8 @@ export type TemplateContext = {
   issuer: TemplateParty;
   client: TemplateParty;
   logoUrl: string | null;
+  /** Largeur / hauteur du logo ; null si inconnue (taille maximale du modèle). */
+  logoRatio: number | null;
   lines: TemplateLine[];
   /** Dates / conditions, déjà filtrées : n'y figure que ce qui existe. */
   meta: TemplateMetaEntry[];
@@ -434,7 +436,11 @@ export function buildTemplateContext(
     secondaryDate,
     issuer,
     client,
-    logoUrl: input.company.logoUrl ?? null,
+    logoUrl: input.showLogo === false ? null : (input.company.logoUrl ?? null),
+    logoRatio:
+      typeof input.company.logoRatio === 'number' && Number.isFinite(input.company.logoRatio) && input.company.logoRatio > 0
+        ? input.company.logoRatio
+        : null,
     lines: buildLines(input),
     meta,
     totals: {

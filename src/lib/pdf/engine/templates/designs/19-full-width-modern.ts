@@ -42,7 +42,7 @@ function render(context: TemplateContext): string {
     26,
   )}; display:flex; justify-content:space-between; align-items:flex-end; gap:${u(20)}">
     <div style="min-width:0">
-    ${logoBanner(context.logoUrl, { maxHeight: 34, marginBottom: 12 })}
+    ${logoBanner(context.logoUrl, { ratio: context.logoRatio, maxHeight: 34, marginBottom: 12 })}
     <div style="font-size:${u(42)}; font-weight:800; letter-spacing:${u(
       -1.8,
     )}; line-height:1">${escapeHtml(labels.document)}<br/><span style="font-size:${u(

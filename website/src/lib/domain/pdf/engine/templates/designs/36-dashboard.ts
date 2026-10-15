@@ -1,5 +1,5 @@
 import type { TemplateContext } from '@/lib/pdf/engine/templates/context';
-import { FONTS, escapeHtml, qrSlot, u } from '@/lib/pdf/engine/templates/shared';
+import { FONTS, escapeHtml, qrSlot, u, logoBox } from '@/lib/pdf/engine/templates/shared';
 import type { PdfTemplateDefinition } from '@/lib/pdf/engine/templates/types';
 import { joinLines, legalIdsText, paymentLines, quantityText, totalsList } from '@/lib/pdf/engine/templates/designs/kit';
 
@@ -63,7 +63,7 @@ function render(context: TemplateContext): string {
   return `<div class="dc-page" style="font-family:${FONTS.workSans}; color:${INK}; background:${BG}; padding:${u(36)} ${u(40)} ${u(26)}">
   <div style="display:flex; justify-content:space-between; align-items:center; gap:${u(16)}">
     <div style="display:flex; align-items:center; gap:${u(12)}">
-      ${context.logoUrl ? `<img src="${escapeHtml(context.logoUrl)}" alt="" style="max-height:${u(38)}; max-width:${u(160)}" />` : `<div style="width:${u(38)}; height:${u(38)}; border-radius:${u(10)}; background:${TEAL}; color:#fff; display:flex; align-items:center; justify-content:center; font-family:${FONTS.grotesk}; font-weight:700; font-size:${u(14)}">${escapeHtml(issuer.initials)}</div>`}
+      ${context.logoUrl ? `<img src="${escapeHtml(context.logoUrl)}" alt="" style="${logoBox(context.logoRatio, 38, 160)}" />` : `<div style="width:${u(38)}; height:${u(38)}; border-radius:${u(10)}; background:${TEAL}; color:#fff; display:flex; align-items:center; justify-content:center; font-family:${FONTS.grotesk}; font-weight:700; font-size:${u(14)}">${escapeHtml(issuer.initials)}</div>`}
       <div>
         <div style="font-family:${FONTS.grotesk}; font-size:${u(17)}; font-weight:700">${escapeHtml(issuer.name)}</div>
         <div style="font-size:${u(9.5)}; color:${SLATE}">${joinLines([...issuer.addressLines, issuer.phone, issuer.email], ' · ')}</div>

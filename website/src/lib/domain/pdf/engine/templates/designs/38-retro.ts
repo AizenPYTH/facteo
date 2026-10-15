@@ -1,5 +1,5 @@
 import type { TemplateContext } from '@/lib/pdf/engine/templates/context';
-import { FONTS, escapeHtml, qrSlot, u } from '@/lib/pdf/engine/templates/shared';
+import { FONTS, escapeHtml, qrSlot, u, logoBox } from '@/lib/pdf/engine/templates/shared';
 import type { PdfTemplateDefinition } from '@/lib/pdf/engine/templates/types';
 import { joinLines, legalIdsText, paymentLines, quantityText, totalsList } from '@/lib/pdf/engine/templates/designs/kit';
 
@@ -41,7 +41,7 @@ function render(context: TemplateContext): string {
 
   <div style="display:flex; justify-content:space-between; align-items:flex-end; gap:${u(24)}; padding:${u(30)} ${u(52)} 0">
     <div style="min-width:0">
-      ${context.logoUrl ? `<img src="${escapeHtml(context.logoUrl)}" alt="" style="display:block; max-height:${u(46)}; max-width:${u(190)}; margin-bottom:${u(10)}" />` : ''}
+      ${context.logoUrl ? `<img src="${escapeHtml(context.logoUrl)}" alt="" style="display:block; ${logoBox(context.logoRatio, 46, 190)}; margin-bottom:${u(10)}" />` : ''}
       <div style="font-family:${FONTS.fraunces}; font-weight:900; font-size:${u(62)}; line-height:0.92; letter-spacing:${u(-2)}; color:${BROWN}">${escapeHtml(labels.document)}<span style="color:${ORANGE}">.</span></div>
       <div style="display:inline-block; margin-top:${u(10)}; background:${MUSTARD}; color:${INK}; border-radius:${u(30)}; padding:${u(5)} ${u(16)}; font-family:${FONTS.fraunces}; font-weight:700; font-size:${u(14)}">${escapeHtml(labels.number)} ${escapeHtml(context.number)}</div>
     </div>

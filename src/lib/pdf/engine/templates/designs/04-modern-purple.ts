@@ -45,7 +45,7 @@ function render(context: TemplateContext): string {
   )} ${u(52)}">
   <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:${u(24)}">
     <div style="display:flex; gap:${u(13)}; align-items:center">
-      ${logoMark(context.logoUrl, issuer.initials, {
+      ${logoMark(context.logoUrl, issuer.initials, { ratio: context.logoRatio,
         size: 42,
         radius: 13,
         background: VIOLET,

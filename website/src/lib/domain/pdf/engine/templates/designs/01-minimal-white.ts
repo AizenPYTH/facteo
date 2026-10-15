@@ -39,7 +39,7 @@ function render(context: TemplateContext): string {
   <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:${u(24)}">
     <div>
       <div style="display:flex; align-items:center; gap:${u(10)}">
-        ${logoMark(context.logoUrl, issuer.initials, { size: 30, border: `${u(1.5)} solid ${INK}` })}
+        ${logoMark(context.logoUrl, issuer.initials, { ratio: context.logoRatio, size: 30, border: `${u(1.5)} solid ${INK}` })}
         <div style="font-size:${u(17)}; font-weight:700; letter-spacing:${u(-0.3)}">${escapeHtml(issuer.name)}</div>
       </div>
       <div style="font-size:${u(10.5)}; line-height:1.7; color:${MUTED}; margin-top:${u(14)}">

@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase';
+import { prepareLogoFile } from '@/lib/domain/company-assets/logo-image';
 import { logSupabaseError } from '@/lib/supabase/errors';
 import { updateCompanyAssetUrl } from '@/lib/domain/supabase/companies';
 import {
@@ -22,8 +23,10 @@ function toNullableString(value: string): string | null {
 
 export async function uploadCompanyLogoFile(
   companyId: string,
-  file: File,
+  original: File,
 ): Promise<string> {
+  // Logo rogné, réduit et converti en PNG/JPEG avant l'envoi.
+  const file = await prepareLogoFile(original);
   const mimeType = file.type || 'image/png';
   const extension = mimeType.includes('png')
     ? 'png'

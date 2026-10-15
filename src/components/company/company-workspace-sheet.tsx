@@ -1,4 +1,5 @@
 import { Image } from 'expo-image';
+import { CompanyAssetImage } from '@/components/company/company-asset-image';
 import { SymbolView } from 'expo-symbols';
 import { useQueryClient } from '@tanstack/react-query';
 import { OwnCompanyLookup } from '@/components/company/own-company-lookup';
@@ -174,7 +175,7 @@ export function CompanyWorkspaceSheet({
                     style={styles.cardMain}>
                     <View style={styles.avatar}>
                       {company.logoUrl ? (
-                        <Image contentFit="cover" source={{ uri: company.logoUrl }} style={styles.avatarImage} />
+                        <CompanyAssetImage contentFit="contain" style={styles.avatarImage} uri={company.logoUrl} />
                       ) : (
                         <AppText variant="title">{company.name.slice(0, 1).toUpperCase()}</AppText>
                       )}

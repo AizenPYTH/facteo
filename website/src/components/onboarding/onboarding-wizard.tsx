@@ -26,6 +26,7 @@ import {
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/providers/auth-provider';
 import { useCompany } from '@/providers/company-provider';
+import { useCompanyAssetSrc } from '@/hooks/use-company-asset-src';
 import { useSubscription } from '@/hooks/use-subscription';
 
 const STEPS = [
@@ -51,6 +52,8 @@ export function OnboardingWizard() {
   const [step, setStep] = useState(1);
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  // Logo déjà enregistré : bucket privé, affiché par une URL signée.
+  const logoPreviewSrc = useCompanyAssetSrc(logoPreview);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [bootstrapping, setBootstrapping] = useState(false);
@@ -389,7 +392,7 @@ export function OnboardingWizard() {
                       <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white ring-1 ring-slate-200">
                         {logoPreview ? (
                           // eslint-disable-next-line @next/next/no-img-element
-                          <img alt="Logo" className="h-full w-full object-contain" src={logoPreview} />
+                          <img alt="Logo" className="h-full w-full object-contain" src={logoPreviewSrc ?? undefined} />
                         ) : (
                           <Building2 className="text-slate-300" size={22} />
                         )}

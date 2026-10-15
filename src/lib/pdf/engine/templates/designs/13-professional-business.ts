@@ -45,7 +45,7 @@ function render(context: TemplateContext): string {
     20,
   )}; border-bottom:${u(2)} solid ${INK}; padding-bottom:${u(14)}">
     <div style="display:flex; gap:${u(12)}; align-items:center">
-      ${logoMark(context.logoUrl, issuer.initials, {
+      ${logoMark(context.logoUrl, issuer.initials, { ratio: context.logoRatio,
         size: 38,
         border: `${u(2)} solid ${INK}`,
         fontSize: 13,

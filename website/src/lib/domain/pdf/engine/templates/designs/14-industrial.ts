@@ -40,7 +40,7 @@ function render(context: TemplateContext): string {
   return `<div class="dc-page" style="font-family:${FONTS.archivo}; color:${DARK}; background:#F7F6F3; padding:0">
   <div style="display:flex; align-items:stretch">
     <div style="background:${DARK}; color:#fff; padding:${u(28)} ${u(30)}; flex:1; min-width:0">
-      ${logoBanner(context.logoUrl, { maxHeight: 32, marginBottom: 10 })}
+      ${logoBanner(context.logoUrl, { ratio: context.logoRatio, maxHeight: 32, marginBottom: 10 })}
       <div style="font-size:${u(22)}; font-weight:800; letter-spacing:${u(
         2,
       )}; text-transform:uppercase">${escapeHtml(issuer.name)}</div>

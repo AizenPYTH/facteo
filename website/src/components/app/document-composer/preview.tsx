@@ -150,6 +150,7 @@ export function buildComposerPdfInput(
     stampColor: draft.pdfOptions.stampColor,
     stampPosition: emptyUnpaid ? 'none' : draft.pdfOptions.stampPosition,
     showIssuerEmail: draft.pdfOptions.showEmail,
+    showLogo: draft.pdfOptions.showLogo,
     company: withInvoiceBankDetails(base.company, draft.pdfOptions.bank),
     paymentMention: draft.pdfOptions.paymentMention,
   };

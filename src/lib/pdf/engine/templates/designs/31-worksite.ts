@@ -1,5 +1,5 @@
 import type { TemplateContext } from '@/lib/pdf/engine/templates/context';
-import { FONTS, escapeHtml, qrSlot, u } from '@/lib/pdf/engine/templates/shared';
+import { FONTS, escapeHtml, qrSlot, u, logoBox } from '@/lib/pdf/engine/templates/shared';
 import type { PdfTemplateDefinition } from '@/lib/pdf/engine/templates/types';
 import { joinLines, legalIdsText, paymentLines, quantityText, totalsList } from '@/lib/pdf/engine/templates/designs/kit';
 
@@ -17,7 +17,7 @@ function render(context: TemplateContext): string {
   <div style="height:${u(16)}; background:${hazard}"></div>
   <div style="display:flex; justify-content:space-between; align-items:flex-start; padding:${u(26)} ${u(40)} ${u(18)}">
     <div>
-      ${context.logoUrl ? `<img src="${escapeHtml(context.logoUrl)}" alt="" style="max-height:${u(44)}; max-width:${u(200)}; display:block; margin-bottom:${u(6)}" />` : ''}
+      ${context.logoUrl ? `<img src="${escapeHtml(context.logoUrl)}" alt="" style="${logoBox(context.logoRatio, 44, 200)}; display:block; margin-bottom:${u(6)}" />` : ''}
       ${condensed(escapeHtml(issuer.name), 24)}
       <div style="font-size:${u(10)}; line-height:1.55">${joinLines([...issuer.addressLines, issuer.phone])}</div>
       ${legalIdsText(context) ? `<div style="font-size:${u(9.5)}; font-weight:600; margin-top:${u(3)}">${escapeHtml(legalIdsText(context, ' • '))}</div>` : ''}

@@ -1,5 +1,8 @@
 import * as FileSystem from 'expo-file-system/legacy';
+import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 import { Platform } from 'react-native';
+
+import { resolveCompanyAssetUrl } from '@/lib/company-assets/asset-url';
 
 import type { PdfCompanyInfo } from '@/lib/pdf/engine';
 
@@ -104,8 +107,8 @@ async function fetchAsDataUriWeb(url: string): Promise<string | null> {
   });
 }
 
-async function fetchAsDataUriNative(url: string): Promise<string | null> {
-  const destination = buildLocalCacheUri(url);
+async function fetchAsDataUriNative(url: string, cacheKey: string = url): Promise<string | null> {
+  const destination = buildLocalCacheUri(cacheKey);
 
   await FileSystem.deleteAsync(destination, { idempotent: true }).catch(() => undefined);
 
@@ -126,7 +129,7 @@ async function fetchAsDataUriNative(url: string): Promise<string | null> {
     return null;
   }
 
-  const mimeType = normalizeMimeType(readHeader(downloaded.headers, 'content-type'), url);
+  const mimeType = normalizeMimeType(readHeader(downloaded.headers, 'content-type'), cacheKey);
 
   return `data:${mimeType};base64,${base64}`;
 }
@@ -155,26 +158,98 @@ export async function resolveInlineImage(url: string | null | undefined): Promis
       });
       resolved = base64 ? `data:${guessMimeTypeFromUrl(url)};base64,${base64}` : null;
     } else {
-      resolved =
-        Platform.OS === 'web' ? await fetchAsDataUriWeb(url) : await fetchAsDataUriNative(url);
+      // Bucket privé : URL signée avec la session de l'utilisateur.
+      const readable = await resolveCompanyAssetUrl(url);
+      resolved = !readable
+        ? null
+        : Platform.OS === 'web'
+          ? await fetchAsDataUriWeb(readable)
+          : await fetchAsDataUriNative(readable, url);
     }
   } catch {
     resolved = null;
   }
 
-  dataUriCache.set(url, resolved);
+  // Un échec n'est pas mémorisé : on réessaiera au prochain rendu.
+  if (resolved) dataUriCache.set(url, resolved);
 
   return resolved;
+}
+
+const logoCache = new Map<string, { dataUri: string; ratio: number | null }>();
+
+function measureOnWeb(dataUri: string): Promise<number | null> {
+  return new Promise((resolve) => {
+    const ImageCtor = (globalThis as { Image?: new () => HTMLImageElement }).Image;
+    if (!ImageCtor) {
+      resolve(null);
+      return;
+    }
+    const image = new ImageCtor();
+    image.onload = () => resolve(image.naturalHeight ? image.naturalWidth / image.naturalHeight : null);
+    image.onerror = () => resolve(null);
+    image.src = dataUri;
+  });
+}
+
+/**
+ * Logo embarquable + sa forme (largeur / hauteur), qui sert à le dimensionner
+ * dans chaque modèle. Les très grandes images sont réduites à 1200 px.
+ */
+export async function resolveInlineLogo(
+  url: string | null | undefined,
+): Promise<{ dataUri: string; ratio: number | null } | null> {
+  if (!url) return null;
+  const cached = logoCache.get(url);
+  if (cached) return cached;
+
+  const dataUri = await resolveInlineImage(url);
+  if (!dataUri) return null;
+
+  let result: { dataUri: string; ratio: number | null } = { dataUri, ratio: null };
+  try {
+    if (Platform.OS === 'web') {
+      result = { dataUri, ratio: await measureOnWeb(dataUri) };
+    } else {
+      const image = await ImageManipulator.manipulate(dataUri).renderAsync();
+      const longest = Math.max(image.width, image.height);
+      const ratio = image.height > 0 ? image.width / image.height : null;
+      if (longest > 1200) {
+        const isPng = dataUri.startsWith('data:image/png');
+        const resized = await ImageManipulator.manipulate(dataUri)
+          .resize(image.width >= image.height ? { width: 1200 } : { height: 1200 })
+          .renderAsync();
+        const saved = await resized.saveAsync({
+          base64: true,
+          format: isPng ? SaveFormat.PNG : SaveFormat.JPEG,
+          compress: 0.92,
+        });
+        result = {
+          dataUri: saved.base64 ? `data:image/${isPng ? 'png' : 'jpeg'};base64,${saved.base64}` : dataUri,
+          ratio,
+        };
+      } else {
+        result = { dataUri, ratio };
+      }
+    }
+  } catch {
+    result = { dataUri, ratio: null };
+  }
+
+  logoCache.set(url, result);
+  return result;
 }
 
 /** À appeler quand un logo / une signature vient d'être remplacé. */
 export function clearInlineImageCache(url?: string): void {
   if (url) {
     dataUriCache.delete(url);
+    logoCache.delete(url);
     return;
   }
 
   dataUriCache.clear();
+  logoCache.clear();
 }
 
 export async function inlinePdfClientSignature(
@@ -194,14 +269,15 @@ export async function inlinePdfClientSignature(
 }
 
 export async function inlinePdfCompanyImages(company: PdfCompanyInfo): Promise<PdfCompanyInfo> {
-  const [logoUrl, signatureUrl] = await Promise.all([
-    resolveInlineImage(company.logoUrl),
+  const [logo, signatureUrl] = await Promise.all([
+    resolveInlineLogo(company.logoUrl),
     resolveInlineImage(company.signatureUrl),
   ]);
 
   return {
     ...company,
-    logoUrl,
+    logoUrl: logo?.dataUri ?? null,
+    logoRatio: logo?.ratio ?? null,
     signatureUrl,
   };
 }

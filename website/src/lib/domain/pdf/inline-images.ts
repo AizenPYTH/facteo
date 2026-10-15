@@ -1,36 +1,39 @@
 import type { PdfCompanyInfo } from '@/lib/pdf/engine';
+import { inlineImage, inlineLogo } from '@/lib/domain/company-assets/logo-image';
 
-async function fetchAsDataUri(url: string): Promise<string | null> {
-  try {
-    const response = await fetch(url);
+/**
+ * Les images du document (logo, signatures) sont embarquées en data-URI avant
+ * le rendu. Le bucket des logos étant privé, elles sont lues avec la session
+ * de l'utilisateur. Une image introuvable est retirée (null) : jamais d'image
+ * cassée sur une facture.
+ */
 
-    if (!response.ok) {
-      return null;
-    }
+const logoCache = new Map<string, Promise<{ dataUri: string; ratio: number | null } | null>>();
+const imageCache = new Map<string, Promise<string | null>>();
 
-    const blob = await response.blob();
-    const base64 = await new Promise<string>((resolve, reject) => {
-      const reader = new FileReader();
-
-      reader.onloadend = () => {
-        const result = reader.result;
-
-        if (typeof result !== 'string') {
-          reject(new Error('Invalid image data.'));
-          return;
-        }
-
-        resolve(result);
-      };
-
-      reader.onerror = () => reject(reader.error ?? new Error('Unable to read image.'));
-      reader.readAsDataURL(blob);
+function cachedLogo(url: string) {
+  let pending = logoCache.get(url);
+  if (!pending) {
+    pending = inlineLogo(url).catch(() => null);
+    logoCache.set(url, pending);
+    // Un échec (réseau, session) n'est pas mémorisé : on réessaiera au prochain rendu.
+    void pending.then((result) => {
+      if (!result) logoCache.delete(url);
     });
-
-    return base64;
-  } catch {
-    return null;
   }
+  return pending;
+}
+
+function cachedImage(url: string) {
+  let pending = imageCache.get(url);
+  if (!pending) {
+    pending = inlineImage(url).catch(() => null);
+    imageCache.set(url, pending);
+    void pending.then((result) => {
+      if (!result) imageCache.delete(url);
+    });
+  }
+  return pending;
 }
 
 export async function inlinePdfClientSignature(
@@ -40,23 +43,25 @@ export async function inlinePdfClientSignature(
     return null;
   }
 
-  const inlinedUrl = await fetchAsDataUri(signature.url);
+  const inlinedUrl = signature.url.startsWith('data:') ? signature.url : await cachedImage(signature.url);
 
-  return {
-    url: inlinedUrl ?? signature.url,
-    signedAt: signature.signedAt,
-  };
+  return inlinedUrl ? { url: inlinedUrl, signedAt: signature.signedAt } : null;
 }
 
 export async function inlinePdfCompanyImages(company: PdfCompanyInfo): Promise<PdfCompanyInfo> {
-  const [logoUrl, signatureUrl] = await Promise.all([
-    company.logoUrl ? fetchAsDataUri(company.logoUrl) : Promise.resolve(null),
-    company.signatureUrl ? fetchAsDataUri(company.signatureUrl) : Promise.resolve(null),
+  const [logo, signatureUrl] = await Promise.all([
+    company.logoUrl ? cachedLogo(company.logoUrl) : Promise.resolve(null),
+    company.signatureUrl
+      ? company.signatureUrl.startsWith('data:')
+        ? Promise.resolve(company.signatureUrl)
+        : cachedImage(company.signatureUrl)
+      : Promise.resolve(null),
   ]);
 
   return {
     ...company,
-    logoUrl: logoUrl ?? company.logoUrl,
-    signatureUrl: signatureUrl ?? company.signatureUrl,
+    logoUrl: logo?.dataUri ?? null,
+    logoRatio: logo?.ratio ?? null,
+    signatureUrl,
   };
 }

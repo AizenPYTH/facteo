@@ -36,13 +36,14 @@ const STAMP_COLOR_ORDER: StampColor[] = ['auto', 'green', 'blue', 'red', 'black'
   (entry): entry is StampColor => STAMP_COLORS.includes(entry as StampColor),
 );
 
-type IdentifierKey = IssuerLegalId | 'email';
+type IdentifierKey = IssuerLegalId | 'email' | 'logo';
 
 const IDENTIFIERS: { key: IdentifierKey; label: string }[] = [
   { key: 'siren', label: 'SIREN' },
   { key: 'siret', label: 'SIRET' },
   { key: 'vat', label: 'N° de TVA' },
   { key: 'email', label: 'E-mail' },
+  { key: 'logo', label: 'Logo' },
 ];
 
 export function optionsSummary(value: InvoicePdfOptions, customNumber: string, paid: boolean) {
@@ -69,7 +70,13 @@ export function ComposerOptionsPanel({
   previewInput,
   value,
 }: {
-  company: { id: string; email?: string | null; siret: string | null; vatNumber: string | null } | null;
+  company: {
+    id: string;
+    email?: string | null;
+    logoUrl?: string | null;
+    siret: string | null;
+    vatNumber: string | null;
+  } | null;
   /** Titre par défaut de l'entreprise (Paramètres › Numérotation). Absent : « Facture ». */
   defaultTitle?: string | null;
   forecastNumber: string | null;
@@ -101,10 +108,15 @@ export function ComposerOptionsPanel({
     : [baseTitle, ...INVOICE_TITLE_SUGGESTIONS];
 
   function isChecked(key: IdentifierKey): boolean {
+    if (key === 'logo') return value.showLogo;
     return key === 'email' ? value.showEmail : value.legalIds.includes(key);
   }
 
   function toggle(key: IdentifierKey) {
+    if (key === 'logo') {
+      onChange({ ...value, showLogo: !value.showLogo });
+      return;
+    }
     if (key === 'email') {
       onChange({ ...value, showEmail: !value.showEmail });
       return;
@@ -119,6 +131,7 @@ export function ComposerOptionsPanel({
   }
 
   function identifierHint(key: IdentifierKey): string | null {
+    if (key === 'logo') return company?.logoUrl ? 'Logo de la page Entreprise' : null;
     if (key === 'email') return company?.email?.trim() || null;
     return legalValues[key];
   }
@@ -231,7 +244,7 @@ export function ComposerOptionsPanel({
           </div>
 
           <div>
-            <p className="mb-2.5 text-[13.5px] font-bold">Vos identifiants (votre entreprise)</p>
+            <p className="mb-2.5 text-[13.5px] font-bold">Vos identifiants et votre logo</p>
             <div className="grid grid-cols-2 gap-2">
               {IDENTIFIERS.map((identifier) => {
                 const checked = isChecked(identifier.key);

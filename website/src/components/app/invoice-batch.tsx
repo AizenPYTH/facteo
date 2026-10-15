@@ -240,6 +240,7 @@ export function InvoiceBatch() {
             stampPosition: draft.stampPosition,
             templateId: draft.templateId || null,
             showEmail: false,
+            showLogo: true,
             legalIdsPlacement: 'auto',
             showClientId: true,
             clientIdPlacement: 'auto',

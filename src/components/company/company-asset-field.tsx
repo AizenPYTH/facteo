@@ -1,4 +1,5 @@
 import { router, type Href } from 'expo-router';
+import { useCompanyAssetSrc } from '@/lib/company-assets/asset-url';
 import { Image } from 'expo-image';
 import { SymbolView } from 'expo-symbols';
 import { useEffect, useState } from 'react';
@@ -32,7 +33,8 @@ export function CompanyAssetField({ kind, value }: CompanyAssetFieldProps) {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [fallbackUrl, setFallbackUrl] = useState<string | null>(null);
   const isLoading = uploadAsset.isPending || deleteAsset.isPending;
-  const displayUrl = previewUrl ?? value ?? fallbackUrl;
+  // Bucket privé : l'adresse enregistrée est remplacée par une URL signée.
+  const displayUrl = useCompanyAssetSrc(previewUrl ?? value ?? fallbackUrl);
 
   useEffect(() => {
     if (value) {

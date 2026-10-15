@@ -28,7 +28,7 @@ function render(context: TemplateContext): string {
     34,
   )}; flex:1; display:flex; flex-direction:column">
     <div style="text-align:center">
-      ${logoBanner(context.logoUrl, { maxHeight: 34, marginBottom: 12, align: 'center' })}
+      ${logoBanner(context.logoUrl, { ratio: context.logoRatio, maxHeight: 34, marginBottom: 12, align: 'center' })}
       <div style="font-size:${u(20)}; letter-spacing:${u(5)}; text-transform:uppercase">${escapeHtml(
         issuer.name,
       )}</div>
