@@ -2,17 +2,18 @@
 
 import { Suspense, useCallback, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Building2, Check, Plus } from 'lucide-react';
+import { Building2, Check, Plus, Trash2 } from 'lucide-react';
 
 import { useQueryClient } from '@tanstack/react-query';
 import { OwnCompanyLookup } from '@/components/app/own-company-lookup';
 import type { CompanyLookupResult } from '@/lib/company-search/types';
-import { applyCompanyRegistration } from '@/lib/domain/supabase/companies';
+import { applyCompanyRegistration, deleteCompany } from '@/lib/domain/supabase/companies';
 import { companiesQueryKeys } from '@/lib/domain/supabase/query-keys';
 import { AppDialog } from '@/components/app/app-dialog';
 import { AppTopBar } from '@/components/app/app-shell';
 import { EmptyState } from '@/components/app/empty-state';
 import {
+  DangerButton,
   PrimaryButton,
   SecondaryButton,
   SecondaryLink,
@@ -47,6 +48,7 @@ function CompanyCard({
   switching,
   onActivate,
   onSelect,
+  onDelete,
 }: {
   company: TenantCompany;
   active: boolean;
@@ -54,6 +56,8 @@ function CompanyCard({
   switching: boolean;
   onActivate: () => void;
   onSelect: () => void;
+  /** Absent : suppression impossible (pas propriétaire, ou seule entreprise). */
+  onDelete?: () => void;
 }) {
   const place = [company.city, company.country].filter(Boolean).join(', ');
 
@@ -119,6 +123,16 @@ function CompanyCard({
         <SecondaryLink className="px-3 py-2 text-[12.5px]" href="/app/settings/company">
           Profil
         </SecondaryLink>
+        {onDelete ? (
+          <button
+            aria-label={`Supprimer ${company.name}`}
+            className="flex items-center justify-center rounded-app-field border border-app-danger-border px-2.5 text-app-danger transition-colors hover:bg-app-danger-tint"
+            onClick={onDelete}
+            title="Supprimer l’entreprise"
+            type="button">
+            <Trash2 size={15} />
+          </button>
+        ) : null}
       </div>
     </article>
   );
@@ -137,6 +151,37 @@ function CompaniesWorkspaceInner() {
   const [registration, setRegistration] = useState<CompanyLookupResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [toDelete, setToDelete] = useState<TenantCompany | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState('');
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+
+  function closeDelete() {
+    if (deleting) return;
+    setToDelete(null);
+    setDeleteConfirm('');
+    setDeleteError(null);
+  }
+
+  async function handleDelete() {
+    if (!toDelete) return;
+    setDeleting(true);
+    setDeleteError(null);
+    try {
+      const wasActive = toDelete.id === activeCompany?.id;
+      await deleteCompany(toDelete.id);
+      // L'espace actif disparaît : on bascule sur une autre entreprise du compte.
+      const next = companies.find((company) => company.id !== toDelete.id);
+      if (wasActive && next) await switchCompany(next.id);
+      await queryClient.invalidateQueries({ queryKey: companiesQueryKeys.all });
+      setToDelete(null);
+      setDeleteConfirm('');
+    } catch (err) {
+      setDeleteError(err instanceof Error ? err.message : 'Suppression impossible.');
+    } finally {
+      setDeleting(false);
+    }
+  }
 
   const setSelectedId = useCallback(
     (id: string | null) => {
@@ -222,6 +267,9 @@ function CompaniesWorkspaceInner() {
                 highlighted={company.id === selectedId}
                 key={company.id}
                 onActivate={() => void switchCompany(company.id)}
+                onDelete={
+                  company.role === 'owner' && companies.length > 1 ? () => setToDelete(company) : undefined
+                }
                 onSelect={() => setSelectedId(company.id)}
                 switching={isSwitching}
               />
@@ -274,6 +322,39 @@ function CompaniesWorkspaceInner() {
           />
           {error ? <p className="text-[12px] font-medium text-app-danger">{error}</p> : null}
         </form>
+      </AppDialog>
+
+      <AppDialog
+        description="Ses clients, devis, factures, produits et réglages seront supprimés définitivement. Les factures émises doivent être conservées 10 ans : téléchargez-les avant si besoin."
+        footer={
+          <>
+            <SecondaryButton disabled={deleting} onClick={closeDelete} type="button">
+              Annuler
+            </SecondaryButton>
+            <DangerButton
+              disabled={deleting || deleteConfirm.trim() !== (toDelete?.name ?? '').trim()}
+              onClick={() => void handleDelete()}
+              variant="solid">
+              {deleting ? 'Suppression…' : 'Supprimer définitivement'}
+            </DangerButton>
+          </>
+        }
+        onClose={closeDelete}
+        open={toDelete !== null}
+        size="sm"
+        title={`Supprimer « ${toDelete?.name || 'cette entreprise'} » ?`}>
+        <div className="space-y-2 px-[22px] pb-2">
+          <label className="block text-xs font-medium text-app-text-3" htmlFor="company-delete-confirm">
+            Pour confirmer, tapez le nom de l’entreprise : <strong>{toDelete?.name}</strong>
+          </label>
+          <TextInput
+            autoComplete="off"
+            id="company-delete-confirm"
+            onChange={(event) => setDeleteConfirm(event.target.value)}
+            value={deleteConfirm}
+          />
+          {deleteError ? <p className="text-[12px] font-medium text-app-danger">{deleteError}</p> : null}
+        </div>
       </AppDialog>
     </>
   );

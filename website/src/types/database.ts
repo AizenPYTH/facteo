@@ -896,6 +896,10 @@ export type Database = {
         Args: { p_name: string };
         Returns: string;
       };
+      delete_company: {
+        Args: { p_company_id: string };
+        Returns: undefined;
+      };
       ensure_company_settings: {
         Args: { p_company_id: string };
         Returns: string;
