@@ -17,6 +17,7 @@ import { typography } from '@/constants/theme/typography';
 import { useColors, useThemedStyles } from '@/hooks/use-colors';
 import { useCompanyProfile } from '@/hooks/use-company-profile';
 import { useSettings } from '@/hooks/use-settings';
+import { useAddLinesToCatalog } from '@/hooks/use-add-lines-to-catalog';
 import { useTenant } from '@/hooks/use-tenant';
 import {
   analyzeInvoicesImage,
@@ -103,6 +104,7 @@ export function InvoiceBatchScreen() {
   const { data: settings } = useSettings();
   const { data: companyProfile } = useCompanyProfile();
   const { showError, showSuccess } = useToast();
+  const addLinesToCatalog = useAddLinesToCatalog();
 
   const [drafts, setDrafts] = useState<Draft[]>([]);
   const [analyzing, setAnalyzing] = useState(false);
@@ -205,6 +207,7 @@ export function InvoiceBatchScreen() {
     const activeScope = requireScope(scope);
     setSaving(true);
     const remaining: Draft[] = [];
+    const savedLines: InvoiceLineValue[] = [];
     let created = 0;
 
     for (const draft of drafts) {
@@ -236,6 +239,7 @@ export function InvoiceBatchScreen() {
           number: draft.number.trim() || null,
           pdfOptions: draft.pdfOptions,
         });
+        savedLines.push(...lines);
         if (draft.paid) {
           await markInvoiceAsPaid(activeScope, invoice.id);
         }
@@ -249,6 +253,8 @@ export function InvoiceBatchScreen() {
     }
 
     setSaving(false);
+    // Une seule passe pour tout le lot : un même article n'est ajouté qu'une fois.
+    addLinesToCatalog(savedLines);
     void queryClient.invalidateQueries({ queryKey: invoicesQueryKeys.all });
     void queryClient.invalidateQueries({ queryKey: clientsQueryKeys.all });
 
@@ -389,6 +395,7 @@ export function InvoiceBatchScreen() {
               <CollapsibleSection title="Numéro, titre, modèle, SIREN, tampon">
                 <InvoicePresentationSection
                   company={companyProfile ?? null}
+                  defaultTitle={settings?.invoiceTitle}
                   number={draft.number}
                   onChange={(pdfOptions) => update(draft.key, { pdfOptions })}
                   onNumberChange={(number) => update(draft.key, { number, error: null })}

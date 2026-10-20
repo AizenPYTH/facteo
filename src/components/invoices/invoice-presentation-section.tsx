@@ -47,6 +47,8 @@ type InvoicePresentationSectionProps = {
   paid?: boolean;
   /** Pays du client : hors de France, pas de SIREN / SIRET de l'émetteur. */
   clientCountry?: string | null;
+  /** Titre par défaut des factures de l'entreprise (Paramètres › Numérotation). */
+  defaultTitle?: string | null;
 };
 
 /** Modèles rangés par catégorie, groupes vides omis. */
@@ -72,6 +74,7 @@ export function InvoicePresentationSection({
   showTemplate = true,
   paid = false,
   clientCountry,
+  defaultTitle,
 }: InvoicePresentationSectionProps) {
   const styles = useStyles();
   const colors = useColors();
@@ -85,7 +88,11 @@ export function InvoicePresentationSection({
     ISSUER_LEGAL_IDS.filter((id) => id !== 'siren' || isFrenchCountry(company?.country)),
     clientCountry,
   );
-  const activeTitle = value.title?.trim() || DEFAULT_INVOICE_TITLE;
+  const baseTitle = defaultTitle?.trim() || DEFAULT_INVOICE_TITLE;
+  const activeTitle = value.title?.trim() || baseTitle;
+  const titleSuggestions = INVOICE_TITLE_SUGGESTIONS.includes(baseTitle)
+    ? INVOICE_TITLE_SUGGESTIONS
+    : [baseTitle, ...INVOICE_TITLE_SUGGESTIONS];
 
   function toggleLegalId(id: IssuerLegalId) {
     const legalIds = value.legalIds.includes(id)
@@ -113,17 +120,15 @@ export function InvoicePresentationSection({
           label="Titre du document"
           maxLength={60}
           onChangeText={(title) => onChange({ ...value, title })}
-          placeholder={DEFAULT_INVOICE_TITLE}
+          placeholder={baseTitle}
           value={value.title ?? ''}
         />
         <ChipRow>
-          {INVOICE_TITLE_SUGGESTIONS.map((suggestion) => (
+          {titleSuggestions.map((suggestion) => (
             <FilterChip
               key={suggestion}
               label={suggestion}
-              onPress={() =>
-                onChange({ ...value, title: suggestion === DEFAULT_INVOICE_TITLE ? null : suggestion })
-              }
+              onPress={() => onChange({ ...value, title: suggestion === baseTitle ? null : suggestion })}
               selected={activeTitle === suggestion}
             />
           ))}

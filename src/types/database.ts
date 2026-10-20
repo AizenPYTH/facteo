@@ -263,6 +263,10 @@ export type SettingsRow = {
   quote_template_id: string | null;
   invoice_template_id: string | null;
   show_logo?: boolean;
+  number_include_year: boolean;
+  number_separator: string;
+  number_digits: number;
+  invoice_title: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -282,6 +286,10 @@ export type SettingsUpdate = {
   quote_template_id?: string | null;
   invoice_template_id?: string | null;
   show_logo?: boolean;
+  number_include_year?: boolean;
+  number_separator?: string;
+  number_digits?: number;
+  invoice_title?: string | null;
   company_id?: string | null;
   updated_at?: string;
 };
@@ -875,6 +883,10 @@ export type Database = {
       delete_company: {
         Args: { p_company_id: string };
         Returns: undefined;
+      };
+      ensure_company_settings: {
+        Args: { p_company_id: string };
+        Returns: string;
       };
       track_product_event: {
         Args: {

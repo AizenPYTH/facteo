@@ -18,6 +18,11 @@ import {
 import { MARKETING_SITE_URL } from '@/constants/marketing/site';
 import { isSupabaseConfigured, supabase } from '@/lib/supabase';
 import { presentNatively } from '@/lib/native/presentation';
+import type { CompanyLookupResult } from '@/lib/company-search/types';
+import {
+  PENDING_COMPANY_REGISTRATION_KEY,
+  toPendingRegistration,
+} from '@/lib/auth/pending-company-registration';
 
 /** Au-delà de ce délai, on cesse d’attendre la restauration de session. */
 const SESSION_RESTORE_TIMEOUT_MS = 8000;
@@ -52,6 +57,8 @@ export type SignUpParams = {
   firstName: string;
   lastName: string;
   companyName: string;
+  /** Entreprise trouvée par SIREN / SIRET à l'inscription : reprise à la première connexion. */
+  companyRegistration?: CompanyLookupResult | null;
 };
 
 export type AuthResult = {
@@ -203,6 +210,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
       firstName,
       lastName,
       companyName,
+      companyRegistration,
     }: SignUpParams): Promise<AuthResult> => {
       const { data, error } = await supabase.auth.signUp({
         email,
@@ -212,6 +220,9 @@ export function AuthProvider({ children }: PropsWithChildren) {
             first_name: firstName,
             last_name: lastName,
             company_name: companyName,
+            ...(companyRegistration
+              ? { [PENDING_COMPANY_REGISTRATION_KEY]: toPendingRegistration(companyRegistration) }
+              : {}),
           },
         },
       });
