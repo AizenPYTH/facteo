@@ -51,6 +51,7 @@ import { isValidIban } from '@/lib/payments/sepa-qr';
 import { fetchCatalogItems } from '@/lib/supabase/products';
 import { requireScope } from '@/lib/tenant/scope';
 import { useInvoiceMutations } from '@/hooks/use-invoice-mutations';
+import { useAddLinesToCatalog } from '@/hooks/use-add-lines-to-catalog';
 import { useSettings } from '@/hooks/use-settings';
 import {
   addDaysFrenchDateInput,
@@ -88,6 +89,7 @@ import {
   type InvoiceStatus,
 } from '@/types/invoice';
 import { createEmptyQuoteLine, formatDecimalForInput, type QuoteLineValue } from '@/types/quote';
+import { formatDocumentNumber } from '@/types/settings';
 import {
   createDefaultInvoicePdfOptions,
   normalizeBankValue,
@@ -138,6 +140,7 @@ export function InvoiceWizardScreen({
   const { showError, showSuccess } = useToast();
   const { data: companyProfile } = useCompanyProfile();
   const { data: settings } = useSettings();
+  const addLinesToCatalog = useAddLinesToCatalog();
   const { user } = useAuth();
   const { scope } = useTenant();
   const queryClient = useQueryClient();
@@ -190,10 +193,14 @@ export function InvoiceWizardScreen({
 
   const templateId = pdfOptions.templateId ?? settings?.invoiceTemplateId ?? null;
   const forecastNumber = settings
-    ? `${settings.invoicePrefix?.trim() || 'FAC'}-${new Date().getUTCFullYear()}-${String(
-        settings.nextInvoiceNumber,
-      ).padStart(6, '0')}`
+    ? formatDocumentNumber(settings.invoicePrefix, settings.nextInvoiceNumber, {
+        includeYear: settings.numberIncludeYear,
+        separator: settings.numberSeparator,
+        digits: Number(settings.numberDigits) || 6,
+      })
     : null;
+  /** Titre par défaut des factures de l'entreprise (« Note d'honoraires »…). */
+  const defaultInvoiceTitle = mode === 'create' ? settings?.invoiceTitle.trim() || null : null;
 
   const totals = useMemo(() => mapInvoiceLinesToDocumentTotals(state.lines), [state.lines]);
   const companyName = companyProfile?.companyName?.trim() || 'Votre entreprise';
@@ -517,8 +524,9 @@ export function InvoiceWizardScreen({
           creation: voiceAttemptId ? { method: 'voice', attemptId: voiceAttemptId } : { method: 'manual' },
           ...(alreadyPaid ? { alreadyPaid: true, dueAt: null } : {}),
           number: customNumber.trim() || null,
-          pdfOptions: { ...pdfOptions, templateId },
+          pdfOptions: { ...pdfOptions, templateId, title: pdfOptions.title?.trim() || defaultInvoiceTitle },
         });
+        addLinesToCatalog(state.lines);
         void rememberLegalIds(pdfOptions.legalIds);
         void rememberPaymentMention(pdfOptions.paymentMention);
         void saveBankDetailsAsDefault();
@@ -614,6 +622,7 @@ export function InvoiceWizardScreen({
                   />
                   <InvoicePresentationSection
                     company={companyProfile ?? null}
+                    defaultTitle={defaultInvoiceTitle}
                     forecastNumber={forecastNumber}
                     number={customNumber}
                     onChange={setPdfOptions}
@@ -754,7 +763,7 @@ export function InvoiceWizardScreen({
     const saved =
       mode === 'edit' && invoiceId
         ? await fetchInvoicePdfOptions(activeScope, invoiceId)
-        : { ...pdfOptions, templateId };
+        : { ...pdfOptions, templateId, title: pdfOptions.title?.trim() || defaultInvoiceTitle };
     const options = { ...saved, ...overrides };
     return buildInvoiceDraftPdfHtml(
       activeScope,
@@ -778,6 +787,7 @@ export function InvoiceWizardScreen({
   }, [
     alreadyPaid,
     customNumber,
+    defaultInvoiceTitle,
     forecastNumber,
     headerInfo?.number,
     invoiceId,
@@ -856,6 +866,7 @@ export function InvoiceWizardScreen({
             clientName={state.clientName}
             company={companyProfile ?? null}
             customNumber={customNumber}
+            defaultTitle={defaultInvoiceTitle}
             dueAt={state.info.dueAt}
             forecastNumber={forecastNumber}
             lines={state.lines}

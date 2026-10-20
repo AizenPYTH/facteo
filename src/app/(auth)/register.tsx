@@ -1,15 +1,17 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Link, router, type Href } from 'expo-router';
-import { useState } from 'react';
+import { Fragment, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { Text } from 'react-native';
 
 import { AuthScreen } from '@/components/auth/auth-screen';
 import { AuthTextField } from '@/components/auth/auth-text-field';
+import { RegisterCompanyLookup } from '@/components/auth/register-company-lookup';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/use-auth';
 import { useAuthScreenStyles } from '@/hooks/use-auth-screen-styles';
 import { getAuthErrorMessage } from '@/lib/auth/errors';
+import type { CompanyLookupResult } from '@/lib/company-search/types';
 import { openLegalPage } from '@/lib/legal/open-legal-page';
 import { registerSchema, type RegisterFormValues } from '@/lib/validations/register';
 import { useToast } from '@/providers/toast-provider';
@@ -78,10 +80,13 @@ export default function RegisterScreen() {
   const { signUp } = useAuth();
   const { showSuccess } = useToast();
   const [formError, setFormError] = useState<string | null>(null);
+  const [registrationNumber, setRegistrationNumber] = useState('');
+  const [registration, setRegistration] = useState<CompanyLookupResult | null>(null);
 
   const {
     control,
     handleSubmit,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
@@ -104,6 +109,7 @@ export default function RegisterScreen() {
       firstName: values.firstName,
       lastName: values.lastName,
       companyName: values.companyName,
+      companyRegistration: registration,
     });
 
     if (error) {
@@ -144,27 +150,41 @@ export default function RegisterScreen() {
       subtitle="Commencez en quelques secondes."
       title="Créer un compte">
       {FIELDS.map((field) => (
-        <Controller
-          key={field.name}
-          control={control}
-          name={field.name}
-          render={({ field: { onChange, onBlur, value } }) => (
-            <AuthTextField
-              autoCapitalize={field.autoCapitalize}
-              autoComplete={field.autoComplete}
-              error={errors[field.name]?.message}
-              icon={field.icon}
-              isPassword={'isPassword' in field ? field.isPassword : false}
-              keyboardType={field.name === 'email' ? 'email-address' : 'default'}
-              label={field.label}
-              onBlur={onBlur}
-              onChangeText={onChange}
-              placeholder={field.placeholder}
-              textContentType={field.textContentType}
-              value={value}
+        <Fragment key={field.name}>
+          {field.name === 'companyName' ? (
+            <RegisterCompanyLookup
+              onChange={setRegistrationNumber}
+              onFound={(result) => {
+                setRegistration(result);
+                // Le nom officiel remplit le champ ; il reste modifiable.
+                if (result?.companyName) {
+                  setValue('companyName', result.companyName, { shouldDirty: true, shouldValidate: true });
+                }
+              }}
+              value={registrationNumber}
             />
-          )}
-        />
+          ) : null}
+          <Controller
+            control={control}
+            name={field.name}
+            render={({ field: { onChange, onBlur, value } }) => (
+              <AuthTextField
+                autoCapitalize={field.autoCapitalize}
+                autoComplete={field.autoComplete}
+                error={errors[field.name]?.message}
+                icon={field.icon}
+                isPassword={'isPassword' in field ? field.isPassword : false}
+                keyboardType={field.name === 'email' ? 'email-address' : 'default'}
+                label={field.label}
+                onBlur={onBlur}
+                onChangeText={onChange}
+                placeholder={field.placeholder}
+                textContentType={field.textContentType}
+                value={value}
+              />
+            )}
+          />
+        </Fragment>
       ))}
       <Text style={authScreenStyles.footerText}>
         En créant un compte, vous acceptez nos{' '}

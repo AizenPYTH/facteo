@@ -27,6 +27,7 @@ import {
 } from '@/types/invoices-list';
 import type { DataScope } from '@/types/tenant';
 import {
+  createDefaultInvoicePdfOptions,
   parseInvoicePdfOptions,
   serializeInvoicePdfOptions,
   type InvoicePdfOptions,
@@ -403,8 +404,14 @@ export async function createInvoice(scope: DataScope, input: CreateInvoiceInput)
     throw error;
   }
 
-  if (input.pdfOptions) {
-    await saveInvoicePdfOptions(scope, invoiceRow.id, input.pdfOptions);
+  // Titre par défaut de l'entreprise (« Note d'honoraires »…) quand la facture n'en précise pas.
+  const defaultTitle = settings?.invoiceTitle ?? null;
+  const pdfOptions =
+    defaultTitle && !input.pdfOptions?.title?.trim()
+      ? { ...(input.pdfOptions ?? createDefaultInvoicePdfOptions()), title: defaultTitle }
+      : input.pdfOptions;
+  if (pdfOptions) {
+    await saveInvoicePdfOptions(scope, invoiceRow.id, pdfOptions);
   }
 
   if (input.creation) {

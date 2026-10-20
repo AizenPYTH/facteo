@@ -19,6 +19,7 @@ import { SettingsScreenFrame } from '@/components/web/desktop/settings-screen-fr
 import { spacing } from '@/constants/theme/spacing';
 import { typography } from '@/constants/theme/typography';
 import { useCatalogItems } from '@/hooks/use-catalog';
+import { useCatalogImport } from '@/hooks/use-catalog-import';
 import { useCatalogMutations } from '@/hooks/use-catalog-mutations';
 import { useThemedStyles } from '@/hooks/use-colors';
 import { useDebouncedValue } from '@/hooks/use-debounced-value';
@@ -50,6 +51,7 @@ export default function CatalogSettingsScreen() {
 
   const { create, update, remove } = useCatalogMutations(type);
   const { showError, showSuccess } = useToast();
+  const spreadsheet = useCatalogImport(type);
 
   const [sheetVisible, setSheetVisible] = useState(false);
   const [editing, setEditing] = useState<ProductRow | null>(null);
@@ -83,6 +85,29 @@ export default function CatalogSettingsScreen() {
       setEditing(null);
     } catch {
       showError('Enregistrement impossible. Réessayez.');
+    }
+  }
+
+  async function handlePickSpreadsheet() {
+    try {
+      const message = await spreadsheet.pickFile();
+      if (message) showError(message);
+    } catch {
+      showError('Impossible d’ouvrir vos fichiers. Réessayez.');
+    }
+  }
+
+  async function handleImport() {
+    try {
+      const { created, updated, duplicates } = await spreadsheet.confirm(true);
+      const parts = [
+        `${created} ajouté${created > 1 ? 's' : ''}`,
+        updated > 0 ? `${updated} mis à jour` : null,
+        duplicates > updated ? `${duplicates - updated} déjà présent${duplicates - updated > 1 ? 's' : ''}` : null,
+      ].filter(Boolean);
+      showSuccess(`Import terminé : ${parts.join(', ')}.`);
+    } catch {
+      showError('Import interrompu. Les articles déjà enregistrés sont conservés ; réessayez.');
     }
   }
 
@@ -159,15 +184,21 @@ export default function CatalogSettingsScreen() {
         />
       )}
 
-      {items.length > 0 ? (
-        <View style={styles.footer}>
+      <View style={styles.footer}>
+        {items.length > 0 ? (
           <Button
             onPress={openCreate}
             title={`Créer un${isService ? 'e' : ''} ${singular}`}
             variant="ghost"
           />
-        </View>
-      ) : null}
+        ) : null}
+        <Button
+          loading={spreadsheet.reading}
+          onPress={() => void handlePickSpreadsheet()}
+          title="Importer un fichier Excel ou CSV"
+          variant="ghost"
+        />
+      </View>
 
       <CatalogItemSheet
         item={editing}
@@ -191,6 +222,26 @@ export default function CatalogSettingsScreen() {
         onSubmit={(values) => void handleSubmit(values)}
         type={type}
         visible={sheetVisible}
+      />
+
+      <ConfirmDialog
+        confirmLabel={
+          spreadsheet.progress && spreadsheet.progress.total > 0
+            ? `Import… ${spreadsheet.progress.done}/${spreadsheet.progress.total}`
+            : `Importer ${spreadsheet.pending?.items.length ?? 0} article${(spreadsheet.pending?.items.length ?? 0) > 1 ? 's' : ''}`
+        }
+        loading={spreadsheet.saving}
+        message={
+          spreadsheet.pending
+            ? `${spreadsheet.pending.items.length} ligne${spreadsheet.pending.items.length > 1 ? 's' : ''} trouvée${spreadsheet.pending.items.length > 1 ? 's' : ''} dans « ${spreadsheet.pending.fileName} ». Elles rejoignent vos ${isService ? 'prestations' : 'produits'}, communs à toutes vos entreprises. Un article dont la référence existe déjà est mis à jour, sans doublon.`
+            : undefined
+        }
+        onCancel={() => {
+          if (!spreadsheet.saving) spreadsheet.cancel();
+        }}
+        onConfirm={() => void handleImport()}
+        title={`Importer dans ${isService ? 'Prestations' : 'Produits'} ?`}
+        visible={spreadsheet.pending !== null}
       />
 
       <ConfirmDialog
@@ -270,6 +321,7 @@ function useStyles() {
     },
     footer: {
       paddingTop: spacing.sm,
+      gap: spacing.xs,
     },
     priceBlock: {
       alignItems: 'flex-end',

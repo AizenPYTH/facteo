@@ -10,6 +10,7 @@ import { DocumentTotalsBar } from '@/components/documents/document-totals-bar';
 import { FormNavigationProvider } from '@/components/ui/form/form-navigation';
 import { WizardActionBar } from '@/components/ui/wizard-action-bar';
 import { WizardScreen } from '@/components/ui/wizard-screen';
+import { useAddLinesToCatalog } from '@/hooks/use-add-lines-to-catalog';
 import { useCompanyProfile } from '@/hooks/use-company-profile';
 import { useQuoteMutations } from '@/hooks/use-quote-mutations';
 import { useSettings } from '@/hooks/use-settings';
@@ -46,6 +47,7 @@ export function QuoteWizardScreen({
 }: QuoteWizardScreenProps) {
   const { createQuote, updateQuote } = useQuoteMutations();
   const { showError, showSuccess } = useToast();
+  const addLinesToCatalog = useAddLinesToCatalog();
   const { data: companyProfile } = useCompanyProfile();
   const { data: settings } = useSettings();
 
@@ -210,6 +212,7 @@ export function QuoteWizardScreen({
     try {
       if (mode === 'create') {
         await createQuote.mutateAsync(input);
+        addLinesToCatalog(state.lines);
         showSuccess('Devis créé.');
         router.replace('/quotes' as Href);
         return;

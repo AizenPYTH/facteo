@@ -73,6 +73,8 @@ type ComposerTemplateStepProps = {
   customNumber: string;
   onCustomNumberChange: (value: string) => void;
   forecastNumber: string | null;
+  /** Titre par défaut des factures de l'entreprise (Paramètres › Numérotation). */
+  defaultTitle?: string | null;
   company: {
     siret?: string | null;
     vatNumber?: string | null;
@@ -120,6 +122,7 @@ export function ComposerTemplateStep({
   customNumber,
   onCustomNumberChange,
   forecastNumber,
+  defaultTitle,
   company,
   saveBankAsDefault,
   onSaveBankAsDefaultChange,
@@ -253,6 +256,7 @@ export function ComposerTemplateStep({
             paid={paid}
             company={company}
             customNumber={customNumber}
+            defaultTitle={defaultTitle}
             forecastNumber={forecastNumber}
             onChange={onPdfOptionsChange}
             onCustomNumberChange={onCustomNumberChange}
@@ -415,6 +419,7 @@ function PresentationOptions({
   customNumber,
   onCustomNumberChange,
   forecastNumber,
+  defaultTitle,
   buildPlacementBackgroundHtml,
   buildClientPlacementBackgroundHtml,
   client,
@@ -441,6 +446,7 @@ function PresentationOptions({
   customNumber: string;
   onCustomNumberChange: (value: string) => void;
   forecastNumber: string | null;
+  defaultTitle?: string | null;
 }) {
   const styles = useComposerStyles(templateStyles);
   const colors = useComposerColors();
@@ -464,7 +470,11 @@ function PresentationOptions({
   );
   // Client hors de France : son numéro (NIPC…), à afficher ou non, et où.
   const clientId = clientNationalId(client);
-  const activeTitle = value.title?.trim() || DEFAULT_INVOICE_TITLE;
+  const baseTitle = defaultTitle?.trim() || DEFAULT_INVOICE_TITLE;
+  const activeTitle = value.title?.trim() || baseTitle;
+  const titleSuggestions = INVOICE_TITLE_SUGGESTIONS.includes(baseTitle)
+    ? INVOICE_TITLE_SUGGESTIONS
+    : [baseTitle, ...INVOICE_TITLE_SUGGESTIONS];
   const shownIds = value.legalIds.length + (value.showEmail ? 1 : 0);
 
   const summary = [
@@ -567,7 +577,7 @@ function PresentationOptions({
                 maxLength={60}
                 onChangeText={(title) => onChange({ ...value, title })}
                 onSubmitEditing={titleField?.onSubmitEditing}
-                placeholder={DEFAULT_INVOICE_TITLE}
+                placeholder={baseTitle}
                 placeholderTextColor={colors.ink3}
                 ref={titleField?.ref}
                 returnKeyType={titleField?.returnKeyType}
@@ -581,14 +591,14 @@ function PresentationOptions({
               horizontal
               keyboardShouldPersistTaps="handled"
               showsHorizontalScrollIndicator={false}>
-              {INVOICE_TITLE_SUGGESTIONS.map((suggestion) => (
+              {titleSuggestions.map((suggestion) => (
                 <Pill
                   key={suggestion}
                   label={suggestion}
                   onPress={() =>
                     onChange({
                       ...value,
-                      title: suggestion === DEFAULT_INVOICE_TITLE ? null : suggestion,
+                      title: suggestion === baseTitle ? null : suggestion,
                     })
                   }
                   selected={activeTitle === suggestion}

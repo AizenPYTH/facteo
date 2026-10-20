@@ -5,12 +5,14 @@ import { AuthLoadingScreen } from '@/components/auth/auth-loading-screen';
 import { TenantSwitchingOverlay } from '@/components/tenant/tenant-switching-overlay';
 import { useActivityPing } from '@/hooks/use-activity-ping';
 import { useAuth } from '@/hooks/use-auth';
+import { usePendingCompanyRegistration } from '@/hooks/use-pending-company-registration';
 import { usePushNotifications } from '@/hooks/use-push-notifications';
 import { stackScreenOptions } from '@/lib/navigation/screen-options';
 
 export default function AppLayout() {
   const { user, loading } = useAuth();
   usePushNotifications();
+  usePendingCompanyRegistration();
   useActivityPing(user?.id);
 
   if (loading) {

@@ -5,6 +5,7 @@ import { AuthLoadingScreen } from '@/components/auth/auth-loading-screen';
 import { TenantSwitchingOverlay } from '@/components/tenant/tenant-switching-overlay';
 import { DesktopShell } from '@/components/web/desktop/desktop-shell';
 import { useAuth } from '@/hooks/use-auth';
+import { usePendingCompanyRegistration } from '@/hooks/use-pending-company-registration';
 import { useBreakpoint } from '@/hooks/use-breakpoint';
 import { usePushNotifications } from '@/hooks/use-push-notifications';
 
@@ -12,6 +13,7 @@ export default function AppLayout() {
   const { user, loading } = useAuth();
   const { isDesktop, isTablet } = useBreakpoint();
   usePushNotifications();
+  usePendingCompanyRegistration();
 
   if (loading) {
     return <AuthLoadingScreen />;
