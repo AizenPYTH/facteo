@@ -294,6 +294,7 @@ export type SettingsUpdate = {
 export type ProductRow = {
   id: string;
   user_id: string;
+  company_id: string | null;
   type: 'product' | 'service';
   name: string;
   description: string | null;
@@ -320,6 +321,7 @@ export type ProductRow = {
 export type ProductInsert = {
   id?: string;
   user_id: string;
+  company_id?: string | null;
   type?: 'product' | 'service';
   name: string;
   description?: string | null;
