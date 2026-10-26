@@ -4,9 +4,11 @@ import { SITE_URL } from '@/lib/constants';
 import { DISALLOWED_PATHS } from '@/lib/seo/routes';
 
 /**
- * Le fichier autorisait tout, y compris l'espace connecté et les parcours de
- * compte. On ferme ce qui n'a rien à faire dans l'index, sans jamais toucher
- * aux ressources nécessaires au rendu : les fichiers `_next/static` restent
+ * Tout est explorable sauf les points d'API. Les pages de compte et l'espace
+ * connecté ne sont pas bloqués ici : bloquées, elles ne pouvaient pas montrer
+ * leur `noindex` à Google (« Bloquée par le fichier robots.txt » dans la Search
+ * Console). Elles sont écartées de l'index par l'en-tête `X-Robots-Tag`
+ * (`NOINDEX_PATHS`, next.config.ts). Les fichiers `_next/static` restent
  * accessibles, sans quoi Google verrait une page sans style ni script.
  */
 export default function robots(): MetadataRoute.Robots {

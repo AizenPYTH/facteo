@@ -68,14 +68,17 @@ export const INDEXABLE_ROUTES: PublicRoute[] = [
 ];
 
 /**
- * Chemins interdits à l'exploration.
+ * Pages à garder hors de l'index : compte, espace connecté, parcours mobiles,
+ * alias de redirection.
  *
- * `/app` et les parcours de compte n'ont rien à faire dans l'index : ils
- * exigent une session et n'offrent aucun contenu à un visiteur venu de la
- * recherche. Les alias de redirection sont exclus pour éviter les chaînes
- * inutiles.
+ * Elles ne sont PAS interdites dans robots.txt : une page bloquée à
+ * l'exploration ne peut pas montrer son `noindex` à Google, qui la signale
+ * alors « Bloquée par le fichier robots.txt » (et peut même l'indexer sans
+ * contenu si elle reçoit des liens). Google les explore donc, et l'en-tête
+ * `X-Robots-Tag: noindex` (next.config.ts) les écarte proprement de l'index,
+ * y compris les pages client de `/app` qui n'ont pas de métadonnées serveur.
  */
-export const DISALLOWED_PATHS = [
+export const NOINDEX_PATHS = [
   '/app',
   '/auth',
   '/onboarding',
@@ -85,6 +88,11 @@ export const DISALLOWED_PATHS = [
   '/inscription',
   '/mot-de-passe-oublie',
   '/reinitialiser-mot-de-passe',
-  '/mobile/',
-  '/api/',
+  '/mobile',
 ] as const;
+
+/**
+ * Seuls chemins interdits à l'exploration : les points d'API. Ce ne sont pas
+ * des pages et ils n'ont rien à montrer à un robot.
+ */
+export const DISALLOWED_PATHS = ['/api/'] as const;
