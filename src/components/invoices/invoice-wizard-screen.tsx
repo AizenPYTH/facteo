@@ -10,6 +10,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { VoiceDictationCard } from '@/components/ai/voice-dictation-card';
+import { VoiceInvoiceAssistant, type VoiceAssistantSummary } from '@/components/ai/voice-invoice-assistant';
 import {
   COMPACT_BOTTOM_BAR_HEIGHT,
   ComposerBottomBar,
@@ -44,9 +45,11 @@ import { useTenant } from '@/hooks/use-tenant';
 import { takePendingDictation } from '@/lib/ai/pending-dictation';
 import { processVoiceCommand, type ProcessVoiceCommandResult } from '@/lib/ai/voice-transcription';
 import { newVoiceAttemptId, trackProductEvent } from '@/lib/analytics/product-events';
-import { createClient, fetchClientsPage } from '@/lib/supabase/clients';
+import { createClient, fetchClientById, fetchClientsPage, updateClient } from '@/lib/supabase/clients';
+import { sendDocumentEmail } from '@/lib/email/send-document';
+import { generatePdfFromHtml } from '@/lib/pdf/output';
 import { updateCompanyBankDetails } from '@/lib/supabase/companies';
-import { profilesQueryKeys } from '@/lib/supabase/query-keys';
+import { invoicesQueryKeys, profilesQueryKeys } from '@/lib/supabase/query-keys';
 import { isValidIban } from '@/lib/payments/sepa-qr';
 import { fetchCatalogItems } from '@/lib/supabase/products';
 import { requireScope } from '@/lib/tenant/scope';
@@ -77,12 +80,17 @@ import {
   type ComposerColors,
 } from '@/constants/theme/composer';
 import { triggerErrorHaptic } from '@/lib/haptics';
-import { buildInvoiceDraftPdfHtml } from '@/lib/pdf/document-pdf';
+import { buildInvoiceDraftPdfHtml, buildInvoicePdfHtml } from '@/lib/pdf/document-pdf';
 import { resolvePdfTemplate } from '@/lib/pdf/engine/templates/registry';
 import { DEFAULT_PDF_TEMPLATE_ID } from '@/lib/pdf/engine/templates/types';
 import { buildTemplatePreviewHtml } from '@/lib/pdf/template-preview-html';
-import { fetchInvoicePdfOptions } from '@/lib/supabase/invoices';
-import { createEmptyClientFormValues, getClientDisplayName, type Client } from '@/types/client';
+import { fetchInvoiceById, fetchInvoicePdfOptions, updateInvoiceStatus } from '@/lib/supabase/invoices';
+import {
+  createEmptyClientFormValues,
+  getClientDisplayName,
+  mapClientToFormValues,
+  type Client,
+} from '@/types/client';
 import {
   INVOICE_STATUS_LABELS,
   type InvoiceLineValue,
@@ -173,6 +181,14 @@ export function InvoiceWizardScreen({
   // Assistant iPhone : erreurs affichées jusqu'à l'étape validée, feuilles.
   const [errorScope, setErrorScope] = useState(0);
   const [previewOpen, setPreviewOpen] = useState(false);
+  /**
+   * Assistant vocal après Siri : il lit la facture préparée, la crée et
+   * l'envoie sur réponse orale. Reste monté pendant l'aperçu PDF.
+   */
+  const [assistantPending, setAssistantPending] = useState(false);
+  const [assistantMounted, setAssistantMounted] = useState(false);
+  const [assistantOpen, setAssistantOpen] = useState(false);
+  const [previewFromAssistant, setPreviewFromAssistant] = useState(false);
   const [galleryOpen, setGalleryOpen] = useState(false);
   const [barHeight, setBarHeight] = useState(150);
   const scrollRef = useRef<KeyboardAwareScrollViewRef>(null);
@@ -203,6 +219,34 @@ export function InvoiceWizardScreen({
   const defaultInvoiceTitle = mode === 'create' ? settings?.invoiceTitle.trim() || null : null;
 
   const totals = useMemo(() => mapInvoiceLinesToDocumentTotals(state.lines), [state.lines]);
+
+  // Dictée Siri appliquée : l'assistant vocal prend le relais dès que la
+  // facture a un client et des lignes.
+  useEffect(() => {
+    if (!assistantPending || !state.clientId || state.lines.length === 0) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- ouverture unique, après la dictée
+    setAssistantPending(false);
+    setAssistantMounted(true);
+    setAssistantOpen(true);
+  }, [assistantPending, state.clientId, state.lines.length]);
+
+  const assistantSummary = useMemo<VoiceAssistantSummary>(
+    () => ({
+      clientName: state.clientName || 'votre client',
+      clientEmail: selectedClient?.email?.trim() || null,
+      lines: state.lines
+        .filter((line) => line.title.trim() || line.description.trim())
+        .map((line) => ({
+          label: line.title.trim() || line.description.trim().split('\n')[0],
+          amountHt: mapInvoiceLinesToDocumentTotals([line]).subtotalHt,
+        })),
+      totalHt: totals.subtotalHt,
+      totalVat: totals.totalVat,
+      totalTtc: totals.totalTtc,
+      title: pdfOptions.title?.trim() || defaultInvoiceTitle || 'Facture',
+    }),
+    [defaultInvoiceTitle, pdfOptions.title, selectedClient?.email, state.clientName, state.lines, totals],
+  );
   const companyName = companyProfile?.companyName?.trim() || 'Votre entreprise';
   const isSaving = mode === 'create' ? createInvoice.isPending : updateInvoice.isPending;
 
@@ -363,7 +407,10 @@ export function InvoiceWizardScreen({
           void trackProductEvent('voice_invoice_started', { attemptId });
           try {
             const result = await processVoiceCommand({ documentType: 'invoice', transcript: text, attemptId });
-            if (!cancelled) showSuccess(await applyVoiceCommand(result));
+            if (!cancelled) {
+              showSuccess(await applyVoiceCommand(result));
+              setAssistantPending(true);
+            }
           } catch (error) {
             void trackProductEvent('voice_invoice_failed', { attemptId, errorCode: 'request_failed' });
             if (!cancelled) showError(error instanceof Error ? error.message : 'Dictée impossible.');
@@ -519,17 +566,7 @@ export function InvoiceWizardScreen({
 
     try {
       if (mode === 'create') {
-        await createInvoice.mutateAsync({
-          ...input,
-          creation: voiceAttemptId ? { method: 'voice', attemptId: voiceAttemptId } : { method: 'manual' },
-          ...(alreadyPaid ? { alreadyPaid: true, dueAt: null } : {}),
-          number: customNumber.trim() || null,
-          pdfOptions: { ...pdfOptions, templateId, title: pdfOptions.title?.trim() || defaultInvoiceTitle },
-        });
-        addLinesToCatalog(state.lines);
-        void rememberLegalIds(pdfOptions.legalIds);
-        void rememberPaymentMention(pdfOptions.paymentMention);
-        void saveBankDetailsAsDefault();
+        await createFromWizard(input);
         showSuccess('Facture créée.');
         router.replace('/invoices' as Href);
         return;
@@ -546,6 +583,74 @@ export function InvoiceWizardScreen({
     } catch (error) {
       showError(getInvoiceErrorMessage(readErrorMessage(error)));
     }
+  }
+
+  /** Création (assistant ou bouton) : la facture, puis catalogue, mentions et IBAN retenus. */
+  async function createFromWizard(input: { clientId: string; lines: InvoiceLineValue[] } & ReturnType<typeof parseInvoiceInfoValues>) {
+    const invoice = await createInvoice.mutateAsync({
+      ...input,
+      creation: voiceAttemptId ? { method: 'voice', attemptId: voiceAttemptId } : { method: 'manual' },
+      ...(alreadyPaid ? { alreadyPaid: true, dueAt: null } : {}),
+      number: customNumber.trim() || null,
+      pdfOptions: { ...pdfOptions, templateId, title: pdfOptions.title?.trim() || defaultInvoiceTitle },
+    });
+    addLinesToCatalog(state.lines);
+    void rememberLegalIds(pdfOptions.legalIds);
+    void rememberPaymentMention(pdfOptions.paymentMention);
+    void saveBankDetailsAsDefault();
+    return invoice;
+  }
+
+  /** Assistant vocal : « oui, crée-la ». Lève une erreur lisible si la facture est incomplète. */
+  async function createFromAssistant(): Promise<{ id: string; number: string }> {
+    if (!state.clientId) throw new Error('Choisissez d’abord un client.');
+    if (state.lines.length === 0 || !areInvoiceLinesValid(state.lines)) {
+      throw new Error('Une ligne de la facture est incomplète.');
+    }
+    let metadata;
+    try {
+      metadata = parseInvoiceInfoValues(state.info);
+    } catch {
+      throw new Error('Vérifiez les dates et le délai de paiement.');
+    }
+    try {
+      const invoice = await createFromWizard({ clientId: state.clientId, lines: state.lines, ...metadata });
+      return { id: invoice.id, number: invoice.number };
+    } catch (error) {
+      throw new Error(getInvoiceErrorMessage(readErrorMessage(error)));
+    }
+  }
+
+  /**
+   * Assistant vocal : envoi par e-mail de la facture créée. Une adresse dictée
+   * est d'abord enregistrée sur la fiche du client, puis le PDF part comme
+   * depuis la fiche facture. Renvoie le destinataire.
+   */
+  async function sendFromAssistant(invoiceId: string, email: string | null): Promise<string> {
+    const activeScope = requireScope(scope);
+    if (email && state.clientId) {
+      const client = await fetchClientById(activeScope, state.clientId);
+      if (client && client.email?.trim().toLowerCase() !== email.toLowerCase()) {
+        await updateClient(activeScope, client.id, { ...mapClientToFormValues(client), email });
+      }
+    }
+    const detail = await fetchInvoiceById(activeScope, invoiceId);
+    if (!detail) throw new Error('Facture introuvable.');
+    const html = await buildInvoicePdfHtml(activeScope, detail, user?.email ?? null);
+    const pdf = await generatePdfFromHtml(html, `${detail.number}.pdf`);
+    if (!pdf.uri) throw new Error('L’envoi nécessite l’application iPhone.');
+    const result = await sendDocumentEmail({
+      documentType: 'invoice',
+      documentId: invoiceId,
+      pdfUri: pdf.uri,
+      pdfFileName: pdf.fileName,
+    });
+    if (detail.status === 'draft') {
+      // L'envoi a bien eu lieu : un échec du statut ne le remet pas en cause.
+      await updateInvoiceStatus(activeScope, invoiceId, 'sent').catch(() => undefined);
+    }
+    void queryClient.invalidateQueries({ queryKey: invoicesQueryKeys.all });
+    return result.recipientEmail || email || 'votre client';
   }
 
   /** Coordonnées de la facture gardées dans l'entreprise, si l'interrupteur est activé. */
@@ -978,10 +1083,38 @@ export function InvoiceWizardScreen({
                   }
                 : undefined
             }
-            onClose={() => setPreviewOpen(false)}
+            onClose={() => {
+              setPreviewOpen(false);
+              if (previewFromAssistant) {
+                setPreviewFromAssistant(false);
+                // Laisser l'aperçu se refermer avant de rouvrir l'assistant.
+                setTimeout(() => setAssistantOpen(true), 450);
+              }
+            }}
             templateName={activeTemplate.name}
             visible={previewOpen}
           />
+          {assistantMounted ? (
+            <VoiceInvoiceAssistant
+              onClose={(createdId) => {
+                setAssistantOpen(false);
+                setAssistantMounted(false);
+                if (createdId) {
+                  showSuccess('Facture créée.');
+                  router.replace(`/invoices/${createdId}` as Href);
+                }
+              }}
+              onCreate={createFromAssistant}
+              onPreview={() => {
+                setAssistantOpen(false);
+                setPreviewFromAssistant(true);
+                setTimeout(() => setPreviewOpen(true), 450);
+              }}
+              onSend={sendFromAssistant}
+              summary={assistantSummary}
+              visible={assistantOpen}
+            />
+          ) : null}
           {mode === 'create' && scope ? (
             <TemplateGalleryModal
               buildPreviewHtml={buildGalleryHtml}
