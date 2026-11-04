@@ -1,4 +1,4 @@
-import { RecordingPresets, useAudioRecorder } from 'expo-audio';
+import { RecordingPresets, setAudioModeAsync, useAudioRecorder } from 'expo-audio';
 import { SymbolView } from 'expo-symbols';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Modal, Pressable, ScrollView, Text, View } from 'react-native';
@@ -87,6 +87,8 @@ export function VoiceInvoiceAssistant({
   const [recipient, setRecipient] = useState<string | null>(null);
   const aliveRef = useRef(true);
   const startedRef = useRef(false);
+  /** Fermeture en cours : plus aucune parole, écoute ni changement d'état. */
+  const closingRef = useRef(false);
   const listeningRef = useRef(false);
   const summaryRef = useRef(summary);
   const phaseRef = useRef<Phase>(phase);
@@ -106,14 +108,14 @@ export function VoiceInvoiceAssistant({
   }, []);
 
   const say = useCallback(async (text: string) => {
-    if (!aliveRef.current) return;
+    if (!aliveRef.current || closingRef.current) return;
     setMessage(text);
     await speakFrench(text);
   }, []);
 
   /** Écoute une réponse : s'arrête seule après un court silence. */
   const listen = useCallback(async (): Promise<{ audioBase64: string; mimeType: string } | null> => {
-    if (listeningRef.current) return null;
+    if (listeningRef.current || closingRef.current) return null;
     const permission = await requestMicrophonePermission();
     if (permission !== 'granted') {
       setError('Autorisez le micro pour répondre à voix haute, ou utilisez les boutons.');
@@ -130,8 +132,21 @@ export function VoiceInvoiceAssistant({
       let lastLoudAt = startedAt;
       await new Promise<void>((resolve) => {
         const timer = setInterval(() => {
+          // Assistant fermé : on arrête avant de toucher à l'enregistreur.
+          if (closingRef.current || !aliveRef.current) {
+            clearInterval(timer);
+            resolve();
+            return;
+          }
           const now = Date.now();
-          const level = recorder.getStatus().metering ?? -160;
+          let level = -160;
+          try {
+            level = recorder.getStatus().metering ?? -160;
+          } catch {
+            clearInterval(timer);
+            resolve();
+            return;
+          }
           if (level > SPEECH_DB) {
             spokeAt ??= now;
             lastLoudAt = now;
@@ -148,18 +163,39 @@ export function VoiceInvoiceAssistant({
         }, 120);
       });
       const payload = await stopVoiceRecording(session);
+      if (closingRef.current) return null;
       if (spokeAt === null) {
         setPhase(previous);
         return null;
       }
       return { audioBase64: payload.audioBase64, mimeType: payload.mimeType };
     } catch {
-      setPhase(previous);
+      if (!closingRef.current) setPhase(previous);
       return null;
     } finally {
       listeningRef.current = false;
     }
   }, [recorder]);
+
+  /**
+   * Fermeture propre : la voix s'arrête, l'écoute en cours se termine et rend
+   * le micro, puis seulement l'écran se ferme. Fermer pendant l'écoute faisait
+   * tomber l'app (l'enregistreur était lu après sa destruction).
+   */
+  const closeAssistant = useCallback(
+    async (invoiceId: string | null) => {
+      if (closingRef.current) return;
+      closingRef.current = true;
+      stopSpeaking();
+      const deadline = Date.now() + 2000;
+      while (listeningRef.current && Date.now() < deadline) {
+        await new Promise((resolve) => setTimeout(resolve, 60));
+      }
+      await setAudioModeAsync({ allowsRecording: false, playsInSilentMode: true }).catch(() => undefined);
+      onClose(invoiceId);
+    },
+    [onClose],
+  );
 
   const askAndListen = useCallback(
     async (stage: VoiceAssistantStage, question: string): Promise<VoiceAssistantReply | null> => {
@@ -184,9 +220,9 @@ export function VoiceInvoiceAssistant({
     async (text: string, invoiceId: string | null) => {
       setPhase('done');
       await say(text);
-      if (aliveRef.current) setTimeout(() => onClose(invoiceId), 900);
+      if (aliveRef.current) setTimeout(() => void closeAssistant(invoiceId), 900);
     },
-    [onClose, say],
+    [closeAssistant, say],
   );
 
   const send = useCallback(
@@ -288,13 +324,13 @@ export function VoiceInvoiceAssistant({
         await create(reply.action === 'confirm_and_send', reply.email);
       } else if (reply.action === 'cancel') {
         await say('D’accord, modifiez-la à l’écran.');
-        onClose(null);
+        await closeAssistant(null);
       } else {
         setPhase('review');
         await say('Je n’ai pas compris. Dites oui pour créer la facture, ou non pour la modifier.');
       }
     },
-    [create, onClose, say],
+    [closeAssistant, create, say],
   );
 
   const reviewSentence = useCallback(() => {
@@ -361,7 +397,7 @@ export function VoiceInvoiceAssistant({
   return (
     <Modal
       animationType="slide"
-      onRequestClose={() => onClose(created?.id ?? null)}
+      onRequestClose={() => void closeAssistant(created?.id ?? null)}
       presentationStyle="pageSheet"
       visible={visible}>
       <View style={[styles.sheet, { paddingBottom: Math.max(insets.bottom, spacing.lg) }]}>
@@ -371,10 +407,7 @@ export function VoiceInvoiceAssistant({
             accessibilityLabel="Fermer l’assistant"
             accessibilityRole="button"
             hitSlop={12}
-            onPress={() => {
-              stopSpeaking();
-              onClose(created?.id ?? null);
-            }}>
+            onPress={() => void closeAssistant(created?.id ?? null)}>
             <SymbolView name="xmark.circle.fill" size={28} tintColor={colors.textTertiary} />
           </Pressable>
         </View>
@@ -476,10 +509,7 @@ export function VoiceInvoiceAssistant({
                 />
                 <Button
                   disabled={busy}
-                  onPress={() => {
-                    stopSpeaking();
-                    onClose(created.id);
-                  }}
+                  onPress={() => void closeAssistant(created.id)}
                   title="Pas maintenant"
                   variant="ghost"
                 />
@@ -500,10 +530,7 @@ export function VoiceInvoiceAssistant({
             {!created ? (
               <Button
                 disabled={busy}
-                onPress={() => {
-                  stopSpeaking();
-                  onClose(null);
-                }}
+                onPress={() => void closeAssistant(null)}
                 title="Modifier à l’écran"
                 variant="ghost"
               />
