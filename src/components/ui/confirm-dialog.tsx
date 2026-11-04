@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { Modal, Pressable, Text, View } from 'react-native';
 import Animated, { FadeIn, FadeOut, ZoomIn, ZoomOut } from 'react-native-reanimated';
 
@@ -20,6 +21,8 @@ export type ConfirmDialogProps = {
   loading?: boolean;
   onConfirm: () => void;
   onCancel: () => void;
+  /** Réglage affiché sous le message (interrupteur, choix…). */
+  children?: ReactNode;
   testID?: string;
 };
 
@@ -42,6 +45,7 @@ export function ConfirmDialog({
   loading = false,
   onConfirm,
   onCancel,
+  children,
   testID,
 }: ConfirmDialogProps) {
   const styles = useStyles();
@@ -75,6 +79,8 @@ export function ConfirmDialog({
               {message}
             </Text>
           ) : null}
+
+          {children}
 
           <View style={styles.actions}>
             <Button

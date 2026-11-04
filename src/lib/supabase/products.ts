@@ -120,3 +120,27 @@ export async function fetchCatalogItems(
     }
   }
 }
+
+/**
+ * Suppression logique de plusieurs éléments du catalogue (sélection). Même
+ * règle que `deleteProduct` : la référence est libérée, les documents émis ne
+ * changent pas. Renvoie le nombre d'éléments supprimés.
+ */
+export async function deleteProducts(userId: string, productIds: string[]): Promise<number> {
+  const ids = [...new Set(productIds)].filter(Boolean);
+  let deleted = 0;
+  for (let start = 0; start < ids.length; start += 200) {
+    const { data, error } = await supabase
+      .from('products')
+      .update({ deleted_at: new Date().toISOString(), reference: null })
+      .eq('user_id', userId)
+      .in('id', ids.slice(start, start + 200))
+      .select('id');
+
+    if (error) {
+      throw error;
+    }
+    deleted += data?.length ?? 0;
+  }
+  return deleted;
+}

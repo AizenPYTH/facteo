@@ -1,7 +1,13 @@
 import * as FileSystem from 'expo-file-system/legacy';
+import * as Sharing from 'expo-sharing';
+import { Platform } from 'react-native';
 import * as XLSX from 'xlsx';
 
-import { productsFromWorkbook, type ImportedProduct } from '@/lib/catalog/spreadsheet-parse';
+import {
+  PRODUCT_IMPORT_TEMPLATE_HEADERS,
+  productsFromWorkbook,
+  type ImportedProduct,
+} from '@/lib/catalog/spreadsheet-parse';
 
 export {
   PRODUCT_IMPORT_TEMPLATE_HEADERS,
@@ -45,4 +51,37 @@ export async function readSpreadsheetProducts(
     );
   }
   return products;
+}
+
+const TEMPLATE_FILE_NAME = 'INVEQ-modele-import-produits.xlsx';
+
+/**
+ * Modèle Excel d'import (mêmes colonnes que le site) : enregistré dans le
+ * cache puis proposé à la feuille de partage (Fichiers, Mail, AirDrop…).
+ * Sur le web, le fichier est téléchargé directement.
+ */
+export async function shareImportTemplate(): Promise<void> {
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(
+    workbook,
+    XLSX.utils.aoa_to_sheet([Array.from(PRODUCT_IMPORT_TEMPLATE_HEADERS)]),
+    'Produits',
+  );
+
+  if (Platform.OS === 'web') {
+    XLSX.writeFile(workbook, TEMPLATE_FILE_NAME);
+    return;
+  }
+
+  const base64 = XLSX.write(workbook, { type: 'base64', bookType: 'xlsx' }) as string;
+  const uri = `${FileSystem.cacheDirectory}${TEMPLATE_FILE_NAME}`;
+  await FileSystem.writeAsStringAsync(uri, base64, { encoding: FileSystem.EncodingType.Base64 });
+  if (!(await Sharing.isAvailableAsync())) {
+    throw new Error('Le partage de fichiers est indisponible sur cet appareil.');
+  }
+  await Sharing.shareAsync(uri, {
+    mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    UTI: 'org.openxmlformats.spreadsheetml.sheet',
+    dialogTitle: 'Modèle d’import INVEQ',
+  });
 }

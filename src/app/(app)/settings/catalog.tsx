@@ -1,6 +1,8 @@
+import { useQueryClient } from '@tanstack/react-query';
 import { router, useLocalSearchParams } from 'expo-router';
+import { SymbolView } from 'expo-symbols';
 import { useMemo, useState } from 'react';
-import { FlatList, Text, View } from 'react-native';
+import { FlatList, Switch, Text, View } from 'react-native';
 
 import {
   CatalogItemSheet,
@@ -21,9 +23,13 @@ import { typography } from '@/constants/theme/typography';
 import { useCatalogItems } from '@/hooks/use-catalog';
 import { useCatalogImport } from '@/hooks/use-catalog-import';
 import { useCatalogMutations } from '@/hooks/use-catalog-mutations';
-import { useThemedStyles } from '@/hooks/use-colors';
+import { useAuth } from '@/hooks/use-auth';
+import { useColors, useThemedStyles } from '@/hooks/use-colors';
 import { useDebouncedValue } from '@/hooks/use-debounced-value';
+import { shareImportTemplate } from '@/lib/catalog/spreadsheet-import';
 import { formatPriceHT, formatVatRate } from '@/lib/format/currency';
+import { catalogQueryKeys } from '@/lib/supabase/query-keys';
+import { deleteProducts } from '@/lib/supabase/products';
 import { useToast } from '@/providers/toast-provider';
 import type { ProductRow } from '@/types/database';
 
@@ -56,6 +62,17 @@ export default function CatalogSettingsScreen() {
   const [sheetVisible, setSheetVisible] = useState(false);
   const [editing, setEditing] = useState<ProductRow | null>(null);
   const [pendingDelete, setPendingDelete] = useState<ProductRow | null>(null);
+  /** Import : mettre à jour les articles dont la référence existe déjà (sinon : les laisser). */
+  const [updateExisting, setUpdateExisting] = useState(true);
+  const [sharingTemplate, setSharingTemplate] = useState(false);
+  /** Sélection multiple : `null` hors sélection. */
+  const [selected, setSelected] = useState<Set<string> | null>(null);
+  const [bulkConfirm, setBulkConfirm] = useState(false);
+  const [bulkDeleting, setBulkDeleting] = useState(false);
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const colors = useColors();
+  const selecting = selected !== null;
 
   const isService = type === 'service';
   const title = isService ? 'Prestations' : 'Produits';
@@ -99,7 +116,7 @@ export default function CatalogSettingsScreen() {
 
   async function handleImport() {
     try {
-      const { created, updated, duplicates } = await spreadsheet.confirm(true);
+      const { created, updated, duplicates } = await spreadsheet.confirm(updateExisting);
       const parts = [
         `${created} ajouté${created > 1 ? 's' : ''}`,
         updated > 0 ? `${updated} mis à jour` : null,
@@ -108,6 +125,42 @@ export default function CatalogSettingsScreen() {
       showSuccess(`Import terminé : ${parts.join(', ')}.`);
     } catch {
       showError('Import interrompu. Les articles déjà enregistrés sont conservés ; réessayez.');
+    }
+  }
+
+  async function handleShareTemplate() {
+    setSharingTemplate(true);
+    try {
+      await shareImportTemplate();
+    } catch (error) {
+      showError(error instanceof Error ? error.message : 'Modèle indisponible. Réessayez.');
+    } finally {
+      setSharingTemplate(false);
+    }
+  }
+
+  function toggleSelected(id: string) {
+    setSelected((current) => {
+      const next = new Set(current ?? []);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  async function handleBulkDelete() {
+    if (!user || !selected || selected.size === 0) return;
+    setBulkDeleting(true);
+    try {
+      const count = await deleteProducts(user.id, [...selected]);
+      showSuccess(`${count} élément${count > 1 ? 's' : ''} supprimé${count > 1 ? 's' : ''}.`);
+      setSelected(null);
+    } catch {
+      showError('Suppression impossible. Réessayez.');
+    } finally {
+      setBulkDeleting(false);
+      setBulkConfirm(false);
+      void queryClient.invalidateQueries({ queryKey: catalogQueryKeys.all });
     }
   }
 
@@ -136,10 +189,31 @@ export default function CatalogSettingsScreen() {
           value={search}
         />
         <FilterChipBar
-          onChange={(value) => router.setParams({ type: value })}
+          onChange={(value) => {
+            setSelected(null);
+            router.setParams({ type: value });
+          }}
           options={TYPE_OPTIONS}
           value={type}
         />
+        {items.length > 0 ? (
+          <View style={styles.selectionBar}>
+            {selecting ? (
+              <>
+                <Button
+                  onPress={() =>
+                    setSelected(selected.size === items.length ? new Set() : new Set(items.map((item) => item.id)))
+                  }
+                  title={selected.size === items.length ? 'Tout désélectionner' : 'Tout sélectionner'}
+                  variant="ghost"
+                />
+                <Button onPress={() => setSelected(null)} title="Terminé" variant="ghost" />
+              </>
+            ) : (
+              <Button onPress={() => setSelected(new Set())} title="Sélectionner" variant="ghost" />
+            )}
+          </View>
+        ) : null}
       </View>
 
       {query.isLoading ? (
@@ -177,28 +251,55 @@ export default function CatalogSettingsScreen() {
           renderItem={({ item, index }) => (
             <View>
               {index > 0 ? <ListRowSeparator /> : null}
-              <CatalogRow item={item} onEdit={() => openEdit(item)} />
+              <CatalogRow
+                item={item}
+                onPress={() => (selecting ? toggleSelected(item.id) : openEdit(item))}
+                selected={selecting ? selected.has(item.id) : undefined}
+                tint={colors.primary}
+                untint={colors.textTertiary}
+              />
             </View>
           )}
           showsVerticalScrollIndicator={false}
         />
       )}
 
-      <View style={styles.footer}>
-        {items.length > 0 ? (
+      {selecting ? (
+        <View style={styles.footer}>
           <Button
-            onPress={openCreate}
-            title={`Créer un${isService ? 'e' : ''} ${singular}`}
+            disabled={selected.size === 0}
+            onPress={() => setBulkConfirm(true)}
+            style={styles.destructive}
+            title={
+              selected.size > 0
+                ? `Supprimer ${selected.size} élément${selected.size > 1 ? 's' : ''}`
+                : 'Choisissez les éléments à supprimer'
+            }
+          />
+        </View>
+      ) : (
+        <View style={styles.footer}>
+          {items.length > 0 ? (
+            <Button
+              onPress={openCreate}
+              title={`Créer un${isService ? 'e' : ''} ${singular}`}
+              variant="ghost"
+            />
+          ) : null}
+          <Button
+            loading={spreadsheet.reading}
+            onPress={() => void handlePickSpreadsheet()}
+            title="Importer un fichier Excel ou CSV"
             variant="ghost"
           />
-        ) : null}
-        <Button
-          loading={spreadsheet.reading}
-          onPress={() => void handlePickSpreadsheet()}
-          title="Importer un fichier Excel ou CSV"
-          variant="ghost"
-        />
-      </View>
+          <Button
+            loading={sharingTemplate}
+            onPress={() => void handleShareTemplate()}
+            title="Télécharger le modèle Excel"
+            variant="ghost"
+          />
+        </View>
+      )}
 
       <CatalogItemSheet
         item={editing}
@@ -233,7 +334,7 @@ export default function CatalogSettingsScreen() {
         loading={spreadsheet.saving}
         message={
           spreadsheet.pending
-            ? `${spreadsheet.pending.items.length} ligne${spreadsheet.pending.items.length > 1 ? 's' : ''} trouvée${spreadsheet.pending.items.length > 1 ? 's' : ''} dans « ${spreadsheet.pending.fileName} ». Elles rejoignent vos ${isService ? 'prestations' : 'produits'}, communs à toutes vos entreprises. Un article dont la référence existe déjà est mis à jour, sans doublon.`
+            ? `${spreadsheet.pending.items.length} ligne${spreadsheet.pending.items.length > 1 ? 's' : ''} trouvée${spreadsheet.pending.items.length > 1 ? 's' : ''} dans « ${spreadsheet.pending.fileName} ». Elles rejoignent vos ${isService ? 'prestations' : 'produits'}, communs à toutes vos entreprises, sans doublon.`
             : undefined
         }
         onCancel={() => {
@@ -241,7 +342,35 @@ export default function CatalogSettingsScreen() {
         }}
         onConfirm={() => void handleImport()}
         title={`Importer dans ${isService ? 'Prestations' : 'Produits'} ?`}
-        visible={spreadsheet.pending !== null}
+        visible={spreadsheet.pending !== null}>
+        <View style={styles.switchRow}>
+          <View style={styles.switchText}>
+            <Text style={styles.switchTitle}>Mettre à jour les articles existants</Text>
+            <Text style={styles.switchHint}>
+              {updateExisting
+                ? 'Même référence : prix, stock et infos remplacés par ceux du fichier.'
+                : 'Même référence : l’article existant est laissé tel quel.'}
+            </Text>
+          </View>
+          <Switch
+            accessibilityLabel="Mettre à jour les articles existants"
+            disabled={spreadsheet.saving}
+            onValueChange={setUpdateExisting}
+            trackColor={{ true: colors.primary }}
+            value={updateExisting}
+          />
+        </View>
+      </ConfirmDialog>
+
+      <ConfirmDialog
+        confirmLabel={`Supprimer ${selected?.size ?? 0}`}
+        destructive
+        loading={bulkDeleting}
+        message="Ils ne seront plus proposés à l’ajout. Les devis et factures déjà émis ne changent pas."
+        onCancel={() => setBulkConfirm(false)}
+        onConfirm={() => void handleBulkDelete()}
+        title={`Supprimer ${selected?.size ?? 0} élément${(selected?.size ?? 0) > 1 ? 's' : ''} ?`}
+        visible={bulkConfirm}
       />
 
       <ConfirmDialog
@@ -258,14 +387,39 @@ export default function CatalogSettingsScreen() {
   );
 }
 
-function CatalogRow({ item, onEdit }: { item: ProductRow; onEdit: () => void }) {
+function CatalogRow({
+  item,
+  onPress,
+  selected,
+  tint,
+  untint,
+}: {
+  item: ProductRow;
+  onPress: () => void;
+  /** `undefined` hors sélection multiple. */
+  selected?: boolean;
+  tint: string;
+  untint: string;
+}) {
   const styles = useStyles();
   const meta = [item.reference, item.unit].filter(Boolean).join(' · ');
+  const selecting = selected !== undefined;
 
   return (
     <ListRow
-      accessibilityHint="Modifier cet élément"
-      onPress={onEdit}
+      accessibilityHint={
+        selecting ? (selected ? 'Sélectionné. Touchez pour retirer.' : 'Touchez pour sélectionner.') : 'Modifier cet élément'
+      }
+      leading={
+        selecting ? (
+          <SymbolView
+            name={selected ? 'checkmark.circle.fill' : 'circle'}
+            size={24}
+            tintColor={selected ? tint : untint}
+          />
+        ) : undefined
+      }
+      onPress={onPress}
       showChevron={false}
       subtitle={meta || undefined}
       title={item.name}
@@ -322,6 +476,32 @@ function useStyles() {
     footer: {
       paddingTop: spacing.sm,
       gap: spacing.xs,
+    },
+    selectionBar: {
+      flexDirection: 'row',
+      justifyContent: 'flex-end',
+      gap: spacing.xs,
+    },
+    destructive: {
+      backgroundColor: colors.error,
+    },
+    switchRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.md,
+      marginTop: spacing.sm,
+    },
+    switchText: {
+      flex: 1,
+      gap: 2,
+    },
+    switchTitle: {
+      ...typography.subheadlineMedium,
+      color: colors.text,
+    },
+    switchHint: {
+      ...typography.caption1,
+      color: colors.textSecondary,
     },
     priceBlock: {
       alignItems: 'flex-end',
