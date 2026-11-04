@@ -1,3 +1,4 @@
+import { useQuery } from '@tanstack/react-query';
 import { router, type Href } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { Text, View } from 'react-native';
@@ -11,14 +12,17 @@ import { typography } from '@/constants/theme/typography';
 import { useThemedStyles } from '@/hooks/use-colors';
 import { useDashboard } from '@/hooks/use-dashboard';
 import { useInfiniteInvoices } from '@/hooks/use-invoices';
+import { useTenant } from '@/hooks/use-tenant';
 import { formatCurrency } from '@/lib/format/currency';
+import { supabase } from '@/lib/supabase';
+import { invoicesQueryKeys } from '@/lib/supabase/query-keys';
 
 type PeriodId = 'month' | 'quarter' | 'year';
 
-const PERIODS: { value: PeriodId; label: string }[] = [
-  { value: 'month', label: 'Ce mois' },
-  { value: 'quarter', label: 'Trimestre' },
-  { value: 'year', label: 'Année' },
+const PERIODS: { value: PeriodId; label: string; collected: string }[] = [
+  { value: 'month', label: 'Ce mois', collected: 'Encaissé ce mois' },
+  { value: 'quarter', label: 'Trimestre', collected: 'Encaissé ce trimestre' },
+  { value: 'year', label: 'Année', collected: 'Encaissé cette année' },
 ];
 
 function periodStart(period: PeriodId): Date {
@@ -38,7 +42,30 @@ export default function PaymentsSettingsScreen() {
   const styles = useStyles();
   const [period, setPeriod] = useState<PeriodId>('month');
   const { stats } = useDashboard();
+  const { scope } = useTenant();
   const { invoices, isLoading, isRefetching, refetch } = useInfiniteInvoices('', 'paid');
+
+  // Total encaissé sur la période choisie, calculé en base : la liste, elle,
+  // ne charge que les premières factures.
+  const collected = useQuery({
+    queryKey: [...invoicesQueryKeys.all, 'collected', scope?.companyId ?? '', period],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('invoices')
+        .select('total, total_ttc')
+        .eq('company_id', scope!.companyId)
+        .eq('status', 'paid')
+        .gte('paid_at', periodStart(period).toISOString());
+      if (error) throw error;
+      return (data ?? []).reduce((sum, row) => {
+        const { total, total_ttc: totalTtc } = row as { total?: unknown; total_ttc?: unknown };
+        return sum + (Number(totalTtc ?? total) || 0);
+      }, 0);
+    },
+    enabled: Boolean(scope?.companyId),
+    staleTime: 30_000,
+  });
+  const collectedLabel = PERIODS.find((entry) => entry.value === period)?.collected ?? 'Encaissé';
 
   const visible = useMemo(() => {
     const start = periodStart(period).getTime();
@@ -54,13 +81,16 @@ export default function PaymentsSettingsScreen() {
 
   return (
     <SettingsScreenFrame scrollable={false} title="Paiements">
+      <FilterChipBar onChange={setPeriod} options={PERIODS} value={period} />
+
       <View style={styles.stats}>
-        <PaymentStat label="Encaissé ce mois" value={formatCurrency(stats.monthlyRevenue)} />
+        <PaymentStat
+          label={collectedLabel}
+          value={collected.data === undefined ? '—' : formatCurrency(collected.data)}
+        />
         <PaymentStat label="En attente" value={formatCurrency(stats.outstandingAmount)} />
         <PaymentStat danger label="En retard" value={String(stats.lateInvoices)} />
       </View>
-
-      <FilterChipBar onChange={setPeriod} options={PERIODS} value={period} />
 
       <InvoicesList
         invoices={visible}
@@ -70,6 +100,7 @@ export default function PaymentsSettingsScreen() {
         onInvoicePress={(invoice) => router.push(`/invoices/${invoice.id}` as Href)}
         onRefresh={() => {
           void refetch();
+          void collected.refetch();
         }}
         showCreateAction={false}
       />
@@ -111,6 +142,7 @@ function useStyles() {
       flexDirection: 'row',
       flexWrap: 'wrap',
       gap: spacing.sm,
+      marginTop: spacing.sm,
       marginBottom: spacing.md,
     },
     stat: {
