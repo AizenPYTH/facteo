@@ -7,6 +7,7 @@ import { useActivityPing } from '@/hooks/use-activity-ping';
 import { useAuth } from '@/hooks/use-auth';
 import { usePendingCompanyRegistration } from '@/hooks/use-pending-company-registration';
 import { usePushNotifications } from '@/hooks/use-push-notifications';
+import { useSiriDictation } from '@/hooks/use-siri-dictation';
 import { stackScreenOptions } from '@/lib/navigation/screen-options';
 
 export default function AppLayout() {
@@ -14,6 +15,8 @@ export default function AppLayout() {
   usePushNotifications();
   usePendingCompanyRegistration();
   useActivityPing(user?.id);
+  // Une fois connecté seulement : la facture a besoin du compte et de l'entreprise.
+  useSiriDictation(Boolean(user) && !loading);
 
   if (loading) {
     return <AuthLoadingScreen />;

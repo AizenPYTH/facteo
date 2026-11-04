@@ -65,6 +65,7 @@
       ],
       "expo-iap",
       "./plugins/with-defer-iap-init",
+      "./plugins/with-siri-shortcut",
       "expo-apple-authentication",
       "expo-web-browser",
       [
