@@ -1097,12 +1097,16 @@ export function InvoiceWizardScreen({
           {assistantMounted ? (
             <VoiceInvoiceAssistant
               onClose={(createdId) => {
+                // La feuille se referme d'abord ; démonter ou naviguer pendant
+                // son animation fait tomber l'app sur iOS.
                 setAssistantOpen(false);
-                setAssistantMounted(false);
-                if (createdId) {
-                  showSuccess('Facture créée.');
-                  router.replace(`/invoices/${createdId}` as Href);
-                }
+                setTimeout(() => {
+                  setAssistantMounted(false);
+                  if (createdId) {
+                    showSuccess('Facture créée.');
+                    router.replace(`/invoices/${createdId}` as Href);
+                  }
+                }, 500);
               }}
               onCreate={createFromAssistant}
               onPreview={() => {
