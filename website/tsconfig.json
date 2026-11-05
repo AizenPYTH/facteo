@@ -38,6 +38,7 @@
       "@/lib/auth/*": ["./src/lib/domain/auth/*"],
       "@/lib/invoices/*": ["./src/lib/domain/invoices/*"],
       "@/lib/quotes/*": ["./src/lib/domain/quotes/*"],
+      "@/lib/reminders/*": ["./src/lib/domain/reminders/*"],
       "@/lib/documents/*": ["./src/lib/domain/documents/*"],
       "@/lib/calculations/*": ["./src/lib/domain/calculations/*"],
       "@/lib/pdf/*": ["./src/lib/domain/pdf/*"],

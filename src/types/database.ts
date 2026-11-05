@@ -151,6 +151,11 @@ export type InvoiceRow = {
   created_at: string;
   updated_at: string;
   deleted_at: string | null;
+  /** Relances automatiques pour cette facture (migration 20261105140000). */
+  reminders_enabled?: boolean;
+  /** standard | deposit | balance (migration 20261105120000). */
+  billing_role?: string;
+  deposit_percent?: number | null;
 };
 
 export type InvoiceWithClient = InvoiceRow & {
@@ -219,6 +224,7 @@ export type InvoiceInsert = {
   stripe_checkout_session_id?: string | null;
   created_at?: string;
   updated_at?: string;
+  reminders_enabled?: boolean;
 };
 
 export type InvoicePaymentRow = {
@@ -895,9 +901,73 @@ export type Database = {
         Update: never;
         Relationships: [];
       };
+      reminder_settings: {
+        Row: {
+          company_id: string;
+          enabled: boolean;
+          before_due_enabled: boolean;
+          due_enabled: boolean;
+          after_7_enabled: boolean;
+          after_15_enabled: boolean;
+          include_payment_link: boolean;
+          templates: unknown;
+          updated_at: string;
+          updated_by: string | null;
+        };
+        Insert: {
+          company_id: string;
+          enabled?: boolean;
+          before_due_enabled?: boolean;
+          due_enabled?: boolean;
+          after_7_enabled?: boolean;
+          after_15_enabled?: boolean;
+          include_payment_link?: boolean;
+          templates?: unknown;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Update: Partial<{
+          enabled: boolean;
+          before_due_enabled: boolean;
+          due_enabled: boolean;
+          after_7_enabled: boolean;
+          after_15_enabled: boolean;
+          include_payment_link: boolean;
+          templates: unknown;
+          updated_at: string;
+          updated_by: string | null;
+        }>;
+        Relationships: [];
+      };
+      invoice_reminders: {
+        Row: {
+          id: string;
+          invoice_id: string;
+          company_id: string | null;
+          user_id: string;
+          stage: string;
+          status: string;
+          recipient_email: string | null;
+          subject: string | null;
+          body: string | null;
+          amount_due: number | null;
+          provider_message_id: string | null;
+          error: string | null;
+          triggered_by: string | null;
+          created_at: string;
+          sent_at: string | null;
+        };
+        Insert: never;
+        Update: never;
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: {
+      invoice_next_reminder: {
+        Args: { p_invoice_id: string };
+        Returns: unknown;
+      };
       quote_billing_state: {
         Args: { p_quote_id: string };
         Returns: unknown;

@@ -40,6 +40,7 @@ import { ActionMenu, type ActionMenuItem } from '@/components/app/action-menu';
 import { ActivityTimeline } from '@/components/app/activity-timeline';
 import { AppDialog } from '@/components/app/app-dialog';
 import { ClientLinkPanel } from '@/components/app/client-link-panel';
+import { InvoiceRemindersPanel } from '@/components/app/invoice-reminders-panel';
 import { InvoiceQuoteLinks, QuoteBillingPanel } from '@/components/app/quote-billing-panel';
 import { EmptyState, ErrorState, NoResultsState } from '@/components/app/empty-state';
 import { DocumentQuickPreviewModal } from '@/components/app/document-quick-preview';
@@ -1317,6 +1318,7 @@ export function InvoicesWorkspace() {
                 extra={
                   <>
                     {detail.quoteId ? <InvoiceQuoteLinks invoiceId={detail.id} quoteId={detail.quoteId} /> : null}
+                    <InvoiceRemindersPanel invoiceId={detail.id} status={detail.status} />
                     <ClientLinkPanel documentId={detail.id} documentType="invoice" status={detail.status} />
                   </>
                 }

@@ -9,6 +9,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { DocumentActionsSheet } from '@/components/documents/document-actions-sheet';
 import { ClientLinkSection } from '@/components/documents/client-link-section';
+import { InvoiceRemindersSection } from '@/components/invoices/invoice-reminders-section';
 import { InvoiceQuoteLinksSection } from '@/components/quotes/quote-billing-section';
 import { SentDocumentsSection } from '@/components/documents/sent-documents-section';
 import {
@@ -732,6 +733,8 @@ export default function InvoiceDetailScreen() {
         {invoice.quoteId ? (
           <InvoiceQuoteLinksSection invoiceId={invoice.id} quoteId={invoice.quoteId} />
         ) : null}
+
+        <InvoiceRemindersSection invoiceId={invoice.id} status={invoice.status} />
 
         <ClientLinkSection
           documentId={invoice.id}

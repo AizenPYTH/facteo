@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   Bell,
+  BellRing,
   BookOpen,
   Building2,
   CreditCard,
@@ -52,6 +53,7 @@ export const SETTINGS_NAV_GROUPS: SettingsNavGroup[] = [
   {
     title: 'Facturation',
     items: [
+      { href: '/app/settings/reminders', label: 'Relances', icon: BellRing },
       { href: '/app/settings/numbering', label: 'Numérotation', icon: Hash },
       { href: '/app/settings/templates', label: 'Modèles PDF', icon: Palette },
       {

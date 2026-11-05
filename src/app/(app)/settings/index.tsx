@@ -37,6 +37,7 @@ const ICONS = {
   templates: { ios: 'doc.richtext', android: 'article', web: 'article' },
   eInvoice: { ios: 'bolt', android: 'bolt', web: 'bolt' },
   payments: { ios: 'creditcard', android: 'credit_card', web: 'credit_card' },
+  reminders: { ios: 'bell.badge', android: 'notifications_active', web: 'notifications_active' },
   products: { ios: 'cube', android: 'inventory_2', web: 'inventory_2' },
   services: { ios: 'wrench.and.screwdriver', android: 'handyman', web: 'handyman' },
   appearance: { ios: 'moon', android: 'dark_mode', web: 'dark_mode' },
@@ -180,6 +181,12 @@ export default function SettingsScreen() {
               icon={ICONS.payments}
               label="Paiements"
               onPress={() => router.push('/settings/payments' as Href)}
+            />
+            <SettingsRow
+              description="Rappels automatiques des factures impayées"
+              icon={ICONS.reminders}
+              label="Relances"
+              onPress={() => router.push('/settings/reminders' as Href)}
             />
           </SettingsSection>
 
