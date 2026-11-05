@@ -20,7 +20,9 @@ import type { InvoiceDetail } from '@/types/invoice';
 import type { QuoteDetail } from '@/types/quote';
 import type { DataScope } from '@/types/tenant';
 import { DEFAULT_PDF_TEMPLATE_ID } from '@/lib/pdf/engine/templates/types';
-import { withInvoiceBankDetails } from '@/types/pdf-options';
+import { withInvoiceBankDetails, type InvoicePdfOptions } from '@/types/pdf-options';
+import type { Settings } from '@/types/settings';
+import type { TenantCompany } from '@/types/tenant';
 
 export async function resolvePdfCompanyInfo(
   scope: DataScope,
@@ -32,6 +34,23 @@ export async function resolvePdfCompanyInfo(
     fetchCompanySiren(scope.companyId),
   ]);
 
+  return assemblePdfCompanyInfo(company, profileRow, siren, authEmail);
+}
+
+type PdfProfileParts = {
+  first_name?: string | null;
+  last_name?: string | null;
+  iban?: string | null;
+  bic?: string | null;
+} | null;
+
+/** Émetteur du PDF à partir de l'entreprise et du profil déjà chargés. */
+export function assemblePdfCompanyInfo(
+  company: TenantCompany | null,
+  profileRow: PdfProfileParts,
+  siren: string | null | undefined,
+  authEmail?: string | null,
+): PdfCompanyInfo {
   const companyForm = mapCompanyToFormValues(
     company,
     profileRow?.first_name ?? '',
@@ -56,11 +75,11 @@ export async function resolvePdfCompanyInfo(
     paymentMethods: company?.paymentMethods ?? companyForm.paymentMethods,
     logoUrl: company?.logoUrl ?? null,
     signatureUrl: company?.signatureUrl ?? null,
-    siren: siren || null,
+    siren: siren?.trim() || null,
   };
 }
 
-function fallbackClient(name: string): PdfClientInfo {
+export function fallbackClient(name: string): PdfClientInfo {
   return {
     lastName: '',
     firstName: name,
@@ -87,6 +106,19 @@ export async function buildQuotePdfInput(
     fetchDocumentSignature('quote', quote.id),
   ]);
 
+  return assembleQuotePdfInput(quote, company, settings, client, documentSignature);
+}
+
+type PdfSignatureParts = { signatureUrl: string; signedAt: string } | null;
+
+/** Devis → PDF, à partir de données déjà chargées (espace connecté ou lien public). */
+export function assembleQuotePdfInput(
+  quote: QuoteDetail,
+  company: PdfCompanyInfo,
+  settings: Settings | null,
+  client: PdfClientInfo | null,
+  documentSignature: PdfSignatureParts,
+): PdfDocumentInput {
   return {
     kind: 'quote',
     number: quote.number,
@@ -123,6 +155,18 @@ export async function buildInvoicePdfInput(
     fetchInvoicePdfOptions(scope, invoice.id),
   ]);
 
+  return assembleInvoicePdfInput(invoice, company, settings, client, documentSignature, pdfOptions);
+}
+
+/** Facture → PDF, à partir de données déjà chargées (espace connecté ou lien public). */
+export function assembleInvoicePdfInput(
+  invoice: InvoiceDetail,
+  company: PdfCompanyInfo,
+  settings: Settings | null,
+  client: PdfClientInfo | null,
+  documentSignature: PdfSignatureParts,
+  pdfOptions: InvoicePdfOptions,
+): PdfDocumentInput {
   return {
     kind: 'invoice',
     number: invoice.number,
@@ -159,6 +203,16 @@ export async function buildInvoicePdfInput(
     showLogo: pdfOptions.showLogo,
     paymentMention: pdfOptions.paymentMention,
   };
+}
+
+/** HTML final d'un PDF : images embarquées et polices incluses. */
+export async function renderPdfInputToHtml(input: PdfDocumentInput): Promise<string> {
+  const withImages = {
+    ...input,
+    company: await inlinePdfCompanyImages(input.company),
+    clientSignature: await inlinePdfClientSignature(input.clientSignature),
+  };
+  return embedPdfFonts(renderDocumentPdfHtml(withImages));
 }
 
 export async function buildQuotePdfHtml(

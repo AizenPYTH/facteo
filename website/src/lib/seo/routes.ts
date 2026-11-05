@@ -89,6 +89,8 @@ export const NOINDEX_PATHS = [
   '/mot-de-passe-oublie',
   '/reinitialiser-mot-de-passe',
   '/mobile',
+  // Liens privés envoyés aux clients (devis à signer, factures).
+  '/d',
 ] as const;
 
 /**

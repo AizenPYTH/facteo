@@ -60,35 +60,74 @@ export function resolveClientName(
 
 export type EmailContent = { subject: string; text: string; html: string };
 
+/** Adresse sûre pour un lien d'e-mail (https uniquement). */
+export function safeHttpsUrl(value: string | null | undefined): string | null {
+  if (typeof value !== 'string') return null;
+  const trimmed = value.trim();
+  return /^https:\/\/[^\s"'<>]+$/.test(trimmed) ? trimmed : null;
+}
+
+function ctaButton(href: string, label: string, primary: boolean): string {
+  const style = primary
+    ? 'background:#4f46e5;color:#ffffff;'
+    : 'background:#ffffff;color:#4f46e5;border:1px solid #c7d2fe;';
+  return `<a href="${escapeHtml(href)}" style="${style}display:inline-block;padding:12px 18px;border-radius:10px;font-weight:600;text-decoration:none;margin:0 8px 8px 0;">${escapeHtml(label)}</a>`;
+}
+
 export function buildEmailContent(params: {
   documentType: DocumentType;
   documentNumber: string;
   clientName: string;
   companyName: string;
   customMessage?: string | null;
+  /** Lien sécurisé vers le document (consultation, signature du devis). */
+  documentUrl?: string | null;
+  /** Lien de paiement en ligne de la facture, s'il existe. */
+  paymentUrl?: string | null;
+  /** Le PDF est-il joint au message ? */
+  hasAttachment?: boolean;
 }): EmailContent {
   const { documentType, documentNumber, clientName, companyName } = params;
   const isQuote = documentType === 'quote';
   const label = isQuote ? 'devis' : 'facture';
+  const documentUrl = safeHttpsUrl(params.documentUrl);
+  const paymentUrl = isQuote ? null : safeHttpsUrl(params.paymentUrl);
+  const hasAttachment = params.hasAttachment !== false;
   const subject = `${isQuote ? 'Devis' : 'Facture'} ${documentNumber} — ${companyName}`;
   const intro = isQuote
-    ? `Veuillez trouver ci-joint notre devis n° ${documentNumber}.`
-    : `Veuillez trouver ci-joint la facture n° ${documentNumber}.`;
+    ? hasAttachment
+      ? `Veuillez trouver ci-joint notre devis n° ${documentNumber}.`
+      : `Voici notre devis n° ${documentNumber}.`
+    : hasAttachment
+      ? `Veuillez trouver ci-joint la facture n° ${documentNumber}.`
+      : `Voici la facture n° ${documentNumber}.`;
   const closing =
     params.customMessage?.trim() ||
     (isQuote
       ? 'Nous restons à votre disposition pour toute question.'
       : 'Merci de procéder au règlement selon les conditions indiquées.');
+  const linkLabel = isQuote ? 'Consulter et signer le devis' : 'Consulter la facture';
+  const linkHint = isQuote
+    ? 'Vous pouvez consulter le devis, le télécharger, puis l’accepter en le signant en ligne (téléphone ou ordinateur) ou le refuser.'
+    : null;
 
   const text = [
     `Bonjour ${clientName},`,
     '',
     intro,
     closing,
+    ...(documentUrl ? ['', `${linkLabel} : ${documentUrl}`] : []),
+    ...(linkHint && documentUrl ? [linkHint] : []),
+    ...(paymentUrl ? ['', `Payer en ligne : ${paymentUrl}`] : []),
     '',
     'Cordialement,',
     companyName,
   ].join('\n');
+
+  const buttons = [
+    documentUrl ? ctaButton(documentUrl, linkLabel, !paymentUrl) : '',
+    paymentUrl ? ctaButton(paymentUrl, 'Payer en ligne', true) : '',
+  ].join('');
 
   const html = `<!DOCTYPE html>
 <html lang="fr">
@@ -97,7 +136,9 @@ export function buildEmailContent(params: {
       <p style="margin:0 0 16px;">Bonjour ${escapeHtml(clientName)},</p>
       <p style="margin:0 0 12px;">${escapeHtml(intro)}</p>
       <p style="margin:0 0 20px;">${escapeHtml(closing)}</p>
-      <p style="margin:0;color:#6b7280;font-size:13px;">Le ${escapeHtml(label)} est joint à ce message au format PDF.</p>
+      ${buttons ? `<div style="margin:0 0 12px;">${buttons}</div>` : ''}
+      ${linkHint && documentUrl ? `<p style="margin:0 0 16px;color:#6b7280;font-size:13px;">${escapeHtml(linkHint)}</p>` : ''}
+      ${hasAttachment ? `<p style="margin:0;color:#6b7280;font-size:13px;">Le ${escapeHtml(label)} est joint à ce message au format PDF.</p>` : ''}
       <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0;" />
       <p style="margin:0;">Cordialement,<br/><strong>${escapeHtml(companyName)}</strong></p>
     </div>

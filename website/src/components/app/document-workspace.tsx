@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
   useMutation,
   useQueryClient,
@@ -39,6 +39,7 @@ import type { QuoteStatusFilter } from '@inveq/types/quotes-list';
 import { ActionMenu, type ActionMenuItem } from '@/components/app/action-menu';
 import { ActivityTimeline } from '@/components/app/activity-timeline';
 import { AppDialog } from '@/components/app/app-dialog';
+import { ClientLinkPanel } from '@/components/app/client-link-panel';
 import { EmptyState, ErrorState, NoResultsState } from '@/components/app/empty-state';
 import { DocumentQuickPreviewModal } from '@/components/app/document-quick-preview';
 import { DocumentStatusTimeline } from '@/components/app/document-status-timeline';
@@ -655,6 +656,7 @@ function DocumentDetailPanel({
   company,
   stamp,
   onStampChange,
+  extra,
 }: {
   kind: DocumentKind;
   document: InvoiceDetail | QuoteDetail;
@@ -685,6 +687,8 @@ function DocumentDetailPanel({
   /** Factures uniquement : tampon « Facture payée ». */
   stamp?: { color: StampColor; position: StampPosition };
   onStampChange?: (value: { color: StampColor; position: StampPosition }) => void;
+  /** Bloc affiché sous les dates et totaux (lien client, signature…). */
+  extra?: ReactNode;
 }) {
   const PrimaryIcon = primaryAction.icon;
 
@@ -765,6 +769,8 @@ function DocumentDetailPanel({
         <DetailField label="Total HT" value={formatCurrency(document.subtotalHt)} />
         <DetailField label="TVA" value={formatCurrency(document.totalVat)} />
       </div>
+
+      {extra}
 
       <div className="border-b border-app-border-soft px-5 py-4">
         <div className="mb-2.5 flex items-center justify-between gap-2">
@@ -1300,6 +1306,9 @@ export function InvoicesWorkspace() {
                 downloadBusy={actionLoading === 'download'}
                 dueIsLate={detail.status === 'overdue'}
                 dueOrValid={detail.dueAt}
+                extra={
+                  <ClientLinkPanel documentId={detail.id} documentType="invoice" status={detail.status} />
+                }
                 kind="invoice"
                 menuItems={invoiceMenuItems(detail)}
                 onDownload={() => void runPdfAction('download')}
@@ -1737,6 +1746,9 @@ export function QuotesWorkspace() {
                 downloadBusy={actionLoading === 'download'}
                 dueIsLate={detail.status === 'expired'}
                 dueOrValid={detail.validUntil}
+                extra={
+                  <ClientLinkPanel documentId={detail.id} documentType="quote" status={detail.status} />
+                }
                 kind="quote"
                 menuItems={quoteMenuItems(detail)}
                 onDownload={() => void runPdfAction('download')}

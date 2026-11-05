@@ -12,12 +12,22 @@ const nextConfig: NextConfig = {
   // Pages de compte et espace connecté : explorables (robots.txt les laisse
   // passer) mais jamais indexées. Voir `NOINDEX_PATHS`.
   async headers() {
-    return NOINDEX_PATHS.flatMap((path) =>
-      [path, `${path}/:path*`].map((source) => ({
-        source,
-        headers: [{ key: 'X-Robots-Tag', value: 'noindex, nofollow' }],
-      })),
-    );
+    return [
+      ...NOINDEX_PATHS.flatMap((path) =>
+        [path, `${path}/:path*`].map((source) => ({
+          source,
+          headers: [{ key: 'X-Robots-Tag', value: 'noindex, nofollow' }],
+        })),
+      ),
+      // Lien privé : le jeton ne part ni en référent ni dans un cache partagé.
+      {
+        source: '/d/:path*',
+        headers: [
+          { key: 'Referrer-Policy', value: 'no-referrer' },
+          { key: 'Cache-Control', value: 'private, no-store' },
+        ],
+      },
+    ];
   },
 };
 

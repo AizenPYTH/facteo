@@ -27,6 +27,7 @@ import {
 const RESEND_ENDPOINT = 'https://api.resend.com/emails';
 const FROM_ADDRESS = Deno.env.get('RESEND_FROM_ADDRESS')?.trim() || 'factures@inveq.fr';
 const FROM_NAME = Deno.env.get('RESEND_FROM_NAME')?.trim() || 'INVEQ';
+const PUBLIC_SITE_URL = (Deno.env.get('PUBLIC_SITE_URL')?.trim() || 'https://www.inveq.fr').replace(/\/$/, '');
 
 /** Resend accepte 40 Mo par message ; on reste très en dessous. */
 const MAX_PDF_BASE64_LENGTH = 12_000_000;
@@ -152,6 +153,38 @@ async function loadDocument(
   };
 }
 
+async function issueDocumentLink(
+  serviceClient: SupabaseClient,
+  documentType: DocumentType,
+  documentId: string,
+  userId: string,
+): Promise<string | null> {
+  const { data, error } = await serviceClient.rpc('issue_document_share_link', {
+    p_document_type: documentType,
+    p_document_id: documentId,
+    p_actor: userId,
+    p_mark_sent: false,
+  });
+  if (error || typeof data !== 'string') {
+    console.error('[send-document-email] link', error?.message);
+    return null;
+  }
+  return `${PUBLIC_SITE_URL}/d/${data}`;
+}
+
+/** Lien Stripe existant, seulement si la facture reste à payer. */
+async function loadInvoicePaymentLink(serviceClient: SupabaseClient, invoiceId: string): Promise<string | null> {
+  const { data, error } = await serviceClient
+    .from('invoices')
+    .select('status, stripe_payment_link')
+    .eq('id', invoiceId)
+    .maybeSingle();
+  if (error || !data) return null;
+  const status = data.status as string;
+  if (!['draft', 'sent', 'overdue', 'partially_paid'].includes(status)) return null;
+  return (data.stripe_payment_link as string | null) ?? null;
+}
+
 Deno.serve(async (request) => {
   if (request.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
@@ -248,12 +281,21 @@ Deno.serve(async (request) => {
   const companyName = ((company?.name as string | null)?.trim()) || 'INVEQ';
   const companyEmail = (company?.email as string | null)?.trim() ?? '';
 
+  // Lien sécurisé (consultation, téléchargement, signature du devis) et lien
+  // de paiement de la facture. Sans eux, l'e-mail part quand même avec le PDF.
+  const [documentUrl, paymentUrl] = await Promise.all([
+    issueDocumentLink(serviceClient, documentType, document.id, userId),
+    documentType === 'invoice' ? loadInvoicePaymentLink(serviceClient, document.id) : Promise.resolve(null),
+  ]);
+
   const content = buildEmailContent({
     documentType,
     documentNumber: document.number,
     clientName,
     companyName,
     customMessage: body.message,
+    documentUrl,
+    paymentUrl,
   });
 
   const fileName = sanitizeFileName(body.pdfFileName, `${document.number}.pdf`);
@@ -291,6 +333,7 @@ Deno.serve(async (request) => {
     // On journalise l'échec pour que l'historique reflète la réalité.
     await serviceClient.from('sent_documents').insert({
       user_id: userId,
+      company_id: document.companyId,
       document_type: documentType,
       document_id: document.id,
       document_number: document.number,
@@ -310,6 +353,7 @@ Deno.serve(async (request) => {
 
   await serviceClient.from('sent_documents').insert({
     user_id: userId,
+    company_id: document.companyId,
     document_type: documentType,
     document_id: document.id,
     document_number: document.number,

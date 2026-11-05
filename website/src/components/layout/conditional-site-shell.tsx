@@ -13,6 +13,7 @@ const NO_MARKETING_SHELL_PREFIXES = [
   '/reinitialiser-mot-de-passe',
   '/auth',
   '/mobile',
+  '/d/',
 ];
 
 export function ConditionalSiteShell({ children }: { children: React.ReactNode }) {

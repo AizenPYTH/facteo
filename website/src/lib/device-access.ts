@@ -62,6 +62,8 @@ export const MOBILE_GATE_EXEMPT_PREFIXES = [
   // Aide & contact (ouverts depuis l’app)
   '/support',
   '/contact',
+  // Document envoyé à un client : il doit pouvoir le signer depuis son téléphone.
+  '/d/',
 ] as const;
 
 /**

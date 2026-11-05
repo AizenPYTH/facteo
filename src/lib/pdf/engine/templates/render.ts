@@ -248,7 +248,27 @@ function withPageExtras(
       `${stamp}${result}`;
   }
 
+  // Signature du client (devis signé en ligne ou dans l'app), au-dessus des mentions.
+  const signature = clientSignatureBlock(context);
+  if (signature) {
+    result =
+      insertBefore(result, /<div class="dc-spacer"/, signature) ?? `${result}${signature}`;
+  }
+
   return result;
+}
+
+function clientSignatureBlock(context: TemplateContext): string | null {
+  if (!context.clientSignature?.url) {
+    return null;
+  }
+  return `<div style="display:flex; justify-content:flex-end; margin-top:${u(18)}; break-inside:avoid; page-break-inside:avoid">
+  <div style="min-width:${u(230)}; max-width:${u(280)}; border:1px solid #E2E8F0; border-radius:${u(8)}; padding:${u(10)} ${u(12)}; background:#FFFFFF">
+    <div style="font-size:${u(9)}; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; color:#64748B">Bon pour accord — signature du client</div>
+    <img src="${escapeHtml(context.clientSignature.url)}" alt="Signature du client" style="display:block; max-width:100%; height:${u(58)}; object-fit:contain; margin:${u(6)} 0" />
+    <div style="font-size:${u(9)}; color:#64748B">${escapeHtml(context.clientSignature.caption)}</div>
+  </div>
+</div>`;
 }
 
 /**

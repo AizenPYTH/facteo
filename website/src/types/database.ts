@@ -673,6 +673,44 @@ export type CompanyMemberRow = {
   created_at: string;
 };
 
+/** Preuve d'acceptation ou de refus d'un devis en ligne (jamais modifiée). */
+export type QuoteAcceptanceRow = {
+  id: string;
+  quote_id: string;
+  quote_number: string;
+  user_id: string;
+  company_id: string | null;
+  link_id: string | null;
+  decision: 'accepted' | 'rejected';
+  signer_name: string;
+  signer_email: string | null;
+  signature_image: string | null;
+  comment: string | null;
+  consent_text: string | null;
+  total_ttc: number;
+  document_snapshot: unknown;
+  document_hash: string;
+  ip_address: string | null;
+  user_agent: string | null;
+  created_at: string;
+};
+
+/** Lien public vers un document. Seule l'empreinte du jeton est stockée. */
+export type DocumentShareLinkRow = {
+  id: string;
+  user_id: string;
+  company_id: string | null;
+  document_type: 'quote' | 'invoice';
+  document_id: string;
+  token_hash: string;
+  created_at: string;
+  expires_at: string;
+  revoked_at: string | null;
+  first_viewed_at: string | null;
+  last_viewed_at: string | null;
+  view_count: number;
+};
+
 export type Database = {
   public: {
     Tables: {
@@ -863,9 +901,45 @@ export type Database = {
         Update: Partial<DocumentSignatureRow>;
         Relationships: [];
       };
+      quote_acceptances: {
+        Row: QuoteAcceptanceRow;
+        Insert: never;
+        Update: never;
+        Relationships: [];
+      };
+      document_share_links: {
+        Row: DocumentShareLinkRow;
+        Insert: never;
+        Update: never;
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: {
+      create_document_share_link: {
+        Args: { p_document_type: 'quote' | 'invoice'; p_document_id: string };
+        Returns: string;
+      };
+      revoke_document_share_links: {
+        Args: { p_document_type: 'quote' | 'invoice'; p_document_id: string };
+        Returns: number;
+      };
+      get_public_document: {
+        Args: { p_token: string };
+        Returns: unknown;
+      };
+      respond_to_public_quote: {
+        Args: {
+          p_token: string;
+          p_decision: 'accepted' | 'rejected';
+          p_signer_name: string;
+          p_signer_email?: string | null;
+          p_signature?: string | null;
+          p_comment?: string | null;
+          p_consent?: boolean;
+        };
+        Returns: unknown;
+      };
       ensure_profile_exists: {
         Args: Record<PropertyKey, never>;
         Returns: undefined;
