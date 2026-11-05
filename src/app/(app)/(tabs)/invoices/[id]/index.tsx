@@ -8,6 +8,7 @@ import { ScrollView, Switch, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { DocumentActionsSheet } from '@/components/documents/document-actions-sheet';
+import { ClientLinkSection } from '@/components/documents/client-link-section';
 import { SentDocumentsSection } from '@/components/documents/sent-documents-section';
 import {
   CancelInvoiceModal,
@@ -726,6 +727,13 @@ export default function InvoiceDetailScreen() {
             />
           </CollapsibleSection>
         ) : null}
+
+        <ClientLinkSection
+          documentId={invoice.id}
+          documentNumber={invoice.number}
+          documentType="invoice"
+          status={invoice.status}
+        />
 
         <SentDocumentsSection documents={sentDocuments} loading={sentDocumentsLoading} />
       </ScrollView>

@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { DocumentDetailSkeleton } from '@/components/documents/document-detail-skeleton';
 import { DocumentFinalizePanel } from '@/components/pdf/document-finalize-panel';
 import { DocumentClientSignatureBlock } from '@/components/signatures/document-client-signature-block';
+import { ClientLinkSection } from '@/components/documents/client-link-section';
 import { SentDocumentsSection } from '@/components/documents/sent-documents-section';
 import {
   DeleteQuoteModal,
@@ -204,6 +205,13 @@ export default function QuoteDetailScreen() {
           onSignModalVisibleChange={setSignModalVisible}
           showSignAction={false}
           signModalVisible={signModalVisible}
+        />
+
+        <ClientLinkSection
+          documentId={quote.id}
+          documentNumber={quote.number}
+          documentType="quote"
+          status={quote.status}
         />
 
         <SentDocumentsSection documents={sentDocuments} loading={sentDocumentsLoading} />

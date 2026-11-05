@@ -426,7 +426,8 @@ begin
         'clients', (select jsonb_build_object('name', cl.name, 'company', cl.company, 'email', cl.email)
                     from public.clients cl where cl.id = q.client_id)
       ),
-      q.client_id, q.company_id, q.user_id, q.status::text, q.valid_until
+      q.client_id, q.company_id, q.user_id, q.status::text,
+      (timezone('Europe/Paris', q.valid_until))::date
     into v_doc, v_client_id, v_company_id, v_owner, v_status, v_valid_until
     from public.quotes q
     where q.id = v_link.document_id and q.deleted_at is null;
@@ -613,7 +614,8 @@ begin
   if v_quote.status::text not in ('draft', 'sent') then
     raise exception 'QUOTE_ALREADY_ANSWERED';
   end if;
-  if v_quote.valid_until is not null and v_quote.valid_until < public.paris_today() then
+  if v_quote.valid_until is not null
+    and (timezone('Europe/Paris', v_quote.valid_until))::date < public.paris_today() then
     raise exception 'QUOTE_EXPIRED';
   end if;
 
