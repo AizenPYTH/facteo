@@ -916,6 +916,18 @@ export type Database = {
     };
     Views: Record<string, never>;
     Functions: {
+      quote_billing_state: {
+        Args: { p_quote_id: string };
+        Returns: unknown;
+      };
+      create_deposit_invoice: {
+        Args: { p_quote_id: string; p_mode: 'percent' | 'amount'; p_value: number };
+        Returns: unknown;
+      };
+      create_final_invoice_from_quote: {
+        Args: { p_quote_id: string };
+        Returns: unknown;
+      };
       create_document_share_link: {
         Args: { p_document_type: 'quote' | 'invoice'; p_document_id: string };
         Returns: string;

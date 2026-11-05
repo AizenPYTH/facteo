@@ -123,6 +123,7 @@ export function useQuoteMutations() {
     onSuccess: () => {
       invalidateQuotes();
       queryClient.invalidateQueries({ queryKey: invoicesQueryKeys.all });
+      queryClient.invalidateQueries({ queryKey: ['quote-billing'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
     },
   });

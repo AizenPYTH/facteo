@@ -40,6 +40,7 @@ import { ActionMenu, type ActionMenuItem } from '@/components/app/action-menu';
 import { ActivityTimeline } from '@/components/app/activity-timeline';
 import { AppDialog } from '@/components/app/app-dialog';
 import { ClientLinkPanel } from '@/components/app/client-link-panel';
+import { InvoiceQuoteLinks, QuoteBillingPanel } from '@/components/app/quote-billing-panel';
 import { EmptyState, ErrorState, NoResultsState } from '@/components/app/empty-state';
 import { DocumentQuickPreviewModal } from '@/components/app/document-quick-preview';
 import { DocumentStatusTimeline } from '@/components/app/document-status-timeline';
@@ -1003,6 +1004,7 @@ export function InvoicesWorkspace() {
           : `Facture ${invoice.number} envoyée.`,
       );
       void queryClient.invalidateQueries({ queryKey: invoicesQueryKeys.all });
+      void queryClient.invalidateQueries({ queryKey: ['quote-billing'] });
     } catch (error) {
       const message =
         error instanceof SendDocumentEmailError
@@ -1020,6 +1022,7 @@ export function InvoicesWorkspace() {
     mutationFn: (invoiceId: string) => duplicateInvoice(requireScope(scope), invoiceId),
     onSuccess: (invoice) => {
       void queryClient.invalidateQueries({ queryKey: invoicesQueryKeys.all });
+      void queryClient.invalidateQueries({ queryKey: ['quote-billing'] });
       setSelectedId(invoice.id);
       showSuccess(`Facture dupliquée en ${invoice.number}.`);
     },
@@ -1044,6 +1047,7 @@ export function InvoicesWorkspace() {
     onError: (error) => showError(toUserFacingError(error.message)),
     onSettled: () => {
       void queryClient.invalidateQueries({ queryKey: invoicesQueryKeys.all });
+      void queryClient.invalidateQueries({ queryKey: ['quote-billing'] });
     },
   });
 
@@ -1068,6 +1072,7 @@ export function InvoicesWorkspace() {
     mutationFn: (invoiceId: string) => updateInvoiceStatus(requireScope(scope), invoiceId, 'sent'),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: invoicesQueryKeys.all });
+      void queryClient.invalidateQueries({ queryKey: ['quote-billing'] });
       showSuccess('Facture marquée comme envoyée.');
     },
     onError: (error) => showError(toUserFacingError(error.message)),
@@ -1077,6 +1082,7 @@ export function InvoicesWorkspace() {
     mutationFn: (invoiceId: string) => markInvoiceAsPaid(requireScope(scope), invoiceId),
     onSuccess: (invoice) => {
       void queryClient.invalidateQueries({ queryKey: invoicesQueryKeys.all });
+      void queryClient.invalidateQueries({ queryKey: ['quote-billing'] });
       showSuccess(`Facture ${invoice.number} marquée comme payée.`);
     },
     onError: (error) => showError(getInvoiceErrorMessage(error.message)),
@@ -1094,6 +1100,7 @@ export function InvoicesWorkspace() {
     },
     onSuccess: (numbers) => {
       void queryClient.invalidateQueries({ queryKey: invoicesQueryKeys.all });
+      void queryClient.invalidateQueries({ queryKey: ['quote-billing'] });
       setCheckedIds([]);
       showSuccess(
         numbers.length > 1
@@ -1103,6 +1110,7 @@ export function InvoicesWorkspace() {
     },
     onError: (error) => {
       void queryClient.invalidateQueries({ queryKey: invoicesQueryKeys.all });
+      void queryClient.invalidateQueries({ queryKey: ['quote-billing'] });
       showError(toUserFacingError(error.message));
     },
   });
@@ -1307,7 +1315,10 @@ export function InvoicesWorkspace() {
                 dueIsLate={detail.status === 'overdue'}
                 dueOrValid={detail.dueAt}
                 extra={
-                  <ClientLinkPanel documentId={detail.id} documentType="invoice" status={detail.status} />
+                  <>
+                    {detail.quoteId ? <InvoiceQuoteLinks invoiceId={detail.id} quoteId={detail.quoteId} /> : null}
+                    <ClientLinkPanel documentId={detail.id} documentType="invoice" status={detail.status} />
+                  </>
                 }
                 kind="invoice"
                 menuItems={invoiceMenuItems(detail)}
@@ -1498,7 +1509,8 @@ export function QuotesWorkspace() {
     onSuccess: (invoice) => {
       void queryClient.invalidateQueries({ queryKey: quotesQueryKeys.all });
       void queryClient.invalidateQueries({ queryKey: invoicesQueryKeys.all });
-      showSuccess(`Devis converti en facture ${invoice.number}.`);
+      void queryClient.invalidateQueries({ queryKey: ['quote-billing'] });
+      showSuccess(`Facture ${invoice.number} créée à partir du devis.`);
       router.push(`/app/invoices?selected=${invoice.id}`);
     },
     onError: (error) => showError(getQuoteErrorMessage(error.message)),
@@ -1747,7 +1759,13 @@ export function QuotesWorkspace() {
                 dueIsLate={detail.status === 'expired'}
                 dueOrValid={detail.validUntil}
                 extra={
-                  <ClientLinkPanel documentId={detail.id} documentType="quote" status={detail.status} />
+                  <>
+                    <QuoteBillingPanel
+                      onInvoiceCreated={(invoiceId) => router.push(`/app/invoices?selected=${invoiceId}`)}
+                      quote={detail}
+                    />
+                    <ClientLinkPanel documentId={detail.id} documentType="quote" status={detail.status} />
+                  </>
                 }
                 kind="quote"
                 menuItems={quoteMenuItems(detail)}

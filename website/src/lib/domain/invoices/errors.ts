@@ -1,11 +1,20 @@
 import { GENERIC_ERROR_MESSAGE } from '@/lib/errors/messages';
 import { resolveUserFacingError } from '@/lib/errors/postgres';
+import { billingErrorMessage, findBillingErrorCode, isBillingErrorText } from '@/lib/quotes/billing-errors';
 
 export function getInvoiceErrorMessage(message: string): string {
   return resolveUserFacingError(message, mapInvoiceErrorMessage);
 }
 
 function mapInvoiceErrorMessage(message: string): string {
+  // Règles d'acompte et de solde, vérifiées en base.
+  if (isBillingErrorText(message)) {
+    return message;
+  }
+  if (findBillingErrorCode(message)) {
+    return billingErrorMessage({ message });
+  }
+
   switch (message) {
     case 'User must be authenticated to create an invoice.':
     case 'User must be authenticated to update an invoice.':

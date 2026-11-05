@@ -9,6 +9,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { DocumentActionsSheet } from '@/components/documents/document-actions-sheet';
 import { ClientLinkSection } from '@/components/documents/client-link-section';
+import { InvoiceQuoteLinksSection } from '@/components/quotes/quote-billing-section';
 import { SentDocumentsSection } from '@/components/documents/sent-documents-section';
 import {
   CancelInvoiceModal,
@@ -726,6 +727,10 @@ export default function InvoiceDetailScreen() {
               value={pdfOptions}
             />
           </CollapsibleSection>
+        ) : null}
+
+        {invoice.quoteId ? (
+          <InvoiceQuoteLinksSection invoiceId={invoice.id} quoteId={invoice.quoteId} />
         ) : null}
 
         <ClientLinkSection

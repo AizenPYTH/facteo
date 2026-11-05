@@ -14,6 +14,7 @@ import {
   QuoteDetailView,
   QuoteScreenHeader,
 } from '@/components/quotes';
+import { QuoteBillingSection } from '@/components/quotes/quote-billing-section';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
@@ -183,6 +184,8 @@ export default function QuoteDetailScreen() {
 
         <QuoteDetailView quote={quote} />
 
+        <QuoteBillingSection quote={quote} />
+
         <DocumentFinalizePanel
           buildHtml={buildHtml}
           canMarkAsSent={quote.status === 'draft'}
@@ -270,7 +273,7 @@ export default function QuoteDetailScreen() {
       <ConfirmDialog
         confirmLabel="Convertir"
         loading={convertToInvoice.isPending}
-        message={`Une facture reprenant les prestations de ${quote.number} sera créée. Le devis, lui, reste inchangé.`}
+        message={`La facture finale de ${quote.number} sera créée : facture du devis entier, ou facture de solde si des acomptes existent (ils sont alors déduits).`}
         onCancel={() => setConvertVisible(false)}
         onConfirm={handleConvert}
         title="Convertir en facture ?"

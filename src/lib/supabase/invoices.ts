@@ -1,5 +1,5 @@
+import { createFinalInvoiceFromQuote } from '@/lib/supabase/quote-billing';
 import { trackInvoiceCreation } from '@/lib/analytics/product-events';
-import { mapQuoteLinesToInvoiceLines } from '@/lib/documents/line-mappers';
 import {
   mapCreateInvoiceInputToInsert,
   mapUpdateInvoiceInputToInsert,
@@ -9,7 +9,6 @@ import { supabase } from '@/lib/supabase';
 import { logSupabaseError } from '@/lib/supabase/errors';
 import { throwIfPlanLimitReached } from '@/lib/supabase/subscriptions';
 import { mapInvoiceDetail, mapInvoiceRowToInvoice } from '@/lib/supabase/mappers';
-import { fetchQuoteById } from '@/lib/supabase/quotes';
 import { computeDueDate, fetchSettings, reserveNextInvoiceNumber } from '@/lib/supabase/settings';
 import type {
   CreateInvoiceInput,
@@ -677,59 +676,29 @@ export async function addInvoicePayment(
   };
 }
 
+/**
+ * Devis accepté → facture finale, en une seule opération en base
+ * (`create_final_invoice_from_quote`) : facture du devis entier, ou facture
+ * de solde (acomptes déduits) s'il y a des acomptes. Deux clics ou deux
+ * appareils ne peuvent pas créer deux factures.
+ */
 export async function convertQuoteToInvoice(
   scope: DataScope,
   quoteId: string,
 ): Promise<Invoice> {
-  const quote = await fetchQuoteById(scope, quoteId);
+  const created = await createFinalInvoiceFromQuote(quoteId);
 
-  if (!quote) {
-    throw new Error('Quote not found.');
+  const { data, error } = await supabase
+    .from('invoices')
+    .select(INVOICE_LIST_COLUMNS)
+    .eq('id', created.id)
+    .eq('company_id', scope.companyId)
+    .single();
+
+  if (error || !data) {
+    logSupabaseError('convertQuoteToInvoice.fetch', error);
+    throw error ?? new Error('Unable to fetch invoice.');
   }
 
-  if (quote.status === 'converted') {
-    throw new Error('Quote already converted.');
-  }
-
-  if (quote.status !== 'accepted') {
-    throw new Error('Quote must be accepted before conversion.');
-  }
-
-  if (!quote.clientId) {
-    throw new Error('Client is required.');
-  }
-
-  const invoice = await createInvoice(scope, {
-    clientId: quote.clientId,
-    quoteId: quote.id,
-    lines: mapQuoteLinesToInvoiceLines(quote.lines),
-    issuedAt: quote.issuedAt,
-    dueAt: quote.validUntil,
-    paymentTermsDays: quote.paymentTermsDays,
-    notes: quote.notes ?? undefined,
-  });
-
-  const now = new Date().toISOString();
-
-  const { error: quoteError } = await supabase
-    .from('quotes')
-    .update({
-      status: 'converted',
-      converted_invoice_id: invoice.id,
-      updated_at: now,
-    })
-    .eq('id', quoteId)
-    .eq('company_id', scope.companyId);
-
-  if (quoteError) {
-    logSupabaseError('convertQuoteToInvoice.updateQuote', quoteError);
-    await supabase
-      .from('invoices')
-      .delete()
-      .eq('id', invoice.id)
-      .eq('company_id', scope.companyId);
-    throw quoteError;
-  }
-
-  return invoice;
+  return mapInvoiceRowToInvoice(data as unknown as InvoiceWithClient);
 }

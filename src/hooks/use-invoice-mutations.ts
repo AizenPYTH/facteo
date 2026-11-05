@@ -25,6 +25,7 @@ export function useInvoiceMutations() {
 
   function invalidateInvoices(invoiceId?: string) {
     queryClient.invalidateQueries({ queryKey: invoicesQueryKeys.all });
+    queryClient.invalidateQueries({ queryKey: ['quote-billing'] });
     queryClient.invalidateQueries({ queryKey: dashboardQueryKeys.all });
 
     if (invoiceId && scope?.companyId) {

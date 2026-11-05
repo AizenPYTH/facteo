@@ -1,5 +1,6 @@
 import { GENERIC_ERROR_MESSAGE } from '@/lib/errors/messages';
 import { resolveUserFacingError } from '@/lib/errors/postgres';
+import { isBillingErrorText } from '@/lib/quotes/billing-errors';
 
 export function getQuoteErrorMessage(message: string): string {
   return resolveUserFacingError(message, mapQuoteErrorMessage);
@@ -33,6 +34,11 @@ function mapQuoteErrorMessage(message: string): string {
     case 'Quote already converted.':
       return 'Ce devis a déjà été converti en facture.';
     default: {
+      // Règles d'acompte et de solde : message déjà rédigé en base.
+      if (isBillingErrorText(message)) {
+        return message;
+      }
+
       if (message.includes('duplicate key') || message.includes('quotes_user_id_number_key')) {
         return 'Numéro de devis déjà utilisé. Réessayez.';
       }
